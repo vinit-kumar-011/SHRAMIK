@@ -71,16 +71,17 @@ The core analytical loop is:
         │ CONFIDENCE +     │────────▶│ EARLY WARNING       │
         │ EVIDENCE /       │         │ ENGINE              │
         │ per result       │         └─────────────────────┘
-        └────────┬─────────┘
-                 │
-                 │ baseline forecast + gap
-                 ▼
-        ┌──────────────────┐
-        │ WHAT-IF          │
-        │ SIMULATOR        │
-        │ seats + lag +    │
-        │ location + skill │
-        └────────┬─────────┘
+         └──────────────────┘
+
+         FORECAST + GAP outputs
+                  │
+                  ▼
+         ┌──────────────────┐
+         │ WHAT-IF          │
+         │ SIMULATOR        │
+         │ seats + lag +    │
+         │ location + skill │
+         └────────┬─────────┘
                  │
                  ▼
         ┌──────────────────┐
