@@ -131,7 +131,7 @@ If data_status is not SUFFICIENT:
 
 Historical demand_quantity and supply_quantity may remain non-null when those observed values are available, because descriptive historical/trend views may still use them.
 
-confidence_inputs may remain non-null only as diagnostic metadata when some inputs are known. At minimum, history_periods should be populated when the history count is known so the backend/UI can explain an insufficient-history result. These diagnostics do not constitute a confidence score and must not be used to display a confidence level while data_status is not SUFFICIENT.
+confidence_inputs may remain non-null only as diagnostic metadata when some inputs are known. At minimum, history_periods must be populated when the history count is known so the backend/UI can explain an insufficient-history result. These diagnostics do not constitute a confidence score and must not be used to display a confidence level while data_status is not SUFFICIENT.
 
 A valid request with insufficient history is normally HTTP 200, not an API error.
 
@@ -271,6 +271,8 @@ Representative structure:
       "upper": 1470,
       "level": 0.80
     }
+
+This interval is **illustrative only; it is not produced by the required naive_last_value baseline unless a separate validated uncertainty method is explicitly implemented**.
 
 Rules:
 
