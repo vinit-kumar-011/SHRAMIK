@@ -312,7 +312,7 @@ When fewer than 3 usable periods are available:
 - show a first-class **historical trend / descriptive view** where sufficient descriptive data exists
 - do not label a descriptive trend as a forecast
 
-If the canonical dataset later shows that most location + skill pairs have 5 or more usable periods, the forecasting threshold may be raised after evaluation.
+If the canonical dataset later shows that most location + skill pairs have 5 or more usable periods, the forecasting threshold may be raised after evaluation by changing the configured minimum in `ml/config`. This is a configuration change, not an architectural redesign.
 
 ---
 
@@ -412,6 +412,7 @@ Consumes:
 - forecast demand/supply
 - gap
 - trend information
+- emerging-skill status
 - confidence/evidence
 
 It identifies conditions such as:
@@ -425,6 +426,8 @@ It identifies conditions such as:
 Warnings must have transparent deterministic rules and severity levels.
 
 Low-confidence conditions should normally be treated as lower-priority/watch signals.
+
+`NO_DEMAND` results produce **no shortage or oversupply warnings**.
 
 ---
 
@@ -497,6 +500,7 @@ If the cohort becomes available **after the last forecast period in the scenario
 If the baseline gap is zero, negative, `NO_DEMAND`, or otherwise not a positive shortage:
 
 - return `gap_reduction = null`
+- return `simulated_gap` using the scenario calculation, with `status = NO_DEMAND` when the baseline is `NO_DEMAND`
 - include a reason explaining that gap reduction is defined only relative to a positive baseline shortage
 
 The interface must clearly label the result as a **scenario simulation**, not a guaranteed real-world outcome.
@@ -1033,6 +1037,7 @@ This issue is ready for review when:
 - [x] Common-unit gap definition is explicit
 - [x] Forecast period granularity is defined
 - [x] Forecast minimum-history rule is defined provisionally and must be validated against the canonical dataset in Issue #7
+- [x] Minimum-history configuration location is documented
 - [x] Emerging-skill pipeline position and minimum-history rule are explicit
 - [x] Confidence scope and minimum-history confidence cap are explicit
 - [x] Simulator time/lag and scope are explicit
