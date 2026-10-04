@@ -443,6 +443,8 @@ Rules:
 
 The cutoff is important for detecting future-data leakage.
 
+Validator rule: `trained_through_period < period` for every forecast record. If this condition is false, the record must be rejected as invalid rather than silently accepted.
+
 ## 21. Model Output vs Derived Business Logic
 
 ### Forecast/model layer may produce
