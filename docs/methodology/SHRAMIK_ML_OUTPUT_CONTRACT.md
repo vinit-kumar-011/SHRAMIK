@@ -62,7 +62,7 @@ Representative output:
         "data_coverage": 0.92,
         "data_freshness_days": 45,
         "forecast_error": 0.14,
-        "uncertainty_available": true,
+        "uncertainty_available": false,
         "source_count": 3
       },
       "evidence_coverage": 0.92,
@@ -100,7 +100,7 @@ The numbers, years, IDs, and model metadata in this example are illustrative onl
 | confidence_level | enum/null | Yes | HIGH/MEDIUM/LOW | Trust classification |
 | confidence_inputs | object/null | Optional | mixed | Inputs used by confidence layer |
 | evidence_coverage | number/null | Yes | 0–1 | Evidence support measure |
-| model | object | Required with forecast | metadata | Model and cutoff metadata |
+| model | object/null | Required with forecast | metadata | Model and cutoff metadata |
 
 ## 5. Data Status
 
@@ -131,7 +131,7 @@ If data_status is not SUFFICIENT:
 
 Historical demand_quantity and supply_quantity may remain non-null when those observed values are available, because descriptive historical/trend views may still use them.
 
-confidence_inputs may remain non-null only as diagnostic metadata when some inputs are known, such as history_periods. These diagnostics do not constitute a confidence score and must not be used to display a confidence level while data_status is not SUFFICIENT.
+confidence_inputs may remain non-null only as diagnostic metadata when some inputs are known. At minimum, history_periods should be populated when the history count is known so the backend/UI can explain an insufficient-history result. These diagnostics do not constitute a confidence score and must not be used to display a confidence level while data_status is not SUFFICIENT.
 
 A valid request with insufficient history is normally HTTP 200, not an API error.
 
@@ -151,7 +151,16 @@ Initial values:
 - MODEL_UNAVAILABLE
 - MODEL_FAILURE
 
-reason_code is optional for SUFFICIENT results and required for INSUFFICIENT_DATA / UNAVAILABLE results.
+For SUFFICIENT results, reason_code must be null unless a separately documented informational code is introduced.
+
+For non-SUFFICIENT results, reason_code is required.
+
+Valid mappings for MVP:
+
+- INSUFFICIENT_DATA → INSUFFICIENT_HISTORY or REQUIRED_INPUT_MISSING
+- UNAVAILABLE → SOURCE_UNAVAILABLE, MODEL_UNAVAILABLE, or MODEL_FAILURE
+
+A validator must reject reason_code/data_status combinations outside these mappings.
 
 This is the machine-readable reason; the backend/API layer converts it into human-readable text for clients. Because data_status and reason_code are both returned, consumers can distinguish INSUFFICIENT_DATA from UNAVAILABLE without inferring from null fields.
 
@@ -163,7 +172,7 @@ demand_quantity:
 - unit: worker/position headcount
 - minimum: 0
 
-Meaning: the usable observed demand quantity feeding the forecast for this location/sector/skill series, typically the latest available historical period.
+Meaning: the latest usable observed demand quantity for this location/sector/skill series that feeds the forecast. For a forecast period of 2027, this may be the 2026 observation (or the latest available historical observation before 2027).
 
 supply_quantity:
 
@@ -171,7 +180,7 @@ supply_quantity:
 - unit: worker headcount
 - minimum: 0
 
-Meaning: the usable observed supply quantity feeding the forecast for this location/sector/skill series, typically the latest available historical period.
+Meaning: the latest usable observed supply quantity for this location/sector/skill series that feeds the forecast. For a forecast period of 2027, this may be the 2026 observation (or the latest available historical observation before 2027).
 
 These are compatible historical quantities used by forecasting and gap analysis.
 
@@ -462,9 +471,11 @@ Emerging Skill Detection is a separate historical-series path.
 Recommended structure:
 
     {
+      "contract_version": "1.0",
       "district_id": "OD-KHD",
       "sector_id": "RENEWABLE_ENERGY",
       "skill_id": "SOLAR_PV_TECHNICIAN",
+      "period_type": "YEAR",
       "period": "2027",
       "data_status": "SUFFICIENT",
       "emerging_skill_status": "EMERGING",
@@ -511,12 +522,13 @@ For example, 2027, 2028, and 2029 are three separate records.
 Each period may have its own:
 
 - data_status
+- reason_code
 - forecast values
 - gap
 - confidence
 - uncertainty
 
-Issue #4 defines the multi-period API envelope.
+Issue #4 defines the multi-period API envelope. It must preserve each period's reason_code so mixed horizons remain explainable.
 
 The ML contract is intentionally **period-level**: a later forecast period may have a different data_status/confidence from an earlier period. The multi-period API must preserve those per-period states rather than collapsing a mixed horizon into one global confidence/status.
 
