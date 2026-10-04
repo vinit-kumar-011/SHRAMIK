@@ -1,7 +1,7 @@
 # SHRAMIK Technical Architecture
 
 **Issue:** #1 — Define SHRAMIK technical architecture and contracts  
-**Status:** Initial architecture baseline  
+**Status:** Review-ready architecture baseline; detailed contracts are intentionally tracked in Issues #2, #4, and #5  
 **Owner:** Lead  
 **Branch:** `feature/architecture-contracts`
 
@@ -30,90 +30,118 @@ The core analytical loop is:
 ## 2. High-Level Architecture
 
 ```text
-                    ┌──────────────────────┐
-                    │   DATA SOURCES       │
-                    │ Jobs / surveys /     │
-                    │ training / official  │
-                    │ statistics / demo    │
-                    │ data                  │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │ DATA INGESTION &      │
-                    │ VALIDATION            │
-                    │ raw → clean →        │
-                    │ normalize → map      │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                    ┌──────────────────────┐
-                    │ EVIDENCE STORE       │
-                    │ PostgreSQL /         │
-                    │ Supabase             │
-                    └──────────┬───────────┘
-                               │
-               ┌───────────────┴────────────────┐
-               │                                │
-               ▼                                ▼
-      ┌─────────────────┐              ┌─────────────────┐
-      │ DEMAND ENGINE   │              │ SUPPLY ENGINE   │
-      └────────┬────────┘              └────────┬────────┘
-               │                                │
-               └──────────────┬─────────────────┘
-                              ▼
-                    ┌──────────────────────┐
-                    │ FORECAST ENGINE     │
-                    │ demand + supply     │
-                    └──────────┬───────────┘
-                               ▼
-                    ┌──────────────────────┐
-                    │ GAP ENGINE          │
-                    │ demand - supply     │
-                    └──────────┬───────────┘
-                               ▼
-                    ┌──────────────────────┐
-                    │ CONFIDENCE +         │
-                    │ EVIDENCE SCORING     │
-                    └──────────┬───────────┘
-                               │
-                ┌──────────────┴──────────────┐
-                ▼                             ▼
-       ┌─────────────────┐           ┌─────────────────┐
-       │ EARLY WARNING   │           │ EMERGING SKILL  │
-       │ ENGINE          │           │ DETECTION       │
-       └────────┬────────┘           └────────┬────────┘
-                │                             │
-                └──────────────┬──────────────┘
-                               ▼
-                    ┌──────────────────────┐
-                    │ WHAT-IF SIMULATOR    │
-                    │ training seats /     │
-                    │ scenario assumptions │
-                    └──────────┬───────────┘
-                               ▼
-                    ┌──────────────────────┐
-                    │ FASTAPI BACKEND      │
-                    │ REST APIs + business │
-                    │ orchestration        │
-                    └──────────┬───────────┘
-                               │
-                    ┌──────────┴───────────┐
-                    ▼                      ▼
-          ┌─────────────────┐    ┌──────────────────┐
-          │ NEXT.JS FRONTEND│    │ LLM EXPLAINER   │
-          │ dashboard / map │    │ explanation /    │
-          │ charts / pages  │    │ planning brief   │
-          └─────────────────┘    └──────────────────┘
+                         ┌──────────────────────┐
+                         │     DATA SOURCES     │
+                         │ jobs / surveys /     │
+                         │ training / official  │
+                         │ statistics / demo    │
+                         │ data                 │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │ DATA INGESTION &      │
+                         │ VALIDATION            │
+                         │ raw → clean →        │
+                         │ normalize → map      │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │ EVIDENCE STORE       │
+                         │ PostgreSQL /         │
+                         │ Supabase             │
+                         └──────────┬───────────┘
+                                    │
+                   ┌────────────────┴─────────────────┐
+                   │                                  │
+                   ▼                                  ▼
+          ┌─────────────────┐                ┌─────────────────┐
+          │ HISTORICAL      │                │ DEMAND / SUPPLY │
+          │ TIME SERIES     │───────────────▶│ ENGINES         │
+          │ common-unit     │                │ + display index │
+          │ quantities      │                └────────┬────────┘
+          └────────┬────────┘                         │
+                   │                                  ▼
+                   │                         ┌─────────────────┐
+                   │                         │ FORECAST ENGINE │
+                   │                         │ demand + supply │
+                   │                         └────────┬────────┘
+                   │                                  ▼
+                   │                         ┌─────────────────┐
+                   │                         │ GAP ENGINE      │
+                   │                         │ demand - supply │
+                   │                         └────────┬────────┘
+                   │                                  ▼
+                   │                         ┌─────────────────┐
+                   │                         │ CONFIDENCE +    │
+                   │                         │ EVIDENCE        │
+                   │                         │ per result      │
+                   │                         └────────┬────────┘
+                   │                                  │
+                   │                                  ▼
+                   │                         ┌─────────────────┐
+                   │                         │ EARLY WARNING   │
+                   │                         │ ENGINE          │
+                   │                         └────────┬────────┘
+                   │                                  │
+                   ▼                                  │
+          ┌─────────────────┐                         │
+          │ EMERGING SKILL  │                         │
+          │ DETECTION       │                         │
+          │ historical      │                         │
+          │ trend based     │                         │
+          └────────┬────────┘                         │
+                   │                                  │
+                   └────────────────┬─────────────────┘
+                                    ▼
+                         ┌──────────────────────┐
+                         │ WHAT-IF SIMULATOR    │
+                         │ training seats +     │
+                         │ duration / lag +     │
+                         │ location / skill     │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                         ┌──────────────────────┐
+                         │ FASTAPI BACKEND      │
+                         │ REST APIs + business │
+                         │ orchestration        │
+                         └──────────┬───────────┘
+                                    │
+                         ┌──────────┴───────────┐
+                         ▼                      ▼
+               ┌─────────────────┐    ┌──────────────────┐
+               │ NEXT.JS         │    │ OPTIONAL LLM     │
+               │ FRONTEND        │    │ EXPLAINER        │
+               │ dashboard / map │    │ called by backend│
+               │ charts / pages  │    │ on demand + cache│
+               └─────────────────┘    └──────────────────┘
 ```
 
-### Critical rule
+### Pipeline decisions
 
-**The LLM does not calculate SHRAMIK's numerical analytics.**
+There are two related analytical paths after normalized historical data is available.
+
+**Forecast / shortage path**
+
+Historical demand/supply → forecast → gap → confidence/evidence → early warnings
+
+**Emerging-skill path**
+
+Historical demand/supply series → recent-vs-historical trend analysis → emerging skill status
+
+Emerging-skill detection therefore does **not** require a forecast-gap result. It is primarily historical-series based. Data quality can still be displayed for the emerging-skill result, but the module must not pretend that it was produced from the shortage pipeline.
+
+Confidence is computed **per forecast/gap result** for each location + skill + forecast period. Early-warning logic consumes that confidence. Low-confidence results are downgraded to watch-level behaviour where appropriate.
+
+### Critical LLM rule
+
+**The LLM does not calculate SHRAMIK numerical analytics.**
 
 Numerical results come from the data, analytical engines, forecasting code, and deterministic business rules.
 
-The LLM receives structured results and explains them in human-readable language.
+The LLM is called **through the FastAPI backend**, receives structured results, and explains them in human-readable language. It is optional and must never block the core analytical experience.
 
 ---
 
@@ -128,12 +156,24 @@ The LLM receives structured results and explains them in human-readable language
 | Maps | Leaflet / React-Leaflet | Geographic intelligence |
 | Backend | Python + FastAPI | REST API and orchestration |
 | Data processing | Pandas + NumPy | Cleaning and analytical transformations |
-| ML | scikit-learn / XGBoost / suitable classical forecasting | Forecasting and modelling |
+| ML | scikit-learn / suitable classical forecasting | Forecasting and modelling |
 | Database | PostgreSQL / Supabase | Structured evidence and application data |
 | AI | LLM API | Explanation and planning briefs only |
 | Frontend hosting | Vercel | Web deployment |
 | Backend hosting | Render / Railway or equivalent | Python API deployment |
 | Source control | Git + GitHub | Collaboration and release management |
+
+### Forecasting baseline
+
+The first forecast implementation must be unambiguous:
+
+**Baseline = naïve last-value forecast**
+
+The baseline predicts the next period using the most recent observed value.
+
+A more suitable transparent model, such as exponential smoothing or linear trend, may then be evaluated against that baseline.
+
+Do not jump directly to XGBoost, LSTM, Transformers, or other complex models. Complexity is justified only if the data and time-aware evaluation show a meaningful improvement.
 
 ### Architecture principle
 
@@ -163,11 +203,23 @@ It must preserve the distinction between:
 - cleaned/normalized data
 - derived analytical values
 
+### Skill taxonomy
+
+Skill/job-role mapping must use an explicit, documented taxonomy.
+
+For MVP, the ingestion design should be **NCO/NSQF-aligned**:
+
+- NCO-style occupation/job-role codes can anchor occupational classification.
+- NSQF-aligned information can be retained where training/qualification data requires skill or qualification-level mapping.
+- The exact code set, mappings, crosswalks, and fallback rules are finalized in **Issue #9 (data ingestion)**.
+
+The team must not silently invent skill names or map unrelated job titles without recording the rule.
+
 ---
 
 ### 4.2 Evidence Store
 
-The database is the system's persistent source of structured evidence.
+The database is the system persistent source of structured evidence.
 
 Core entities include:
 
@@ -187,7 +239,18 @@ Every important derived result should be traceable to relevant source/evidence m
 
 ### 4.3 Demand Engine
 
-Produces a **Demand Index** from available demand-side signals.
+Produces a **Demand Index** from available demand-side signals, while preserving a common-unit demand quantity for forecasting and gap analysis.
+
+For the MVP, the preferred analytical unit is:
+
+**worker/position headcount**
+
+Examples:
+
+- observed demand = number of relevant positions/openings in a period
+- forecast demand = expected number of positions/openings in a future period
+
+The Demand Index is a normalized display/ranking indicator. It is **not** the unit used by the Gap Engine.
 
 The engine must:
 
@@ -202,13 +265,17 @@ No LLM-generated numbers.
 
 ### 4.4 Supply Engine
 
-Produces a **Supply Index** from available supply-side signals.
+Produces a **Supply Index** from available supply-side signals, while preserving a common-unit supply quantity for forecasting and gap analysis.
 
-Examples of signals may include:
+For the MVP, the preferred analytical unit is **worker headcount**, using the same conceptual unit as demand wherever the data supports it.
 
-- training output
+The Supply Index is a normalized display/ranking indicator. It is **not** the unit used by the Gap Engine or simulator.
+
+Examples of supply signals may include:
+
+- trained workforce counts
+- training completions
 - available trained workforce indicators
-- completion data
 - other validated supply proxies
 
 The exact signal set is determined by the canonical dataset.
@@ -217,11 +284,11 @@ The exact signal set is determined by the canonical dataset.
 
 ### 4.5 Forecast Engine
 
-Produces future demand/supply estimates.
+Produces future demand/supply estimates in the **same common analytical unit** used by the Gap Engine.
 
 Requirements:
 
-- begin with a transparent baseline
+- begin with the naïve last-value baseline
 - use time-aware validation
 - avoid future-data leakage
 - use a configurable forecast horizon
@@ -229,29 +296,83 @@ Requirements:
 - handle insufficient history explicitly
 - report uncertainty where supported by the model
 
-The project does **not** assume that a more complex model is automatically better.
+### Data sparsity rule
+
+Government labour-market data may be:
+
+- annual rather than monthly
+- district-level rather than granular
+- incomplete across skills
+- sparse over time
+
+For MVP, the canonical analytical period is **yearly (`YYYY`)** so sparse annual government data is not artificially converted into fake monthly or quarterly observations.
+
+Higher-frequency source data may be aggregated to yearly periods.
+
+**Do not upsample annual data into fabricated quarters or months.**
+
+### Minimum history
+
+Before forecasting a location + skill series, the system should require **at least 5 usable yearly periods by default**.
+
+This threshold must be configurable in the ML configuration.
+
+When fewer than 5 usable periods are available:
+
+- do not fabricate a forecast
+- return an explicit insufficient-data result
+- show the reason in the API/UI
+- optionally fall back to a descriptive historical trend without calling it a forecast
+
+The threshold can be revisited after evaluation, but the MVP must have one explicit rule.
 
 ---
 
 ### 4.6 Gap Engine
 
+The Gap Engine operates on **forecast headcount quantities**, not normalized indices.
+
 Core definition:
 
 `Gap = Forecast Demand - Forecast Supply`
 
+Therefore:
+
+- Forecast Demand = worker/position headcount
+- Forecast Supply = worker headcount
+- Gap = headcount difference
+
 Interpretation:
 
 - positive gap → shortage
-- near-zero gap → balanced
+- balanced band → approximately balanced
 - negative gap → oversupply
 
-Classification thresholds must be configurable rather than hidden inside frontend code.
+### Balanced band
+
+The initial classification configuration lives in:
+
+`ml/config/gap_thresholds.py`
+
+The thresholds should be **relative to forecast demand**, not one fixed headcount value for every district.
+
+The default MVP policy may be:
+
+- shortage: gap > +10% of forecast demand
+- balanced: -10% ≤ gap ≤ +10% of forecast demand
+- oversupply: gap < -10% of forecast demand
+
+The percentage is configurable and must not be hard-coded into the frontend.
+
+For zero or near-zero forecast demand, use a separate safe rule instead of dividing by zero.
 
 ---
 
 ### 4.7 Confidence & Evidence Layer
 
 Confidence is a trust signal, not a decorative badge.
+
+Confidence is computed **per forecast/gap result** for a specific location + skill + forecast period.
 
 It should consider factors such as:
 
@@ -277,7 +398,14 @@ Unless separately validated and calibrated, a confidence score must **not** be p
 
 ### 4.8 Early Warning Engine
 
-Consumes upstream analytical outputs and identifies conditions such as:
+Consumes:
+
+- forecast demand/supply
+- gap
+- trend information
+- confidence/evidence
+
+It identifies conditions such as:
 
 - projected shortage
 - worsening shortage
@@ -293,7 +421,7 @@ Low-confidence conditions should normally be treated as lower-priority/watch sig
 
 ### 4.9 Emerging Skill Detection
 
-Identifies skills showing meaningful recent growth relative to historical behaviour.
+Emerging Skill Detection is **primarily historical-series based**. It consumes recent and historical demand/supply observations directly rather than requiring the Forecast → Gap pipeline.
 
 The method should require:
 
@@ -301,6 +429,14 @@ The method should require:
 - configurable growth thresholds
 - transparent rules
 - an explicit insufficient-data state
+
+The output should distinguish:
+
+- EMERGING
+- NOT_EMERGING
+- INSUFFICIENT_DATA
+
+This module must never label a skill emerging solely because an LLM said so.
 
 ---
 
@@ -310,13 +446,32 @@ MVP intervention:
 
 **Additional training seats**
 
+The simulator must be scoped by:
+
+- location
+- skill/job role
+- intervention start period
+- training duration / completion lag
+- additional seats
+- expected completion rate
+
 Core calculation:
 
 `Effective Additional Supply = Additional Seats × Expected Completion Rate`
 
-`Simulated Supply = Baseline Forecast Supply + Effective Additional Supply`
+Added supply does **not** appear immediately. If training begins in period `t` and the training lag is `L` periods, additional supply becomes available from `t + L`.
 
-`Simulated Gap = Forecast Demand - Simulated Supply`
+`Scenario Supply(t) = Baseline Forecast Supply(t) + Effective Additional Supply`
+
+only for periods where the trained cohort becomes available.
+
+Then:
+
+`Simulated Gap(t) = Forecast Demand(t) - Scenario Supply(t)`
+
+Where baseline gap is positive and non-zero:
+
+`Gap Reduction = (Baseline Gap - Simulated Gap) / Baseline Gap`
 
 The interface must clearly label the result as a **scenario simulation**, not a guaranteed real-world outcome.
 
@@ -342,13 +497,27 @@ It may **not**:
 - silently change calculated values
 - claim certainty when evidence is weak
 
+### Latency and caching
+
+The AI brief is an **optional operation**. The frontend must not block initial page rendering while waiting for it.
+
+For MVP:
+
+- generate the brief on demand
+- cache identical structured inputs using a stable request/input hash
+- use a reasonable backend timeout
+- return a controlled error on provider failure or timeout
+- keep the underlying analytics fully usable
+
+The MVP can use a normal `POST /api/generate-brief` request because it is initiated on demand; the UX must remain non-blocking. A future production version can move to an asynchronous job/status workflow if latency requires it.
+
 If the AI provider fails, the core analytics application must continue to work.
 
 ---
 
 ## 5. Application Data Flow
 
-A normal analytical request should conceptually follow:
+### Forecast / shortage path
 
 ```text
 Source data
@@ -357,23 +526,49 @@ Validation
    ↓
 Normalization
    ↓
-Canonical records
+Canonical historical records
    ↓
-Demand/Supply calculations
+Demand/Supply quantities
    ↓
-Forecast
+Forecast demand + supply
    ↓
-Gap
+Gap (common headcount unit)
    ↓
-Confidence + evidence
+Confidence + evidence (per result)
    ↓
-Warning / emerging-skill rules
+Early-warning rules
    ↓
 API response
    ↓
 Frontend visualization
+```
+
+### Emerging-skill path
+
+```text
+Canonical historical demand/supply series
    ↓
-Optional AI explanation
+Recent-vs-historical analysis
+   ↓
+Emerging-skill status/score
+   ↓
+API response
+   ↓
+Frontend visualization
+```
+
+### Optional AI explanation path
+
+```text
+Structured analytics result
+   ↓
+FastAPI backend
+   ↓
+Cache lookup
+   ├── cache hit → return existing brief
+   └── cache miss → LLM provider → validate/store result
+                                ↓
+                         Frontend explanation
 ```
 
 The frontend should **never recreate analytical formulas** that already belong to the backend/ML layer.
@@ -409,6 +604,19 @@ Database access belongs behind a reusable database/service layer.
 
 API routes should not contain large blocks of raw database logic.
 
+### Backend ↔ LLM
+
+The backend owns:
+
+- LLM provider calls
+- input preparation from structured analytics
+- caching
+- timeout handling
+- response validation
+- safe failure behaviour
+
+The frontend never calls the LLM provider directly.
+
 ### LLM ↔ Analytics
 
 The LLM receives **structured, already-calculated facts**.
@@ -428,7 +636,7 @@ Human-readable explanation
 Not:
 
 ```text
-Raw database dump → LLM → "forecast"
+Raw database dump → LLM → forecast
 ```
 
 ---
@@ -482,6 +690,28 @@ A representative error shape is:
 
 The exact production schema belongs in Issue #4.
 
+### Null and insufficient-data convention
+
+Analytical responses use:
+
+`data_status = SUFFICIENT | INSUFFICIENT_DATA | UNAVAILABLE`
+
+When `data_status` is not `SUFFICIENT`:
+
+- analytical numeric outputs such as forecast/gap should be `null` unless a documented non-forecast value is being returned
+- include a human-readable `reason`
+- do not display `0` as a substitute for missing data
+- the frontend must render an explicit Insufficient data or Unavailable state
+
+Example:
+
+```json
+{
+  "data_status": "INSUFFICIENT_DATA",
+  "reason": "Only 3 usable yearly observations are available; at least 5 are required for the MVP forecast."
+}
+```
+
 ---
 
 ## 9. High-Level ML Result Convention
@@ -494,7 +724,7 @@ Representative structure:
 {
   "location_id": "OD-001",
   "skill_id": "SKILL-001",
-  "period": "2027-Q1",
+  "period": "2027",
   "forecast_demand": 1250,
   "forecast_supply": 900,
   "gap": 350,
@@ -509,6 +739,14 @@ Representative structure:
 ```
 
 This is an **architecture-level example**.
+
+Important units:
+
+- `forecast_demand` = worker/position headcount
+- `forecast_supply` = worker headcount
+- `gap` = headcount difference
+
+A separate display/ranking index may be included, but it must not be substituted into the gap calculation.
 
 The authoritative machine-readable ML contract is finalized in **Issue #5**.
 
@@ -537,10 +775,11 @@ Important analytical outputs should retain:
 - calculation/processing version where useful
 - source/update date
 - relevant evidence metadata
+- analytical period
 
 The team should be able to explain:
 
-**What data produced this result, using which model/rules, at what point in time?**
+**What data produced this result, using which model/rules, for which period, at what point in time?**
 
 This is especially important for forecasts and planner-facing recommendations.
 
@@ -559,7 +798,19 @@ Do not introduce unnecessary individual-level personally identifiable informatio
 
 Secrets and API credentials must stay in environment variables and must never be committed to Git.
 
-Future production hardening may add stronger RBAC, audit logging, encryption controls, and other enterprise security measures.
+### Authentication
+
+**No authentication/RBAC is planned for the MVP.**
+
+The MVP is a controlled demonstration environment. Do not imply that production-grade government identity, departmental role-based access, or audit controls exist unless they are actually implemented.
+
+Future production hardening may add:
+
+- RBAC
+- audit logging
+- encryption controls
+- stronger secrets management
+- government identity integration
 
 ---
 
@@ -577,12 +828,12 @@ Next.js frontend
 FastAPI backend host
   ├── analytics / ML modules
   ├── database access
-  └── AI provider
+  └── AI provider (optional, backend-mediated)
         ↓
 Supabase / PostgreSQL
 ```
 
-The exact hosting provider can change without changing the application's logical architecture.
+The exact hosting provider can change without changing the application logical architecture.
 
 ---
 
@@ -594,12 +845,14 @@ Planned repository structure:
 SHRAMIK/
 ├── frontend/          # Next.js application
 ├── backend/           # FastAPI application
-├── ml/                # analytics / forecasting logic
+├── ml/
+│   ├── config/        # analytical thresholds / model settings
+│   └── ...            # analytics / forecasting logic
 ├── data/
 │   ├── raw/           # source inputs
 │   └── processed/     # normalized datasets
 ├── docs/              # architecture, API, methodology
-└── scripts/            # setup / data / utility scripts
+└── scripts/           # setup / data / utility scripts
 ```
 
 ### Important boundary
@@ -610,6 +863,8 @@ Do not place frontend rendering logic inside ML modules.
 
 Do not put the whole backend into one large Python file.
 
+Configuration values that affect analytical classification must live in the ML/config area, be documented, and be version-controlled with the code.
+
 ---
 
 ## 15. Beginner Mental Model
@@ -618,17 +873,19 @@ Think of SHRAMIK as a chain of responsibility:
 
 **Data tells us what happened.**
 
-**Demand/Supply engines turn raw observations into comparable indicators.**
+**Demand/Supply engines produce common-unit quantities plus optional display indices.**
 
-**Forecasting estimates what may happen next.**
+**Forecasting estimates what may happen next in the same common unit.**
 
-**Gap analysis compares future demand and supply.**
+**Gap analysis compares future demand and supply in headcount.**
 
-**Confidence/evidence tells us how much we should trust the conclusion.**
+**Confidence/evidence tells us how much we should trust each forecast/gap result.**
 
-**Early warnings detect important changes.**
+**Early warnings detect important changes using those analytical results.**
 
-**The simulator asks “what if we intervene?”**
+**Emerging-skill detection looks directly at historical trends.**
+
+**The simulator asks what if we intervene, and when would the added supply appear.**
 
 **The backend delivers those structured results.**
 
@@ -647,11 +904,20 @@ For MVP, the team agrees that:
 - ML is a separate analytical layer.
 - PostgreSQL/Supabase is the structured evidence store.
 - The frontend does not own analytical calculations.
-- The LLM does not own numerical forecasting.
-- Analytical outputs require provenance/confidence metadata.
+- Demand and supply gap calculations use common-unit headcount quantities, not normalized indices.
+- Display/ranking indices are separate from analytical headcount quantities.
+- Forecasts use yearly (`YYYY`) periods in the MVP.
+- A location + skill forecast requires at least 5 usable yearly observations by default.
+- Insufficient data returns an explicit status and does not fabricate numeric values.
+- Emerging-skill detection is historical-series based and does not require the forecast-gap pipeline.
+- Confidence is computed per location + skill + forecast period result.
+- Early warnings consume confidence/evidence.
+- The baseline forecast is a naïve last-value forecast.
 - Time-aware validation and no data leakage are mandatory.
 - Transparent classical/statistical methods are preferred over unnecessary deep learning.
-- The MVP simulation focuses on training-seat interventions.
+- The MVP simulation focuses on training-seat interventions and includes a training duration/lag and target location/skill.
+- The LLM is backend-mediated, optional, non-blocking to the core UI, and cached where possible.
+- No authentication/RBAC is planned for the MVP.
 - Aggregate data is preferred over individual worker data.
 - GitHub contracts should be documented before dependent feature work.
 
@@ -672,15 +938,16 @@ For MVP, the team agrees that:
  └──→ #11 Frontend foundation
 
 #7 + #9
- └──→ Data available for analytics
-
-#13 Demand/Supply
- └──→ #14 Forecasting
-       └──→ #15 Gap analysis
-             └──→ #16 Confidence/Evidence
-                   ├──→ #17 Early warnings
-                   ├──→ #18 Emerging skills
-                   └──→ #22 Model evaluation
+ └──→ Canonical historical data available
+       ├──→ #13 Demand/Supply engines
+       │      └──→ #14 Forecasting
+       │             └──→ #15 Gap analysis
+       │                    └──→ #16 Confidence/Evidence
+       │                           ├──→ #17 Early warnings
+       │                           └──→ #22 Model evaluation
+       │
+       └──→ #18 Emerging skills
+              historical-series path; no forecast dependency
 
 #19 Simulation
 #20/#21 APIs
@@ -718,6 +985,8 @@ Do **not** turn this issue into:
 
 Those are separate roadmap issues.
 
+The open items in the checklist are **intentional dependencies**. They are not missing work inside Issue #1.
+
 ---
 
 ## 19. Completion Checklist for Issue #1
@@ -726,19 +995,29 @@ This issue is ready for review when:
 
 - [x] Overall architecture is documented
 - [x] Main modules are defined
-- [x] End-to-end data flow is documented
+- [x] End-to-end data flows are documented
 - [x] Technology choices are recorded
 - [x] Frontend/backend boundary is explicit
 - [x] Backend/ML boundary is explicit
 - [x] Database/evidence responsibility is explicit
+- [x] Common-unit gap definition is explicit
+- [x] Forecast period granularity is defined
+- [x] Forecast minimum-history rule is defined
+- [x] Emerging-skill pipeline position is explicit
+- [x] Confidence scope is explicit
+- [x] Simulator time/lag and scope are explicit
+- [x] AI caching/latency boundary is explicit
+- [x] Authentication/RBAC MVP boundary is explicit
+- [x] Insufficient-data/null convention is explicit
+- [x] Skill taxonomy decision is assigned to ingestion work
 - [x] Initial API surface is recorded
 - [x] High-level ML result structure is recorded
 - [x] LLM limitations are explicit
 - [x] Security/privacy boundaries are explicit
 - [x] Repository module boundaries are documented
-- [ ] Detailed API contract completed in Issue #4
-- [ ] Detailed ML contract completed in Issue #5
-- [ ] Database schema finalized in Issue #2
+- [x] Detailed API contract intentionally deferred to Issue #4
+- [x] Detailed ML contract intentionally deferred to Issue #5
+- [x] Detailed database schema intentionally deferred to Issue #2
 
 ---
 
@@ -748,3 +1027,5 @@ This issue is ready for review when:
 - **#4** Define SHRAMIK API contracts
 - **#5** Define SHRAMIK ML output contract
 - **#6** Set up SHRAMIK development environment
+- **#9** Build SHRAMIK data ingestion and validation pipeline
+- **#13–#18** Implement SHRAMIK analytical intelligence
