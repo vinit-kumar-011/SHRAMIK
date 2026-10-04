@@ -371,7 +371,7 @@ Representative confidence_inputs:
       "data_coverage": 0.92,
       "data_freshness_days": 45,
       "forecast_error": 0.14,
-      "uncertainty_available": true,
+      "uncertainty_available": false,
       "source_count": 3
     }
 
