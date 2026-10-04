@@ -33,6 +33,8 @@ All forecast quantities use compatible headcount-style units.
 
 Demand and supply must be normalized into compatible units before a gap is calculated.
 
+For the MVP, each canonical skill/job role maps to exactly one canonical sector. This keeps the District × Sector × Skill key unambiguous. Issue #2 must enforce this relationship in the database design. A future many-to-many sector relationship would require an explicit schema/contract revision.
+
 ## 3. Canonical Analytical Record
 
 Representative output:
@@ -123,6 +125,13 @@ If data_status is not SUFFICIENT:
 - gap = null
 - status = null
 - confidence_level = null
+- forecast_uncertainty = null
+- evidence_coverage = null
+- model = null
+
+Historical demand_quantity and supply_quantity may remain non-null when those observed values are available, because descriptive historical/trend views may still use them.
+
+confidence_inputs may remain non-null only as diagnostic metadata when some inputs are known, such as history_periods. These diagnostics do not constitute a confidence score and must not be used to display a confidence level while data_status is not SUFFICIENT.
 
 A valid request with insufficient history is normally HTTP 200, not an API error.
 
