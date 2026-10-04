@@ -78,27 +78,26 @@ The core analytical loop is:
                    │                         │ EVIDENCE        │
                    │                         │ per result      │
                    │                         └────────┬────────┘
-                   │                                  │
-                   │                                  ▼
-                   │                         ┌─────────────────┐
-                   │                         │ EARLY WARNING   │
-                   │                         │ ENGINE          │
-                   │                         └────────┬────────┘
-                   │                                  │
-                   ▼                                  │
-          ┌─────────────────┐                         │
-          │ EMERGING SKILL  │                         │
-          │ DETECTION       │                         │
-          │ historical      │                         │
-          │ trend based     │                         │
-          └────────┬────────┘                         │
-                   │                                  │
-                   └────────────────┬─────────────────┘
-                                    ▼
+                   │                                  ┌─────────────────┐
+                   │                                  │ EARLY WARNING   │
+                   │                         ┌────────▶│ ENGINE          │
+                   │                         │         └─────────────────┘
+                   │                         │
+                   ▼                         │
+          ┌─────────────────┐                │
+          │ EMERGING SKILL  │                │
+          │ DETECTION       │                │
+          │ historical      │                │
+          │ trend based     │                │
+          └────────┬────────┘                │
+                   │                         │
+                   └─────────────────────────┘
+                                            
+
                          ┌──────────────────────┐
                          │ WHAT-IF SIMULATOR    │
-                         │ training seats +     │
-                         │ duration / lag +     │
+                         │ baseline forecast +  │
+                         │ gap + user inputs    │
                          │ location / skill     │
                          └──────────┬───────────┘
                                     │
@@ -121,6 +120,8 @@ The core analytical loop is:
 
 ### Pipeline decisions
 
+**Data availability note:** Issue #7 is responsible for creating and validating the canonical sample dataset. The current repository does not yet provide enough data to prove whether every location + skill series will meet the minimum-history rule. The MVP therefore uses a practical provisional floor and a first-class descriptive-trend fallback.
+
 There are two related analytical paths after normalized historical data is available.
 
 **Forecast / shortage path**
@@ -134,6 +135,8 @@ Historical demand/supply series → recent-vs-historical trend analysis → emer
 Emerging-skill detection therefore does **not** require a forecast-gap result. It is primarily historical-series based. Data quality can still be displayed for the emerging-skill result, but the module must not pretend that it was produced from the shortage pipeline.
 
 Confidence is computed **per forecast/gap result** for each location + skill + forecast period. Early-warning logic consumes that confidence. Low-confidence results are downgraded to watch-level behaviour where appropriate.
+
+The What-If Simulator is **not downstream of Early Warning or Emerging Skill Detection**. It consumes the baseline forecast/gap outputs plus user-provided scenario inputs.
 
 ### Critical LLM rule
 
@@ -172,6 +175,8 @@ The first forecast implementation must be unambiguous:
 The baseline predicts the next period using the most recent observed value.
 
 A more suitable transparent model, such as exponential smoothing or linear trend, may then be evaluated against that baseline.
+
+With short yearly series, the naïve baseline may legitimately perform as well as or better than the alternatives. **Keeping the naïve baseline is an acceptable MVP outcome** when evaluation does not show a reliable improvement from a more complex method.
 
 Do not jump directly to XGBoost, LSTM, Transformers, or other complex models. Complexity is justified only if the data and time-aware evaluation show a meaningful improvement.
 
@@ -219,7 +224,7 @@ The team must not silently invent skill names or map unrelated job titles withou
 
 ### 4.2 Evidence Store
 
-The database is the system persistent source of structured evidence.
+The database is the system's persistent source of structured evidence.
 
 Core entities include:
 
@@ -313,18 +318,21 @@ Higher-frequency source data may be aggregated to yearly periods.
 
 ### Minimum history
 
-Before forecasting a location + skill series, the system should require **at least 5 usable yearly periods by default**.
+The repository does not yet contain the canonical sample dataset, so the team **must validate data availability in Issue #7 before this threshold is treated as final**.
 
-This threshold must be configurable in the ML configuration.
+For MVP, use **3 usable yearly observations as the default minimum** for a simple baseline/trend forecast. Three years is a practical floor for a prototype when district-level government data is sparse; a stronger model may require more history.
 
-When fewer than 5 usable periods are available:
+This threshold must be configurable in the ML configuration and should be revisited after evaluating the actual canonical dataset.
+
+When fewer than 3 usable periods are available:
 
 - do not fabricate a forecast
 - return an explicit insufficient-data result
 - show the reason in the API/UI
-- optionally fall back to a descriptive historical trend without calling it a forecast
+- show a first-class **historical trend / descriptive view** where sufficient descriptive data exists
+- do not label a descriptive trend as a forecast
 
-The threshold can be revisited after evaluation, but the MVP must have one explicit rule.
+If the canonical dataset later shows that most location + skill pairs have 5 or more usable periods, the forecasting threshold may be raised after evaluation.
 
 ---
 
@@ -364,7 +372,19 @@ The default MVP policy may be:
 
 The percentage is configurable and must not be hard-coded into the frontend.
 
-For zero or near-zero forecast demand, use a separate safe rule instead of dividing by zero.
+### Zero / near-zero demand
+
+The Gap Engine uses a configurable minimum demand floor in:
+
+`ml/config/gap_thresholds.py`
+
+For MVP:
+
+- if `Forecast Demand < MIN_FORECAST_DEMAND`, classify the result as `NO_DEMAND`
+- do not apply the relative ±10% shortage/balance/oversupply percentage rule
+- the API should return `status = NO_DEMAND` and preserve the underlying forecast/supply values where available
+
+This prevents division-by-zero and avoids treating tiny labour markets as if a small absolute difference represented a meaningful percentage gap.
 
 ---
 
@@ -459,11 +479,19 @@ Core calculation:
 
 `Effective Additional Supply = Additional Seats × Expected Completion Rate`
 
-Added supply does **not** appear immediately. If training begins in period `t` and the training lag is `L` periods, additional supply becomes available from `t + L`.
+Added supply does **not** appear immediately.
+
+Because the MVP uses yearly periods, training lag is stored in **whole years**. A sub-year training duration is rounded up to the next whole year for the scenario calculation:
+
+`lag_years = ceil(training_duration_months / 12)`
+
+If training begins in period `t`, the cohort becomes available from period `t + lag_years`.
+
+After the cohort becomes available, its effective added supply is assumed to **persist in every subsequent forecast period** for the scenario horizon. This is a simplifying MVP assumption and must be displayed to the user.
 
 `Scenario Supply(t) = Baseline Forecast Supply(t) + Effective Additional Supply`
 
-only for periods where the trained cohort becomes available.
+for all periods from cohort availability onward.
 
 Then:
 
@@ -472,6 +500,11 @@ Then:
 Where baseline gap is positive and non-zero:
 
 `Gap Reduction = (Baseline Gap - Simulated Gap) / Baseline Gap`
+
+If the baseline gap is zero, negative, `NO_DEMAND`, or otherwise not a positive shortage:
+
+- return `gap_reduction = null`
+- include a reason explaining that gap reduction is defined only relative to a positive baseline shortage
 
 The interface must clearly label the result as a **scenario simulation**, not a guaranteed real-world outcome.
 
@@ -689,6 +722,8 @@ A representative error shape is:
 ```
 
 The exact production schema belongs in Issue #4.
+
+A request with valid parameters but insufficient analytical history is **not an API error**. It should normally return HTTP **200** with an explicit data/status field and null analytical values where appropriate. HTTP error responses are reserved for invalid requests, authentication/authorization failures when applicable, server failures, and similar request/system errors.
 
 ### Null and insufficient-data convention
 
@@ -1002,7 +1037,7 @@ This issue is ready for review when:
 - [x] Database/evidence responsibility is explicit
 - [x] Common-unit gap definition is explicit
 - [x] Forecast period granularity is defined
-- [x] Forecast minimum-history rule is defined
+- [x] Forecast minimum-history rule is defined provisionally and must be validated against the canonical dataset in Issue #7
 - [x] Emerging-skill pipeline position is explicit
 - [x] Confidence scope is explicit
 - [x] Simulator time/lag and scope are explicit
