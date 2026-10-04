@@ -49,16 +49,11 @@ Representative output:
       "supply_quantity": 900,
       "demand_index": 78.4,
       "supply_index": 55.1,
-      "forecast_demand": 1380,
-      "forecast_supply": 1010,
-      "gap": 370,
+      "forecast_demand": 1250,
+      "forecast_supply": 900,
+      "gap": 350,
       "status": "SHORTAGE",
-      "forecast_uncertainty": {
-        "available": true,
-        "lower": 1290,
-        "upper": 1470,
-        "level": 0.80
-      },
+      "forecast_uncertainty": null,
       "confidence_level": "MEDIUM",
       "confidence_inputs": {
         "history_periods": 4,
@@ -90,6 +85,7 @@ The numbers, years, IDs, and model metadata in this example are illustrative onl
 | period_type | enum | Yes | YEAR | MVP time granularity |
 | period | string | Yes | YYYY | Analytical/forecast period |
 | data_status | enum | Yes | status | Result/data availability |
+| reason_code | enum/null | Required when data_status is not SUFFICIENT | machine-readable code | Why the result is insufficient/unavailable |
 | demand_quantity | number/null | Yes | headcount | Normalized demand |
 | supply_quantity | number/null | Yes | headcount | Normalized supply |
 | demand_index | number/null | Yes | 0–100 | Display/ranking indicator |
@@ -134,6 +130,22 @@ HTTP errors are for invalid requests, system failures, unavailable services, and
 
 Do not replace missing values with zero.
 
+### reason_code
+
+The ML layer should provide a machine-readable reason_code when data_status is not SUFFICIENT.
+
+Initial values:
+
+- INSUFFICIENT_HISTORY
+- SOURCE_UNAVAILABLE
+- REQUIRED_INPUT_MISSING
+- MODEL_UNAVAILABLE
+- MODEL_FAILURE
+
+reason_code is optional for SUFFICIENT results and required for INSUFFICIENT_DATA / UNAVAILABLE results.
+
+This is the machine-readable reason; the backend/API layer converts it into human-readable text for clients. Because data_status and reason_code are both returned, consumers can distinguish INSUFFICIENT_DATA from UNAVAILABLE without inferring from null fields.
+
 ## 6. Demand and Supply Quantities
 
 demand_quantity:
@@ -142,13 +154,17 @@ demand_quantity:
 - unit: worker/position headcount
 - minimum: 0
 
+Meaning: the usable observed demand quantity feeding the forecast for this location/sector/skill series, typically the latest available historical period.
+
 supply_quantity:
 
 - type: number/null
 - unit: worker headcount
 - minimum: 0
 
-These are the compatible quantities used by forecasting and gap analysis.
+Meaning: the usable observed supply quantity feeding the forecast for this location/sector/skill series, typically the latest available historical period.
+
+These are compatible historical quantities used by forecasting and gap analysis.
 
 ## 7. Demand and Supply Indices
 
@@ -169,6 +185,8 @@ supply_index:
 - never used directly in gap calculations
 
 If required index inputs are unavailable, return null rather than zero.
+
+The precise normalization reference set (for example, the eligible location/skill population and time window used to scale values to 0–100) is defined by **Issue #13** and must be versioned. Consumers must not infer the reference population from the numeric value alone.
 
 ## 8. Forecast Outputs
 
@@ -195,6 +213,10 @@ MIN_FORECAST_HISTORY = 3 usable yearly observations
 This is provisional and must be validated against the canonical dataset in Issue #7.
 
 Configuration belongs under ml/config.
+
+A **usable yearly observation** is an observation that has a valid year, a non-null required demand/supply value needed by the selected forecast, passes the ingestion/validation rules, and is not otherwise excluded by the data-quality pipeline.
+
+Only usable observations count toward MIN_FORECAST_HISTORY.
 
 With fewer than the configured minimum:
 
@@ -239,6 +261,7 @@ Rules:
 - 0 < level < 1
 - do not fabricate uncertainty
 - if defensible uncertainty cannot be produced, return null or available = false
+- for the required naive_last_value MVP baseline, the default is **forecast_uncertainty = null** unless the implementation has a documented, validated method for producing an interval
 
 ## 12. Gap
 
@@ -288,6 +311,8 @@ Initial relative policy:
 
 The percentage is configurable and must not be duplicated in frontend code.
 
+Boundary example: exactly +10% of forecast demand is **BALANCED**, not SHORTAGE.
+
 ## 15. Zero / Near-Zero Demand
 
 Configuration:
@@ -295,6 +320,8 @@ Configuration:
 MIN_FORECAST_DEMAND = TBD
 
 The final starting value must be selected from the canonical dataset in Issues #5/#7 and the rationale must be recorded.
+
+Until then, automated tests must **inject the configured value** rather than depending on a hidden hard-coded number.
 
 When forecast_demand < MIN_FORECAST_DEMAND and data_status = SUFFICIENT:
 
@@ -352,6 +379,7 @@ HIGH_CONFIDENCE_MIN_HISTORY = 5
 
 Therefore:
 
+- count only usable periods after validation/exclusion rules
 - 3–4 usable periods → maximum confidence is MEDIUM
 - 5+ usable periods → HIGH is allowed only when other confidence inputs support it
 - weak evidence or poor forecast quality can still produce LOW
@@ -368,6 +396,12 @@ evidence_coverage:
 It measures evidence support according to the documented evidence methodology.
 
 It is not the same as statistical confidence.
+
+It also differs from data_coverage:
+- data_coverage = completeness of the required analytical inputs available for computation
+- evidence_coverage = proportion/strength of the resulting analytical claim that is traceable to documented supporting source/evidence records
+
+The two values may happen to be equal in some datasets, but they have different definitions and should not be calculated from the same shortcut merely because both are expressed on a 0–1 scale.
 
 Detailed scoring belongs to Issue #16. Evidence retrieval belongs to Issue #21.
 
@@ -475,6 +509,8 @@ Each period may have its own:
 
 Issue #4 defines the multi-period API envelope.
 
+The ML contract is intentionally **period-level**: a later forecast period may have a different data_status/confidence from an earlier period. The multi-period API must preserve those per-period states rather than collapsing a mixed horizon into one global confidence/status.
+
 ## 25. Compatibility Rules
 
 Backward-compatible:
@@ -530,10 +566,12 @@ Before committing AI-generated ML code, the developer must verify the returned s
 - [x] Demand/supply quantities defined
 - [x] Demand/supply indices defined
 - [x] Forecast outputs defined
+- [x] Baseline uncertainty default defined
 - [x] Gap defined
 - [x] Status enum defined
 - [x] data_status enum defined
 - [x] status/data_status precedence defined
+- [x] reason_code semantics defined
 - [x] Insufficient-data behaviour defined
 - [x] Forecast minimum history defined provisionally as 3
 - [x] Baseline model defined
@@ -541,7 +579,7 @@ Before committing AI-generated ML code, the developer must verify the returned s
 - [x] Confidence representation defined
 - [x] Confidence inputs defined
 - [x] Minimum-history confidence cap defined
-- [x] Evidence coverage defined
+- [x] Evidence coverage and data-coverage distinction defined
 - [x] Model metadata/versioning defined
 - [x] Model-vs-business-logic boundary defined
 - [x] Emerging-skill output defined separately
