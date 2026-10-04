@@ -1,0 +1,73 @@
+# ==============================
+# SHRAMIK - Global Git Ignore
+# ==============================
+
+# ---------- Environment ----------
+.env
+.env.*
+!.env.example
+
+# ---------- Node / Next.js ----------
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# ---------- Jupyter ----------
+.ipynb_checkpoints/
+
+# ---------- ML / Data ----------
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.onnx
+
+# Local/generated datasets
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# ---------- Logs ----------
+*.log
+logs/
+
+# ---------- Testing / Coverage ----------
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/
+.nyc_output/
+
+# ---------- IDE ----------
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+.idea/
+*.iml
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- Temporary ----------
+*.tmp
+*.temp
+*.bak
+*.swp
