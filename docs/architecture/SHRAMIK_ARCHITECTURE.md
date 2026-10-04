@@ -32,90 +32,70 @@ The core analytical loop is:
 ```text
                          ┌──────────────────────┐
                          │     DATA SOURCES     │
-                         │ jobs / surveys /     │
-                         │ training / official  │
-                         │ statistics / demo    │
-                         │ data                 │
                          └──────────┬───────────┘
                                     │
                                     ▼
                          ┌──────────────────────┐
-                         │ DATA INGESTION &      │
-                         │ VALIDATION            │
-                         │ raw → clean →        │
-                         │ normalize → map      │
+                         │ INGESTION /          │
+                         │ VALIDATION /         │
+                         │ NORMALIZATION        │
                          └──────────┬───────────┘
                                     │
                                     ▼
                          ┌──────────────────────┐
                          │ EVIDENCE STORE       │
-                         │ PostgreSQL /         │
-                         │ Supabase             │
+                         │ PostgreSQL/Supabase  │
                          └──────────┬───────────┘
                                     │
-                   ┌────────────────┴─────────────────┐
-                   │                                  │
-                   ▼                                  ▼
-          ┌─────────────────┐                ┌─────────────────┐
-          │ HISTORICAL      │                │ DEMAND / SUPPLY │
-          │ TIME SERIES     │───────────────▶│ ENGINES         │
-          │ common-unit     │                │ + display index │
-          │ quantities      │                └────────┬────────┘
-          └────────┬────────┘                         │
-                   │                                  ▼
-                   │                         ┌─────────────────┐
-                   │                         │ FORECAST ENGINE │
-                   │                         │ demand + supply │
-                   │                         └────────┬────────┘
-                   │                                  ▼
-                   │                         ┌─────────────────┐
-                   │                         │ GAP ENGINE      │
-                   │                         │ demand - supply │
-                   │                         └────────┬────────┘
-                   │                                  ▼
-                   │                         ┌─────────────────┐
-                   │                         │ CONFIDENCE +    │
-                   │                         │ EVIDENCE        │
-                   │                         │ per result      │
-                   │                         └────────┬────────┘
-                   │                                  ┌─────────────────┐
-                   │                                  │ EARLY WARNING   │
-                   │                         ┌────────▶│ ENGINE          │
-                   │                         │         └─────────────────┘
-                   │                         │
-                   ▼                         │
-          ┌─────────────────┐                │
-          │ EMERGING SKILL  │                │
-          │ DETECTION       │                │
-          │ historical      │                │
-          │ trend based     │                │
-          └────────┬────────┘                │
-                   │                         │
-                   └─────────────────────────┘
-                                            
-
-                         ┌──────────────────────┐
-                         │ WHAT-IF SIMULATOR    │
-                         │ baseline forecast +  │
-                         │ gap + user inputs    │
-                         │ location / skill     │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │ FASTAPI BACKEND      │
-                         │ REST APIs + business │
-                         │ orchestration        │
-                         └──────────┬───────────┘
-                                    │
-                         ┌──────────┴───────────┐
-                         ▼                      ▼
-               ┌─────────────────┐    ┌──────────────────┐
-               │ NEXT.JS         │    │ OPTIONAL LLM     │
-               │ FRONTEND        │    │ EXPLAINER        │
-               │ dashboard / map │    │ called by backend│
-               │ charts / pages  │    │ on demand + cache│
-               └─────────────────┘    └──────────────────┘
+                 ┌──────────────────┴──────────────────┐
+                 │                                     │
+                 ▼                                     ▼
+        ┌──────────────────┐                 ┌──────────────────┐
+        │ DEMAND / SUPPLY  │                 │ HISTORICAL      │
+        │ ENGINES          │                 │ SERIES          │
+        │ common-unit qty  │                 └────────┬─────────┘
+        │ + display index  │                          │
+        └────────┬─────────┘                          ▼
+                 │                           ┌──────────────────┐
+                 ▼                           │ EMERGING SKILL   │
+        ┌──────────────────┐                 │ DETECTION        │
+        │ FORECAST ENGINE  │                 └────────┬─────────┘
+        │ demand + supply  │                          │
+        └────────┬─────────┘                          │
+                 ▼                                    │
+        ┌──────────────────┐                          │
+        │ GAP ENGINE       │──────────────────┐       │
+        └────────┬─────────┘                  │       │
+                 ▼                            ▼       ▼
+        ┌──────────────────┐         ┌─────────────────────┐
+        │ CONFIDENCE +     │────────▶│ EARLY WARNING       │
+        │ EVIDENCE /       │         │ ENGINE              │
+        │ per result       │         └─────────────────────┘
+        └────────┬─────────┘
+                 │
+                 │ baseline forecast + gap
+                 ▼
+        ┌──────────────────┐
+        │ WHAT-IF          │
+        │ SIMULATOR        │
+        │ seats + lag +    │
+        │ location + skill │
+        └────────┬─────────┘
+                 │
+                 ▼
+        ┌──────────────────┐
+        │ FASTAPI BACKEND  │
+        │ REST + business  │
+        │ orchestration    │
+        └────────┬─────────┘
+                 │
+          ┌──────┴─────────────┐
+          ▼                    ▼
+┌──────────────────┐  ┌────────────────────┐
+│ NEXT.JS FRONTEND │  │ OPTIONAL LLM       │
+│ dashboard / map  │  │ via backend        │
+│ charts / pages   │  │ on demand + cache  │
+└──────────────────┘  └────────────────────┘
 ```
 
 ### Pipeline decisions
@@ -378,10 +358,17 @@ The Gap Engine uses a configurable minimum demand floor in:
 
 `ml/config/gap_thresholds.py`
 
+For MVP, define a placeholder constant:
+
+`MIN_FORECAST_DEMAND = TBD`
+
+The actual starting value must be set from the canonical dataset during Issue #5/#7 review. It should be a small, explicitly documented headcount floor rather than an arbitrary hidden value. Until it is set, implementations must not silently invent different defaults.
+
 For MVP:
 
 - if `Forecast Demand < MIN_FORECAST_DEMAND`, classify the result as `NO_DEMAND`
 - do not apply the relative ±10% shortage/balance/oversupply percentage rule
+- this classification is valid only when `data_status = SUFFICIENT`
 - the API should return `status = NO_DEMAND` and preserve the underlying forecast/supply values where available
 
 This prevents division-by-zero and avoids treating tiny labour markets as if a small absolute difference represented a meaningful percentage gap.
@@ -413,6 +400,8 @@ Outputs should support:
 Low-confidence results must be visibly distinguished and should not automatically drive aggressive policy recommendations.
 
 Unless separately validated and calibrated, a confidence score must **not** be presented as a probability that an event will happen.
+
+When a series has only the minimum or near-minimum amount of history, confidence must be capped at **MEDIUM** (or **LOW** when other evidence is weak). A 3-year naïve forecast must therefore never receive HIGH confidence solely because freshness and coverage are good.
 
 ---
 
@@ -449,6 +438,8 @@ The method should require:
 - configurable growth thresholds
 - transparent rules
 - an explicit insufficient-data state
+
+For MVP, Emerging Skill Detection requires **at least 3 usable yearly observations** by default so that the latest period can be compared with the preceding historical periods. Its minimum-history setting is separate from the forecast minimum and is defined in **Issue #18**. It must not silently inherit the forecasting threshold.
 
 The output should distinguish:
 
@@ -500,6 +491,8 @@ Then:
 Where baseline gap is positive and non-zero:
 
 `Gap Reduction = (Baseline Gap - Simulated Gap) / Baseline Gap`
+
+If the cohort becomes available **after the last forecast period in the scenario horizon**, the scenario has no effect within that horizon. The API should return the **baseline forecast/gap unchanged**, with an explicit reason such as `COHORT_AFTER_HORIZON`; this is a valid simulation result, not an API error.
 
 If the baseline gap is zero, negative, `NO_DEMAND`, or otherwise not a positive shortage:
 
@@ -731,6 +724,8 @@ Analytical responses use:
 
 `data_status = SUFFICIENT | INSUFFICIENT_DATA | UNAVAILABLE`
 
+The `data_status` field describes data availability, while the `status` field describes the analytical classification (for example, `SHORTAGE | BALANCED | OVERSUPPLY | NO_DEMAND`). They are separate fields. **If `data_status` is not `SUFFICIENT`, `status` and forecast/gap analytical outputs must be `null`** because no valid analytical classification should be presented from insufficient or unavailable data.
+
 When `data_status` is not `SUFFICIENT`:
 
 - analytical numeric outputs such as forecast/gap should be `null` unless a documented non-forecast value is being returned
@@ -743,7 +738,7 @@ Example:
 ```json
 {
   "data_status": "INSUFFICIENT_DATA",
-  "reason": "Only 3 usable yearly observations are available; at least 5 are required for the MVP forecast."
+  "reason": "Only 2 usable yearly observations are available; at least 3 are required for the MVP forecast."
 }
 ```
 
@@ -942,7 +937,7 @@ For MVP, the team agrees that:
 - Demand and supply gap calculations use common-unit headcount quantities, not normalized indices.
 - Display/ranking indices are separate from analytical headcount quantities.
 - Forecasts use yearly (`YYYY`) periods in the MVP.
-- A location + skill forecast requires at least 5 usable yearly observations by default.
+- A location + skill forecast requires at least 3 usable yearly observations by default, provisionally; this is validated against the canonical dataset in Issue #7.
 - Insufficient data returns an explicit status and does not fabricate numeric values.
 - Emerging-skill detection is historical-series based and does not require the forecast-gap pipeline.
 - Confidence is computed per location + skill + forecast period result.
@@ -1038,8 +1033,8 @@ This issue is ready for review when:
 - [x] Common-unit gap definition is explicit
 - [x] Forecast period granularity is defined
 - [x] Forecast minimum-history rule is defined provisionally and must be validated against the canonical dataset in Issue #7
-- [x] Emerging-skill pipeline position is explicit
-- [x] Confidence scope is explicit
+- [x] Emerging-skill pipeline position and minimum-history rule are explicit
+- [x] Confidence scope and minimum-history confidence cap are explicit
 - [x] Simulator time/lag and scope are explicit
 - [x] AI caching/latency boundary is explicit
 - [x] Authentication/RBAC MVP boundary is explicit
