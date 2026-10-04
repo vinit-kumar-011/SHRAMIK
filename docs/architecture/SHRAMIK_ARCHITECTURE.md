@@ -946,7 +946,7 @@ For MVP, the team agrees that:
 - Insufficient data returns an explicit status and does not fabricate numeric values.
 - Emerging-skill detection is historical-series based and does not require the forecast-gap pipeline.
 - Confidence is computed per location + skill + forecast period result.
-- Early warnings consume confidence/evidence.
+- Early warnings consume forecast, gap, emerging-skill status, and confidence/evidence.
 - The baseline forecast is a naïve last-value forecast.
 - Time-aware validation and no data leakage are mandatory.
 - Transparent classical/statistical methods are preferred over unnecessary deep learning.
