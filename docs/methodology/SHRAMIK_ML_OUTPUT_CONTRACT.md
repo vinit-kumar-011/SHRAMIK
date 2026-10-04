@@ -27,7 +27,7 @@ Required identity fields:
 - sector_id: string
 - skill_id: string
 - period_type: YEAR for MVP
-- period: YYYY, for example 2027
+- period: YYYY; the actual year is determined from the latest available observed period and forecast horizon. Any year shown below (such as 2027) is illustrative only.
 
 All forecast quantities use compatible headcount-style units.
 
@@ -77,7 +77,7 @@ Representative output:
       }
     }
 
-The numbers are illustrative only.
+The numbers, years, IDs, and model metadata in this example are illustrative only. The system must derive forecast periods from the actual canonical dataset and configured forecast horizon; 2027 is not a hard-coded forecast year.
 
 ## 4. Field Definitions
 
