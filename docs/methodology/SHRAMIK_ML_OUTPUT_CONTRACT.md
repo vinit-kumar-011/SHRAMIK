@@ -87,9 +87,9 @@ The numbers, years, IDs, and model metadata in this example are illustrative onl
 | period_type | enum | Yes | YEAR | MVP time granularity |
 | period | string | Yes | YYYY | Analytical/forecast period |
 | data_status | enum | Yes | status | Result/data availability |
-| reason_code | enum/null | Required when data_status is not SUFFICIENT | machine-readable code | Why the result is insufficient/unavailable |
-| demand_quantity | number/null | Yes | headcount | Normalized demand |
-| supply_quantity | number/null | Yes | headcount | Normalized supply |
+| reason_code | enum/null | Required when data_status is not SUFFICIENT; null otherwise | machine-readable code | Why the result is insufficient/unavailable |
+| demand_quantity | number/null | Yes | headcount | Latest usable observed demand feeding the forecast |
+| supply_quantity | number/null | Yes | headcount | Latest usable observed supply feeding the forecast |
 | demand_index | number/null | Yes | 0–100 | Display/ranking indicator |
 | supply_index | number/null | Yes | 0–100 | Display/ranking indicator |
 | forecast_demand | number/null | Yes | headcount | Forecast demand |
@@ -141,7 +141,7 @@ Do not replace missing values with zero.
 
 ### reason_code
 
-The ML layer should provide a machine-readable reason_code when data_status is not SUFFICIENT.
+The ML layer must provide a machine-readable reason_code when data_status is not SUFFICIENT.
 
 Initial values:
 
@@ -494,6 +494,8 @@ emerging_skill_status allowed values:
 - INSUFFICIENT_DATA
 
 This enum is separate from data_status.
+
+For v1.1, consider promoting history_periods to a top-level diagnostic field so the same historical-count metadata does not need to be repeated inside module-specific objects.
 
 MVP minimum history is 3 usable yearly observations by default. Exact thresholds and configuration are finalized in Issue #18.
 
