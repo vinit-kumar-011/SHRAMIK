@@ -405,6 +405,7 @@ Example with a sufficient baseline:
         "effective_additional_supply": 850,
         "baseline_data_status": "SUFFICIENT",
         "gap_reduction": 1.70,
+        "shortage_closed_fraction": 1.0,
         "simulation_note_code": null,
         "periods": [
           {
@@ -483,8 +484,11 @@ Example with a sufficient baseline:
 The sufficient-baseline example is internally consistent. At horizon_end=2031:
 
     gap_reduction = (500 - (-350)) / 500 = 1.70
+    shortage_closed_fraction = min(max(1.70, 0), 1) = 1.0
 
-gap_reduction is not capped at 1.0. It may exceed 1.0 when an intervention reduces a positive shortage to a surplus (negative gap). It is a mathematical reduction relative to the baseline shortage.
+gap_reduction is not capped at 1.0. It may exceed 1.0 when an intervention reduces a positive shortage to a surplus (negative gap). It is a mathematical reduction relative to the baseline shortage. shortage_closed_fraction is the UI-safe, capped measure of the baseline shortage closed, ranging from 0 to 1.
+
+Issue #29 should display shortage_closed_fraction as "shortage fully closed" (or equivalent) when gap_reduction exceeds 1.0, rather than using the raw value as the primary dashboard percentage.
 
 Example with no baseline forecast period available:
 
@@ -499,6 +503,7 @@ Example with no baseline forecast period available:
         "effective_additional_supply": 850,
         "baseline_data_status": "INSUFFICIENT_DATA",
         "gap_reduction": null,
+        "shortage_closed_fraction": null,
         "simulation_note_code": "BASELINE_INSUFFICIENT_DATA",
         "periods": []
       },
@@ -523,12 +528,13 @@ Each periods[] entry contains:
 | baseline_forecast_supply | number or null | Null when baseline forecast is unavailable |
 | baseline_gap | number or null | Null when gap is unavailable or gap_eligible=false |
 | added_supply | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
+| shortage_closed_fraction | number or null | Top-level only; capped horizon-end shortage-closure measure in [0,1], null when the horizon-end positive eligible shortage is not computable |
 | simulated_supply | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
 | simulated_gap | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
 
 For data_status=SUFFICIENT and gap_eligible=true, baseline gap and simulated gap are calculated in the common headcount unit. This includes baseline_status=NO_DEMAND; when NO_DEMAND is present with an eligible gap, the stored baseline gap may be used by the simulator exactly as Issue #2 permits.
 
-For data_status=SUFFICIENT and gap_eligible=false, baseline_gap is null and the simulator returns added_supply, simulated_supply, and simulated_gap as null for that period. It does not invent a gap from incompatible signals.
+For data_status=SUFFICIENT and gap_eligible=false, baseline_gap is null and the simulator returns added_supply, simulated_supply, and simulated_gap as null for that period. It does not invent a gap from incompatible signals. This is a deliberate API-level exception to the generic simulator dependency wording in Issue #5: although Issue #5 says simulated_gap is still returned for NO_DEMAND, the Issue #2 gap-eligibility rule and this API contract take precedence when gap_eligible=false.
 
 Top-level gap_reduction is the reduction at horizon_end when the horizon-end baseline is SUFFICIENT, gap_eligible=true, and has a positive baseline gap:
 
