@@ -107,10 +107,11 @@ Do not expose SQL, stack traces, credentials, or internal exception details.
 
 ### Request correlation
 
-The backend accepts an optional X-Request-ID header as the request correlation identifier. When it is absent, the backend generates a request ID. Every successful response places the applied request ID in meta.request_id; error responses place it in error.request_id.
+The backend accepts an optional X-Request-ID header as the request correlation identifier. The supplied value must be 1–64 characters and match the pattern ^[A-Za-z0-9._:-]+$ with no whitespace or control characters, preventing log/header injection through the correlation field. When it is absent, the backend generates a request ID. Every successful response places the applied request ID in meta.request_id; error responses place it in error.request_id.
 
 
 # 7. Endpoint Contracts
+
 
 ## 7.1 GET /api/v1/dashboard
 
@@ -136,6 +137,12 @@ The following six counts are mutually exclusive and sum to forecast_results:
 - gap_ineligible_count: data_status=SUFFICIENT, gap_eligible=false
 
 A gap-ineligible row is not counted in no_demand_count, even though Issue #5 permits status=NO_DEMAND for an ineligible gap. This keeps the dashboard totals mutually exclusive.
+
+warning_count and emerging_skill_count are independent counts. They are not members of the mutually exclusive forecast-count set and therefore do not need to sum to forecast_results.
+
+### Dashboard list-size semantics
+
+page_size defaults to 25 and is constrained to 1–100. It limits the number of records returned in each dashboard list: top_shortages, top_emerging_skills, and active_warnings. It does not change summary totals.
 
 Example response:
 
@@ -165,15 +172,17 @@ Example response:
       },
       "meta": {
         "request_id": "req_123",
-        "analysis_mode": "OFFICIAL"
+        "analysis_mode": "OFFICIAL",
+        "page_size": 25
       }
     }
 
 top_shortages is a named DashboardShortageRecord subset defined in Section 8. It includes only sufficient, gap-eligible SHORTAGE forecasts and is ranked by absolute gap descending, then district_id, then skill_id, then period ascending.
 
-top_emerging_skills is a named DashboardEmergingSkillRecord subset based on Issue #18. It is ranked by emerging_score descending, then recent_growth descending, then district_id, then skill_id. Issue #18 must expose those ranking fields; a change to that output requires reconciliation here before implementation.
+top_emerging_skills is a named DashboardEmergingSkillRecord subset based on Issue #18. It is ranked by signal_strength descending, then recent_growth_rate descending, then district_id, then skill_id. The ranking fields and names match the Issue #5/Issue #18 emerging-skill contract.
 
 active_warnings uses the warning records and deterministic prioritization defined by Issue #17. The dashboard must not introduce a second warning-ranking algorithm.
+
 
 ## 7.2 GET /api/v1/districts
 
@@ -216,6 +225,8 @@ Returns canonical skills/job roles. This endpoint is descriptive and does not re
 Query parameters: sector_id, taxonomy_name, active_only, page, page_size.
 
 page_size defaults to 25 and has a maximum of 100.
+
+Taxonomy mappings are provenance-agnostic reference mappings. This descriptive endpoint does not select OFFICIAL or DEMO analytical results and therefore does not hide or substitute taxonomy mappings based on analysis_mode.
 
 Response item includes skill_id, name, sector_id, sector_name, and taxonomy_mappings.
 
@@ -302,7 +313,7 @@ Query parameters: district_id, skill_id, period, warning_type, severity, analysi
 
 analysis_mode defaults to OFFICIAL and the applied value is echoed in meta.analysis_mode.
 
-Response item contains warning_id, forecast_id, emerging_skill_signal_id, warning_type, severity, detected_period, explanation_code, provenance_state, and forecast_status, plus supporting fields defined by Issue #17.
+Response item contains warning_id, forecast_id, emerging_skill_signal_id, warning_type, severity, detected_period, explanation_code, provenance_state, and forecast_status, plus supporting fields defined by Issue #17. forecast_status is the Issue #5 analytical classification field status (SHORTAGE, BALANCED, OVERSUPPLY, or NO_DEMAND when applicable); data_status remains a separate forecast field and must not be inferred from forecast_status.
 
 Warning type/severity vocabulary and ranking remain owned by Issue #17.
 
@@ -337,6 +348,7 @@ Example item:
       "selected_for_mvp": true
     }
 
+
 ## 7.10 POST /api/v1/simulate
 
 Runs the stateless training intervention simulator.
@@ -364,10 +376,10 @@ JSON body:
 | training_duration_months | integer | yes | Greater than or equal to 1 |
 | seats | integer | yes | Greater than or equal to 0 |
 | completion_rate | number | yes | 0.0 to 1.0 inclusive |
-| horizon_end | string | no | YYYY; defaults to latest available baseline forecast period for district + skill + analysis_mode |
+| horizon_end | string | no | YYYY; defaults to latest available baseline forecast period; if no baseline period exists, see no-baseline behaviour below |
 | analysis_mode | enum | no | OFFICIAL or DEMO; defaults to OFFICIAL |
 
-horizon_end must be greater than or equal to start_period.
+horizon_end must be greater than or equal to start_period when supplied.
 
 A simulation is stateless and is not persisted as a forecast result.
 
@@ -380,6 +392,8 @@ The calculation follows the architecture rule:
 
 Every valid simulation request returns HTTP 200, including insufficient baseline data.
 
+Example with a sufficient baseline:
+
     {
       "data": {
         "district_id": "OD-KHD",
@@ -390,7 +404,7 @@ Every valid simulation request returns HTTP 200, including insufficient baseline
         "lag_years": 1,
         "effective_additional_supply": 850,
         "baseline_data_status": "SUFFICIENT",
-        "gap_reduction": 0.68,
+        "gap_reduction": 1.70,
         "simulation_note_code": null,
         "periods": [
           {
@@ -398,6 +412,7 @@ Every valid simulation request returns HTTP 200, including insufficient baseline
             "baseline_data_status": "SUFFICIENT",
             "baseline_reason_code": null,
             "baseline_status": "SHORTAGE",
+            "baseline_gap_eligible": true,
             "baseline_forecast_demand": 1250,
             "baseline_forecast_supply": 900,
             "baseline_gap": 350,
@@ -410,12 +425,52 @@ Every valid simulation request returns HTTP 200, including insufficient baseline
             "baseline_data_status": "SUFFICIENT",
             "baseline_reason_code": null,
             "baseline_status": "SHORTAGE",
+            "baseline_gap_eligible": true,
             "baseline_forecast_demand": 1300,
             "baseline_forecast_supply": 920,
             "baseline_gap": 380,
             "added_supply": 850,
             "simulated_supply": 1770,
             "simulated_gap": -470
+          },
+          {
+            "period": "2029",
+            "baseline_data_status": "SUFFICIENT",
+            "baseline_reason_code": null,
+            "baseline_status": "SHORTAGE",
+            "baseline_gap_eligible": true,
+            "baseline_forecast_demand": 1350,
+            "baseline_forecast_supply": 940,
+            "baseline_gap": 410,
+            "added_supply": 850,
+            "simulated_supply": 1790,
+            "simulated_gap": -440
+          },
+          {
+            "period": "2030",
+            "baseline_data_status": "SUFFICIENT",
+            "baseline_reason_code": null,
+            "baseline_status": "SHORTAGE",
+            "baseline_gap_eligible": true,
+            "baseline_forecast_demand": 1400,
+            "baseline_forecast_supply": 950,
+            "baseline_gap": 450,
+            "added_supply": 850,
+            "simulated_supply": 1800,
+            "simulated_gap": -400
+          },
+          {
+            "period": "2031",
+            "baseline_data_status": "SUFFICIENT",
+            "baseline_reason_code": null,
+            "baseline_status": "SHORTAGE",
+            "baseline_gap_eligible": true,
+            "baseline_forecast_demand": 1450,
+            "baseline_forecast_supply": 950,
+            "baseline_gap": 500,
+            "added_supply": 850,
+            "simulated_supply": 1800,
+            "simulated_gap": -350
           }
         ]
       },
@@ -425,38 +480,91 @@ Every valid simulation request returns HTTP 200, including insufficient baseline
       }
     }
 
-Each periods[] entry contains exactly these core scenario fields plus baseline status metadata:
+The sufficient-baseline example is internally consistent. At horizon_end=2031:
+
+    gap_reduction = (500 - (-350)) / 500 = 1.70
+
+gap_reduction is not capped at 1.0. It may exceed 1.0 when an intervention reduces a positive shortage to a surplus (negative gap). It is a mathematical reduction relative to the baseline shortage.
+
+Example with no baseline forecast period available:
+
+    {
+      "data": {
+        "district_id": "OD-KHD",
+        "skill_id": "SOLAR_PV_TECHNICIAN",
+        "start_period": "2027",
+        "horizon_end": null,
+        "analysis_mode": "OFFICIAL",
+        "lag_years": 1,
+        "effective_additional_supply": 850,
+        "baseline_data_status": "INSUFFICIENT_DATA",
+        "gap_reduction": null,
+        "simulation_note_code": "BASELINE_INSUFFICIENT_DATA",
+        "periods": []
+      },
+      "meta": {
+        "request_id": "req_124",
+        "analysis_mode": "OFFICIAL"
+      }
+    }
+
+### Per-period response fields
+
+Each periods[] entry contains:
 
 | Field | Type | Nullability / semantics |
 |---|---|---|
 | period | YYYY string | Required |
 | baseline_data_status | enum | SUFFICIENT, INSUFFICIENT_DATA, or UNAVAILABLE |
 | baseline_reason_code | string or null | Uses Issue #5 insufficient-data reason vocabulary when applicable |
-| baseline_status | enum or null | Issue #5 analytical status; null when baseline data is not sufficient |
+| baseline_status | enum or null | Issue #5 analytical status field; null when baseline data is not SUFFICIENT |
+| baseline_gap_eligible | boolean or null | Copied from the baseline forecast; null when baseline data is not SUFFICIENT |
 | baseline_forecast_demand | number or null | Null when baseline forecast is unavailable |
 | baseline_forecast_supply | number or null | Null when baseline forecast is unavailable |
-| baseline_gap | number or null | Null when gap is unavailable |
-| added_supply | number or null | Null when baseline data is not sufficient |
-| simulated_supply | number or null | Null when baseline data is not sufficient |
-| simulated_gap | number or null | Null when baseline data is not sufficient |
+| baseline_gap | number or null | Null when gap is unavailable or gap_eligible=false |
+| added_supply | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
+| simulated_supply | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
+| simulated_gap | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
 
-Top-level gap_reduction is the reduction at horizon_end when the horizon-end baseline is SUFFICIENT and has a positive baseline gap:
+For data_status=SUFFICIENT and gap_eligible=true, baseline gap and simulated gap are calculated in the common headcount unit. This includes baseline_status=NO_DEMAND; when NO_DEMAND is present with an eligible gap, the stored baseline gap may be used by the simulator exactly as Issue #2 permits.
+
+For data_status=SUFFICIENT and gap_eligible=false, baseline_gap is null and the simulator returns added_supply, simulated_supply, and simulated_gap as null for that period. It does not invent a gap from incompatible signals.
+
+Top-level gap_reduction is the reduction at horizon_end when the horizon-end baseline is SUFFICIENT, gap_eligible=true, and has a positive baseline gap:
 
     (baseline_gap - simulated_gap) / baseline_gap
 
-It is null when this is not computable, including no positive baseline shortage or insufficient/unavailable horizon-end data.
+It is null when this is not computable, including no positive baseline shortage, gap-ineligible horizon-end data, or insufficient/unavailable horizon-end data.
 
 simulation_note_code is intentionally separate from Issue #5 reason_code. It is a simulator-only enum:
 - COHORT_AFTER_HORIZON — cohort becomes available after the final scenario period; scenario values remain equal to baseline within the horizon.
-- NO_POSITIVE_BASELINE_GAP — the relevant baseline gap is zero or negative, so gap reduction is undefined.
+- NO_POSITIVE_BASELINE_GAP — the relevant eligible baseline gap is zero or negative, so gap reduction is undefined. This may also apply to an eligible NO_DEMAND baseline.
+- BASELINE_GAP_INELIGIBLE — a required baseline period has gap_eligible=false, so no simulated gap can be computed for that period.
 - BASELINE_INSUFFICIENT_DATA — one or more required baseline periods are insufficient for scenario computation.
 - BASELINE_UNAVAILABLE — required baseline forecast data is unavailable.
 
-When simulation_note_code is COHORT_AFTER_HORIZON, the per-period baseline values are returned unchanged and scenario values equal the baseline values within the horizon. This is a valid simulation result, not an API error.
+When multiple note conditions occur, the implementation returns the highest-priority applicable note using this order: BASELINE_UNAVAILABLE, BASELINE_INSUFFICIENT_DATA, BASELINE_GAP_INELIGIBLE, COHORT_AFTER_HORIZON, NO_POSITIVE_BASELINE_GAP. The per-period fields remain authoritative for exactly which periods are affected.
+
+### No-baseline behaviour
+
+When no baseline forecast period exists for the requested district + skill + analysis_mode, the simulator returns HTTP 200 rather than an error.
+
+The response uses:
+- baseline_data_status = INSUFFICIENT_DATA
+- simulation_note_code = BASELINE_INSUFFICIENT_DATA
+- periods = []
+- gap_reduction = null
+- analysis_mode = OFFICIAL or the explicitly requested mode, echoed in both data.analysis_mode and meta.analysis_mode
+
+No forecast or scenario values are fabricated.
+
+For partial baseline availability, the simulator returns available baseline periods plus null-valued period entries for baseline periods that are explicitly present but INSUFFICIENT_DATA or UNAVAILABLE, following the per-period schema above.
 
 ### Insufficient-data behaviour
 
 When a baseline forecast period is INSUFFICIENT_DATA, the simulator returns HTTP 200. That period preserves baseline_data_status=INSUFFICIENT_DATA and the Issue #5 baseline_reason_code; the baseline forecast/gap fields and all scenario values for that period are null. The simulator must not turn insufficient data into zero or raise a request error.
+
+
 
 ## 7.11 POST /api/v1/generate-brief
 
@@ -480,7 +588,7 @@ Request rules:
 - warning_ids must identify existing warning records when supplied.
 - A malformed forecast UUID returns 422 / VALIDATION_ERROR.
 - A well-formed but unknown forecast ID or warning ID returns 404 / RESOURCE_NOT_FOUND.
-- The backend validates that supplied forecast records belong to the requested district and skill; incompatible references return 422 / VALIDATION_ERROR.
+- The backend validates that supplied forecast records belong to the requested district and skill; incompatible references return 400 / INVALID_REQUEST because this is an endpoint-level semantic constraint.
 - include_evidence defaults to true.
 
 ### Response
@@ -491,7 +599,7 @@ Request rules:
         "generated_at": "2026-10-05T04:30:00Z",
         "cached": false,
         "input_hash": "sha256:…",
-        "model": "configured-llm-model",
+        "llm_model": "configured-llm-model",
         "forecast_ids": [
           "550e8400-e29b-41d4-a716-446655440000"
         ]
@@ -505,6 +613,10 @@ The response forecast_ids are the IDs actually used to generate the returned bri
 
 input_hash is the stable hash of the normalized structured brief input used for cache identity.
 
+cached=false means the brief was generated during this request. cached=true means the returned brief was retrieved from the application cache using the same normalized input_hash and represents the previously generated brief.
+
+generated_at is the original generation timestamp of the brief content. A cache hit does not update generated_at; the cache-hit response time is represented by the HTTP response timestamp, not generated_at.
+
 AI rules:
 - The LLM receives structured analytical values from the backend.
 - It must not invent forecast values, evidence, sources, confidence levels, or scenario results.
@@ -514,6 +626,7 @@ AI rules:
 - Provider failure returns 503 / AI_UNAVAILABLE.
 - Provider timeout returns 504 / AI_TIMEOUT.
 - Core analytical endpoints remain usable when AI generation fails.
+
 
 ## 7.12 Cross-endpoint filtering, pagination, provenance, CORS, and caching
 
@@ -579,7 +692,11 @@ A compact subset of ForecastRecord containing at least forecast_id, analysis_mod
 
 **DashboardEmergingSkillRecord**
 
-A compact subset of Issue #18 emerging-skill output containing at least district_id, sector_id, skill_id, emerging_score, recent_growth, trend_direction, observation_periods, and status. Ranking is defined in Section 7.1.
+A compact subset of the Issue #5 / Issue #18 emerging-skill output containing at least district_id, sector_id, skill_id, recent_growth_rate, historical_growth_rate, signal_strength, emerging_skill_status, and the relevant history/provenance fields defined by those contracts.
+
+Ranking uses the same field names and deterministic rule as Section 7.1: signal_strength descending, then recent_growth_rate descending, then district_id, then skill_id. Do not rename these fields at the API layer.
+
+
 
 **DistrictRecord / DistrictItem**
 
@@ -725,8 +842,8 @@ Frontend developers consume only the documented schemas in this document and the
 - [x] Early-warning endpoint defined
 - [x] Evidence endpoint defined, including 404-vs-empty semantics
 - [x] Model-evaluation endpoint defined
-- [x] What-if simulator endpoint defined with explicit request/response schemas
-- [x] Simulator insufficient-data behaviour defined as HTTP 200
+- [x] What-if simulator endpoint defined with explicit request/response schemas and internally consistent examples
+- [x] Simulator insufficient-data/no-baseline behaviour defined as HTTP 200
 - [x] Simulator note-code vocabulary separated from Issue #5 reason_code
 - [x] AI planning-brief endpoint defined
 - [x] AI failure/timeout contracts defined
