@@ -45,7 +45,7 @@ The official OGD catalogue was inspected through the national OGD listing. It cu
    - Updated: 10/12/2021
    - File size: 252 bytes
 
-**Decision:** this catalogue is **not sufficient by itself** for the SHRAMIK target grain or the intended recent historical forecasting window. Do not use it as the canonical District × Sector × Skill × Year demand series without an additional official resource proving the required grain.
+**Decision:** this catalogue is **not sufficient by itself** for a skill-level demand series or the intended recent historical forecasting window. Preserve its actual published grain and use it only for capabilities that the source genuinely supports.
 
 ### Odisha Directorate of Employment / State Employment Service
 
@@ -115,7 +115,7 @@ What is **not yet established** is a recent multi-year **District × Skill/Trade
 
 Therefore:
 
-- Do not mark the full canonical District × Sector × Skill × Year target as proven yet.
+- Do not claim a universal skill-level demand grain from aggregate sources. The national canonical model accepts heterogeneous source grain and records capability explicitly.
 - Do not fabricate historical demand from current vacancy snapshots.
 - Continue demand-side audit through the Odisha Employment Directorate / Employment Market Information sources.
 - If the demand source proves only District × Occupation × Year, pause and reconcile the taxonomy contracts before extraction.
