@@ -383,7 +383,7 @@ JSON body:
 | training_duration_months | integer | yes | Greater than or equal to 1 |
 | seats | integer | yes | Greater than or equal to 0 |
 | completion_rate | number | yes | 0.0 to 1.0 inclusive |
-| horizon_end | string | no | YYYY; defaults to latest available baseline forecast period; if no baseline period exists, see no-baseline behaviour below |
+| horizon_end | string | no | YYYY; defaults to the latest existing baseline forecast record for the requested district + skill + analysis_mode, including a stored period with INSUFFICIENT_DATA or UNAVAILABLE; if no baseline forecast period exists at all, see no-baseline behaviour below |
 | analysis_mode | enum | no | OFFICIAL or DEMO; defaults to OFFICIAL |
 
 horizon_end must be greater than or equal to start_period when supplied.
@@ -520,6 +520,10 @@ Example with no baseline forecast period available:
       }
     }
 
+### Response field structure
+
+Top-level simulator response fields include district_id, skill_id, start_period, horizon_end, analysis_mode, lag_years, effective_additional_supply, baseline_data_status, gap_reduction, shortage_closed_fraction, simulation_note_code, and periods[].
+
 ### Per-period response fields
 
 Each periods[] entry contains:
@@ -535,7 +539,6 @@ Each periods[] entry contains:
 | baseline_forecast_supply | number or null | Null when baseline forecast is unavailable |
 | baseline_gap | number or null | Null when gap is unavailable or gap_eligible=false |
 | added_supply | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
-| shortage_closed_fraction | number or null | Top-level only; capped horizon-end shortage-closure measure in [0,1], null when the horizon-end positive eligible shortage is not computable |
 | simulated_supply | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
 | simulated_gap | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
 
@@ -864,7 +867,8 @@ Frontend developers consume only the documented schemas in this document and the
 - [x] Evidence endpoint defined, including 404-vs-empty semantics
 - [x] Model-evaluation endpoint defined
 - [x] What-if simulator endpoint defined with explicit request/response schemas and internally consistent examples
-- [x] Simulator insufficient-data/no-baseline behaviour defined as HTTP 200
+- [x] Simulator gap_reduction and shortage_closed_fraction semantics defined
+- [x] Simulator insufficient-data/no-baseline/gap-ineligible behaviour defined as HTTP 200
 - [x] Simulator note-code vocabulary separated from Issue #5 reason_code
 - [x] AI planning-brief endpoint defined
 - [x] AI failure/timeout contracts defined
