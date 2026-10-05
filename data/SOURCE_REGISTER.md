@@ -67,6 +67,57 @@ The Government of India's Local Government Directory provides official state/dis
 
 **Decision:** use LGD as the authority for district identifiers once the final source-backed district set is selected. Do not hard-code illustrative district codes.
 
+## 2B. Additional official structured-data findings (2026-10-05)
+
+### Odisha SAMS — ITI institute/trade vacancy data
+
+The official Odisha Student Academic Management System exposes an institute-wise ITI trade vacancy table with fields including:
+
+- district
+- institute
+- trade
+- sanctioned strength
+- admission taken
+- vacant
+- IMC-related capacity fields
+
+The currently indexed table contains 697 result rows. This proves that Odisha has an official structured source capable of supporting **District × ITI × Trade** observations for the current admission/vacancy snapshot.
+
+**Important limitation:** the public table is a current snapshot, not yet a validated multi-year historical series. Therefore it should not be treated as a 3+ year forecasting history until historical snapshots/archives are found.
+
+**Decision:** use this as a candidate supply/capacity source and as evidence that district/trade skill grain is operationally available.
+
+### Odisha Central Placement Cell — 2023-24 ITI placement data
+
+The official Central Placement Cell publishes an Excel-backed 2023-24 placement dataset with institute-level placement counts and male/female breakdowns. The indexed data reports a total of 6,904 placements across the listed records.
+
+**Important limitation:** this dataset is institute-level and does not expose trade/skill in the indexed table. It therefore supports an **Institute/District × Year placement outcome** signal, but not yet District × Skill × Year by itself.
+
+**Decision:** retain as a secondary supply/employment-outcome signal. Do not infer trade-level placements from it.
+
+### Odisha Central Placement Cell — government ITI master list
+
+The official 2023-24 government ITI master list exposes district and institute names, providing a useful source for deterministic ITI-to-district mapping. It includes the candidate districts in our plan, including Cuttack, Ganjam, Mayurbhanj, Khurda and Sambalpur.
+
+**Decision:** use it as a supporting reference when normalizing institute-level supply/placement records to districts.
+
+### Current grain assessment
+
+The source audit now establishes that official Odisha sources can support:
+
+- District × ITI × Trade × current capacity/admission/vacancy
+- District/Institute × Year × placement outcome
+- District × ITI master mapping
+
+What is **not yet established** is a recent multi-year **District × Skill/Trade × Year demand** series from an official vacancy source.
+
+Therefore:
+
+- Do not mark the full canonical District × Sector × Skill × Year target as proven yet.
+- Do not fabricate historical demand from current vacancy snapshots.
+- Continue demand-side audit through the Odisha Employment Directorate / Employment Market Information sources.
+- If the demand source proves only District × Occupation × Year, pause and reconcile the taxonomy contracts before extraction.
+
 ## 3. First extraction target
 
 Start with a deliberately small Odisha subset:
