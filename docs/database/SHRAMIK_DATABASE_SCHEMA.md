@@ -985,10 +985,10 @@ Issue #5 is currently **v1.1** and is the authoritative ML output contract for t
 
 For SUFFICIENT forecast results, `confidence_inputs` must contain these exact keys when computable:
 
-- `history_periods` — source-backed usable history count
-- `total_history_periods` — total usable history supplied to the model
-- `synthetic_history_periods` — synthetic usable history supplied to the model
-- `is_contiguous` — whether the observed years used are consecutive
+- `history_periods` — source-backed usable history count; NULL when not computable
+- `total_history_periods` — total usable history supplied to the model; NULL when not computable
+- `synthetic_history_periods` — synthetic usable history supplied to the model; NULL when not computable
+- `is_contiguous` — whether the observed years used are consecutive; NULL when not computable
 
 These diagnostics remain inside the contract JSONB object rather than being duplicated as forecast columns, avoiding competing sources of truth.
 
