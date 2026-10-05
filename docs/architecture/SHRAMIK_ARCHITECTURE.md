@@ -101,7 +101,7 @@ The core analytical loop is:
 
 ### Pipeline decisions
 
-**Data availability note:** Issue #7 is responsible for creating and validating the canonical sample dataset. The current repository does not yet provide enough data to prove whether every location + skill series will meet the minimum-history rule. The MVP therefore uses a practical provisional floor and a first-class descriptive-trend fallback.
+**Data architecture note:** The official PS requires heterogeneous labour-market sources and a dashboard spanning national → state → district levels. SHRAMIK therefore uses a national canonical data model with source/state-specific ingestion adapters. Issue #7 validates a small multi-state pilot; it does not define Odisha as the product's canonical geography. See `docs/data/SHRAMIK_NATIONAL_DATA_MODEL.md`.
 
 There are two related analytical paths after normalized historical data is available.
 
@@ -173,21 +173,25 @@ Do not introduce microservices, Kubernetes, blockchain, a custom LLM, or deep-le
 
 ### 4.1 Data Ingestion
 
-Responsible for:
+Responsible for a **national, source-agnostic ingestion layer**.
 
-- accepting source datasets
-- validating schemas
-- handling missing/invalid values
-- normalizing units and names
-- mapping locations, sectors, and skills
-- storing provenance
-- producing a reproducible canonical dataset
+Pipeline:
+
+**Source → adapter → validation → normalization → taxonomy/geography mapping → provenance → canonical observations**
+
+The system must support heterogeneous source grain. A source may provide State, District, District × Sector, District × Skill, or District × Sector × Skill observations. Missing dimensions remain missing; the ingestion layer must never fabricate a skill, sector, or geography merely to satisfy an analytical key.
+
+State/source-specific parsing belongs in adapters and must not leak into shared analytics, database semantics, or API code.
+
+The hackathon dummy dataset is another adapter/input source, not a special hard-coded database schema.
 
 It must preserve the distinction between:
 
 - raw source data
 - cleaned/normalized data
+- canonical observations
 - derived analytical values
+- model forecasts
 
 ### Skill taxonomy
 
@@ -202,6 +206,14 @@ For MVP, the ingestion design should be **NCO/NSQF-aligned**:
 The team must not silently invent skill names or map unrelated job titles without recording the rule.
 
 ---
+
+### National data model
+
+The authoritative ingestion/canonicalization rules are defined in `docs/data/SHRAMIK_NATIONAL_DATA_MODEL.md`.
+
+National reference dimensions include state, LGD district, sector, NCO/NCS occupation/job role, and NSQF/QP/NOS mappings where actually available. Source capability/grain is recorded explicitly.
+
+The detailed forecast contract remains skill-level for MVP stability. National/state/district/sector dashboard views are deterministic rollups of supported analytical results; aggregate source signals must not be falsely joined to skill-level supply.
 
 ### 4.2 Evidence Store
 
@@ -284,12 +296,14 @@ Requirements:
 
 ### Data sparsity rule
 
-Government labour-market data may be:
+Government and platform labour-market data may be:
 
 - annual rather than monthly
-- district-level rather than granular
-- incomplete across skills
-- sparse over time
+- available at different geographic levels
+- available at different occupation/skill levels
+- fragmented across sources
+- sparse or non-uniform across States
+- heterogeneous in units and flow/stock semantics
 
 For MVP, the canonical analytical period is **yearly (`YYYY`)** so sparse annual government data is not artificially converted into fake monthly or quarterly observations.
 
@@ -455,7 +469,15 @@ This module must never label a skill emerging solely because an LLM said so.
 
 ---
 
-### 4.10 What-If Simulator
+### 4.10 National / State / District Rollups
+
+The product must support the PS drill-down path:
+
+**National → State → District → Sector → Skill**
+
+Rollups are deterministic and evidence-aware. A higher-level dashboard summary must not imply that every underlying state has the same source coverage or analytical grain. Coverage, provenance, and confidence remain visible.
+
+### 4.12 What-If Simulator
 
 MVP intervention:
 
