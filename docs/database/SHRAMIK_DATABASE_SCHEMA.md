@@ -124,11 +124,13 @@ erDiagram
     SKILLS ||--o{ DEMAND_OBSERVATIONS : describes
     DATA_SOURCES ||--o{ DEMAND_OBSERVATIONS : supports
     SOURCE_RETRIEVALS ||--o{ DEMAND_OBSERVATIONS : identifies_retrieval
+    EVIDENCE_ITEMS ||--o{ DEMAND_OBSERVATIONS : supports
 
     DISTRICTS ||--o{ SUPPLY_OBSERVATIONS : has
     SKILLS ||--o{ SUPPLY_OBSERVATIONS : describes
     DATA_SOURCES ||--o{ SUPPLY_OBSERVATIONS : supports
     SOURCE_RETRIEVALS ||--o{ SUPPLY_OBSERVATIONS : identifies_retrieval
+    EVIDENCE_ITEMS ||--o{ SUPPLY_OBSERVATIONS : supports
     SYNTHETIC_GENERATION_RUNS ||--o{ DEMAND_OBSERVATIONS : generates
     SYNTHETIC_GENERATION_RUNS ||--o{ SUPPLY_OBSERVATIONS : generates
 
@@ -183,7 +185,7 @@ Canonical district reference.
 Constraints:
 
 - UNIQUE(state_id, name)
-- UNIQUE(lgd_district_code) WHERE lgd_district_code IS NOT NULL
+- UNIQUE(lgd_district_code)
 
 ### 5.3 sectors
 
@@ -574,12 +576,13 @@ Structural checks:
    - the analytical engine, not the database, determines whether NO_DEMAND applies using the configured MIN_FORECAST_DEMAND policy threshold.
 12. When gap is present:
    - gap = forecast_demand - forecast_supply.
-12. reason_code must be present for non-SUFFICIENT results and NULL for SUFFICIENT results.
+   - gap remains present when status = NO_DEMAND and gap_eligible = true; the simulator may use this baseline gap.
+13. reason_code must be present for non-SUFFICIENT results and NULL for SUFFICIENT results.
 14. reason_code must use the allowed mappings from Issue #5.
 15. gap_eligibility_reason must use the controlled values defined in Issue #5.
 16. `analysis_mode = OFFICIAL` requires `provenance_state = SOURCE_BACKED`; enforce with a row-local PostgreSQL CHECK.
-17. If gap_eligible = false, status must be NULL or NO_DEMAND; if gap_eligible = true, all four documented status values are structurally allowed. The engine owns the MIN_FORECAST_DEMAND threshold.
-18. The referenced model_versions.trained_through_period must be less than period_year; enforce with a database trigger in Issue #8.
+15. If gap_eligible = false, status must be NULL or NO_DEMAND. If gap_eligible = true, status may be SHORTAGE, BALANCED, OVERSUPPLY, or NO_DEMAND; the engine owns the MIN_FORECAST_DEMAND threshold.
+16. The referenced model_versions.trained_through_period must be less than period_year; enforce with a database trigger in Issue #8.
 
 ### Forecast uniqueness and recalculation rule
 
@@ -648,7 +651,8 @@ Constraints:
 - UNIQUE(district_id, skill_id, period_type, period_year, contract_version)
 - At most one active result for a given District × Skill × Period × Contract Version using a partial unique index:
   (district_id, skill_id, period_type, period_year, contract_version) WHERE is_active = true.
-- Recalculation must upsert/update the existing logical result and record the latest calculation_run_id rather than create a duplicate.
+- The MVP intentionally stores one logical emerging-skill result per contract version; recalculation does not preserve historical result rows.
+- Recalculation must upsert/update the existing logical result and record the latest calculation_run_id rather than create a duplicate. A future requirement for historical run retention would require adding calculation_run_id to the logical key through a schema revision.
 
 Important:
 
@@ -844,7 +848,7 @@ The database must reject:
 - synthetic observations without a generation_run_id
 - non-SUFFICIENT forecast rows containing forecast/gap/confidence output
 - SUFFICIENT forecast rows without a model version
-- forecasts whose model cutoff is not earlier than the forecast period
+- forecasts whose model cutoff is not earlier than the forecast period (trigger-enforced)
 - invalid reason_code/data_status combinations
 - more than one active forecast for the same District × Skill × Period
 - evidence links that point to zero or multiple targets
@@ -999,9 +1003,11 @@ A forecast may be computationally sufficient while remaining gap-ineligible. In 
 Status precedence:
 
 1. If data_status != SUFFICIENT, status is NULL.
-2. If data_status = SUFFICIENT and forecast_demand < MIN_FORECAST_DEMAND, status is NO_DEMAND even when gap_eligible = false.
+2. The analytical engine decides whether the configured MIN_FORECAST_DEMAND threshold produces NO_DEMAND; when it does, status may be NO_DEMAND even when gap_eligible = false.
 3. Otherwise SHORTAGE / BALANCED / OVERSUPPLY require gap_eligible = true.
-4. When gap_eligible = false and the NO_DEMAND condition does not apply, status is NULL.
+4. When gap_eligible = false and the engine has not selected NO_DEMAND, status is NULL.
+
+The database does not encode MIN_FORECAST_DEMAND. It only enforces the structural rule that a gap-ineligible row may have status NULL or NO_DEMAND.
 
 ## 21. Backend/API Boundary
 
