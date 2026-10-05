@@ -119,9 +119,9 @@ Dashboard overview for the selected analytical scope.
 
 Query parameters: district_id, sector_id, skill_id, period, analysis_mode, page_size.
 
-analysis_mode defaults to OFFICIAL. The applied value is echoed as meta.analysis_mode.
+analysis_mode defaults to OFFICIAL. The applied value is echoed as meta.analysis_mode. When district_id, sector_id, and skill_id are all omitted, this existing endpoint represents the national dashboard scope; no separate state endpoint is part of the MVP contract.
 
-The dashboard summary is calculated over the same forecast-result population used by detailed forecast endpoints for the selected scope, period, analysis_mode, and active-state rules.
+The dashboard summary is calculated over the same active forecast-result population used by detailed forecast endpoints for the selected scope, period, and analysis_mode. When period is omitted, it uses the latest available active forecast period for that requested scope and analysis_mode.
 
 ### Summary count semantics
 
@@ -133,7 +133,7 @@ The following six counts are mutually exclusive and sum to forecast_results:
 - balanced_count: data_status=SUFFICIENT, gap_eligible=true, status=BALANCED
 - oversupply_count: data_status=SUFFICIENT, gap_eligible=true, status=OVERSUPPLY
 - no_demand_count: data_status=SUFFICIENT, gap_eligible=true, status=NO_DEMAND
-- insufficient_data_count: data_status=INSUFFICIENT_DATA
+- insufficient_data_count: data_status IN (INSUFFICIENT_DATA, UNAVAILABLE)
 - gap_ineligible_count: data_status=SUFFICIENT, gap_eligible=false
 
 A gap-ineligible row is not counted in no_demand_count, even though Issue #5 permits status=NO_DEMAND for an ineligible gap. This keeps the dashboard totals mutually exclusive.
@@ -211,7 +211,7 @@ Returns geographic intelligence for one district.
 
 Query parameters: period, analysis_mode, page_size. analysis_mode defaults to OFFICIAL. page_size defaults to 25 and is constrained to 1–100; it applies only to top_shortages, top_emerging_skills, and active_warnings. It does not paginate or truncate sector_summary.
 
-The applied mode is echoed in meta.analysis_mode.
+The applied mode is echoed in meta.analysis_mode. This current analytical view uses active results. When period is omitted, it uses the latest available active forecast period for the requested district and analysis_mode.
 
 Response data contains district, summary, sector_summary, top_shortages, top_emerging_skills, and active_warnings.
 
@@ -229,7 +229,7 @@ top_shortages and top_emerging_skills use the same deterministic ranking rules a
 
 Returns canonical skills/job roles. This endpoint is descriptive and does not require analysis_mode. Taxonomy mappings are provenance-agnostic reference mappings and are not selected or hidden by OFFICIAL/DEMO analytical mode.
 
-Query parameters: sector_id, taxonomy_name, active_only, page, page_size.
+Query parameters: sector_id, taxonomy_name, active_only (default true), page, page_size.
 
 page_size defaults to 25 and has a maximum of 100.
 
@@ -243,7 +243,7 @@ Returns skill intelligence across the available geographic scope.
 
 Query parameters: district_id, period_start, period_end, analysis_mode.
 
-analysis_mode defaults to OFFICIAL and is echoed in meta.analysis_mode.
+analysis_mode defaults to OFFICIAL and is echoed in meta.analysis_mode. current_summary uses active results; when neither period_start nor period_end is supplied, it uses the latest available active forecast period for the requested scope and analysis_mode.
 
 When supplied, period_start and period_end are inclusive. A reversed range returns 422 / VALIDATION_ERROR.
 
@@ -267,7 +267,7 @@ period_start and period_end are inclusive when supplied. A reversed range return
 
 page is 1-based. page_size defaults to 25 and is constrained to 1–100. Values above 100 return 422 / VALIDATION_ERROR.
 
-The default sort is district_id ascending, then period ascending, with sector_id and skill_id as deterministic tie-breakers.
+The default sort is district_id ascending, then period ascending, with sector_id, skill_id, and forecast_id as deterministic tie-breakers. forecast_id is the final tie-breaker required when active_only=false so pagination remains deterministic when multiple stored model results otherwise share the same sort fields.
 
 active_only=true is evaluated after applying the requested analysis_mode; the endpoint must never silently substitute a forecast from another provenance mode.
 
@@ -314,7 +314,7 @@ The backend must not silently mix OFFICIAL and DEMO results.
 
 Returns active or historical warnings.
 
-Query parameters: district_id, skill_id, period, warning_type, severity, analysis_mode (default OFFICIAL), active_only, page, page_size.
+Query parameters: district_id, skill_id, period, warning_type, severity, analysis_mode (default OFFICIAL), active_only (default true), page, page_size.
 
 analysis_mode defaults to OFFICIAL and the applied value is echoed in meta.analysis_mode.
 
@@ -342,7 +342,7 @@ Query parameters: district_id, skill_id, period_start, period_end, model_name, p
 
 period_start and period_end are inclusive when supplied. page_size defaults to 25 and has a maximum of 100.
 
-Response uses an extensible metrics object because exact metric names are owned by Issue #22.
+Response uses an extensible metrics object because exact metric names are owned by Issue #22. The endpoint is reserved by this contract but is deferred from the first implementation slice; Issue #22 owns its implementation, metrics, scope, and any evaluation-result storage. This contract does not define or require a metrics table or placeholder metrics.
 
 Example item:
 
@@ -789,7 +789,7 @@ meta.analysis_mode is included whenever the endpoint supports or derives an anal
 
 OFFICIAL requires provenance_state = SOURCE_BACKED.
 
-DEMO explicitly exposes analysis_mode = DEMO and provenance_state = SYNTHETIC_DEMO or MIXED_PROVENANCE.
+DEMO explicitly exposes analysis_mode = DEMO. Its provenance_state is independent and may be SOURCE_BACKED, SYNTHETIC_DEMO, or MIXED_PROVENANCE according to the data materially used; DEMO does not by itself imply synthetic data.
 
 History diagnostics inside confidence_inputs retain Issue #5 v1.1 semantics: history_periods is source-backed usable history, total_history_periods is total usable model history, synthetic_history_periods is synthetic model history, and is_contiguous indicates whether observed years are consecutive. Missing/non-computable diagnostics are serialized as null when the documented key is included.
 
@@ -802,7 +802,7 @@ Collection endpoints use 1-based page numbering and bounded page_size values wit
 
 Filters that affect analytical interpretation must be explicit, especially analysis_mode, district, skill, sector, and period.
 
-For forecast collections, active_only is applied within the selected analysis_mode. The default ordering is documented in Section 7.6.
+For forecast collections, active_only is applied within the selected analysis_mode. Endpoints that expose active_only default it to true unless their endpoint contract explicitly states otherwise. The default ordering is documented in Section 7.6.
 
 All supplied period_start and period_end values are inclusive.
 

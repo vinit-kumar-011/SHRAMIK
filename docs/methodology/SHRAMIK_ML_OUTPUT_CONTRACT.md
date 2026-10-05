@@ -169,6 +169,8 @@ provenance_state describes the data actually used:
 
 The provenance state is mandatory because data_status = SUFFICIENT must never imply that a result is based entirely on official observations.
 
+analysis_mode and provenance_state are independent dimensions. OFFICIAL requires SOURCE_BACKED. DEMO may validly be SOURCE_BACKED when all observations materially used are source-backed, as well as SYNTHETIC_DEMO or MIXED_PROVENANCE when synthetic observations materially contribute. DEMO describes the analytical environment/result selected; provenance_state describes the data actually used.
+
 ### Mode-specific minimum-history rule
 
 In OFFICIAL mode:
@@ -614,6 +616,10 @@ Validator rule: `trained_through_period < period` for every forecast record. If 
 - evidence coverage
 - early warnings
 - policy/scenario interpretation
+
+### Persistence boundary
+
+The ML/analytical pipeline persists the validated forecast records, emerging-skill signals, and early warnings that it produces. The API reads those persisted analytical results and maps them to the HTTP contract. A GET request must not calculate, rerun, or persist a forecast, warning, or emerging-skill signal.
 
 The forecasting model must not silently embed policy thresholds.
 
