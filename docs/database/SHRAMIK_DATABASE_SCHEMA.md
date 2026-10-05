@@ -20,11 +20,11 @@ This issue is **design only**.
 - Issue #8 implements the approved design as PostgreSQL/Supabase migrations and seed/reference data.
 - Backend developers must raise schema problems with the lead rather than silently redefining shared business semantics.
 
-The target analytical grain is:
+The database supports a **national heterogeneous observation model**. Source observations may exist at State, District, Sector, Skill, or combined geography/occupation grains. Missing dimensions are represented as NULL and are never fabricated.
 
-**District × Sector × Skill × Year**
+The detailed MVP forecast result remains District × Skill × Forecast Period for API/ML stability. National, State, District and Sector dashboard views are deterministic rollups of supported analytical results.
 
-In the MVP, a canonical skill/job role belongs to exactly one canonical sector. Sector is therefore derived through the skill relationship in database fact tables instead of being redundantly copied into every observation or result row.
+A canonical skill/job role still belongs to exactly one canonical sector.
 
 ---
 
@@ -106,6 +106,7 @@ The simulator is stateless in the MVP and does not require a persistent scenario
 | evidence_items | Concrete supporting evidence extracted from sources | Provenance |
 | evidence_links | Links evidence to analytical outputs | Provenance |
 | source_retrievals | Immutable retrieval records for downloaded/source resources | Provenance |
+| source_capabilities | Observed source grain/capability registry | Provenance |
 | synthetic_generation_runs | Immutable generation metadata for synthetic/demo runs | Provenance |
 
 ---
@@ -145,6 +146,7 @@ erDiagram
     EMERGING_SKILL_SIGNALS ||--o{ EARLY_WARNINGS : enriches
 
     DATA_SOURCES ||--o{ SOURCE_RETRIEVALS : retrieved_as
+    DATA_SOURCES ||--o{ SOURCE_CAPABILITIES : describes
     DATA_SOURCES ||--o{ EVIDENCE_ITEMS : contains
     EVIDENCE_ITEMS ||--o{ EVIDENCE_LINKS : supports
     FORECAST_RESULTS ||--o{ EVIDENCE_LINKS : supported_by
@@ -167,7 +169,7 @@ Canonical state/UT reference.
 | code | TEXT | No | Unique standardized state code |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
-MVP is Odisha-focused, but retaining the state table avoids baking Odisha into every district record.
+The national model uses the state table as a required geography dimension for source normalization and cross-state aggregation.
 
 ### 5.2 districts
 
@@ -369,95 +371,123 @@ This avoids an un-enforced polymorphic foreign key while keeping one reusable ev
 
 ## 7. Historical Observation Tables
 
-Demand and supply are stored separately because their provenance may come from different source systems.
+Demand and supply are stored separately because their provenance and source systems may differ.
 
-### 7.1 demand_observations
+### 7.1 National observation-grain model
 
-Historical demand signal in compatible worker/position headcount units.
+The observation tables support these controlled grains:
+
+- STATE
+- STATE_SECTOR
+- STATE_SKILL
+- STATE_SECTOR_SKILL
+- DISTRICT
+- DISTRICT_SECTOR
+- DISTRICT_SKILL
+- DISTRICT_SECTOR_SKILL
+
+The selected grain is stored explicitly in observation_grain.
+
+Rules:
+- state_id is always required.
+- district_id is required for DISTRICT* grains.
+- sector_id is required for *SECTOR* grains.
+- skill_id is required for *SKILL* grains.
+- skill_id may be NULL for district/state aggregate signals.
+- sector_id may be NULL when not supplied or when it can be derived through skill_id.
+- No aggregate value may be redistributed into a missing lower-level dimension without source-backed evidence.
+
+### 7.2 demand_observations
 
 | Column | Type | Null | Rules |
 |---|---|---:|---|
 | id | UUID | No | Primary key |
-| district_id | TEXT | No | FK → districts.id |
-| skill_id | TEXT | No | FK → skills.id |
+| state_id | TEXT | No | FK → states.id |
+| district_id | TEXT | Yes | FK → districts.id; required for DISTRICT* grains |
+| sector_id | TEXT | Yes | FK → sectors.id; required for *SECTOR* grains |
+| skill_id | TEXT | Yes | FK → skills.id; required for *SKILL* grains |
+| observation_grain | TEXT | No | Controlled national observation grain |
 | period_type | TEXT | No | MVP = YEAR |
 | period_year | SMALLINT | No | 4-digit year |
-| demand_quantity | NUMERIC(14,2) | Yes | Headcount/position quantity; >= 0 |
-| source_id | UUID | Yes | FK → data_sources.id; NULL permitted for synthetic observations |
+| demand_quantity | NUMERIC(14,2) | Yes | Quantity in documented source/analytical unit; >= 0 |
+| demand_signal_type | TEXT | No | Exact demand signal |
+| source_id | UUID | Yes | FK → data_sources.id; NULL only for synthetic observations |
 | source_date | DATE | Yes | Publication date when known; otherwise retrieval date |
 | retrieval_id | UUID | Yes | FK → source_retrievals.id for downloaded resources |
-| evidence_item_id | UUID | Yes | Optional FK → evidence_items.id for row-level source evidence |
+| evidence_item_id | UUID | Yes | Optional FK → evidence_items.id |
 | provenance_state | TEXT | No | SOURCE_BACKED / SYNTHETIC_DEMO |
 | is_synthetic | BOOLEAN | No | Default false |
 | generation_run_id | UUID | Yes | FK → synthetic_generation_runs.id when synthetic |
-| demand_signal_type | TEXT | No | Exact demand signal type used by analytics |
 | transformation_note | TEXT | Yes | Required for derived/transformed/synthetic records |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
 Checks:
+- state_id is always present.
+- district_id is present for DISTRICT* grains.
+- sector_id is present for *SECTOR* grains.
+- skill_id is present for *SKILL* grains.
+- source_id is present for SOURCE_BACKED observations.
+- SOURCE_BACKED requires is_synthetic=false.
+- SYNTHETIC_DEMO requires is_synthetic=true and generation_run_id.
+- quantities are non-negative when defined.
 
-- `source_id IS NOT NULL OR provenance_state = 'SYNTHETIC_DEMO'`.
-- `provenance_state = 'SYNTHETIC_DEMO'` requires `is_synthetic = true`.
-- `provenance_state = 'SOURCE_BACKED'` requires `is_synthetic = false` and `source_id IS NOT NULL`.
-- Synthetic observations require `generation_run_id IS NOT NULL`.
+Uniqueness must include source identity because multiple legitimate sources can report the same signal. For source-backed rows, use the logical key: state_id, district_id, sector_id, skill_id, observation_grain, period_type, period_year, source_id, demand_signal_type. For synthetic rows, replace source_id with generation_run_id.
 
-Uniqueness:
+### 7.3 supply_observations
 
-- UNIQUE(district_id, skill_id, period_type, period_year, source_id, demand_signal_type) WHERE source_id IS NOT NULL.
-- UNIQUE(district_id, skill_id, period_type, period_year, generation_run_id, demand_signal_type) WHERE source_id IS NULL.
-
-The first index prevents duplicate observations from the same source. The second prevents duplicate synthetic observations from the same generation run while allowing synthetic data to coexist with source-backed observations. Canonical source selection happens in the ingestion/analytics layer.
-
-Why source is part of the uniqueness key:
-
-Two valid sources may contain the same District × Skill × Year signal. The database must not force them into one record and lose provenance. Canonical aggregation/selection happens in the ingestion/analytics layer.
-
-### 7.2 supply_observations
-
-Historical supply and training context.
+Supply uses the same national observation-grain model and provenance rules.
 
 | Column | Type | Null | Rules |
 |---|---|---:|---|
 | id | UUID | No | Primary key |
-| district_id | TEXT | No | FK → districts.id |
-| skill_id | TEXT | No | FK → skills.id |
+| state_id | TEXT | No | FK → states.id |
+| district_id | TEXT | Yes | FK → districts.id; required for DISTRICT* grains |
+| sector_id | TEXT | Yes | FK → sectors.id; required for *SECTOR* grains |
+| skill_id | TEXT | Yes | FK → skills.id; required for *SKILL* grains |
+| observation_grain | TEXT | No | Controlled national observation grain |
 | period_type | TEXT | No | MVP = YEAR |
 | period_year | SMALLINT | No | 4-digit year |
-| supply_quantity | NUMERIC(14,2) | Yes | Worker headcount; >= 0 |
-| training_capacity | NUMERIC(14,2) | Yes | Training seats/capacity; >= 0 |
-| enrollment | NUMERIC(14,2) | Yes | Enrolment count; >= 0 |
+| supply_quantity | NUMERIC(14,2) | Yes | Worker/supply quantity; >= 0 |
+| training_capacity | NUMERIC(14,2) | Yes | Training capacity/seats; >= 0 |
+| enrollment | NUMERIC(14,2) | Yes | Enrolment; >= 0 |
 | completions | NUMERIC(14,2) | Yes | Completion count; >= 0 |
-| source_id | UUID | Yes | FK → data_sources.id; NULL permitted for synthetic observations |
+| supply_signal_type | TEXT | No | Exact supply signal |
+| source_id | UUID | Yes | FK → data_sources.id; NULL only for synthetic observations |
 | source_date | DATE | Yes | Publication date when known; otherwise retrieval date |
 | retrieval_id | UUID | Yes | FK → source_retrievals.id for downloaded resources |
-| evidence_item_id | UUID | Yes | Optional FK → evidence_items.id for row-level source evidence |
+| evidence_item_id | UUID | Yes | Optional FK → evidence_items.id |
 | provenance_state | TEXT | No | SOURCE_BACKED / SYNTHETIC_DEMO |
 | is_synthetic | BOOLEAN | No | Default false |
 | generation_run_id | UUID | Yes | FK → synthetic_generation_runs.id when synthetic |
-| supply_signal_type | TEXT | No | Exact supply signal type used by analytics |
 | transformation_note | TEXT | Yes | Required for derived/transformed/synthetic records |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
-
-Checks:
-
-- `source_id IS NOT NULL OR provenance_state = 'SYNTHETIC_DEMO'`.
-- `provenance_state = 'SYNTHETIC_DEMO'` requires `is_synthetic = true`.
-- `provenance_state = 'SOURCE_BACKED'` requires `is_synthetic = false` and `source_id IS NOT NULL`.
-- Synthetic observations require `generation_run_id IS NOT NULL`.
-
-Uniqueness:
-
-- UNIQUE(district_id, skill_id, period_type, period_year, source_id, supply_signal_type) WHERE source_id IS NOT NULL.
-- UNIQUE(district_id, skill_id, period_type, period_year, generation_run_id, supply_signal_type) WHERE source_id IS NULL.
-
-The first index prevents duplicate observations from the same source. The second prevents duplicate synthetic observations from the same generation run while allowing synthetic data to coexist with source-backed observations. Canonical source selection happens in the ingestion/analytics layer.
 
 Important semantic rule:
 
-> training_capacity, enrollment, and completions are separate contextual measures. They are not silently treated as current employed supply.
+> training_capacity, enrollment and completions are separate measures. They are not silently treated as current employed supply.
 
----
+### 7.4 source_capabilities
 
+This registry records what a source actually supports before analytics consume it.
+
+| Column | Type | Null | Rules |
+|---|---|---:|---|
+| id | UUID | No | Primary key |
+| source_id | UUID | No | FK → data_sources.id |
+| state_scope | TEXT | Yes | State/UT code or NATIONAL |
+| observation_grain | TEXT | No | Observed source grain |
+| taxonomy_name | TEXT | Yes | NCO/NCS/NSQF/etc. when applicable |
+| taxonomy_version | TEXT | Yes | Version when applicable |
+| signal_type | TEXT | No | Demand/supply/context signal |
+| unit | TEXT | No | Documented source unit |
+| flow_stock_semantics | TEXT | Yes | Documented interpretation |
+| coverage_start | SMALLINT | Yes | Earliest supported period |
+| coverage_end | SMALLINT | Yes | Latest supported period |
+| geography_notes | TEXT | Yes | Coverage limitations |
+| occupation_notes | TEXT | Yes | Skill/occupation limitations |
+| created_at | TIMESTAMPTZ | No | Default current timestamp |
+
+This table is descriptive provenance, not permission to invent missing fields.
 ## 8. Model Metadata
 
 ### 8.1 model_versions
@@ -769,23 +799,19 @@ The final canonical dataset rules are owned by Issue #7.
 | district → state | Every district belongs to one state |
 | skill → sector | Every canonical skill belongs to exactly one sector |
 | taxonomy mapping → skill | Every external mapping references one canonical skill |
-| demand observation → district/skill | District and skill must exist; source is required only for source-backed observations |
-| supply observation → district/skill | District and skill must exist; source is required only for source-backed observations |
-| forecast → district/skill/model | All must exist for a usable forecast |
-| forecast → provenance/analysis mode | Provenance state and execution mode are explicit |
+| demand observation → state | Required |
+| demand observation → district/sector/skill | Optional according to observation_grain |
+| supply observation → state | Required |
+| supply observation → district/sector/skill | Optional according to observation_grain |
+| forecast → district/skill/model | All must exist for a usable skill-level forecast |
+| source capability → source | Every capability record belongs to one source |
 | source retrieval → source | Every retrieval belongs to one source |
 | synthetic observation → generation run | Every synthetic observation references a generation run |
 | emerging signal → district/skill | All must exist |
 | warning → forecast | Warning requires a forecast result |
 | evidence → source | Every evidence item has a source |
-| evidence link → output | Exactly one analytical-output target per link |
 
-Use ON DELETE RESTRICT for canonical reference records so an accidental delete cannot orphan historical analytical records.
-
-For active/inactive reference data, use is_active instead of deleting records that are already referenced.
-
----
-
+Use ON DELETE RESTRICT for canonical reference records.
 ## 16. Index Plan
 
 Initial indexes should target actual backend query patterns rather than every column.
@@ -801,10 +827,13 @@ Initial indexes should target actual backend query patterns rather than every co
 
 ### Observation indexes
 
+- demand_observations(state_id, observation_grain, period_year)
 - demand_observations(district_id, skill_id, period_year)
-- demand_observations(skill_id, period_year)
+- demand_observations(sector_id, period_year)
+- supply_observations(state_id, observation_grain, period_year)
 - supply_observations(district_id, skill_id, period_year)
-- supply_observations(skill_id, period_year)
+- supply_observations(sector_id, period_year)
+- source_capabilities(source_id, observation_grain)
 
 ### Analytical indexes
 
@@ -943,8 +972,8 @@ This mapping keeps the ML contract stable without forcing the database to store 
 
 | Canonical Dataset Field | Database destination |
 |---|---|
-| district_id | districts.id / observation district_id |
-| district_name | districts.name |
+| district_id | districts.id / observation district_id where present |
+| district_name | districts.name where district-level |
 | state_code | states.code |
 | lgd_district_code | districts.lgd_district_code |
 | sector_id | sectors.id via skills.sector_id |
@@ -1086,6 +1115,9 @@ The schema provides stable storage for these outputs without embedding unresolve
 - [x] Synthetic generation provenance defined
 - [x] Historical demand storage defined
 - [x] Historical supply/training storage defined
+- [x] National heterogeneous observation grains defined
+- [x] Source capability registry defined
+- [x] State/source-specific adapters separated from canonical schema
 - [x] Source provenance defined
 - [x] Evidence storage and linking defined
 - [x] Forecast result structure mapped to Issue #5
