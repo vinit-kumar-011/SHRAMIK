@@ -667,7 +667,21 @@ Training duration is converted to whole-year lag for the MVP.
 
 If the cohort arrives after the final forecast period, the simulator reports COHORT_AFTER_HORIZON and returns the baseline unchanged.
 
-If baseline shortage is not positive, gap_reduction is null with a reason, while simulated_gap is still returned using the scenario calculation. For the API edge case where the baseline record has gap_eligible=false, Issue #4 deliberately returns simulated_gap=null because no valid common-unit gap can be computed; this exception is defined in the API contract and does not alter the baseline analytical record contract.
+The simulator distinguishes two different baseline cases:
+
+1. **Eligible baseline with a zero or negative gap** (including an eligible `NO_DEMAND` result):
+   - `gap_reduction = null`
+   - a `simulation_note_code` is returned as defined in **Issue #4, Section 7.10**
+   - `simulated_gap` is still returned using the scenario calculation
+
+2. **Baseline with `gap_eligible=false`**:
+   - `baseline_gap = null`
+   - `gap_reduction = null`
+   - `simulated_gap = null`
+   - the API returns `simulation_note_code = BASELINE_GAP_INELIGIBLE`
+   - this deliberate API exception is defined in **Issue #4, Section 7.10** because no valid common-unit gap can be computed
+
+The simulator's `simulation_note_code` is distinct from this ML contract's analytical `reason_code`; Issue #4, Section 7.10 defines its vocabulary and precedence.
 
 ## 24. Multiple Forecast Periods
 
