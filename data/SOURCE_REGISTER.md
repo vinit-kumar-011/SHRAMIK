@@ -118,6 +118,69 @@ Therefore:
 - Continue demand-side audit through the Odisha Employment Directorate / Employment Market Information sources.
 - If the demand source proves only District × Occupation × Year, pause and reconcile the taxonomy contracts before extraction.
 
+## 2C. Demand-side audit findings (2026-10-05)
+
+### Odisha District Employment Exchange statistical pages
+
+Official district-government Employment Exchange pages provide historical employment-market statistics. Examples found:
+
+- **Jagatsinghpur:** 2015, 2016, 2017 and February 2018 figures for registration, notification, submission, placement, live register and vacancy outstanding. The same page also gives live-register qualification categories including I.T.I. Trained.
+- **Subarnapur:** 2015, 2016, 2017 and March 2018 figures for registration, notification, submission, placement, live register and vacancy outstanding. It also publishes placement-linked training by year and trade, including Mason/Bar Binding/Carpentry, Hospitality, Tally, DTP and Basic Automotive Servicing.
+- **Kendrapara:** historical registration/notification/submission/placement/live-register data and training/recruitment records by year; the page also reports I.T.I.-trained candidates in its live-register breakdown.
+
+The Directorate of Employment states that District Employment Exchanges collect Employment Market Information, including manpower and vacancy-position data, and conduct surveys/studies. Its official portal also states that employers furnish vacancy returns to District Employment Exchanges.
+
+### Critical grain finding
+
+The district Employment Exchange statistics establish a useful **District × Year labour-market pressure** signal, including `vacancy_outstanding`, but the public tables inspected do **not** establish a consistent **District × Skill/Trade × Year vacancy** series.
+
+The trade-specific records found on district pages are primarily **training/placement** records, not vacancy demand.
+
+Therefore the canonical demand grain should NOT be declared District × Skill × Year yet.
+
+### Recommended SHRAMIK MVP data model after audit
+
+For the defensible official-data MVP, separate signals instead of forcing them into one fabricated gap:
+
+1. `employment_market_demand`
+   - district_id
+   - year
+   - vacancy_outstanding
+   - registrations
+   - placements
+   - provenance
+
+2. `skill_supply_pipeline`
+   - district_id
+   - year
+   - skill/trade
+   - trainees_completed/trained
+   - placements_where_available
+   - provenance
+
+3. `current_skill_capacity`
+   - district_id
+   - institute_id
+   - skill/trade
+   - sanctioned_strength
+   - admission_taken
+   - vacant_seats
+   - provenance
+
+These can support different dashboard views and an explicitly labelled **skill-pipeline pressure indicator**, but they must not be represented as a direct skill-level vacancy gap unless a source-backed skill-demand dataset is found.
+
+### Current decision
+
+**Do not fabricate historical skill demand.**
+
+Continue looking for:
+- official occupation/trade-level vacancy tables;
+- archived Employment Market Information reports;
+- district/sector occupation surveys;
+- NCO-linked vacancy data;
+- or another official Odisha demand source with a stable multi-year occupation/skill grain.
+
+If none is found, revise the forecasting contract to forecast the defensible district-level demand signal and use skill-level supply/capacity as a separate analytical layer.
 ## 3. First extraction target
 
 Start with a deliberately small Odisha subset:
