@@ -328,6 +328,17 @@ When DEMO mode reaches the configured minimum using synthetic observations:
 - synthetic history must not increase the confidence/history evidence used to claim official coverage
 
 Annual data must not be fabricated into monthly or quarterly observations.
+## 9.1 Validated History and Contiguity
+
+For the minimum-history count, usable observations do **not** have to be consecutive. For example, 2021, 2022, and 2024 are three usable years, but the series is marked non-contiguous because 2023 is missing.
+
+The forecasting engine must receive the actual observed years and must not silently fabricate missing periods.
+
+- The naive last-value baseline may operate on non-contiguous annual observations when the latest usable observation is valid.
+- Trend/growth models that require regular intervals must enforce their own contiguity requirement or use a separately documented missing-period method.
+- A missing year never becomes an observed year merely because a model requires regular spacing.
+- Diagnostic output should expose is_contiguous when the period sequence is known.
+
 ## 10. Forecast Baseline
 
 Required MVP baseline:
