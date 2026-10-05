@@ -1,7 +1,7 @@
 # SHRAMIK Database Schema
 
 **Issue:** #2 — Design SHRAMIK database schema  
-**Status:** Proposed / review-ready database design  
+**Status:** Updated design reconciliation for provenance-aware data/ML flow  
 **Owner:** Lead  
 **Branch:** feature/database-schema  
 **Implementation:** Issue #8 — Implement SHRAMIK database schema
@@ -105,6 +105,8 @@ The simulator is stateless in the MVP and does not require a persistent scenario
 | early_warnings | Persisted warning records derived from analytical outputs | Analytical fact |
 | evidence_items | Concrete supporting evidence extracted from sources | Provenance |
 | evidence_links | Links evidence to analytical outputs | Provenance |
+| source_retrievals | Immutable retrieval records for downloaded/source resources | Provenance |
+| synthetic_generation_runs | Immutable generation metadata for synthetic/demo runs | Provenance |
 
 ---
 
@@ -511,6 +513,8 @@ Structural checks:
 7. If data_status != SUFFICIENT:
    - forecast_demand = NULL
    - forecast_supply = NULL
+   - gap_eligible = NULL
+   - gap_eligibility_reason = NULL
    - gap = NULL
    - status = NULL
    - confidence_level = NULL
@@ -519,9 +523,21 @@ Structural checks:
    - model_version_id = NULL
 8. If data_status = SUFFICIENT:
    - model_version_id is required.
-   - forecast quantities and gap are required.
+   - forecast quantities are required.
    - confidence_level is required.
    - evidence_coverage is required.
+   - gap_eligible is required.
+9. If gap_eligible = true:
+   - gap is required.
+   - gap_eligibility_reason = NULL.
+   - status may be calculated.
+10. If gap_eligible = false:
+   - forecast_demand and forecast_supply may remain populated.
+   - gap = NULL.
+   - status = NULL.
+   - gap_eligibility_reason is required.
+11. When gap is present:
+   - gap = forecast_demand - forecast_supply.
 12. reason_code must be present for non-SUFFICIENT results and NULL for SUFFICIENT results.
 13. reason_code must use the allowed mappings from Issue #5.
 14. The referenced model_versions.trained_through_period must be less than period_year.
@@ -734,6 +750,8 @@ Initial indexes should target actual backend query patterns rather than every co
 
 ### Provenance indexes
 
+- source_retrievals(source_id, retrieved_at)
+- synthetic_generation_runs(generator_name, generator_version)
 - evidence_items(source_id, observed_period)
 - evidence_links(evidence_item_id)
 - evidence_links(forecast_result_id)
@@ -751,11 +769,14 @@ The database must reject:
 - duplicate canonical district/state/sector/skill codes
 - references to unknown districts/sectors/skills/sources
 - synthetic observations without a generation run
-- downloaded source records without a retrieval record
+- source-backed downloaded observations without a retrieval record
 - negative quantities where the metric is defined as non-negative
 - malformed year values
 - invalid index/confidence/evidence ranges
 - invalid provenance_state or analysis_mode values
+- provenance_state = SYNTHETIC_DEMO without is_synthetic = true
+- provenance_state = SOURCE_BACKED with is_synthetic = true
+- synthetic observations without a generation_run_id
 - non-SUFFICIENT forecast rows containing forecast/gap/confidence output
 - SUFFICIENT forecast rows without a model version
 - forecasts whose model cutoff is not earlier than the forecast period
@@ -815,6 +836,7 @@ This mapping keeps the ML contract stable without forcing the database to store 
 | Canonical Dataset Field | Database destination |
 |---|---|
 | district_id | districts.id / observation district_id |
+| lgd_district_code | districts.lgd_district_code |
 | district_name | districts.name |
 | state_code | states.code |
 | lgd_district_code | districts.lgd_district_code |
@@ -831,6 +853,7 @@ This mapping keeps the ML contract stable without forcing the database to store 
 | completions | supply_observations.completions |
 | source_id | observation source_id |
 | source_type | data_sources.source_type |
+| retrieval_id | observation retrieval_id |
 | source_date | observation source_date |
 | retrieval_id | observation retrieval_id |
 | provenance_state | observation provenance_state |
@@ -930,6 +953,9 @@ The schema provides stable storage for these outputs without embedding unresolve
 - [x] Index plan defined
 - [x] API/database responsibility boundary defined
 - [x] Implementation moved explicitly to Issue #8
+- [x] Provenance retrieval and synthetic generation metadata defined
+- [x] LGD district-code support defined
+- [x] Sector mapping method/confidence metadata defined
 
 ---
 
