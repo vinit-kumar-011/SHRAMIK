@@ -407,8 +407,9 @@ When gap_eligible = false:
 - forecast_demand may remain populated
 - forecast_supply may remain populated
 - gap = null
-- status = null
 - gap_eligibility_reason is required
+- status = NO_DEMAND when data_status = SUFFICIENT and forecast_demand < MIN_FORECAST_DEMAND
+- otherwise status = null
 
 Initial reason values:
 
@@ -428,9 +429,16 @@ status allowed values:
 - BALANCED
 - OVERSUPPLY
 - NO_DEMAND
-- null when data_status is not SUFFICIENT or gap_eligible = false
+- null when data_status is not SUFFICIENT, or when gap_eligible = false and the NO_DEMAND condition does not apply
 
-status is the analytical labour-market classification **only when a comparable gap exists**.
+Status precedence:
+
+1. If data_status != SUFFICIENT, status = null.
+2. If data_status = SUFFICIENT and forecast_demand < MIN_FORECAST_DEMAND, status = NO_DEMAND even when gap_eligible = false.
+3. Otherwise SHORTAGE / BALANCED / OVERSUPPLY require gap_eligible = true.
+4. When gap_eligible = false and the NO_DEMAND condition does not apply, status = null.
+
+status is the analytical labour-market classification when either NO_DEMAND applies or a comparable gap exists.
 
 data_status is data/result availability.
 
@@ -743,6 +751,7 @@ Before committing AI-generated ML code, the developer must verify the returned s
 - [x] analysis mode defined
 - [x] provenance state defined
 - [x] status/data_status/gap eligibility separation defined
+- [x] NO_DEMAND precedence over gap eligibility defined
 - [x] reason_code semantics defined
 - [x] Incompatible-signal handling defined
 - [x] Insufficient-data behaviour defined
