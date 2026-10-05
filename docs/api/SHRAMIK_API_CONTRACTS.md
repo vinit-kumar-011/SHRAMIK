@@ -223,7 +223,7 @@ Schemas are referenced in Section 8:
 - top_emerging_skills[] → DashboardEmergingSkillRecord
 - active_warnings[] → WarningRecord
 
-top_shortages and top_emerging_skills use the same deterministic ranking rules as the dashboard.
+top_shortages and top_emerging_skills use the same deterministic ranking rules as the dashboard. For district detail, the response also includes meta.list_totals and meta.truncated for sector_summary/top_shortages/top_emerging_skills/active_warnings; the semantics are the same as the dashboard, with page_size limiting each returned list.
 
 ## 7.4 GET /api/v1/skills
 
@@ -232,8 +232,6 @@ Returns canonical skills/job roles. This endpoint is descriptive and does not re
 Query parameters: sector_id, taxonomy_name, active_only, page, page_size.
 
 page_size defaults to 25 and has a maximum of 100.
-
-Taxonomy mappings are provenance-agnostic reference mappings. This descriptive endpoint does not select OFFICIAL or DEMO analytical results and therefore does not hide or substitute taxonomy mappings based on analysis_mode.
 
 Response item includes skill_id, name, sector_id, sector_name, and taxonomy_mappings.
 
@@ -495,7 +493,7 @@ The sufficient-baseline example is internally consistent. At horizon_end=2031:
 
 gap_reduction is not capped at 1.0. It may exceed 1.0 when an intervention reduces a positive shortage to a surplus (negative gap). It is a mathematical reduction relative to the baseline shortage. shortage_closed_fraction is the UI-safe, capped measure of the baseline shortage closed, ranging from 0 to 1.
 
-Issue #29 should display shortage_closed_fraction as "shortage fully closed" (or equivalent) when gap_reduction exceeds 1.0, rather than using the raw value as the primary dashboard percentage.
+Issue #29 (Implement SHRAMIK what-if simulator interface) should display shortage_closed_fraction as "shortage fully closed" (or equivalent) when gap_reduction exceeds 1.0, rather than using the raw value as the primary dashboard percentage. This is the confirmed simulator frontend owner.
 
 Example with no baseline forecast period available:
 
@@ -562,7 +560,7 @@ simulation_note_code is intentionally separate from Issue #5 reason_code. It is 
 - BASELINE_INSUFFICIENT_DATA — one or more required baseline periods are insufficient for scenario computation.
 - BASELINE_UNAVAILABLE — required baseline forecast data is unavailable.
 
-simulation_note_code is a single-value field. When multiple conditions apply, it returns only the highest-priority applicable code; it is not a complete list of every applicable condition. The priority order is: BASELINE_UNAVAILABLE, BASELINE_INSUFFICIENT_DATA, COHORT_AFTER_HORIZON, BASELINE_GAP_INELIGIBLE, NO_POSITIVE_BASELINE_GAP. This intentionally gives COHORT_AFTER_HORIZON precedence over a simultaneously applicable gap-ineligible condition because cohort timing is independently material to the scenario result. Per-period fields remain authoritative for exactly which periods are affected.
+simulation_note_code is a single-value field. When multiple conditions apply, it returns only the highest-priority applicable code; it is not a complete list of every applicable condition. The priority order is: BASELINE_UNAVAILABLE, BASELINE_INSUFFICIENT_DATA, COHORT_AFTER_HORIZON, BASELINE_GAP_INELIGIBLE, NO_POSITIVE_BASELINE_GAP. Issue #19 and Issue #29 must use this same order when interpreting or displaying simulator notes. This intentionally gives COHORT_AFTER_HORIZON precedence over a simultaneously applicable gap-ineligible condition because cohort timing is independently material to the scenario result. Per-period fields remain authoritative for exactly which periods are affected.
 
 ### No-baseline behaviour
 
@@ -582,6 +580,10 @@ When horizon_end is omitted, it is the latest existing baseline forecast record 
 The periods array covers every existing baseline forecast period from start_period through horizon_end, inclusive, sorted ascending by period. A period explicitly represented as INSUFFICIENT_DATA or UNAVAILABLE appears as a null-valued analytical/scenario entry using the per-period schema. A calendar year for which no baseline forecast record exists is not fabricated and is omitted. These null entries still belong to the selected horizon and do not change the horizon_end definition; they simply make horizon-end gap reduction non-computable when the final record is not eligible.
 
 For partial baseline availability, the simulator returns available baseline periods plus null-valued period entries for baseline periods that are explicitly present but INSUFFICIENT_DATA or UNAVAILABLE, following the per-period schema above.
+
+### Required simulator test cases
+
+At minimum, Issue #19 must test: (1) a normal sufficient horizon; (2) no baseline forecast period; (3) omitted horizon_end where the latest existing baseline record is INSUFFICIENT_DATA, which must keep both reduction fields null and set simulation_note_code=BASELINE_INSUFFICIENT_DATA (or the applicable higher-priority note when multiple conditions apply); (4) an ineligible gap; and (5) cohort-after-horizon.
 
 ### Insufficient-data behaviour
 
@@ -845,6 +847,7 @@ Frontend developers consume only the documented schemas in this document and the
 | Early-warning taxonomy/rules/ranking | #17 |
 | Emerging-skill detection and output fields | #18 |
 | Simulator implementation | #19 |
+| Simulator frontend presentation | #29 |
 | Model evaluation metrics | #22 |
 | AI planning brief implementation/provider behaviour | #23 |
 
