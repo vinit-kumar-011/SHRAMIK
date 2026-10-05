@@ -22,7 +22,7 @@ This issue is **design only**.
 
 The database supports a **national heterogeneous observation model**. Source observations may exist at State, District, Sector, Skill, or combined geography/occupation grains. Missing dimensions are represented as NULL and are never fabricated.
 
-The detailed MVP forecast result remains District × Skill × Forecast Period for API/ML stability. National, State, District and Sector dashboard views are deterministic rollups of supported analytical results.
+The detailed MVP forecast result remains District × Skill × Forecast Period, with analysis_mode as a separate required identity dimension for result selection and uniqueness. National, State, District and Sector dashboard views are deterministic rollups of supported analytical results.
 
 A canonical skill/job role still belongs to exactly one canonical sector.
 
@@ -543,7 +543,7 @@ This is the main persisted analytical record corresponding to the Issue #5 contr
 
 A row represents:
 
-**District × Skill × Forecast Period × Model Version**
+**District × Skill × Forecast Period × Analysis Mode × Model Version × Contract Version**
 
 Sector is obtained through:
 
@@ -634,25 +634,25 @@ Structural checks:
 
 A forecast result is logically unique for:
 
-**District × Skill × Forecast Period × Model Version × Contract Version**
+**District × Skill × Forecast Period × Analysis Mode × Model Version × Contract Version**
 
 Database uniqueness:
 
-- For SUFFICIENT rows (`model_version_id` is non-null): UNIQUE(district_id, skill_id, period_type, period_year, model_version_id, contract_version).
-- For non-SUFFICIENT rows (`model_version_id` is null): a partial unique index must enforce UNIQUE(district_id, skill_id, period_type, period_year, contract_version) WHERE model_version_id IS NULL. This prevents NULL model-version rows from duplicating on rerun.
+- For SUFFICIENT rows (`model_version_id` is non-null): UNIQUE(district_id, skill_id, period_type, period_year, analysis_mode, model_version_id, contract_version).
+- For non-SUFFICIENT rows (`model_version_id` is null): a partial unique index must enforce UNIQUE(district_id, skill_id, period_type, period_year, analysis_mode, contract_version) WHERE model_version_id IS NULL. This prevents NULL model-version rows from duplicating on rerun.
 - `calculation_run_id` identifies the analytical run that produced the result. Recalculating the same logical result must upsert/update that row with the latest run identifier rather than silently create a duplicate.
 
 ### Active forecast rule
 
 Multiple model results may be stored for evaluation, but at most one result is active for a given:
 
-**District × Skill × Forecast Period**
+**District × Skill × Forecast Period × Analysis Mode**
 
 The database should implement this using a partial unique index on:
 
-(district_id, skill_id, period_type, period_year) WHERE is_active = true
+(district_id, skill_id, period_type, period_year, analysis_mode) WHERE is_active = true
 
-This lets the evaluation pipeline compare models without allowing the API to accidentally expose multiple "selected" forecasts for the same analytical period.
+This lets the evaluation pipeline compare models without allowing the API to accidentally expose multiple "selected" forecasts for the same analytical period and mode. An OFFICIAL active result and a DEMO active result may therefore coexist for the same district, skill, and period.
 
 ### Important denormalization note
 
@@ -853,10 +853,10 @@ Initial indexes should target actual backend query patterns rather than every co
 
 ### Analytical indexes
 
-- forecast_results(district_id, skill_id, period_year)
-- forecast_results(skill_id, period_year)
+- forecast_results(district_id, skill_id, period_year, analysis_mode)
+- forecast_results(skill_id, period_year, analysis_mode)
 - partial unique index for active forecasts:
-  (district_id, skill_id, period_type, period_year) WHERE is_active = true
+  (district_id, skill_id, period_type, period_year, analysis_mode) WHERE is_active = true
 - emerging_skill_signals(district_id, skill_id, period_year)
 - early_warnings(detected_period, is_active)
 
@@ -895,7 +895,7 @@ The database must reject:
 - SUFFICIENT forecast rows without a model version
 - forecasts whose model cutoff is not earlier than the forecast period (trigger-enforced)
 - invalid reason_code/data_status combinations
-- more than one active forecast for the same District × Skill × Period
+- more than one active forecast for the same District × Skill × Period × Analysis Mode
 - evidence links that point to zero or multiple targets
 
 ### 17.1 Enforcement boundary
@@ -906,6 +906,7 @@ The following enforcement split is authoritative for Issue #8:
 |---|---|
 | Stable controlled values listed in Section 17.2 | PostgreSQL CHECK constraints |
 | `analysis_mode = OFFICIAL` → `provenance_state = SOURCE_BACKED` | PostgreSQL CHECK |
+| `analysis_mode = DEMO` with any documented analytical-output provenance state | Allowed; mode and provenance are independent dimensions |
 | Synthetic observation requires generation_run_id | PostgreSQL CHECK + FK |
 | Source-backed observation requires source_id | PostgreSQL CHECK |
 | Forecast model cutoff < forecast period | PostgreSQL trigger on forecast INSERT/UPDATE |
@@ -1039,7 +1040,7 @@ These diagnostics remain inside the contract JSONB object rather than being dupl
 
 ### 20.3 Demo provenance
 
-The forecast_results analysis_mode and provenance_state fields distinguish official/source-backed outputs from DEMO outputs that use synthetic history. Confidence and history diagnostics follow Issue #5 v1.1.
+The forecast_results analysis_mode and provenance_state fields are separate dimensions. OFFICIAL rows must be SOURCE_BACKED. DEMO rows may be SOURCE_BACKED, SYNTHETIC_DEMO, or MIXED_PROVENANCE according to the observations materially used; DEMO does not by itself imply synthetic data. Confidence and history diagnostics follow Issue #5 v1.1.
 
 ### 20.4 Gap eligibility and status precedence
 
@@ -1063,7 +1064,7 @@ Backend responsibilities include:
 - joins between district/skill/sector data
 - selection of the active forecast
 - conversion of period_year to contract period
-- human-readable error/reason messages
+- human-readable error messages; analytical insufficiency remains the documented machine-readable `reason_code`
 - pagination/filtering
 - aggregation for dashboard views
 - hiding internal IDs/metadata where appropriate
@@ -1113,6 +1114,7 @@ The following are **not database-design blockers**:
 | Early-warning rules/severity | #17 |
 | Emerging-skill detection thresholds | #18 |
 | Simulator implementation details | #19 |
+| Model-evaluation implementation, metrics, and any evaluation-result storage | #22 |
 
 The schema provides stable storage for these outputs without embedding unresolved methodology.
 
@@ -1139,7 +1141,7 @@ The schema provides stable storage for these outputs without embedding unresolve
 - [x] Forecast result structure mapped to Issue #5
 - [x] Provenance-aware demo mode and gap eligibility mapped
 - [x] Model/version metadata defined
-- [x] Multiple-model evaluation storage supported
+- [x] Multiple forecast-model results may be stored for comparison; evaluation metrics storage is deferred to Issue #22
 - [x] Active forecast selection rule defined
 - [x] Emerging-skill storage separated from forecast/gap path
 - [x] Early-warning storage boundary defined

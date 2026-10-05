@@ -76,6 +76,15 @@ The core analytical loop is:
          FORECAST + GAP outputs
                   │
                   ▼
+        ┌──────────────────┐
+        │ ANALYTICAL       │
+        │ PERSISTENCE      │
+        │ forecasts /      │
+        │ signals /        │
+        │ warnings         │
+        └────────┬─────────┘
+                 │
+                 ▼
          ┌──────────────────┐
          │ WHAT-IF          │
          │ SIMULATOR        │
@@ -118,6 +127,8 @@ Emerging-skill detection therefore does **not** require a forecast-gap result. I
 Confidence is computed **per forecast/gap result** for each location + skill + forecast period. Early-warning logic consumes that confidence. Low-confidence results are downgraded to watch-level behaviour where appropriate.
 
 The What-If Simulator is **not downstream of Early Warning or Emerging Skill Detection**. It consumes the baseline forecast/gap outputs plus user-provided scenario inputs.
+
+The analytical pipeline persists validated forecast results, early warnings, and emerging-skill signals to the evidence store. FastAPI reads these persisted results for analytical GET endpoints; it must not calculate, rerun, or persist forecasts during a GET request.
 
 ### Critical LLM rule
 
@@ -591,6 +602,8 @@ Confidence + evidence (per result)
    ↓
 Early-warning rules
    ↓
+Persist forecast results + early warnings
+   ↓
 API response
    ↓
 Frontend visualization
@@ -604,6 +617,8 @@ Canonical historical demand/supply series
 Recent-vs-historical analysis
    ↓
 Emerging-skill status/score
+   ↓
+Persist emerging-skill signal
    ↓
 API response
    ↓
@@ -645,11 +660,11 @@ Do not depend on:
 
 ### Backend ↔ ML
 
-ML/analytics modules should return structured Python objects/data structures that the backend can validate and serialize.
+ML/analytics modules produce validated structured outputs and persist the resulting forecasts, early warnings, and emerging-skill signals. FastAPI reads those persisted outputs and serializes them for the API.
 
 The backend owns API concerns.
 
-The ML layer owns analytical calculations.
+The ML/analytical pipeline owns analytical calculations and persistence of its analytical outputs.
 
 ### Backend ↔ Database
 
@@ -713,6 +728,8 @@ The final structures are specified in **Issue #4**, but the architecture reserve
 | AI planning brief | `POST /api/generate-brief` |
 
 These are **contract candidates**, not permission to implement undocumented behaviour. Issue #4 finalizes request/response details.
+
+Model-evaluation implementation, metric definitions, and any evaluation-result storage are deferred to Issue #22. The reserved endpoint must not lead to a placeholder metrics table or fabricated evaluation data in the first implementation slice.
 
 ---
 
@@ -959,6 +976,7 @@ For MVP, the team agrees that:
 - SHRAMIK is a planner-facing decision-support platform.
 - Backend APIs are the integration boundary.
 - ML is a separate analytical layer.
+- The ML/analytical pipeline persists forecasts, early warnings, and emerging-skill signals; analytical GET endpoints read them and never calculate or persist them.
 - PostgreSQL/Supabase is the structured evidence store.
 - The frontend does not own analytical calculations.
 - Demand and supply gap calculations use common-unit headcount quantities, not normalized indices.
