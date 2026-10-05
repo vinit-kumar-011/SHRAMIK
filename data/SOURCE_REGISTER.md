@@ -1,5 +1,7 @@
 # SHRAMIK Canonical Dataset Build
 
+> **National-model reconciliation:** This register is now a source audit for a national LMIS. Odisha findings are pilot/source-adapter evidence only. The authoritative heterogeneous observation model is `docs/data/SHRAMIK_NATIONAL_DATA_MODEL.md`.
+
 **Purpose:** Execution register for the canonical development dataset.  
 **Reference plan:** `docs/data/SHRAMIK_CANONICAL_DATASET_PLAN.md`  
 **Status:** Source audit in progress.
@@ -8,11 +10,11 @@
 
 Before extracting any observations, prove that an official source supports the target grain:
 
-**District × Sector × Skill × Year**
+**National capability-aware observation grain** (STATE / STATE_SECTOR / STATE_SKILL / STATE_SECTOR_SKILL / DISTRICT / DISTRICT_SECTOR / DISTRICT_SKILL / DISTRICT_SECTOR_SKILL)
 
 Do not manufacture `skill_id` values merely to force a source into the target grain.
 
-If the source only supports District × Occupation Group × Year, stop and reconcile Issues #2 and #5 before dependent ingestion/ML work.
+If the source supports only an aggregate grain, preserve that grain. Do not invent skill IDs. Use the source only for analytical capabilities that its actual grain supports.
 
 ## 2. Official source register
 
@@ -181,14 +183,15 @@ Continue looking for:
 - or another official Odisha demand source with a stable multi-year occupation/skill grain.
 
 If none is found, revise the forecasting contract to forecast the defensible district-level demand signal and use skill-level supply/capacity as a separate analytical layer.
-## 2D. Final demand-source finding (2026-10-05)\n\n### Official vacancy reporting is occupation-coded\n\nThe current Odisha vacancy-reporting form used by Career Centres contains fields for:\n- NIC Code of the establishment\n- NCO Code of the post\n- Unique Vacancy ID\n- Career Centre receiving the vacancy\n- date of receipt\n\nThis is strong evidence that the official vacancy system has an occupation-coded representation compatible with the SHRAMIK NCO taxonomy.\n\nHowever, the publicly accessible historical district pages inspected expose aggregate employment-market statistics rather than the underlying occupation-coded vacancy rows. Therefore the occupation-level demand dataset is **architecturally plausible but not publicly verified as an extractable historical dataset**.\n\n### Decision\n\nDo not abandon NCO-2015 or fabricate occupation-level demand.\n\nUse a two-tier demand strategy:\n1. **Primary target:** obtain an official occupation/NCO-coded vacancy export or historical EMI report if accessible.\n2. **Defensible fallback:** use District × Year employment-market demand (vacancy outstanding / registrations / placements) for the official forecasting baseline, while keeping skill/trade supply and capacity as separate analytical layers.\n\nThe fallback must not be described as a skill-level labour shortage.\n\n### Current canonical-data status\n\n- Official current vacancy system: occupation-coded via NCO — **confirmed**.\n- Public historical district demand statistics: District × Year — **confirmed**.\n- Public historical District × Skill × Year vacancy series — **not confirmed**.\n- Skill/trade supply and capacity: District × ITI × Trade and institute/year placement sources — **confirmed**.\n- Synthetic historical skill demand: **prohibited** unless explicitly labelled SYNTHETIC_DEMO and excluded from official-history claims.\n\nAt this point the dataset build has enough evidence to proceed with a real official-data MVP, but the exact ML target must follow the confirmed grain rather than the original aspirational grain.\n## 3. First extraction target
+## 2D. Final demand-source finding (2026-10-05)\n\n### Official vacancy reporting is occupation-coded\n\nThe current Odisha vacancy-reporting form used by Career Centres contains fields for:\n- NIC Code of the establishment\n- NCO Code of the post\n- Unique Vacancy ID\n- Career Centre receiving the vacancy\n- date of receipt\n\nThis is strong evidence that the official vacancy system has an occupation-coded representation compatible with the SHRAMIK NCO taxonomy.\n\nHowever, the publicly accessible historical district pages inspected expose aggregate employment-market statistics rather than the underlying occupation-coded vacancy rows. Therefore the occupation-level demand dataset is **architecturally plausible but not publicly verified as an extractable historical dataset**.\n\n### Decision\n\nDo not abandon NCO-2015 or fabricate occupation-level demand.\n\nUse a two-tier demand strategy:\n1. **Primary target:** obtain an official occupation/NCO-coded vacancy export or historical EMI report if accessible.\n2. **Defensible fallback:** use District × Year employment-market demand (vacancy outstanding / registrations / placements) for the official forecasting baseline, while keeping skill/trade supply and capacity as separate analytical layers.\n\nThe fallback must not be described as a skill-level labour shortage.\n\n### Current canonical-data status\n\n- Official current vacancy system: occupation-coded via NCO — **confirmed**.\n- Public historical district demand statistics: District × Year — **confirmed**.\n- Public historical District × Skill × Year vacancy series — **not confirmed**.\n- Skill/trade supply and capacity: District × ITI × Trade and institute/year placement sources — **confirmed**.\n- Synthetic historical skill demand: **prohibited** unless explicitly labelled SYNTHETIC_DEMO and excluded from official-history claims.\n\nAt this point the dataset build has enough evidence to proceed with a real official-data MVP, but the exact ML target must follow the confirmed grain rather than the original aspirational grain.\n## 3. Pilot extraction target
 
 Start with a deliberately small Odisha subset:
 
-- 3–5 districts, selected by actual source-backed availability
-- 3–5 sectors only where defensible mappings exist
+- a few States selected by source-backed availability
+- 2–4 sectors only where defensible mappings exist
 - multiple skills/job roles only where the source grain supports them
 - 3–5 usable historical years where source-backed data exists
+- at least one source adapter plus the hackathon dummy-data adapter
 
 Candidate districts from the plan are only a starting investigation list:
 
