@@ -1,7 +1,7 @@
 # SHRAMIK ML Output Contract
 
 **Issue:** #5 — Define SHRAMIK ML output contract
-**Status:** Draft v1.0 — implementation contract
+**Status:** v1.1 — implementation contract
 **Owner:** Lead
 **Branch:** feature/ml-output-contract
 
@@ -37,10 +37,12 @@ For the MVP, each canonical skill/job role maps to exactly one canonical sector.
 
 ## 3. Canonical Analytical Record
 
-Representative output:
+Representative **OFFICIAL/source-backed** output:
 
     {
-      "contract_version": "1.0",
+      "contract_version": "1.1",
+      "analysis_mode": "OFFICIAL",
+      "provenance_state": "SOURCE_BACKED",
       "district_id": "OD-KHD",
       "sector_id": "RENEWABLE_ENERGY",
       "skill_id": "SOLAR_PV_TECHNICIAN",
@@ -53,12 +55,17 @@ Representative output:
       "supply_index": 55.1,
       "forecast_demand": 1250,
       "forecast_supply": 900,
+      "gap_eligible": true,
+      "gap_eligibility_reason": null,
       "gap": 350,
       "status": "SHORTAGE",
       "forecast_uncertainty": null,
       "confidence_level": "MEDIUM",
       "confidence_inputs": {
         "history_periods": 4,
+        "total_history_periods": 4,
+        "synthetic_history_periods": 0,
+        "is_contiguous": true,
         "data_coverage": 0.92,
         "data_freshness_days": 45,
         "forecast_error": 0.14,
@@ -74,19 +81,51 @@ Representative output:
       }
     }
 
-The numbers, years, IDs, and model metadata in this example are illustrative only. The system must derive forecast periods from the actual canonical dataset and configured forecast horizon; 2027 is not a hard-coded forecast year.
+Representative **DEMO/mixed-provenance** output pattern when source-backed history is too short:
 
+    {
+      "contract_version": "1.1",
+      "analysis_mode": "DEMO",
+      "provenance_state": "MIXED_PROVENANCE",
+      "district_id": "OD-KHD",
+      "sector_id": "RENEWABLE_ENERGY",
+      "skill_id": "SOLAR_PV_TECHNICIAN",
+      "period_type": "YEAR",
+      "period": "2027",
+      "data_status": "SUFFICIENT",
+      "demand_quantity": 1250,
+      "supply_quantity": 900,
+      "forecast_demand": 1310,
+      "forecast_supply": 940,
+      "gap_eligible": true,
+      "gap_eligibility_reason": null,
+      "gap": 370,
+      "status": "SHORTAGE",
+      "confidence_level": "MEDIUM",
+      "confidence_inputs": {
+        "history_periods": 2,
+        "total_history_periods": 5,
+        "synthetic_history_periods": 3,
+        "is_contiguous": true
+      }
+    }
+
+The DEMO record is intentionally not source-backed even though it is computationally sufficient. Its provenance_state and analysis_mode make the distinction explicit. Its confidence cannot exceed MEDIUM because synthetic observations contributed.
+
+The numbers, years, IDs, and model metadata in these examples are illustrative only. The system must derive forecast periods from the actual canonical dataset and configured forecast horizon; 2027 is not a hard-coded forecast year.
 ## 4. Field Definitions
 
 | Field | Type | Required | Unit / Scale | Meaning |
 |---|---|---:|---|---|
 | contract_version | string | Yes | semantic version | Contract version |
+| analysis_mode | enum | Yes | OFFICIAL/DEMO | Execution mode used to produce the result |
+| provenance_state | enum | Yes | SOURCE_BACKED/SYNTHETIC_DEMO/MIXED_PROVENANCE | Provenance of the historical data materially used by the result |
 | district_id | string | Yes | ID | Canonical district |
 | sector_id | string | Yes | ID | Canonical sector |
 | skill_id | string | Yes | ID | Canonical skill/job role |
 | period_type | enum | Yes | YEAR | MVP time granularity |
 | period | string | Yes | YYYY | Analytical/forecast period |
-| data_status | enum | Yes | status | Result/data availability |
+| data_status | enum | Yes | status | Computational data/result availability |
 | reason_code | enum/null | Required when data_status is not SUFFICIENT; null otherwise | machine-readable code | Why the result is insufficient/unavailable |
 | demand_quantity | number/null | Yes | headcount | Latest usable observed demand feeding the forecast |
 | supply_quantity | number/null | Yes | headcount | Latest usable observed supply feeding the forecast |
@@ -94,14 +133,15 @@ The numbers, years, IDs, and model metadata in this example are illustrative onl
 | supply_index | number/null | Yes | 0–100 | Display/ranking indicator |
 | forecast_demand | number/null | Yes | headcount | Forecast demand |
 | forecast_supply | number/null | Yes | headcount | Forecast supply |
-| gap | number/null | Yes | headcount | Demand forecast minus supply forecast |
-| status | enum/null | Yes | classification | SHORTAGE/BALANCED/OVERSUPPLY/NO_DEMAND |
+| gap_eligible | boolean/null | Yes | boolean | Whether demand and supply signals are comparable for the gap calculation |
+| gap_eligibility_reason | enum/null | Required when gap_eligible=false; null otherwise | machine-readable code | Why a comparable gap cannot be calculated |
+| gap | number/null | Yes | headcount | Forecast demand minus forecast supply when gap_eligible=true |
+| status | enum/null | Yes | classification | SHORTAGE/BALANCED/OVERSUPPLY/NO_DEMAND when gap_eligible=true |
 | forecast_uncertainty | object/null | Optional | interval | Defensible uncertainty bounds |
 | confidence_level | enum/null | Yes | HIGH/MEDIUM/LOW | Trust classification |
 | confidence_inputs | object/null | Optional | mixed | Inputs used by confidence layer |
 | evidence_coverage | number/null | Yes | 0–1 | Evidence support measure |
 | model | object/null | Required with forecast | metadata | Model and cutoff metadata |
-
 ## 5. Data Status
 
 data_status allowed values:
@@ -112,9 +152,41 @@ data_status allowed values:
 
 Meaning:
 
-- SUFFICIENT — enough usable information exists for the requested result.
-- INSUFFICIENT_DATA — required history/source data is insufficient.
+- SUFFICIENT — required computational inputs are available for the requested result under the declared analysis_mode.
+- INSUFFICIENT_DATA — required computational history/source data is insufficient under the declared analysis_mode.
 - UNAVAILABLE — a required dependency, source, or model is unavailable.
+
+analysis_mode allowed values:
+
+- OFFICIAL — synthetic observations are never used by the forecasting computation.
+- DEMO — synthetic observations may be used to complete a demonstrable forecast series when source-backed history is too short.
+
+provenance_state describes the data actually used:
+
+- SOURCE_BACKED — all historical observations materially used by the result are source-backed.
+- SYNTHETIC_DEMO — all historical observations materially used are synthetic/demo.
+- MIXED_PROVENANCE — both source-backed and synthetic observations materially contribute.
+
+The provenance state is mandatory because data_status = SUFFICIENT must never imply that a result is based entirely on official observations.
+
+### Mode-specific minimum-history rule
+
+In OFFICIAL mode:
+
+- only source-backed usable observations count toward forecast eligibility
+- MIN_FORECAST_HISTORY = 3 remains the provisional MVP minimum
+- a series below the minimum returns INSUFFICIENT_DATA
+
+In DEMO mode:
+
+- the model may use source-backed and synthetic observations together
+- total_history_periods is the number of usable observations actually supplied to the forecasting model
+- history_periods remains the number of source-backed usable observations
+- synthetic_history_periods is the number of synthetic usable observations supplied to the model
+- forecast eligibility uses total_history_periods >= MIN_FORECAST_HISTORY
+- the result must be labelled with the appropriate provenance_state
+
+This keeps the prototype demonstrable without allowing fabricated years to masquerade as official history.
 
 ### Precedence
 
@@ -122,6 +194,8 @@ If data_status is not SUFFICIENT:
 
 - forecast_demand = null
 - forecast_supply = null
+- gap_eligible = null
+- gap_eligibility_reason = null
 - gap = null
 - status = null
 - confidence_level = null
@@ -129,9 +203,9 @@ If data_status is not SUFFICIENT:
 - evidence_coverage = null
 - model = null
 
-Historical demand_quantity and supply_quantity may remain non-null when those observed values are available, because descriptive historical/trend views may still use them.
+Historical demand_quantity and supply_quantity may remain non-null when those observed values are available.
 
-confidence_inputs may remain non-null only as diagnostic metadata when some inputs are known. At minimum, history_periods must be populated when the history count is known so the backend/UI can explain an insufficient-history result. These diagnostics do not constitute a confidence score and must not be used to display a confidence level while data_status is not SUFFICIENT.
+confidence_inputs may remain non-null as diagnostics when some inputs are known.
 
 A valid request with insufficient history is normally HTTP 200, not an API error.
 
@@ -151,9 +225,7 @@ Initial values:
 - MODEL_UNAVAILABLE
 - MODEL_FAILURE
 
-For SUFFICIENT results, reason_code must be null unless a separately documented informational code is introduced.
-
-For non-SUFFICIENT results, reason_code is required.
+For SUFFICIENT results, reason_code must be null.
 
 Valid mappings for MVP:
 
@@ -161,9 +233,6 @@ Valid mappings for MVP:
 - UNAVAILABLE → SOURCE_UNAVAILABLE, MODEL_UNAVAILABLE, or MODEL_FAILURE
 
 A validator must reject reason_code/data_status combinations outside these mappings.
-
-This is the machine-readable reason; the backend/API layer converts it into human-readable text for clients. Because data_status and reason_code are both returned, consumers can distinguish INSUFFICIENT_DATA from UNAVAILABLE without inferring from null fields.
-
 ## 6. Demand and Supply Quantities
 
 demand_quantity:
@@ -228,24 +297,47 @@ MVP configuration:
 
 MIN_FORECAST_HISTORY = 3 usable yearly observations
 
-This is provisional and must be validated against the canonical dataset in Issue #7.
+This is provisional and must be validated against the **source-backed** canonical dataset in Issue #7.
 
-Configuration belongs under ml/config.
+A source-backed usable yearly observation:
 
-A **usable yearly observation** is an observation that has a valid year, a non-null required demand/supply value needed by the selected forecast, passes the ingestion/validation rules, and is not otherwise excluded by the data-quality pipeline.
+- has a valid year
+- has a non-null required demand/supply value needed by the selected forecast
+- passes ingestion/validation rules
+- is not otherwise excluded by the data-quality pipeline
+- is source-backed
 
-Only usable observations count toward MIN_FORECAST_HISTORY.
+A computationally usable observation follows the same validation rules but may be synthetic when analysis_mode = DEMO.
 
-With fewer than the configured minimum:
+Only source-backed observations count toward official history coverage and the evidence-based recommendation for MIN_FORECAST_HISTORY.
+
+When OFFICIAL mode has fewer than the configured minimum source-backed observations:
 
 - do not produce a forecast
 - set data_status = INSUFFICIENT_DATA
-- set forecast fields and analytical gap/status to null
-- expose a reason in the API-facing layer
-- allow a first-class descriptive historical-trend view where enough descriptive data exists
-- never label a descriptive trend as a forecast
+- set forecast fields and gap/status to null
+- expose reason_code = INSUFFICIENT_HISTORY
+- allow a descriptive historical view where appropriate
+
+When DEMO mode reaches the configured minimum using synthetic observations:
+
+- a forecast may be produced
+- provenance_state must show SYNTHETIC_DEMO or MIXED_PROVENANCE
+- history_periods remains source-backed count
+- total_history_periods reflects the full computational history
+- synthetic history must not increase the confidence/history evidence used to claim official coverage
 
 Annual data must not be fabricated into monthly or quarterly observations.
+## 9.1 Validated History and Contiguity
+
+For the minimum-history count, usable observations do **not** have to be consecutive. For example, 2021, 2022, and 2024 are three usable years, but the series is marked non-contiguous because 2023 is missing.
+
+The forecasting engine must receive the actual observed years and must not silently fabricate missing periods.
+
+- The naive last-value baseline may operate on non-contiguous annual observations when the latest usable observation is valid.
+- Trend/growth models that require regular intervals must enforce their own contiguity requirement or use a separately documented missing-period method.
+- A missing year never becomes an observed year merely because a model requires regular spacing.
+- Diagnostic output should expose is_contiguous when the period sequence is known.
 
 ## 10. Forecast Baseline
 
@@ -285,22 +377,49 @@ Rules:
 
 ## 12. Gap
 
-gap is:
+The mathematical gap is:
 
 **Forecast Demand − Forecast Supply**
 
 Unit:
 
-**headcount**
+**headcount-style quantity**
 
-Rules:
+The field name gap is retained for contract stability. It is **not automatically a literal labour-force shortage**.
 
-- positive gap = shortage pressure
-- approximately zero = balanced
-- negative gap = oversupply pressure
+For the prototype, when the underlying signals are notified vacancies versus annual training completions, the resulting value is a:
 
-Gap must use forecast quantities, never normalized indices.
+**skill-pipeline pressure indicator**
 
+not a direct estimate of the number of workers the labour market is short of.
+
+### Gap eligibility
+
+gap_eligible indicates whether the demand and supply signals are comparable enough for this calculation.
+
+When gap_eligible = true:
+
+- gap = forecast_demand - forecast_supply
+- status may be calculated using the configured thresholds
+
+When gap_eligible = false:
+
+- forecast_demand may remain populated
+- forecast_supply may remain populated
+- gap = null
+- status = null
+- gap_eligibility_reason is required
+
+Initial reason values:
+
+- INCOMPATIBLE_UNIT
+- INCOMPATIBLE_FLOW_STOCK
+- INCOMPATIBLE_TIME_BASIS
+- INCOMPATIBLE_GEOGRAPHY
+- INCOMPATIBLE_OCCUPATION_SCOPE
+- INCOMPATIBLE_SIGNALS
+
+The gap engine must not fabricate a comparable gap when eligibility fails.
 ## 13. Status
 
 status allowed values:
@@ -309,14 +428,17 @@ status allowed values:
 - BALANCED
 - OVERSUPPLY
 - NO_DEMAND
-- null when data_status is not SUFFICIENT
+- null when data_status is not SUFFICIENT or gap_eligible = false
 
-status is the analytical labour-market classification.
+status is the analytical labour-market classification **only when a comparable gap exists**.
 
 data_status is data/result availability.
 
-They are separate fields.
+gap_eligible is comparability for the gap layer.
 
+provenance_state is provenance of the data used.
+
+These are separate dimensions.
 ## 14. Gap Threshold Configuration
 
 Initial configuration location:
@@ -369,7 +491,10 @@ It is not a probability.
 Representative confidence_inputs:
 
     {
-      "history_periods": 4,
+      "history_periods": 2,
+      "total_history_periods": 5,
+      "synthetic_history_periods": 3,
+      "is_contiguous": true,
       "data_coverage": 0.92,
       "data_freshness_days": 45,
       "forecast_error": 0.14,
@@ -377,17 +502,23 @@ Representative confidence_inputs:
       "source_count": 3
     }
 
-The exact scoring formula is owned by Issue #16.
-
 Required semantics:
 
-- history_periods: integer >= 0
+- history_periods: integer >= 0; **source-backed usable history count**
+- total_history_periods: integer >= 0; total usable history actually supplied to the model
+- synthetic_history_periods: integer >= 0; synthetic usable history supplied to the model
+- is_contiguous: boolean/null; whether the observed periods used for the model are consecutive
 - data_coverage: 0–1
 - data_freshness_days: integer/null >= 0
 - forecast_error: number/null >= 0
 - uncertainty_available: boolean
 - source_count: integer/null >= 0
 
+The exact confidence scoring formula is owned by Issue #16.
+
+history_periods must not be redefined to include synthetic observations.
+
+total_history_periods exists specifically so demo-mode model inputs are transparent.
 ## 18. Minimum-History Confidence Cap
 
 Configuration belongs under ml/config.
@@ -397,15 +528,22 @@ MVP settings:
 MIN_FORECAST_HISTORY = 3
 HIGH_CONFIDENCE_MIN_HISTORY = 5
 
-Therefore:
+The confidence cap is based on source-backed history, not synthetic history:
 
-- count only usable periods after validation/exclusion rules
-- 3–4 usable periods → maximum confidence is MEDIUM
-- 5+ usable periods → HIGH is allowed only when other confidence inputs support it
+- 0–2 source-backed periods → HIGH is not allowed; other evidence/model factors determine whether the result is LOW or MEDIUM in DEMO mode
+- 3–4 source-backed periods → maximum confidence is MEDIUM
+- 5+ source-backed periods → HIGH is allowed only when other confidence inputs support it
 - weak evidence or poor forecast quality can still produce LOW
 
-This makes the minimum/near-minimum-history rule explicit and configurable.
+Additional provenance cap:
 
+- SOURCE_BACKED → normal confidence rules apply
+- MIXED_PROVENANCE → maximum confidence is MEDIUM
+- SYNTHETIC_DEMO → maximum confidence is LOW
+
+This prevents synthetic data from increasing confidence merely because the synthetic series was generated with many periods.
+
+In OFFICIAL mode, synthetic history is not present and does not affect confidence.
 ## 19. Evidence Coverage
 
 evidence_coverage:
@@ -475,7 +613,9 @@ Emerging Skill Detection is a separate historical-series path.
 Recommended structure:
 
     {
-      "contract_version": "1.0",
+      "contract_version": "1.1",
+      "analysis_mode": "OFFICIAL",
+      "provenance_state": "SOURCE_BACKED",
       "district_id": "OD-KHD",
       "sector_id": "RENEWABLE_ENERGY",
       "skill_id": "SOLAR_PV_TECHNICIAN",
@@ -497,10 +637,9 @@ emerging_skill_status allowed values:
 
 This enum is separate from data_status.
 
-For v1.1, consider promoting history_periods to a top-level diagnostic field so the same historical-count metadata does not need to be repeated inside module-specific objects.
+For v1.1, provenance_state makes source-backed versus demo historical inputs explicit for emerging-skill outputs as well.
 
 MVP minimum history is 3 usable yearly observations by default. Exact thresholds and configuration are finalized in Issue #18.
-
 ## 23. Simulator Contract Dependencies
 
 The ML contract does not calculate scenario policy recommendations, but the analytical record must expose enough baseline values for the simulator.
@@ -529,15 +668,18 @@ Each period may have its own:
 
 - data_status
 - reason_code
+- analysis_mode
+- provenance_state
 - forecast values
+- gap_eligible
+- gap_eligibility_reason
 - gap
 - confidence
 - uncertainty
 
-Issue #4 defines the multi-period API envelope. It must preserve each period's reason_code so mixed horizons remain explainable.
+Issue #4 defines the multi-period API envelope. It must preserve the per-period provenance and gap-eligibility state so mixed horizons remain explainable.
 
-The ML contract is intentionally **period-level**: a later forecast period may have a different data_status/confidence from an earlier period. The multi-period API must preserve those per-period states rather than collapsing a mixed horizon into one global confidence/status.
-
+The ML contract is intentionally **period-level**: a later forecast period may have different data_status, provenance, or confidence from an earlier period. The multi-period API must preserve those per-period states rather than collapsing a mixed horizon into one global status.
 ## 25. Compatibility Rules
 
 Backward-compatible:
@@ -566,7 +708,7 @@ MAJOR.MINOR
 Examples:
 
 - 1.0 = initial contract
-- 1.1 = backward-compatible optional additions
+- 1.1 = provenance, demo-mode, gap-eligibility and history diagnostics
 - 2.0 = breaking change
 
 Model version is separate from contract version.
@@ -595,26 +737,34 @@ Before committing AI-generated ML code, the developer must verify the returned s
 - [x] Forecast outputs defined
 - [x] Baseline uncertainty default defined
 - [x] Gap defined
+- [x] Gap eligibility defined
 - [x] Status enum defined
 - [x] data_status enum defined
-- [x] status/data_status precedence defined
+- [x] analysis mode defined
+- [x] provenance state defined
+- [x] status/data_status/gap eligibility separation defined
 - [x] reason_code semantics defined
+- [x] Incompatible-signal handling defined
 - [x] Insufficient-data behaviour defined
 - [x] Forecast minimum history defined provisionally as 3
+- [x] Official history count separated from demo computational history
+- [x] Non-contiguous history semantics defined
 - [x] Baseline model defined
 - [x] Uncertainty structure defined
 - [x] Confidence representation defined
 - [x] Confidence inputs defined
-- [x] Minimum-history confidence cap defined
+- [x] Provenance-aware confidence cap defined
 - [x] Evidence coverage and data-coverage distinction defined
 - [x] Model metadata/versioning defined
 - [x] Model-vs-business-logic boundary defined
 - [x] Emerging-skill output defined separately
 - [x] Multi-period semantics defined
 - [x] Compatibility rules defined
-- [ ] Exact database field mapping finalized in Issue #2
+- [x] Pressure-indicator wording defined for gap
+- [ ] Exact database field mapping finalized in Issue #42 / schema reconciliation
 - [ ] Exact HTTP envelope finalized in Issue #4
 - [ ] MIN_FORECAST_DEMAND validated from canonical data in Issue #7
+
 
 ## Related Issues
 
