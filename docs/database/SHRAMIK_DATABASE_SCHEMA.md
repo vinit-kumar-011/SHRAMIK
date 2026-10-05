@@ -1,7 +1,7 @@
 # SHRAMIK Database Schema
 
 **Issue:** #2 — Design SHRAMIK database schema  
-**Status:** Updated design reconciliation for provenance-aware data/ML flow  
+**Status:** Final schema reconciliation for provenance-aware data/ML flow  
 **Owner:** Lead  
 **Branch:** feature/database-schema  
 **Implementation:** Issue #8 — Implement SHRAMIK database schema
@@ -118,16 +118,19 @@ erDiagram
     SECTORS ||--o{ SKILLS : classifies
     SKILLS ||--o{ SKILL_TAXONOMY_MAPPINGS : maps_to
     DATA_SOURCES ||--o{ SKILLS : supports_sector_mapping
+    DATA_SOURCES ||--o{ SKILL_TAXONOMY_MAPPINGS : supports_mapping
 
     DISTRICTS ||--o{ DEMAND_OBSERVATIONS : has
     SKILLS ||--o{ DEMAND_OBSERVATIONS : describes
     DATA_SOURCES ||--o{ DEMAND_OBSERVATIONS : supports
     SOURCE_RETRIEVALS ||--o{ DEMAND_OBSERVATIONS : identifies_retrieval
+    EVIDENCE_ITEMS ||--o{ DEMAND_OBSERVATIONS : supports
 
     DISTRICTS ||--o{ SUPPLY_OBSERVATIONS : has
     SKILLS ||--o{ SUPPLY_OBSERVATIONS : describes
     DATA_SOURCES ||--o{ SUPPLY_OBSERVATIONS : supports
     SOURCE_RETRIEVALS ||--o{ SUPPLY_OBSERVATIONS : identifies_retrieval
+    EVIDENCE_ITEMS ||--o{ SUPPLY_OBSERVATIONS : supports
     SYNTHETIC_GENERATION_RUNS ||--o{ DEMAND_OBSERVATIONS : generates
     SYNTHETIC_GENERATION_RUNS ||--o{ SUPPLY_OBSERVATIONS : generates
 
@@ -179,9 +182,10 @@ Canonical district reference.
 | is_active | BOOLEAN | No | Default true |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
-Constraint:
+Constraints:
 
 - UNIQUE(state_id, name)
+- UNIQUE(lgd_district_code)
 
 ### 5.3 sectors
 
@@ -379,9 +383,10 @@ Historical demand signal in compatible worker/position headcount units.
 | period_type | TEXT | No | MVP = YEAR |
 | period_year | SMALLINT | No | 4-digit year |
 | demand_quantity | NUMERIC(14,2) | Yes | Headcount/position quantity; >= 0 |
-| source_id | UUID | No | FK → data_sources.id |
+| source_id | UUID | Yes | FK → data_sources.id; NULL permitted for synthetic observations |
 | source_date | DATE | Yes | Publication date when known; otherwise retrieval date |
 | retrieval_id | UUID | Yes | FK → source_retrievals.id for downloaded resources |
+| evidence_item_id | UUID | Yes | Optional FK → evidence_items.id for row-level source evidence |
 | provenance_state | TEXT | No | SOURCE_BACKED / SYNTHETIC_DEMO |
 | is_synthetic | BOOLEAN | No | Default false |
 | generation_run_id | UUID | Yes | FK → synthetic_generation_runs.id when synthetic |
@@ -389,9 +394,19 @@ Historical demand signal in compatible worker/position headcount units.
 | transformation_note | TEXT | Yes | Required for derived/transformed/synthetic records |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
-Constraint:
+Checks:
 
-- UNIQUE(district_id, skill_id, period_type, period_year, source_id)
+- `source_id IS NOT NULL OR provenance_state = 'SYNTHETIC_DEMO'`.
+- `provenance_state = 'SYNTHETIC_DEMO'` requires `is_synthetic = true`.
+- `provenance_state = 'SOURCE_BACKED'` requires `is_synthetic = false` and `source_id IS NOT NULL`.
+- Synthetic observations require `generation_run_id IS NOT NULL`.
+
+Uniqueness:
+
+- UNIQUE(district_id, skill_id, period_type, period_year, source_id, demand_signal_type) WHERE source_id IS NOT NULL.
+- UNIQUE(district_id, skill_id, period_type, period_year, generation_run_id, demand_signal_type) WHERE source_id IS NULL.
+
+The first index prevents duplicate observations from the same source. The second prevents duplicate synthetic observations from the same generation run while allowing synthetic data to coexist with source-backed observations. Canonical source selection happens in the ingestion/analytics layer.
 
 Why source is part of the uniqueness key:
 
@@ -412,9 +427,10 @@ Historical supply and training context.
 | training_capacity | NUMERIC(14,2) | Yes | Training seats/capacity; >= 0 |
 | enrollment | NUMERIC(14,2) | Yes | Enrolment count; >= 0 |
 | completions | NUMERIC(14,2) | Yes | Completion count; >= 0 |
-| source_id | UUID | No | FK → data_sources.id |
+| source_id | UUID | Yes | FK → data_sources.id; NULL permitted for synthetic observations |
 | source_date | DATE | Yes | Publication date when known; otherwise retrieval date |
 | retrieval_id | UUID | Yes | FK → source_retrievals.id for downloaded resources |
+| evidence_item_id | UUID | Yes | Optional FK → evidence_items.id for row-level source evidence |
 | provenance_state | TEXT | No | SOURCE_BACKED / SYNTHETIC_DEMO |
 | is_synthetic | BOOLEAN | No | Default false |
 | generation_run_id | UUID | Yes | FK → synthetic_generation_runs.id when synthetic |
@@ -422,9 +438,19 @@ Historical supply and training context.
 | transformation_note | TEXT | Yes | Required for derived/transformed/synthetic records |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
-Constraint:
+Checks:
 
-- UNIQUE(district_id, skill_id, period_type, period_year, source_id)
+- `source_id IS NOT NULL OR provenance_state = 'SYNTHETIC_DEMO'`.
+- `provenance_state = 'SYNTHETIC_DEMO'` requires `is_synthetic = true`.
+- `provenance_state = 'SOURCE_BACKED'` requires `is_synthetic = false` and `source_id IS NOT NULL`.
+- Synthetic observations require `generation_run_id IS NOT NULL`.
+
+Uniqueness:
+
+- UNIQUE(district_id, skill_id, period_type, period_year, source_id, supply_signal_type) WHERE source_id IS NOT NULL.
+- UNIQUE(district_id, skill_id, period_type, period_year, generation_run_id, supply_signal_type) WHERE source_id IS NULL.
+
+The first index prevents duplicate observations from the same source. The second prevents duplicate synthetic observations from the same generation run while allowing synthetic data to coexist with source-backed observations. Canonical source selection happens in the ingestion/analytics layer.
 
 Important semantic rule:
 
@@ -444,14 +470,16 @@ Stores immutable metadata for forecast-producing model versions.
 | name | TEXT | No | Example: naive_last_value |
 | version | TEXT | No | Example: v1 |
 | is_baseline | BOOLEAN | No | Default false |
-| trained_through_period | SMALLINT | No | Must be earlier than forecast period |
+| trained_through_period | SMALLINT | No | Training/data cutoff for this immutable model version |
 | contract_version | TEXT | No | ML output contract version |
 | metadata | JSONB | Yes | Optional model details |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
-Constraint:
+Constraints:
 
 - UNIQUE(name, version)
+- A model version is immutable after creation.
+- A new training cutoff/retraining event requires a new `model_versions` row/version; never mutate `trained_through_period` on a version already referenced by forecast results.
 
 MVP baseline:
 
@@ -494,7 +522,7 @@ forecast_results.skill_id → skills.sector_id → sectors.id
 | forecast_demand | NUMERIC(14,2) | Yes | Forecast demand headcount |
 | forecast_supply | NUMERIC(14,2) | Yes | Forecast supply headcount |
 | gap_eligible | BOOLEAN | Yes | Whether demand and supply are comparable for the gap layer |
-| gap_eligibility_reason | TEXT | Yes | Reason when gap_eligible = false |
+| gap_eligibility_reason | TEXT | Yes | Controlled enum: INCOMPATIBLE_UNIT / INCOMPATIBLE_FLOW_STOCK / INCOMPATIBLE_TIME_BASIS / INCOMPATIBLE_GEOGRAPHY / INCOMPATIBLE_OCCUPATION_SCOPE / INCOMPATIBLE_SIGNALS |
 | gap | NUMERIC(14,2) | Yes | forecast_demand - forecast_supply when eligible |
 | status | TEXT | Yes | SHORTAGE / BALANCED / OVERSUPPLY / NO_DEMAND |
 | forecast_uncertainty | JSONB | Yes | Optional validated uncertainty structure |
@@ -502,6 +530,7 @@ forecast_results.skill_id → skills.sector_id → sectors.id
 | confidence_inputs | JSONB | Yes | Diagnostic confidence inputs |
 | evidence_coverage | NUMERIC(5,4) | Yes | 0–1 |
 | model_version_id | UUID | Yes | FK → model_versions.id; required for SUFFICIENT |
+| calculation_run_id | UUID | Yes | Analytical calculation/batch run identifier for reproducibility/audit |
 | is_active | BOOLEAN | No | Default false; selected output for API consumption |
 | calculated_at | TIMESTAMPTZ | No | Calculation timestamp |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
@@ -540,13 +569,32 @@ Structural checks:
 10. If gap_eligible = false:
    - forecast_demand and forecast_supply may remain populated.
    - gap = NULL.
-   - status = NULL.
    - gap_eligibility_reason is required.
-11. When gap is present:
+   - status must be NULL or NO_DEMAND.
+11. If gap_eligible = true:
+   - status may be SHORTAGE, BALANCED, OVERSUPPLY, or NO_DEMAND.
+   - the analytical engine, not the database, determines whether NO_DEMAND applies using the configured MIN_FORECAST_DEMAND policy threshold.
+12. When gap is present:
    - gap = forecast_demand - forecast_supply.
-12. reason_code must be present for non-SUFFICIENT results and NULL for SUFFICIENT results.
-13. reason_code must use the allowed mappings from Issue #5.
-14. The referenced model_versions.trained_through_period must be less than period_year.
+   - gap remains present when status = NO_DEMAND and gap_eligible = true; the simulator may use this baseline gap.
+13. reason_code must be present for non-SUFFICIENT results and NULL for SUFFICIENT results.
+14. reason_code must use the allowed mappings from Issue #5.
+15. gap_eligibility_reason must use the controlled values defined in Issue #5.
+16. `analysis_mode = OFFICIAL` requires `provenance_state = SOURCE_BACKED`; enforce with a row-local PostgreSQL CHECK.
+15. If gap_eligible = false, status must be NULL or NO_DEMAND. If gap_eligible = true, status may be SHORTAGE, BALANCED, OVERSUPPLY, or NO_DEMAND; the engine owns the MIN_FORECAST_DEMAND threshold.
+16. The referenced model_versions.trained_through_period must be less than period_year; enforce with a database trigger in Issue #8.
+
+### Forecast uniqueness and recalculation rule
+
+A forecast result is logically unique for:
+
+**District × Skill × Forecast Period × Model Version × Contract Version**
+
+Database uniqueness:
+
+- For SUFFICIENT rows (`model_version_id` is non-null): UNIQUE(district_id, skill_id, period_type, period_year, model_version_id, contract_version).
+- For non-SUFFICIENT rows (`model_version_id` is null): a partial unique index must enforce UNIQUE(district_id, skill_id, period_type, period_year, contract_version) WHERE model_version_id IS NULL. This prevents NULL model-version rows from duplicating on rerun.
+- `calculation_run_id` identifies the analytical run that produced the result. Recalculating the same logical result must upsert/update that row with the latest run identifier rather than silently create a duplicate.
 
 ### Active forecast rule
 
@@ -577,7 +625,7 @@ This table represents the separate historical-series path defined in Issue #1 an
 | Column | Type | Null | Rules |
 |---|---|---:|---|
 | id | UUID | No | Primary key |
-| contract_version | TEXT | No | Example: 1.0 |
+| contract_version | TEXT | No | Example: 1.1 |
 | district_id | TEXT | No | FK → districts.id |
 | skill_id | TEXT | No | FK → skills.id |
 | period_type | TEXT | No | MVP = YEAR |
@@ -593,12 +641,18 @@ This table represents the separate historical-series path defined in Issue #1 an
 | total_history_periods | INTEGER | Yes | Total usable historical periods supplied to the model |
 | synthetic_history_periods | INTEGER | Yes | Synthetic usable historical periods supplied to the model |
 | is_contiguous | BOOLEAN | Yes | Whether used observed periods are consecutive |
+| calculation_run_id | UUID | Yes | Analytical calculation/batch run identifier for reproducibility/audit |
+| is_active | BOOLEAN | No | Default false; selected result for API consumption |
 | calculated_at | TIMESTAMPTZ | No | Calculation timestamp |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
-Constraint:
+Constraints:
 
 - UNIQUE(district_id, skill_id, period_type, period_year, contract_version)
+- At most one active result for a given District × Skill × Period × Contract Version using a partial unique index:
+  (district_id, skill_id, period_type, period_year, contract_version) WHERE is_active = true.
+- The MVP intentionally stores one logical emerging-skill result per contract version; recalculation does not preserve historical result rows.
+- Recalculation must upsert/update the existing logical result and record the latest calculation_run_id rather than create a duplicate. A future requirement for historical run retention would require adding calculation_run_id to the logical key through a schema revision.
 
 Important:
 
@@ -623,15 +677,22 @@ Stores actionable warning events generated from already-computed analytics.
 | severity | TEXT | No | Severity defined by Issue #17 |
 | detected_period | SMALLINT | No | Year in which warning applies |
 | explanation_code | TEXT | Yes | Machine-readable reason |
+| calculation_run_id | UUID | Yes | Analytical calculation/batch run identifier for reproducibility/audit |
 | is_active | BOOLEAN | No | Default true |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
+
+Constraint:
+
+- UNIQUE(forecast_result_id, warning_type, detected_period)
+
+Recalculation must upsert/update the existing warning for the same logical key and record the latest calculation_run_id; it must not create duplicate warning rows.
 
 The schema intentionally does not hard-code the final warning taxonomy beyond required structural fields. Issue #17 owns warning thresholds, severity rules, and warning types.
 
 Database rule:
 
 - A warning must reference a forecast result.
-- The referenced forecast should not have data_status = INSUFFICIENT_DATA or UNAVAILABLE.
+- The referenced forecast must have data_status = SUFFICIENT; enforce with a database trigger in Issue #8.
 - NO_DEMAND forecast results must not generate shortage/oversupply warnings; the engine enforces this business rule.
 
 ---
@@ -708,8 +769,8 @@ The final canonical dataset rules are owned by Issue #7.
 | district → state | Every district belongs to one state |
 | skill → sector | Every canonical skill belongs to exactly one sector |
 | taxonomy mapping → skill | Every external mapping references one canonical skill |
-| demand observation → district/skill/source | All must exist before observation is accepted |
-| supply observation → district/skill/source | All must exist before observation is accepted |
+| demand observation → district/skill | District and skill must exist; source is required only for source-backed observations |
+| supply observation → district/skill | District and skill must exist; source is required only for source-backed observations |
 | forecast → district/skill/model | All must exist for a usable forecast |
 | forecast → provenance/analysis mode | Provenance state and execution mode are explicit |
 | source retrieval → source | Every retrieval belongs to one source |
@@ -756,8 +817,8 @@ Initial indexes should target actual backend query patterns rather than every co
 
 ### Provenance indexes
 
-- source_retrievals(source_id, retrieved_at)
-- synthetic_generation_runs(generator_name, generator_version)
+The source_retrievals and synthetic_generation_runs indexes are already listed under Reference indexes above. Additional provenance indexes:
+
 - evidence_items(source_id, observed_period)
 - evidence_links(evidence_item_id)
 - evidence_links(forecast_result_id)
@@ -775,7 +836,9 @@ The database must reject:
 - duplicate canonical district/state/sector/skill codes
 - references to unknown districts/sectors/skills/sources
 - synthetic observations without a generation run
+- source-backed observations without source_id
 - source-backed downloaded observations without a retrieval record
+- invalid provenance/mode combinations
 - negative quantities where the metric is defined as non-negative
 - malformed year values
 - invalid index/confidence/evidence ranges
@@ -785,10 +848,49 @@ The database must reject:
 - synthetic observations without a generation_run_id
 - non-SUFFICIENT forecast rows containing forecast/gap/confidence output
 - SUFFICIENT forecast rows without a model version
-- forecasts whose model cutoff is not earlier than the forecast period
+- forecasts whose model cutoff is not earlier than the forecast period (trigger-enforced)
 - invalid reason_code/data_status combinations
 - more than one active forecast for the same District × Skill × Period
 - evidence links that point to zero or multiple targets
+
+### 17.1 Enforcement boundary
+
+The following enforcement split is authoritative for Issue #8:
+
+| Rule | Enforcement |
+|---|---|
+| Stable controlled values listed in Section 17.2 | PostgreSQL CHECK constraints |
+| `analysis_mode = OFFICIAL` → `provenance_state = SOURCE_BACKED` | PostgreSQL CHECK |
+| Synthetic observation requires generation_run_id | PostgreSQL CHECK + FK |
+| Source-backed observation requires source_id | PostgreSQL CHECK |
+| Forecast model cutoff < forecast period | PostgreSQL trigger on forecast INSERT/UPDATE |
+| Warning cannot reference INSUFFICIENT_DATA or UNAVAILABLE forecast | PostgreSQL trigger on warning INSERT/UPDATE |
+| Downloaded source data requires retrieval_id | Ingestion layer; downloaded status is pipeline context and is not inferred by a CHECK |
+| Canonical source selection when multiple valid sources exist | Versioned ingestion/analytics selection rule |
+| Recalculation idempotency | UPSERT on the logical unique key; calculation_run_id is audit metadata |
+
+### 17.2 Canonical controlled-value catalog
+
+These are the single authoritative stable MVP value lists for Issue #8. Implement them as PostgreSQL CHECK constraints (or equivalent domains) rather than unconstrained TEXT.
+
+- period_type: YEAR
+- analysis_mode: OFFICIAL, DEMO
+- observation provenance_state: SOURCE_BACKED, SYNTHETIC_DEMO
+- analytical-output provenance_state: SOURCE_BACKED, SYNTHETIC_DEMO, MIXED_PROVENANCE
+- data_status: SUFFICIENT, INSUFFICIENT_DATA, UNAVAILABLE
+- confidence_level: HIGH, MEDIUM, LOW
+- status: SHORTAGE, BALANCED, OVERSUPPLY, NO_DEMAND
+- emerging_skill_status: EMERGING, NOT_EMERGING, INSUFFICIENT_DATA
+- relation_type: SUPPORTS, CONTEXT, INPUT
+- reason_code: INSUFFICIENT_HISTORY, SOURCE_UNAVAILABLE, REQUIRED_INPUT_MISSING, MODEL_UNAVAILABLE, MODEL_FAILURE
+- gap_eligibility_reason: INCOMPATIBLE_UNIT, INCOMPATIBLE_FLOW_STOCK, INCOMPATIBLE_TIME_BASIS, INCOMPATIBLE_GEOGRAPHY, INCOMPATIBLE_OCCUPATION_SCOPE, INCOMPATIBLE_SIGNALS
+- retrieval_status: SUCCESS, FAILED, PARTIAL
+- evidence_type: ROW, TABLE, PAGE, STATEMENT, OTHER
+- source_type: DATASET, REPORT, WEB, SURVEY, OTHER
+- mapping_method: OFFICIAL_CROSSWALK, MANUAL, INFERRED
+- mapping_confidence: HIGH, MEDIUM, LOW
+
+Demand/supply signal vocabularies and Issue #17 warning-type/severity vocabularies remain owned by their respective issues and must be finalized before corresponding CHECK constraints are implemented.
 
 The database must not enforce:
 
@@ -842,7 +944,6 @@ This mapping keeps the ML contract stable without forcing the database to store 
 | Canonical Dataset Field | Database destination |
 |---|---|
 | district_id | districts.id / observation district_id |
-| lgd_district_code | districts.lgd_district_code |
 | district_name | districts.name |
 | state_code | states.code |
 | lgd_district_code | districts.lgd_district_code |
@@ -861,7 +962,6 @@ This mapping keeps the ML contract stable without forcing the database to store 
 | source_type | data_sources.source_type |
 | retrieval_id | observation retrieval_id |
 | source_date | observation source_date |
-| retrieval_id | observation retrieval_id |
 | provenance_state | observation provenance_state |
 | is_synthetic | observation is_synthetic |
 | generation_run_id | observation generation_run_id |
@@ -879,13 +979,35 @@ The canonical dataset may require multiple observation rows when demand and supp
 
 For observation records, source_date represents the publication date when explicitly available; otherwise it uses the retrieval date from source_retrievals. The observation period is never substituted for source_date.
 
-### 20.2 Demo provenance
+### 20.2 Contract v1.1 and history diagnostics
+
+Issue #5 is currently **v1.1** and is the authoritative ML output contract for this schema. It includes `analysis_mode`, `provenance_state`, `gap_eligible`, `gap_eligibility_reason`, and the history split.
+
+For SUFFICIENT forecast results, `confidence_inputs` must contain these exact keys when computable:
+
+- `history_periods` — source-backed usable history count; NULL when not computable
+- `total_history_periods` — total usable history supplied to the model; NULL when not computable
+- `synthetic_history_periods` — synthetic usable history supplied to the model; NULL when not computable
+- `is_contiguous` — whether the observed years used are consecutive; NULL when not computable
+
+These diagnostics remain inside the contract JSONB object rather than being duplicated as forecast columns, avoiding competing sources of truth.
+
+### 20.3 Demo provenance
 
 The forecast_results analysis_mode and provenance_state fields distinguish official/source-backed outputs from DEMO outputs that use synthetic history. Confidence and history diagnostics follow Issue #5 v1.1.
 
-### 20.3 Gap eligibility
+### 20.4 Gap eligibility and status precedence
 
-A forecast may be computationally sufficient while remaining gap-ineligible. In that case forecast quantities can be stored, but gap and status remain NULL and gap_eligibility_reason records why the comparison is not valid.
+A forecast may be computationally sufficient while remaining gap-ineligible. In that case forecast quantities can be stored, but gap remains NULL and gap_eligibility_reason records why the comparison is not valid.
+
+Status precedence:
+
+1. If data_status != SUFFICIENT, status is NULL.
+2. The analytical engine decides whether the configured MIN_FORECAST_DEMAND threshold produces NO_DEMAND; when it does, status may be NO_DEMAND even when gap_eligible = false.
+3. Otherwise SHORTAGE / BALANCED / OVERSUPPLY require gap_eligible = true.
+4. When gap_eligible = false and the engine has not selected NO_DEMAND, status is NULL.
+
+The database does not encode MIN_FORECAST_DEMAND. It only enforces the structural rule that a gap-ineligible row may have status NULL or NO_DEMAND.
 
 ## 21. Backend/API Boundary
 
@@ -903,6 +1025,13 @@ Backend responsibilities include:
 - converting JSONB model/uncertainty metadata to the documented contract shape
 
 The frontend must consume Issue #4 API contracts rather than query the database directly.
+
+Supabase security boundary:
+
+- Row-level security (RLS) must be enabled on application tables before exposing the Supabase project endpoint.
+- Anonymous direct table access must be denied unless a specific reviewed policy requires it.
+- The frontend never queries Postgres/Supabase tables directly; FastAPI is the application data-access boundary.
+- Service-role credentials must remain server-side and must never be exposed to the frontend.
 
 ---
 
@@ -951,6 +1080,7 @@ The schema provides stable storage for these outputs without embedding unresolve
 - [x] One-skill-to-one-sector MVP rule enforced
 - [x] External taxonomy mapping structure defined
 - [x] Sector-mapping method/confidence metadata defined
+- [x] Taxonomy mapping source relationship defined
 - [x] LGD district code supported
 - [x] Source retrieval records and SHA-256 integrity metadata defined
 - [x] Synthetic generation provenance defined
@@ -973,9 +1103,10 @@ The schema provides stable storage for these outputs without embedding unresolve
 - [x] Index plan defined
 - [x] API/database responsibility boundary defined
 - [x] Implementation moved explicitly to Issue #8
-- [x] Provenance retrieval and synthetic generation metadata defined
-- [x] LGD district-code support defined
-- [x] Sector mapping method/confidence metadata defined
+- [x] Enforcement split and ownership defined
+- [x] Canonical controlled-value catalog defined
+- [x] Calculation-run and recalculation/upsert semantics defined
+- [x] Supabase RLS/security boundary defined
 
 ---
 

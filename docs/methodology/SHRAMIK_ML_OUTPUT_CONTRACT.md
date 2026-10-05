@@ -407,8 +407,9 @@ When gap_eligible = false:
 - forecast_demand may remain populated
 - forecast_supply may remain populated
 - gap = null
-- status = null
 - gap_eligibility_reason is required
+- status = NO_DEMAND when the analytical engine's configured MIN_FORECAST_DEMAND policy threshold is met, even when gap_eligible = false
+- otherwise status = null
 
 Initial reason values:
 
@@ -428,9 +429,18 @@ status allowed values:
 - BALANCED
 - OVERSUPPLY
 - NO_DEMAND
-- null when data_status is not SUFFICIENT or gap_eligible = false
+- null when data_status is not SUFFICIENT, or when gap_eligible = false and the NO_DEMAND condition does not apply
 
-status is the analytical labour-market classification **only when a comparable gap exists**.
+Status precedence:
+
+1. If data_status != SUFFICIENT, status = null.
+2. The analytical engine applies the configured MIN_FORECAST_DEMAND threshold. When the threshold condition for NO_DEMAND is met, status = NO_DEMAND even when gap_eligible = false.
+3. Otherwise SHORTAGE / BALANCED / OVERSUPPLY require gap_eligible = true.
+4. When gap_eligible = false and the NO_DEMAND condition does not apply, status = null.
+
+The database only enforces the structural rule that a gap-ineligible result may carry status NULL or NO_DEMAND; it does not encode MIN_FORECAST_DEMAND.
+
+status is the analytical labour-market classification when either NO_DEMAND applies or a comparable gap exists.
 
 data_status is data/result availability.
 
@@ -505,6 +515,7 @@ Representative confidence_inputs:
 Required semantics:
 
 - history_periods: integer >= 0; **source-backed usable history count**
+- **v1.1 semantic change:** `history_periods` specifically means source-backed usable historical periods; it no longer means all computationally usable periods. `total_history_periods` and `synthetic_history_periods` separately describe the computational history supplied to the model.
 - total_history_periods: integer >= 0; total usable history actually supplied to the model
 - synthetic_history_periods: integer >= 0; synthetic usable history supplied to the model
 - is_contiguous: boolean/null; whether the observed periods used for the model are consecutive
@@ -637,7 +648,7 @@ emerging_skill_status allowed values:
 
 This enum is separate from data_status.
 
-For v1.1, provenance_state makes source-backed versus demo historical inputs explicit for emerging-skill outputs as well.
+For v1.1, provenance_state makes source-backed versus demo historical inputs explicit for emerging-skill outputs as well. The v1.1 contract also makes the history-count split explicit: `history_periods` is source-backed usable history, while `total_history_periods` and `synthetic_history_periods` describe the computational history actually supplied to the model.
 
 MVP minimum history is 3 usable yearly observations by default. Exact thresholds and configuration are finalized in Issue #18.
 ## 23. Simulator Contract Dependencies
@@ -743,6 +754,7 @@ Before committing AI-generated ML code, the developer must verify the returned s
 - [x] analysis mode defined
 - [x] provenance state defined
 - [x] status/data_status/gap eligibility separation defined
+- [x] NO_DEMAND precedence over gap eligibility defined
 - [x] reason_code semantics defined
 - [x] Incompatible-signal handling defined
 - [x] Insufficient-data behaviour defined
