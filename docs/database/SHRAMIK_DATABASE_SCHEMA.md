@@ -117,14 +117,19 @@ erDiagram
     STATES ||--o{ DISTRICTS : contains
     SECTORS ||--o{ SKILLS : classifies
     SKILLS ||--o{ SKILL_TAXONOMY_MAPPINGS : maps_to
+    DATA_SOURCES ||--o{ SKILLS : supports_sector_mapping
 
     DISTRICTS ||--o{ DEMAND_OBSERVATIONS : has
     SKILLS ||--o{ DEMAND_OBSERVATIONS : describes
     DATA_SOURCES ||--o{ DEMAND_OBSERVATIONS : supports
+    SOURCE_RETRIEVALS ||--o{ DEMAND_OBSERVATIONS : identifies_retrieval
 
     DISTRICTS ||--o{ SUPPLY_OBSERVATIONS : has
     SKILLS ||--o{ SUPPLY_OBSERVATIONS : describes
     DATA_SOURCES ||--o{ SUPPLY_OBSERVATIONS : supports
+    SOURCE_RETRIEVALS ||--o{ SUPPLY_OBSERVATIONS : identifies_retrieval
+    SYNTHETIC_GENERATION_RUNS ||--o{ DEMAND_OBSERVATIONS : generates
+    SYNTHETIC_GENERATION_RUNS ||--o{ SUPPLY_OBSERVATIONS : generates
 
     MODEL_VERSIONS ||--o{ FORECAST_RESULTS : produces
     DISTRICTS ||--o{ FORECAST_RESULTS : targets
@@ -136,6 +141,7 @@ erDiagram
     FORECAST_RESULTS ||--o{ EARLY_WARNINGS : generates
     EMERGING_SKILL_SIGNALS ||--o{ EARLY_WARNINGS : enriches
 
+    DATA_SOURCES ||--o{ SOURCE_RETRIEVALS : retrieved_as
     DATA_SOURCES ||--o{ EVIDENCE_ITEMS : contains
     EVIDENCE_ITEMS ||--o{ EVIDENCE_LINKS : supports
     FORECAST_RESULTS ||--o{ EVIDENCE_LINKS : supported_by
@@ -256,7 +262,7 @@ One record for each official dataset, official report, survey, web source, or ot
 | publisher | TEXT | No | Organization/publisher |
 | url | TEXT | Yes | Canonical source URL |
 | publication_date | DATE | Yes | Publication date if known |
-| accessed_at | TIMESTAMPTZ | No | Retrieval/access timestamp |
+| accessed_at | TIMESTAMPTZ | Yes | Last catalogue/metadata access; exact file retrieval is tracked in source_retrievals |
 | coverage_start | SMALLINT | Yes | Earliest covered year if known |
 | coverage_end | SMALLINT | Yes | Latest covered year if known |
 | notes | TEXT | Yes | Coverage/granularity notes |
@@ -867,7 +873,21 @@ The canonical dataset may require multiple observation rows when demand and supp
 
 ---
 
-## 20. Backend/API Boundary
+## 20. Provenance and contract notes
+
+### 20.1 Source date vs retrieval date
+
+For observation records, source_date represents the publication date when explicitly available; otherwise it uses the retrieval date from source_retrievals. The observation period is never substituted for source_date.
+
+### 20.2 Demo provenance
+
+The forecast_results analysis_mode and provenance_state fields distinguish official/source-backed outputs from DEMO outputs that use synthetic history. Confidence and history diagnostics follow Issue #5 v1.1.
+
+### 20.3 Gap eligibility
+
+A forecast may be computationally sufficient while remaining gap-ineligible. In that case forecast quantities can be stored, but gap and status remain NULL and gap_eligibility_reason records why the comparison is not valid.
+
+## 21. Backend/API Boundary
 
 The database exposes storage structures; it does not dictate the external API shape.
 
@@ -886,7 +906,7 @@ The frontend must consume Issue #4 API contracts rather than query the database 
 
 ---
 
-## 21. Migration / Implementation Boundary
+## 22. Migration / Implementation Boundary
 
 Issue #2 ends at **approved database design**.
 
@@ -904,7 +924,7 @@ Issue #8 must not change analytical semantics without a review of this design.
 
 ---
 
-## 22. Open Decisions Intentionally Left to Other Issues
+## 23. Open Decisions Intentionally Left to Other Issues
 
 The following are **not database-design blockers**:
 
@@ -924,7 +944,7 @@ The schema provides stable storage for these outputs without embedding unresolve
 
 ---
 
-## 23. Acceptance Checklist
+## 24. Acceptance Checklist
 
 - [x] Database responsibility separated from database implementation
 - [x] Canonical state/district/sector/skill entities defined
@@ -959,7 +979,7 @@ The schema provides stable storage for these outputs without embedding unresolve
 
 ---
 
-## 24. Implementation Notes for Issue #8
+## 25. Implementation Notes for Issue #8
 
 When implementing this design:
 
