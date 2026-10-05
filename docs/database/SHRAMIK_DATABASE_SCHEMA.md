@@ -167,6 +167,7 @@ Canonical district reference.
 | id | TEXT | No | Primary key; stable canonical district ID |
 | state_id | TEXT | No | FK → states.id |
 | name | TEXT | No | District name |
+| lgd_district_code | TEXT | Yes | Official LGD district code |
 | is_active | BOOLEAN | No | Default true |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
@@ -197,6 +198,10 @@ Canonical skill/job-role catalogue.
 | code | TEXT | No | Unique machine-readable code |
 | name | TEXT | No | Canonical skill/job-role name |
 | sector_id | TEXT | No | FK → sectors.id |
+| sector_mapping_method | TEXT | No | OFFICIAL_CROSSWALK / MANUAL / INFERRED |
+| sector_mapping_confidence | TEXT | No | HIGH / MEDIUM / LOW |
+| sector_mapping_source_id | UUID | Yes | FK → data_sources.id when source-backed |
+| sector_mapping_note | TEXT | Yes | Sector assignment rationale/provenance |
 | description | TEXT | Yes | Optional description |
 | is_active | BOOLEAN | No | Default true |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
@@ -218,7 +223,8 @@ Stores explicit external taxonomy relationships without inventing crosswalks.
 | taxonomy_name | TEXT | No | Example: NCO-2015 |
 | taxonomy_version | TEXT | Yes | Version/year where applicable |
 | taxonomy_code | TEXT | No | External code |
-| mapping_type | TEXT | No | DOCUMENTED / DERIVED |
+| mapping_method | TEXT | No | OFFICIAL_CROSSWALK / MANUAL / INFERRED |
+| mapping_confidence | TEXT | No | HIGH / MEDIUM / LOW |
 | source_id | UUID | Yes | FK → data_sources.id when mapping is source-backed |
 | mapping_note | TEXT | Yes | Explanation/provenance |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
@@ -258,7 +264,53 @@ Important:
 
 data_sources records the provenance of a source; it does not imply that the source contains the exact District × Sector × Skill × Year values used by SHRAMIK. The canonical dataset process must validate actual granularity.
 
-### 6.2 evidence_items
+### 6.2 source_retrievals
+
+One immutable record for each downloaded source resource/version used by SHRAMIK.
+
+| Column | Type | Null | Rules |
+|---|---|---:|---|
+| id | UUID | No | Primary key |
+| source_id | UUID | No | FK → data_sources.id |
+| canonical_url | TEXT | No | URL used to retrieve the resource |
+| retrieved_at | TIMESTAMPTZ | No | Retrieval timestamp |
+| content_identifier | TEXT | Yes | Local filename/path or stable content identifier |
+| sha256_hash | TEXT | No | SHA-256 hash of downloaded content |
+| publication_date | DATE | Yes | Source publication date when known |
+| retrieval_status | TEXT | No | SUCCESS / FAILED / PARTIAL |
+| parser_version | TEXT | Yes | Parser/version used for extraction |
+| transformation_version | TEXT | Yes | Transformation/preprocessing version |
+| notes | TEXT | Yes | Retrieval-specific notes |
+| created_at | TIMESTAMPTZ | No | Default current timestamp |
+
+Rules:
+
+- Retrieval records are append-only.
+- A changed source file creates a new record rather than silently overwriting the old one.
+- SHA-256 identifies the exact downloaded content.
+
+### 6.3 synthetic_generation_runs
+
+One immutable record for each synthetic-data generation run.
+
+| Column | Type | Null | Rules |
+|---|---|---:|---|
+| id | UUID | No | Primary key; generation_run_id |
+| generator_name | TEXT | No | Generator identifier |
+| generator_version | TEXT | No | Generator version |
+| random_seed | BIGINT | No | Reproducibility seed |
+| parameters | JSONB | No | Generator parameter/configuration payload |
+| generated_at | TIMESTAMPTZ | No | Generation timestamp |
+| source_context | TEXT | Yes | Context/rationale used to choose synthetic ranges |
+| created_at | TIMESTAMPTZ | No | Default current timestamp |
+
+Rules:
+
+- Synthetic observations reference generation_run_id.
+- Generation runs are append-only.
+- Same generator version + seed + parameters must reproduce the same synthetic records.
+
+### 6.4 evidence_items
 
 A concrete evidence item extracted from a source.
 
@@ -281,7 +333,7 @@ Examples:
 | note | TEXT | Yes | Extracted context/interpretation |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
-### 6.3 evidence_links
+### 6.5 evidence_links
 
 Associates one evidence item with one analytical output.
 
@@ -320,9 +372,13 @@ Historical demand signal in compatible worker/position headcount units.
 | period_year | SMALLINT | No | 4-digit year |
 | demand_quantity | NUMERIC(14,2) | Yes | Headcount/position quantity; >= 0 |
 | source_id | UUID | No | FK → data_sources.id |
-| source_date | DATE | Yes | Date represented by source record |
+| source_date | DATE | Yes | Publication date when known; otherwise retrieval date |
+| retrieval_id | UUID | Yes | FK → source_retrievals.id for downloaded resources |
+| provenance_state | TEXT | No | SOURCE_BACKED / SYNTHETIC_DEMO |
 | is_synthetic | BOOLEAN | No | Default false |
-| transformation_note | TEXT | Yes | Required when transformed/derived/synthetic |
+| generation_run_id | UUID | Yes | FK → synthetic_generation_runs.id when synthetic |
+| demand_signal_type | TEXT | No | Exact demand signal type used by analytics |
+| transformation_note | TEXT | Yes | Required for derived/transformed/synthetic records |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
 Constraint:
@@ -349,9 +405,13 @@ Historical supply and training context.
 | enrollment | NUMERIC(14,2) | Yes | Enrolment count; >= 0 |
 | completions | NUMERIC(14,2) | Yes | Completion count; >= 0 |
 | source_id | UUID | No | FK → data_sources.id |
-| source_date | DATE | Yes | Date represented by source record |
+| source_date | DATE | Yes | Publication date when known; otherwise retrieval date |
+| retrieval_id | UUID | Yes | FK → source_retrievals.id for downloaded resources |
+| provenance_state | TEXT | No | SOURCE_BACKED / SYNTHETIC_DEMO |
 | is_synthetic | BOOLEAN | No | Default false |
-| transformation_note | TEXT | Yes | Required when transformed/derived/synthetic |
+| generation_run_id | UUID | Yes | FK → synthetic_generation_runs.id when synthetic |
+| supply_signal_type | TEXT | No | Exact supply signal type used by analytics |
+| transformation_note | TEXT | Yes | Required for derived/transformed/synthetic records |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
 Constraint:
@@ -410,7 +470,9 @@ forecast_results.skill_id → skills.sector_id → sectors.id
 | Column | Type | Null | Rules |
 |---|---|---:|---|
 | id | UUID | No | Primary key |
-| contract_version | TEXT | No | Example: 1.0 |
+| contract_version | TEXT | No | Example: 1.1 |
+| analysis_mode | TEXT | No | OFFICIAL / DEMO |
+| provenance_state | TEXT | No | SOURCE_BACKED / SYNTHETIC_DEMO / MIXED_PROVENANCE |
 | district_id | TEXT | No | FK → districts.id |
 | skill_id | TEXT | No | FK → skills.id |
 | period_type | TEXT | No | MVP = YEAR |
@@ -423,7 +485,9 @@ forecast_results.skill_id → skills.sector_id → sectors.id
 | supply_index | NUMERIC(5,2) | Yes | 0–100 display/ranking index |
 | forecast_demand | NUMERIC(14,2) | Yes | Forecast demand headcount |
 | forecast_supply | NUMERIC(14,2) | Yes | Forecast supply headcount |
-| gap | NUMERIC(14,2) | Yes | forecast_demand - forecast_supply |
+| gap_eligible | BOOLEAN | Yes | Whether demand and supply are comparable for the gap layer |
+| gap_eligibility_reason | TEXT | Yes | Reason when gap_eligible = false |
+| gap | NUMERIC(14,2) | Yes | forecast_demand - forecast_supply when eligible |
 | status | TEXT | Yes | SHORTAGE / BALANCED / OVERSUPPLY / NO_DEMAND |
 | forecast_uncertainty | JSONB | Yes | Optional validated uncertainty structure |
 | confidence_level | TEXT | Yes | HIGH / MEDIUM / LOW |
@@ -458,11 +522,9 @@ Structural checks:
    - forecast quantities and gap are required.
    - confidence_level is required.
    - evidence_coverage is required.
-9. When all three values are present:
-   - gap = forecast_demand - forecast_supply.
-10. reason_code must be present for non-SUFFICIENT results and NULL for SUFFICIENT results.
-11. reason_code must use the allowed mappings from Issue #5.
-12. The referenced model_versions.trained_through_period must be less than period_year.
+12. reason_code must be present for non-SUFFICIENT results and NULL for SUFFICIENT results.
+13. reason_code must use the allowed mappings from Issue #5.
+14. The referenced model_versions.trained_through_period must be less than period_year.
 
 ### Active forecast rule
 
@@ -503,7 +565,12 @@ This table represents the separate historical-series path defined in Issue #1 an
 | recent_growth_rate | NUMERIC(10,6) | Yes | Historical trend signal |
 | historical_growth_rate | NUMERIC(10,6) | Yes | Historical comparison baseline |
 | signal_strength | NUMERIC(5,4) | Yes | 0–1 |
-| history_periods | INTEGER | Yes | Number of usable historical periods |
+| analysis_mode | TEXT | No | OFFICIAL / DEMO |
+| provenance_state | TEXT | No | SOURCE_BACKED / SYNTHETIC_DEMO / MIXED_PROVENANCE |
+| history_periods | INTEGER | Yes | Number of source-backed usable historical periods |
+| total_history_periods | INTEGER | Yes | Total usable historical periods supplied to the model |
+| synthetic_history_periods | INTEGER | Yes | Synthetic usable historical periods supplied to the model |
+| is_contiguous | BOOLEAN | Yes | Whether used observed periods are consecutive |
 | calculated_at | TIMESTAMPTZ | No | Calculation timestamp |
 | created_at | TIMESTAMPTZ | No | Default current timestamp |
 
@@ -622,6 +689,9 @@ The final canonical dataset rules are owned by Issue #7.
 | demand observation → district/skill/source | All must exist before observation is accepted |
 | supply observation → district/skill/source | All must exist before observation is accepted |
 | forecast → district/skill/model | All must exist for a usable forecast |
+| forecast → provenance/analysis mode | Provenance state and execution mode are explicit |
+| source retrieval → source | Every retrieval belongs to one source |
+| synthetic observation → generation run | Every synthetic observation references a generation run |
 | emerging signal → district/skill | All must exist |
 | warning → forecast | Warning requires a forecast result |
 | evidence → source | Every evidence item has a source |
@@ -643,6 +713,8 @@ Initial indexes should target actual backend query patterns rather than every co
 - skills(sector_id)
 - skill_taxonomy_mappings(skill_id)
 - skill_taxonomy_mappings(taxonomy_name, taxonomy_code)
+- source_retrievals(source_id, retrieved_at)
+- synthetic_generation_runs(generator_name, generator_version)
 
 ### Observation indexes
 
@@ -678,9 +750,12 @@ The database must reject:
 
 - duplicate canonical district/state/sector/skill codes
 - references to unknown districts/sectors/skills/sources
+- synthetic observations without a generation run
+- downloaded source records without a retrieval record
 - negative quantities where the metric is defined as non-negative
 - malformed year values
 - invalid index/confidence/evidence ranges
+- invalid provenance_state or analysis_mode values
 - non-SUFFICIENT forecast rows containing forecast/gap/confidence output
 - SUFFICIENT forecast rows without a model version
 - forecasts whose model cutoff is not earlier than the forecast period
@@ -706,6 +781,8 @@ Those belong to the corresponding analytical modules.
 | ML Contract Field | Database source |
 |---|---|
 | contract_version | forecast_results.contract_version |
+| analysis_mode | forecast_results.analysis_mode |
+| provenance_state | forecast_results.provenance_state |
 | district_id | forecast_results.district_id |
 | sector_id | skills.sector_id → sectors.id |
 | skill_id | forecast_results.skill_id |
@@ -719,6 +796,8 @@ Those belong to the corresponding analytical modules.
 | supply_index | forecast_results.supply_index |
 | forecast_demand | forecast_results.forecast_demand |
 | forecast_supply | forecast_results.forecast_supply |
+| gap_eligible | forecast_results.gap_eligible |
+| gap_eligibility_reason | forecast_results.gap_eligibility_reason |
 | gap | forecast_results.gap |
 | status | forecast_results.status |
 | forecast_uncertainty | forecast_results.forecast_uncertainty |
@@ -738,6 +817,7 @@ This mapping keeps the ML contract stable without forcing the database to store 
 | district_id | districts.id / observation district_id |
 | district_name | districts.name |
 | state_code | states.code |
+| lgd_district_code | districts.lgd_district_code |
 | sector_id | sectors.id via skills.sector_id |
 | sector_name | sectors.name |
 | skill_id | skills.id |
@@ -752,7 +832,10 @@ This mapping keeps the ML contract stable without forcing the database to store 
 | source_id | observation source_id |
 | source_type | data_sources.source_type |
 | source_date | observation source_date |
+| retrieval_id | observation retrieval_id |
+| provenance_state | observation provenance_state |
 | is_synthetic | observation is_synthetic |
+| generation_run_id | observation generation_run_id |
 | transformation_note | observation transformation_note |
 
 Important:
@@ -824,11 +907,16 @@ The schema provides stable storage for these outputs without embedding unresolve
 - [x] Canonical state/district/sector/skill entities defined
 - [x] One-skill-to-one-sector MVP rule enforced
 - [x] External taxonomy mapping structure defined
+- [x] Sector-mapping method/confidence metadata defined
+- [x] LGD district code supported
+- [x] Source retrieval records and SHA-256 integrity metadata defined
+- [x] Synthetic generation provenance defined
 - [x] Historical demand storage defined
 - [x] Historical supply/training storage defined
 - [x] Source provenance defined
 - [x] Evidence storage and linking defined
 - [x] Forecast result structure mapped to Issue #5
+- [x] Provenance-aware demo mode and gap eligibility mapped
 - [x] Model/version metadata defined
 - [x] Multiple-model evaluation storage supported
 - [x] Active forecast selection rule defined
@@ -852,7 +940,7 @@ When implementing this design:
 1. Use PostgreSQL native UUIDs for generated records.
 2. Use stable TEXT identifiers for canonical state/district/sector/skill codes so external source mappings remain readable.
 3. Use NUMERIC for quantities and rates that may require decimal precision.
-4. Use JSONB only where the contract is intentionally extensible (forecast_uncertainty, confidence_inputs, model metadata).
+4. Use JSONB only where the contract is intentionally extensible (forecast_uncertainty, confidence_inputs, model metadata, synthetic generator parameters).
 5. Keep migrations deterministic and runnable from a clean database.
 6. Seed only canonical/reference data that has been explicitly approved.
 7. Never commit database credentials or service-role keys.
