@@ -34,6 +34,21 @@ Therefore, the canonical prototype uses a **hybrid evidence model**, but provena
 
 Synthetic values must never be presented as government observations.
 
+### Official mode vs demo mode
+
+The pipeline supports two explicit execution modes:
+
+- **OFFICIAL mode:** only source-backed observations are eligible for forecasting. Synthetic observations are excluded from usable forecast history.
+- **DEMO mode:** synthetic observations may be used to complete a demonstrable forecast series when the source-backed series is too short. This mode exists only to keep the prototype demonstrable and must never be treated as evidence of official data coverage.
+
+Every analytical output produced in DEMO mode must carry a provenance_state:
+
+- SOURCE_BACKED
+- SYNTHETIC_DEMO
+- MIXED_PROVENANCE
+
+A forecast using any synthetic history is therefore visibly different from an official/source-backed forecast.
+
 ### Source-backed coverage is the validation truth
 
 Synthetic observations are useful for demonstrating the complete product pipeline, but they **must not be allowed to make the dataset appear more historically complete than the official evidence actually is**.
@@ -113,6 +128,22 @@ https://lgdirectory.gov.in/
 
 The first extraction pass must resolve each selected district to its official LGD code before records are loaded into the canonical dataset.
 
+The mapping must be stored in the repository as a tracked artifact such as:
+
+data/mappings/district_lgd.csv
+
+Minimum columns:
+
+- district_id
+- district_name
+- lgd_district_code
+- source_id
+- source_date
+- retrieval_id
+- mapping_note
+
+LGD downloads/resources are subject to the same retrieval record and SHA-256 hashing rules as other sources.
+
 ## 4. Candidate prototype geography
 
 Do not start with all Odisha districts.
@@ -179,6 +210,13 @@ Every mapping must carry explicit provenance metadata:
 - mapping_note: human-readable rationale
 - mapping_source: source supporting the mapping, when available
 
+This control applies to both:
+
+1. skill/job-role mappings (for example QP/NOS → NCO), and
+2. sector mappings (for example NCO occupation/group → NIC or another documented sector classification).
+
+A sector assignment derived from an occupation crosswalk is therefore a mapping decision and must carry the same method, confidence, source, and note metadata.
+
 Only **OFFICIAL_CROSSWALK** mappings should be treated as authoritative by default.
 
 MANUAL and INFERRED mappings must be filterable so the demo can show exactly which records rely on judgement.
@@ -223,8 +261,14 @@ The final database mapping depends on Issue #2. At dataset level, the expected c
 - is_synthetic
 - provenance_state
 - transformation_note
+- generation_run_id (for synthetic records)
 
-### Taxonomy mapping metadata
+### Analytical eligibility / diagnostics
+
+- gap_eligible
+- gap_eligibility_reason
+
+### Taxonomy / sector mapping metadata
 
 - mapping_method
 - mapping_confidence
@@ -257,17 +301,26 @@ The UI, methodology page, and AI explanations must preserve this interpretation.
 
 ### 8.2 Compatibility rule
 
-A gap may only be calculated when the demand and supply signals are sufficiently compatible in:
+A gap may only be calculated when the demand and supply signals pass the following checklist **for the same series and period**:
 
-- unit
-- flow/stock semantics
-- time basis
-- geographic scope
-- skill/occupation meaning
+| Check | Pass criterion |
+|---|---|
+| Unit | Demand and supply are expressed in compatible units, or a documented normalization makes them comparable |
+| Flow/stock | Both measures have compatible flow/stock semantics for the intended calculation |
+| Time basis | Both represent the same period basis and comparable duration |
+| Geography | Both cover the same district/geographic scope |
+| Occupation scope | Both refer to the same canonical skill/job role or a defensible common occupation scope |
 
-If they are not compatible, preserve both observations but do **not** fabricate a comparable gap. Store the data as contextual evidence instead.
+Record the result as:
 
-This compatibility decision must be recorded in the transformation/methodology notes.
+- gap_eligible = true — all required checks pass
+- gap_eligible = false — one or more checks fail
+
+Also record gap_eligibility_reason, such as INCOMPATIBLE_UNIT, INCOMPATIBLE_FLOW_STOCK, INCOMPATIBLE_TIME_BASIS, INCOMPATIBLE_GEOGRAPHY, or INCOMPATIBLE_OCCUPATION_SCOPE.
+
+If gap_eligible = false, preserve both observations and any forecasts that can still be computed, but do **not** fabricate a comparable gap. The output becomes context-only for the gap layer.
+
+The compatibility checklist must be deterministic enough to be tested and must be recorded in the dataset transformation/methodology metadata.
 
 ### 8.3 Demand
 
@@ -310,12 +363,19 @@ At the **series** level, classify provenance as:
 
 A District × Sector × Skill series is **not** considered source-backed unless **every observation in the validated history is source-backed**.
 
-For history validation and confidence:
+For **official history validation and evidence strength**:
 
 - include source-backed observations that pass validation
-- exclude synthetic observations from the **usable-history count**
+- exclude synthetic observations from the official usable-history count
 - flag mixed series explicitly
-- synthetic periods may still be used for the visual/demo pipeline, but never to claim official history coverage
+
+For **DEMO mode forecasting**:
+
+- synthetic periods may be included in the computational history used by the forecast model
+- the output must carry provenance_state = SYNTHETIC_DEMO or MIXED_PROVENANCE
+- synthetic periods must not increase the source-backed history count used for confidence or official coverage claims
+- confidence must be capped at **MEDIUM** whenever synthetic observations materially contribute to the forecast
+- the UI and AI explanation must explicitly say that the result uses synthetic/demo history
 
 Example:
 
@@ -358,6 +418,8 @@ A usable observation must:
 
 Synthetic history is reported for transparency, not used as evidence that the official data supports forecasting.
 
+The ML contract must expose both the source-backed history count and the total computational history when DEMO mode uses synthetic periods. The source-backed count remains the trust/validation basis; total history explains what the model actually consumed.
+
 ## 11. MIN_FORECAST_DEMAND selection
 
 Do not choose the final demand floor from the combined source-backed + synthetic distribution.
@@ -375,6 +437,8 @@ Procedure:
 7. inject the value into tests rather than hiding it in test code
 
 If source-backed demand quantities are too sparse to support a defensible floor, leave the final value provisional and state the limitation rather than deriving the threshold from synthetic generator settings.
+
+Synthetic demand distributions must never be used to choose, tune, or justify the final production threshold.
 
 ## 12. Source retrieval and reproducibility
 
@@ -397,7 +461,19 @@ For every downloaded source file/resource, maintain a retrieval record containin
 
 The retrieval record should be append-only for reproducibility: a changed source file creates a new retrieval record rather than silently overwriting the old provenance.
 
-Issue #2 / #8 must support this retrieval metadata before the final ingestion implementation is considered complete.
+For synthetic generation, maintain an equally explicit append-only generation record containing at least:
+
+- generation_run_id
+- generator_name
+- generator_version
+- random_seed
+- parameter/configuration payload
+- generation_timestamp
+- rationale/source context used to choose ranges, if any
+
+Each synthetic observation must reference its generation_run_id. Re-running the generator with the same version, seed, and parameters must reproduce the same synthetic records.
+
+Issue #2 / #8 must support this retrieval/generation metadata before the final ingestion implementation is considered complete.
 
 ## 13. Source date vs period
 
@@ -410,32 +486,58 @@ For data-freshness calculations, prefer the **source publication date** when it 
 
 Record which date was used. Do not treat the observation year itself as source_date.
 
+### 13.1 Validated history and contiguity
+
+A **validated usable observation** is an observation that passes the dataset validation rules and contains the required values for the calculation being attempted.
+
+For the minimum-history count, observations do **not** have to be consecutive. For example, 2021, 2022, and 2024 are three usable years, but the series must be flagged as having a missing 2023 period.
+
+The forecast/model layer must receive the actual observed years and may not silently treat missing years as observed data.
+
+- Naive last-value forecasting may operate on non-contiguous annual observations if the latest usable observation is valid.
+- Trend/growth models that require regular intervals must either enforce their own contiguity requirement or use a documented missing-period method.
+- No missing year may be fabricated solely to make a series contiguous.
+
+This distinction must be recorded in diagnostic output, including at minimum history_periods, span_years, and is_contiguous where applicable.
+
 ## 14. Dataset validation
 
-Before calling Issue #7 complete, validate:
+### Must pass (blocking)
 
-- duplicate District × Sector × Skill × Year keys at the canonical-output level
-- valid district references
-- valid LGD district codes
+Issue #7 cannot be marked complete until these pass:
+
+- no duplicate canonical District × Sector × Skill × Year records
+- valid district references and official LGD code mapping
 - valid sector references
 - valid skill/taxonomy references
-- mapping method/confidence present where mapping occurs
-- year format
+- required mapping method/confidence/source metadata present for mapped records
+- valid year format
 - non-negative quantities where required
-- compatible demand/supply units and flow/stock semantics
+- demand/supply compatibility decision recorded per series/period
 - source/provenance presence
-- retrieval record presence for downloaded resources
-- synthetic flag correctness
-- mixed-series classification
-- transformation notes for derived values
-- missing-value conventions
-- source-backed history coverage
-- synthetic history coverage
-- outlier review
+- retrieval record present for every downloaded source resource
+- synthetic generation record present for every synthetic observation
+- synthetic/mixed provenance correctly classified
+- required missing-value conventions respected
+- canonical output reproducibly regenerates from declared inputs/configuration
+
+### Report only (diagnostic)
+
+These should be measured and documented but do not automatically block completion:
+
+- source-backed history coverage distribution
+- synthetic-demo history coverage distribution
+- number of mixed-provenance series
+- number of series with gaps/non-contiguous years
+- outlier review findings
+- source coverage by district/sector/skill
+- number of LOW-confidence mappings
+
+A diagnostic finding becomes blocking only when it violates a stated analytical rule or makes the intended MVP calculation invalid.
 
 ## 15. Taxonomy mapping validation
 
-For each skill/job-role mapping:
+For each skill/job-role **and sector** mapping:
 
 - verify whether an official crosswalk exists
 - otherwise mark the mapping as MANUAL or INFERRED
@@ -461,6 +563,8 @@ rather than:
 **“number of workers the market is short of.”**
 
 This limitation should be visible in the methodology/trust UI and in generated planning explanations.
+
+The ML/API may retain the mathematical field name gap for contract stability, but the user-facing label must describe it as a **skill-pipeline pressure indicator** rather than a workforce-shortage count. Issue #4 must preserve this distinction in its response documentation and UI guidance.
 
 ## 17. Important limitations for the demo
 
@@ -497,6 +601,8 @@ The fallback decision is:
 
 A fallback to occupation-group grain is therefore a deliberate contract change, not an implementation shortcut.
 
+Sector assignment must also be checked at this checkpoint. If the source only supports occupation-group data and no defensible occupation-to-sector mapping exists, sector cannot be silently inferred; the fallback contract must address both the occupation/skill key and sector key.
+
 ## 19. Research findings carried into implementation
 
 The Odisha OGD Employment Exchanges catalogue exists and provides Catalog API and ZIP download options, but its actual downloadable resource fields and grain still require inspection before canonical extraction.
@@ -511,10 +617,14 @@ These sources are source-discovery evidence; the canonical dataset must still be
 
 The following must be reconciled before the canonical dataset is considered final:
 
-1. **Issue #2 / schema:** support taxonomy mapping method/confidence and source-retrieval metadata.
-2. **Issue #5 / ML contract:** if the project falls back from skill grain to occupation-group grain, revise the required identity contract before dependent implementation.
-3. **Architecture / analytics:** preserve the distinction between a labour-market pressure indicator and a literal labour-force shortage whenever demand and supply signals are different flows/stocks.
-4. **ML/config:** final MIN_FORECAST_HISTORY and MIN_FORECAST_DEMAND must be evidence-driven from source-backed data.
+1. **Issue #2 / schema:** support taxonomy mapping method/confidence, sector-mapping metadata, LGD codes, append-only source retrieval records, and synthetic generation records.
+2. **Issue #5 / ML contract — provenance:** add provenance_state to analytical output and explicitly define OFFICIAL vs DEMO mode. In DEMO mode, synthetic observations may satisfy computational history, but history_periods used for confidence must remain source-backed; expose total/synthetic history diagnostics as well.
+3. **Issue #5 / ML contract — gap eligibility:** add gap_eligible and gap_eligibility_reason so forecast quantities can exist while gap and status remain null when demand/supply signals are incompatible. Add INCOMPATIBLE_SIGNALS as the documented reason family.
+4. **Issue #5 / ML contract — field semantics:** preserve gap as the mathematical field but document it as a **skill-pipeline pressure indicator** in API/UI-facing explanations.
+5. **Issue #5 / ML contract — history:** define non-contiguous validated history explicitly and ensure confidence/model rules do not treat missing years as observations.
+6. **Issue #4 / API:** carry provenance_state/demo-mode information and gap eligibility into the API so a synthetic-backed forecast cannot look identical to an official one.
+7. **Architecture / analytics:** preserve the distinction between a labour-market pressure indicator and a literal labour-force shortage whenever demand and supply signals are different flows/stocks.
+8. **ML/config:** final MIN_FORECAST_HISTORY and MIN_FORECAST_DEMAND must be evidence-driven from source-backed data.
 
 ## Next dependency
 
