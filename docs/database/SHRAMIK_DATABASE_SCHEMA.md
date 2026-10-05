@@ -401,8 +401,8 @@ Checks:
 
 Uniqueness:
 
-- UNIQUE(district_id, skill_id, period_type, period_year, source_id) WHERE source_id IS NOT NULL.
-- UNIQUE(district_id, skill_id, period_type, period_year, generation_run_id) WHERE source_id IS NULL.
+- UNIQUE(district_id, skill_id, period_type, period_year, source_id, demand_signal_type) WHERE source_id IS NOT NULL.
+- UNIQUE(district_id, skill_id, period_type, period_year, generation_run_id, demand_signal_type) WHERE source_id IS NULL.
 
 The first index prevents duplicate observations from the same source. The second prevents duplicate synthetic observations from the same generation run while allowing synthetic data to coexist with source-backed observations. Canonical source selection happens in the ingestion/analytics layer.
 
@@ -445,8 +445,8 @@ Checks:
 
 Uniqueness:
 
-- UNIQUE(district_id, skill_id, period_type, period_year, source_id) WHERE source_id IS NOT NULL.
-- UNIQUE(district_id, skill_id, period_type, period_year, generation_run_id) WHERE source_id IS NULL.
+- UNIQUE(district_id, skill_id, period_type, period_year, source_id, supply_signal_type) WHERE source_id IS NOT NULL.
+- UNIQUE(district_id, skill_id, period_type, period_year, generation_run_id, supply_signal_type) WHERE source_id IS NULL.
 
 The first index prevents duplicate observations from the same source. The second prevents duplicate synthetic observations from the same generation run while allowing synthetic data to coexist with source-backed observations. Canonical source selection happens in the ingestion/analytics layer.
 
@@ -568,15 +568,18 @@ Structural checks:
    - forecast_demand and forecast_supply may remain populated.
    - gap = NULL.
    - gap_eligibility_reason is required.
-   - status = NO_DEMAND when data_status = SUFFICIENT and forecast_demand < MIN_FORECAST_DEMAND.
-   - otherwise status = NULL.
-11. When gap is present:
+   - status must be NULL or NO_DEMAND.
+11. If gap_eligible = true:
+   - status may be SHORTAGE, BALANCED, OVERSUPPLY, or NO_DEMAND.
+   - the analytical engine, not the database, determines whether NO_DEMAND applies using the configured MIN_FORECAST_DEMAND policy threshold.
+12. When gap is present:
    - gap = forecast_demand - forecast_supply.
 12. reason_code must be present for non-SUFFICIENT results and NULL for SUFFICIENT results.
-13. reason_code must use the allowed mappings from Issue #5.
-14. gap_eligibility_reason must use the controlled values defined in Issue #5.
-15. `analysis_mode = OFFICIAL` requires `provenance_state = SOURCE_BACKED`; enforce with a row-local PostgreSQL CHECK.
-16. The referenced model_versions.trained_through_period must be less than period_year; enforce with a database trigger in Issue #8.
+14. reason_code must use the allowed mappings from Issue #5.
+15. gap_eligibility_reason must use the controlled values defined in Issue #5.
+16. `analysis_mode = OFFICIAL` requires `provenance_state = SOURCE_BACKED`; enforce with a row-local PostgreSQL CHECK.
+17. If gap_eligible = false, status must be NULL or NO_DEMAND; if gap_eligible = true, all four documented status values are structurally allowed. The engine owns the MIN_FORECAST_DEMAND threshold.
+18. The referenced model_versions.trained_through_period must be less than period_year; enforce with a database trigger in Issue #8.
 
 ### Forecast uniqueness and recalculation rule
 
@@ -584,11 +587,11 @@ A forecast result is logically unique for:
 
 **District × Skill × Forecast Period × Model Version × Contract Version**
 
-Database constraint:
+Database uniqueness:
 
-- UNIQUE(district_id, skill_id, period_type, period_year, model_version_id, contract_version)
-
-`calculation_run_id` identifies the analytical run that produced the result. Recalculating the same logical result must upsert/update that row with the latest run identifier rather than silently create a duplicate.
+- For SUFFICIENT rows (`model_version_id` is non-null): UNIQUE(district_id, skill_id, period_type, period_year, model_version_id, contract_version).
+- For non-SUFFICIENT rows (`model_version_id` is null): a partial unique index must enforce UNIQUE(district_id, skill_id, period_type, period_year, contract_version) WHERE model_version_id IS NULL. This prevents NULL model-version rows from duplicating on rerun.
+- `calculation_run_id` identifies the analytical run that produced the result. Recalculating the same logical result must upsert/update that row with the latest run identifier rather than silently create a duplicate.
 
 ### Active forecast rule
 
@@ -810,8 +813,8 @@ Initial indexes should target actual backend query patterns rather than every co
 
 ### Provenance indexes
 
-- source_retrievals(source_id, retrieved_at)
-- synthetic_generation_runs(generator_name, generator_version)
+The source_retrievals and synthetic_generation_runs indexes are already listed under Reference indexes above. Additional provenance indexes:
+
 - evidence_items(source_id, observed_period)
 - evidence_links(evidence_item_id)
 - evidence_links(forecast_result_id)
@@ -985,11 +988,11 @@ For SUFFICIENT forecast results, `confidence_inputs` must contain these exact ke
 
 These diagnostics remain inside the contract JSONB object rather than being duplicated as forecast columns, avoiding competing sources of truth.
 
-### 20.2 Demo provenance
+### 20.3 Demo provenance
 
 The forecast_results analysis_mode and provenance_state fields distinguish official/source-backed outputs from DEMO outputs that use synthetic history. Confidence and history diagnostics follow Issue #5 v1.1.
 
-### 20.3 Gap eligibility and status precedence
+### 20.4 Gap eligibility and status precedence
 
 A forecast may be computationally sufficient while remaining gap-ineligible. In that case forecast quantities can be stored, but gap remains NULL and gap_eligibility_reason records why the comparison is not valid.
 
@@ -1094,6 +1097,10 @@ The schema provides stable storage for these outputs without embedding unresolve
 - [x] Index plan defined
 - [x] API/database responsibility boundary defined
 - [x] Implementation moved explicitly to Issue #8
+- [x] Enforcement split and ownership defined
+- [x] Canonical controlled-value catalog defined
+- [x] Calculation-run and recalculation/upsert semantics defined
+- [x] Supabase RLS/security boundary defined
 
 ---
 
