@@ -223,7 +223,7 @@ Schemas are referenced in Section 8:
 - top_emerging_skills[] → DashboardEmergingSkillRecord
 - active_warnings[] → WarningRecord
 
-top_shortages and top_emerging_skills use the same deterministic ranking rules as the dashboard. For district detail, the response also includes meta.list_totals and meta.truncated for sector_summary/top_shortages/top_emerging_skills/active_warnings; the semantics are the same as the dashboard, with page_size limiting each returned list.
+top_shortages and top_emerging_skills use the same deterministic ranking rules as the dashboard. For district detail, `page_size` applies only to `top_shortages`, `top_emerging_skills`, and `active_warnings`. `sector_summary` is not paginated or truncated by `page_size` and is returned in full for the selected district. Accordingly, `meta.list_totals` and `meta.truncated` cover only those three dashboard-style lists; `sector_summary` is excluded from both.
 
 ## 7.4 GET /api/v1/skills
 
@@ -520,7 +520,7 @@ Example with no baseline forecast period available:
 
 ### Response field structure
 
-Top-level simulator response fields include district_id, skill_id, start_period, horizon_end, analysis_mode, lag_years, effective_additional_supply, baseline_data_status, gap_reduction, shortage_closed_fraction, simulation_note_code, and periods[].
+Top-level simulator response fields include district_id, skill_id, start_period, horizon_end, analysis_mode, lag_years, effective_additional_supply, baseline_data_status, gap_reduction, shortage_closed_fraction, simulation_note_code, and periods[]. In the Pydantic response model, `shortage_closed_fraction` is typed as an optional numeric field (`float | None`) because it is null when the horizon-end baseline does not provide a computable positive eligible shortage.
 
 ### Per-period response fields
 
@@ -571,6 +571,7 @@ The response uses:
 - simulation_note_code = BASELINE_INSUFFICIENT_DATA
 - periods = []
 - gap_reduction = null
+- shortage_closed_fraction = null
 - analysis_mode = OFFICIAL or the explicitly requested mode, echoed in both data.analysis_mode and meta.analysis_mode
 
 No forecast or scenario values are fabricated.
@@ -583,7 +584,7 @@ For partial baseline availability, the simulator returns available baseline peri
 
 ### Required simulator test cases
 
-At minimum, Issue #19 must test: (1) a normal sufficient horizon; (2) no baseline forecast period; (3) omitted horizon_end where the latest existing baseline record is INSUFFICIENT_DATA, which must keep both reduction fields null and set simulation_note_code=BASELINE_INSUFFICIENT_DATA (or the applicable higher-priority note when multiple conditions apply); (4) an ineligible gap; and (5) cohort-after-horizon.
+At minimum, Issue #19 must test: (1) a normal sufficient horizon; (2) no baseline forecast period; (3) omitted horizon_end where the latest existing baseline record is INSUFFICIENT_DATA, which must keep both reduction fields null, set `simulation_note_code=BASELINE_INSUFFICIENT_DATA` when no higher-priority condition applies, and assert that the response `horizon_end` equals that latest stored period; (4) an ineligible gap; and (5) cohort-after-horizon.
 
 ### Insufficient-data behaviour
 
@@ -871,7 +872,8 @@ Frontend developers consume only the documented schemas in this document and the
 - [x] Model-evaluation endpoint defined
 - [x] What-if simulator endpoint defined with explicit request/response schemas and internally consistent examples
 - [x] Simulator gap_reduction and shortage_closed_fraction semantics defined
-- [x] Simulator insufficient-data/no-baseline/gap-ineligible behaviour defined as HTTP 200
+- [x] Simulator insufficient-data/no-baseline/gap-ineligible behaviour defined as HTTP 200, including the latest-stored-period horizon default test case
+
 - [x] Simulator note-code vocabulary separated from Issue #5 reason_code
 - [x] AI planning-brief endpoint defined
 - [x] AI failure/timeout contracts defined
