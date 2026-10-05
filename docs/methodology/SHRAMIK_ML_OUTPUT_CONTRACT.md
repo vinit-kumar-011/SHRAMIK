@@ -37,10 +37,12 @@ For the MVP, each canonical skill/job role maps to exactly one canonical sector.
 
 ## 3. Canonical Analytical Record
 
-Representative output:
+Representative **OFFICIAL/source-backed** output:
 
     {
-      "contract_version": "1.0",
+      "contract_version": "1.1",
+      "analysis_mode": "OFFICIAL",
+      "provenance_state": "SOURCE_BACKED",
       "district_id": "OD-KHD",
       "sector_id": "RENEWABLE_ENERGY",
       "skill_id": "SOLAR_PV_TECHNICIAN",
@@ -53,12 +55,17 @@ Representative output:
       "supply_index": 55.1,
       "forecast_demand": 1250,
       "forecast_supply": 900,
+      "gap_eligible": true,
+      "gap_eligibility_reason": null,
       "gap": 350,
       "status": "SHORTAGE",
       "forecast_uncertainty": null,
       "confidence_level": "MEDIUM",
       "confidence_inputs": {
         "history_periods": 4,
+        "total_history_periods": 4,
+        "synthetic_history_periods": 0,
+        "is_contiguous": true,
         "data_coverage": 0.92,
         "data_freshness_days": 45,
         "forecast_error": 0.14,
@@ -74,8 +81,38 @@ Representative output:
       }
     }
 
-The numbers, years, IDs, and model metadata in this example are illustrative only. The system must derive forecast periods from the actual canonical dataset and configured forecast horizon; 2027 is not a hard-coded forecast year.
+Representative **DEMO/mixed-provenance** output pattern when source-backed history is too short:
 
+    {
+      "contract_version": "1.1",
+      "analysis_mode": "DEMO",
+      "provenance_state": "MIXED_PROVENANCE",
+      "district_id": "OD-KHD",
+      "sector_id": "RENEWABLE_ENERGY",
+      "skill_id": "SOLAR_PV_TECHNICIAN",
+      "period_type": "YEAR",
+      "period": "2027",
+      "data_status": "SUFFICIENT",
+      "demand_quantity": 1250,
+      "supply_quantity": 900,
+      "forecast_demand": 1310,
+      "forecast_supply": 940,
+      "gap_eligible": true,
+      "gap_eligibility_reason": null,
+      "gap": 370,
+      "status": "SHORTAGE",
+      "confidence_level": "MEDIUM",
+      "confidence_inputs": {
+        "history_periods": 2,
+        "total_history_periods": 5,
+        "synthetic_history_periods": 3,
+        "is_contiguous": true
+      }
+    }
+
+The DEMO record is intentionally not source-backed even though it is computationally sufficient. Its provenance_state and analysis_mode make the distinction explicit. Its confidence cannot exceed MEDIUM because synthetic observations contributed.
+
+The numbers, years, IDs, and model metadata in these examples are illustrative only. The system must derive forecast periods from the actual canonical dataset and configured forecast horizon; 2027 is not a hard-coded forecast year.
 ## 4. Field Definitions
 
 | Field | Type | Required | Unit / Scale | Meaning |
