@@ -150,7 +150,7 @@ Example response:
     {
       "data": {
         "scope": {
-          "district_id": "OD-KHD",
+          "district_id": "<DISTRICT_ID>",
           "sector_id": null,
           "skill_id": null,
           "period": "2027",
@@ -201,7 +201,7 @@ page_size greater than 100 returns 422 / VALIDATION_ERROR.
 
 Response item:
 
-    {"district_id":"OD-KHD","name":"Khordha","state_id":"OD","state_code":"OD","lgd_district_code":"383"}
+    {"district_id":"<DISTRICT_ID>","name":"<DISTRICT_NAME>","state_id":"<STATE_ID>","state_code":"<STATE_CODE>","lgd_district_code":"<LGD_DISTRICT_CODE>"}
 
 lgd_district_code is the canonical LGD district code when known and may be null when unavailable.
 
@@ -363,8 +363,8 @@ Runs the stateless training intervention simulator.
 JSON body:
 
     {
-      "district_id": "OD-KHD",
-      "skill_id": "SOLAR_PV_TECHNICIAN",
+      "district_id": "<DISTRICT_ID>",
+      "skill_id": "<SKILL_ID>",
       "start_period": "2027",
       "training_duration_months": 12,
       "seats": 1000,
@@ -401,8 +401,8 @@ Example with a sufficient baseline:
 
     {
       "data": {
-        "district_id": "OD-KHD",
-        "skill_id": "SOLAR_PV_TECHNICIAN",
+        "district_id": "<DISTRICT_ID>",
+        "skill_id": "<SKILL_ID>",
         "start_period": "2027",
         "horizon_end": "2031",
         "analysis_mode": "OFFICIAL",
@@ -499,8 +499,8 @@ Example with no baseline forecast period available:
 
     {
       "data": {
-        "district_id": "OD-KHD",
-        "skill_id": "SOLAR_PV_TECHNICIAN",
+        "district_id": "<DISTRICT_ID>",
+        "skill_id": "<SKILL_ID>",
         "start_period": "2027",
         "horizon_end": null,
         "analysis_mode": "OFFICIAL",
@@ -599,8 +599,8 @@ Generates an optional AI-assisted planning brief from structured SHRAMIK outputs
 ### Request
 
     {
-      "district_id": "OD-KHD",
-      "skill_id": "SOLAR_PV_TECHNICIAN",
+      "district_id": "<DISTRICT_ID>",
+      "skill_id": "<SKILL_ID>",
       "forecast_ids": [
         "550e8400-e29b-41d4-a716-446655440000"
       ],

@@ -466,6 +466,22 @@ Important semantic rule:
 
 > training_capacity, enrollment and completions are separate measures. They are not silently treated as current employed supply.
 
+Uniqueness follows the demand-observation rule: multiple legitimate sources may report the same signal. For source-backed rows, use the logical key: state_id, district_id, sector_id, skill_id, observation_grain, period_type, period_year, source_id, supply_signal_type. For synthetic rows, replace source_id with generation_run_id.
+
+### 7.3.1 Nullable-grain uniqueness implementation
+
+The logical observation keys contain nullable dimensions because source observations may legitimately exist at aggregate grains. PostgreSQL uniqueness must therefore treat NULL dimensions as equal for duplicate detection.
+
+Issue #8 must implement the demand and supply logical keys using PostgreSQL `UNIQUE NULLS NOT DISTINCT` where supported, or equivalent grain-specific partial unique indexes.
+
+A plain composite `UNIQUE` constraint over nullable `district_id`, `sector_id`, and `skill_id` is insufficient because PostgreSQL normally permits multiple rows whose nullable dimensions are NULL.
+
+The implementation must prevent duplicate observations at the same:
+
+`state + district + sector + skill + observation_grain + period + source (or synthetic generation run) + signal`
+
+while still allowing legitimate observations from different sources.
+
 ### 7.4 source_capabilities
 
 This registry records what a source actually supports before analytics consume it.
