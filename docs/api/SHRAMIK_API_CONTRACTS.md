@@ -139,10 +139,11 @@ The following six counts are mutually exclusive and sum to forecast_results:
 A gap-ineligible row is not counted in no_demand_count, even though Issue #5 permits status=NO_DEMAND for an ineligible gap. This keeps the dashboard totals mutually exclusive.
 
 warning_count and emerging_skill_count are independent counts. They are not members of the mutually exclusive forecast-count set and therefore do not need to sum to forecast_results.
+emerging_skill_count counts records with data_status=SUFFICIENT and emerging_skill_status=EMERGING.
 
 ### Dashboard list-size semantics
 
-page_size defaults to 25 and is constrained to 1–100. It limits the number of records returned in each dashboard list: top_shortages, top_emerging_skills, and active_warnings. It does not change summary totals.
+page_size defaults to 25 and is constrained to 1–100. It limits the number of records returned in each dashboard list: top_shortages, top_emerging_skills, and active_warnings. It does not change summary totals. The dashboard response includes per-list totals in meta.list_totals and a global meta.truncated flag that is true when any dashboard list is larger than the returned page_size.
 
 Example response:
 
@@ -173,7 +174,13 @@ Example response:
       "meta": {
         "request_id": "req_123",
         "analysis_mode": "OFFICIAL",
-        "page_size": 25
+        "page_size": 25,
+        "list_totals": {
+          "top_shortages": 12,
+          "top_emerging_skills": 6,
+          "active_warnings": 8
+        },
+        "truncated": true
       }
     }
 
@@ -220,7 +227,7 @@ top_shortages and top_emerging_skills use the same deterministic ranking rules a
 
 ## 7.4 GET /api/v1/skills
 
-Returns canonical skills/job roles. This endpoint is descriptive and does not require analysis_mode.
+Returns canonical skills/job roles. This endpoint is descriptive and does not require analysis_mode. Taxonomy mappings are provenance-agnostic reference mappings and are not selected or hidden by OFFICIAL/DEMO analytical mode.
 
 Query parameters: sector_id, taxonomy_name, active_only, page, page_size.
 
@@ -313,7 +320,7 @@ Query parameters: district_id, skill_id, period, warning_type, severity, analysi
 
 analysis_mode defaults to OFFICIAL and the applied value is echoed in meta.analysis_mode.
 
-Response item contains warning_id, forecast_id, emerging_skill_signal_id, warning_type, severity, detected_period, explanation_code, provenance_state, and forecast_status, plus supporting fields defined by Issue #17. forecast_status is the Issue #5 analytical classification field status (SHORTAGE, BALANCED, OVERSUPPLY, or NO_DEMAND when applicable); data_status remains a separate forecast field and must not be inferred from forecast_status.
+Response item contains warning_id, forecast_id, emerging_skill_signal_id, warning_type, severity, detected_period, explanation_code, provenance_state, and forecast_classification, plus supporting fields defined by Issue #17. forecast_classification is a copy of the Issue #5 analytical classification field status (SHORTAGE, BALANCED, OVERSUPPLY, or NO_DEMAND when applicable); data_status remains a separate forecast field and must not be inferred from forecast_classification.
 
 Warning type/severity vocabulary and ranking remain owned by Issue #17.
 
@@ -602,6 +609,7 @@ Request rules:
 - A malformed forecast UUID returns 422 / VALIDATION_ERROR.
 - A well-formed but unknown forecast ID or warning ID returns 404 / RESOURCE_NOT_FOUND.
 - The backend validates that supplied forecast records belong to the requested district and skill; incompatible references return 400 / INVALID_REQUEST because this is an endpoint-level semantic constraint.
+- The backend validates that supplied warning records belong to the requested district and skill; incompatible warning references return 400 / INVALID_REQUEST for the same endpoint-level semantic reason.
 - include_evidence defaults to true.
 
 ### Response
@@ -660,7 +668,7 @@ Collection endpoints use:
 
 page_size above 100 returns 422 / VALIDATION_ERROR.
 
-Collection responses include meta.page, meta.page_size, and meta.total.
+Collection responses include meta.page, meta.page_size, and meta.total. Dashboard list responses additionally use meta.list_totals and meta.truncated as defined in Section 7.1.
 
 ### Period ranges
 
@@ -729,7 +737,7 @@ The structured output defined by Issue #18. The API preserves its finalized fiel
 
 **WarningRecord**
 
-The structured warning output defined by Issue #17, including warning identifier, linked forecast/signal identifiers, type, severity, detected period, explanation code, provenance, forecast status, confidence/evidence fields, and ranking-supporting signals where exposed by #17.
+The structured warning output defined by Issue #17, including warning identifier, linked forecast/signal identifiers, type, severity, detected period, explanation code, provenance, forecast_classification (which copies the Issue #5 forecast status field), confidence/evidence fields, and ranking-supporting signals where exposed by #17.
 
 **GeographicSkillSummary**
 
