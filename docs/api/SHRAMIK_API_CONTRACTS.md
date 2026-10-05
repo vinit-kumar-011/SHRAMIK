@@ -209,7 +209,7 @@ lgd_district_code is the canonical LGD district code when known and may be null 
 
 Returns geographic intelligence for one district.
 
-Query parameters: period and analysis_mode. analysis_mode defaults to OFFICIAL.
+Query parameters: period, analysis_mode, page_size. analysis_mode defaults to OFFICIAL. page_size defaults to 25 and is constrained to 1–100; it applies only to top_shortages, top_emerging_skills, and active_warnings. It does not paginate or truncate sector_summary.
 
 The applied mode is echoed in meta.analysis_mode.
 
@@ -571,7 +571,7 @@ The response uses:
 - simulation_note_code = BASELINE_INSUFFICIENT_DATA
 - periods = []
 - gap_reduction = null
-- shortage_closed_fraction = null
+- shortage_closed_fraction = null (explicitly null because no positive eligible horizon-end shortage exists)
 - analysis_mode = OFFICIAL or the explicitly requested mode, echoed in both data.analysis_mode and meta.analysis_mode
 
 No forecast or scenario values are fabricated.
