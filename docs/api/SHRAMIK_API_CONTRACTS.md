@@ -536,11 +536,14 @@ For data_status=SUFFICIENT and gap_eligible=true, baseline gap and simulated gap
 
 For data_status=SUFFICIENT and gap_eligible=false, baseline_gap is null and the simulator returns added_supply, simulated_supply, and simulated_gap as null for that period. It does not invent a gap from incompatible signals. This is a deliberate API-level exception to the generic simulator dependency wording in Issue #5: although Issue #5 says simulated_gap is still returned for NO_DEMAND, the Issue #2 gap-eligibility rule and this API contract take precedence when gap_eligible=false.
 
-Top-level gap_reduction is the reduction at horizon_end when the horizon-end baseline is SUFFICIENT, gap_eligible=true, and has a positive baseline gap:
+Top-level gap_reduction is determined only from the horizon_end period. Intermediate periods, including null-valued periods caused by INSUFFICIENT_DATA, UNAVAILABLE, or gap-ineligible baselines, do not affect the numerator or denominator.
 
-    (baseline_gap - simulated_gap) / baseline_gap
+When the horizon-end baseline is SUFFICIENT, gap_eligible=true, and has a positive baseline gap:
 
-It is null when this is not computable, including no positive baseline shortage, gap-ineligible horizon-end data, or insufficient/unavailable horizon-end data.
+    gap_reduction = (baseline_gap - simulated_gap) / baseline_gap
+    shortage_closed_fraction = min(max(gap_reduction, 0), 1)
+
+Both fields are null when the horizon-end result does not provide a computable positive eligible baseline shortage.
 
 simulation_note_code is intentionally separate from Issue #5 reason_code. It is a simulator-only enum:
 - COHORT_AFTER_HORIZON — cohort becomes available after the final scenario period; scenario values remain equal to baseline within the horizon.
@@ -549,7 +552,7 @@ simulation_note_code is intentionally separate from Issue #5 reason_code. It is 
 - BASELINE_INSUFFICIENT_DATA — one or more required baseline periods are insufficient for scenario computation.
 - BASELINE_UNAVAILABLE — required baseline forecast data is unavailable.
 
-When multiple note conditions occur, the implementation returns the highest-priority applicable note using this order: BASELINE_UNAVAILABLE, BASELINE_INSUFFICIENT_DATA, BASELINE_GAP_INELIGIBLE, COHORT_AFTER_HORIZON, NO_POSITIVE_BASELINE_GAP. The per-period fields remain authoritative for exactly which periods are affected.
+simulation_note_code is a single-value field. When multiple conditions apply, it returns only the highest-priority applicable code; it is not a complete list of every applicable condition. The priority order is: BASELINE_UNAVAILABLE, BASELINE_INSUFFICIENT_DATA, COHORT_AFTER_HORIZON, BASELINE_GAP_INELIGIBLE, NO_POSITIVE_BASELINE_GAP. This intentionally gives COHORT_AFTER_HORIZON precedence over a simultaneously applicable gap-ineligible condition because cohort timing is independently material to the scenario result. Per-period fields remain authoritative for exactly which periods are affected.
 
 ### No-baseline behaviour
 
@@ -563,6 +566,10 @@ The response uses:
 - analysis_mode = OFFICIAL or the explicitly requested mode, echoed in both data.analysis_mode and meta.analysis_mode
 
 No forecast or scenario values are fabricated.
+
+When horizon_end is omitted, it is the latest existing baseline forecast record for the requested district + skill + analysis_mode, regardless of that record's data_status. Therefore, an explicitly stored latest period with INSUFFICIENT_DATA or UNAVAILABLE is still the default horizon end; gap_reduction and shortage_closed_fraction are then null because the horizon-end result is not computationally eligible.
+
+The periods array covers every existing baseline forecast period from start_period through horizon_end, inclusive, sorted ascending by period. A period explicitly represented as INSUFFICIENT_DATA or UNAVAILABLE appears as a null-valued analytical/scenario entry using the per-period schema. A calendar year for which no baseline forecast record exists is not fabricated and is omitted. These null entries still belong to the selected horizon and do not change the horizon_end definition; they simply make horizon-end gap reduction non-computable when the final record is not eligible.
 
 For partial baseline availability, the simulator returns available baseline periods plus null-valued period entries for baseline periods that are explicitly present but INSUFFICIENT_DATA or UNAVAILABLE, following the per-period schema above.
 
