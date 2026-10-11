@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
 export function Button({ children, variant = 'primary', size = 'md', loading = false, className = '', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'quiet' | 'danger'; size?: 'sm' | 'md' | 'lg'; loading?: boolean }) {
-  return <button className={'sh-btn sh-btn--' + variant + ' sh-btn--' + size + ' ' + className} disabled={props.disabled || loading} {...props}>
+  return <button className={'sh-btn sh-btn--' + variant + ' sh-btn--' + size + ' ' + className} {...props} disabled={props.disabled || loading}>
     {loading && <span className="sh-spinner" aria-hidden="true" />}{children}
   </button>;
 }
@@ -14,8 +14,12 @@ export function IconButton({ label, children, ...props }: ButtonHTMLAttributes<H
 export function Badge({ children, tone = 'neutral', dot = false }: { children: ReactNode; tone?: Tone; dot?: boolean }) {
   return <span className={'sh-badge sh-badge--' + tone}>{dot && <span className="sh-badge__dot" aria-hidden="true" />}{children}</span>;
 }
-export function Panel({ children, className = '', ...props }: HTMLAttributes<HTMLElement>) {
-  return <section className={'panel ' + className} {...props}>{children}</section>;
+type PanelProps = HTMLAttributes<HTMLElement> & { title?: string; subtitle?: string; action?: ReactNode };
+export function Panel({ children, className = '', title, subtitle, action, ...props }: PanelProps) {
+  return <section className={'panel ' + className} {...props}>
+    {(title || subtitle || action) && <div className="panel-header"><div>{title && <h3>{title}</h3>}{subtitle && <p>{subtitle}</p>}</div>{action}</div>}
+    <div className="panel-body">{children}</div>
+  </section>;
 }
 export function Field({ label, hint, error, id, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string; error?: string; id: string }) {
   return <div className="sh-field">
