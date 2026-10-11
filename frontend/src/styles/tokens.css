@@ -1,0 +1,34 @@
+:root {
+  color-scheme: light;
+  --sh-canvas: #F7F6F0;
+  --sh-surface: #FFFFFF;
+  --sh-surface-muted: #F0EFE8;
+  --sh-ink: #171717;
+  --sh-muted: #62625C;
+  --sh-border: #292929;
+  --sh-border-muted: #D8D6CD;
+  --sh-yellow: #F2D34F;
+  --sh-yellow-hover: #E6C33C;
+  --sh-navy: #203A5B;
+  --sh-orange: #EB791D;
+  --sh-teal: #20A89C;
+  --sh-success: #35745D;
+  --sh-warning: #B56732;
+  --sh-danger: #B42318;
+  --sh-info: #315D8A;
+  --sh-space-1: 4px;
+  --sh-space-2: 8px;
+  --sh-space-3: 12px;
+  --sh-space-4: 16px;
+  --sh-space-6: 24px;
+  --sh-space-8: 32px;
+  --sh-space-12: 48px;
+  --sh-radius-control: 8px;
+  --sh-radius-card: 12px;
+  --sh-shadow-offset: 3px 3px 0 var(--sh-border);
+  --sh-shadow-subtle: 0 2px 8px rgba(23, 23, 23, .07);
+  --sh-motion-fast: 180ms;
+  --sh-motion-standard: 240ms;
+  --sh-font-display: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
+  --sh-font-body: "IBM Plex Sans", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
