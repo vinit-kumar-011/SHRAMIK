@@ -158,10 +158,18 @@ Annexure-II includes state-wise and district-wise counts of candidates trained/o
 
 The OGD catalog describes this as a high-value dataset with daily granularity and a **Data API**. The catalog was modified in May 2026, while the resource listing shows an update date in September 2025; these dates differ and must not be collapsed into a claim that the underlying rows are refreshed daily today.
 
+**API identifier and current test status (2026-10-11)**
+- Resource UUID shown in the portal's generated request URL: `1d4d1c5a-feea-423b-be4f-c3636fdd1d82`.
+- The portal-generated URL uses the standard `https://api.data.gov.in/resource/{resource-id}?api-key=...&format=json` shape.
+- The portal Swagger/API page returned a browser-side `TypeError: NetworkError when attempting to fetch resource` on Execute. This does not by itself tell us whether the API key is invalid, the upstream request failed, or the browser test was blocked.
+- The API key appeared in a screenshot shared during troubleshooting and must be treated as exposed; regenerate it before testing again. Never commit or share it.
+- Terminal/backend request with a newly generated key: pending.
+
 **Access status**
 - OGD catalog says Data API is available: indicated by portal metadata.
-- Working API request and exact response fields from SHRAMIK environment: pending.
-- Access likely requires the resource ID and an OGD API key; obtain the generated API URL from the official resource page rather than guessing the ID.
+- Resource UUID obtained from actual generated request URL: confirmed.
+- Working API request and exact response fields from SHRAMIK runtime: pending.
+- Access requires an OGD API key; keep it only in local environment configuration.
 
 **Usable role**
 - Potential district-level registered-worker context if the response confirms district and registration counts / demographic fields.
