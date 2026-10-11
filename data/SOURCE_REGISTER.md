@@ -6,6 +6,8 @@
 **Reference plan:** `docs/data/SHRAMIK_CANONICAL_DATASET_PLAN.md`  
 **Status:** Source audit in progress.
 
+**Latest access verification:** See [SHRAMIK Verified Source-Access Audit](../docs/data/SHRAMIK_SOURCE_ACCESS_AUDIT.md) (2026-10-11) for current API/download findings and ingestion priorities.
+
 ## 1. Immediate checkpoint
 
 Before extracting any observations, prove that an official source supports the target grain:
