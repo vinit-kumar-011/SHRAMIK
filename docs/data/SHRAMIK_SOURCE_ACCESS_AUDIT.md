@@ -129,6 +129,63 @@ These are dated, source-specific snapshots. Their current direct-download succes
 
 Use it to verify selected qualification/trade-to-occupation mappings. A stable public API for the required crosswalk was not verified in this audit. Until an official machine-readable export/API is confirmed, capture the specific qualification record/document used for each reviewed mapping and record mapping method, confidence and source. Never invent an NCO code.
 
+### G. MSDE / PMKVY — district-wise training outputs across India
+
+**Official source:** [MSDE Skill India Scheme annexures, answered 11 February 2026](https://www.msde.gov.in/static/uploads/2026/02/ea9aeb01c84a5bfe4b5d18ae591224a0.pdf)
+
+Annexure-II includes state-wise and district-wise counts of candidates trained/oriented under PMKVY for financial years **2020-21 through 2024-25**. The annexure is a public official PDF, not an API resource.
+
+**Access status**
+- Official all-India downloadable report: confirmed.
+- API: not the access path for this report; the published source is a PDF.
+- Extracted/validated SHRAMIK dataset: pending.
+
+**Usable grain and role**
+- State × District × FY annual training-output counts.
+- Signal type: TRAINING_OUTPUT / CANDIDATES_TRAINED_OR_ORIENTED.
+- This gives us a strong candidate **multi-state official dataset** for a real district-level training-context view and parser test.
+
+**Limits**
+- The table is not disaggregated by trade/skill in the listed columns.
+- Counts are candidates trained/oriented under a scheme, not currently available workers and not employer vacancies.
+- Dashes in the source must not automatically become zero until the table's semantics are verified.
+- Keep the financial-year label as published; do not relabel it as calendar year.
+- A district-level training-output series cannot be joined to district × skill demand as if it were a skill shortage.
+
+### H. e-Shram — district-wise demographic/registration data (newer resource)
+
+**Official resource:** [District-wise demographic data of e-Shram registered unorganised workers](https://www.data.gov.in/resource/district-wise-demographic-data-unorganised-workers-registered-eshram-previous-day)
+
+The OGD catalog describes this as a high-value dataset with daily granularity and a **Data API**. The catalog was modified in May 2026, while the resource listing shows an update date in September 2025; these dates differ and must not be collapsed into a claim that the underlying rows are refreshed daily today.
+
+**Access status**
+- OGD catalog says Data API is available: indicated by portal metadata.
+- Working API request and exact response fields from SHRAMIK environment: pending.
+- Access likely requires the resource ID and an OGD API key; obtain the generated API URL from the official resource page rather than guessing the ID.
+
+**Usable role**
+- Potential district-level registered-worker context if the response confirms district and registration counts / demographic fields.
+- Registration count is not the same as people currently available for work, current employment status, or a matching skill supply count.
+- Keep this separate from training output and vacancies.
+
+**Do not confuse resources:** the older occupation-wise e-Shram snapshot at [this OGD page](https://www.data.gov.in/resource/occupation-wise-number-registrations-unorganised-workers-till-23-02-2023) explicitly says its API does not exist. That finding applies to that particular resource, not automatically to the newer district-wise resource.
+
+### I. Labour Bureau — Quarterly Employment Survey (QES)
+
+**Official source:** [Quarterly Employment Survey](https://www.labourbureau.gov.in/qes)
+
+The Labour Bureau describes QES as an establishment-based survey covering establishments with 10 or more workers in nine selected sectors: manufacturing, construction, trade, transportation, education, health, accommodation/restaurants, IT/BPO and financial services. The official page lists round reports.
+
+**Access status**
+- Official report downloads: confirmed.
+- Public row-level API for district × occupation vacancies: not established.
+- Data grain and extraction: report-specific; each report must be inspected before ingestion.
+
+**Usable role and limits**
+- Potential national/sector employment context and change over rounds.
+- Not a substitute for vacancy counts or a district × skill vacancy series.
+- Reports are quarterly, while SHRAMIK's current forecast contract is annual; preserve the report's period and do not manufacture annual or skill detail. Any use in annual analytics requires a documented aggregation/compatibility rule.
+
 ## 2. What this means for the frozen SHRAMIK model
 
 The current model already supports heterogeneous source grains. No database redesign is required merely because sources arrive as APIs, spreadsheets, HTML tables or reports.
@@ -155,12 +212,12 @@ The current database/ML contracts remain authoritative:
 
 ## 3. Recommended first vertical slice
 
-1. **First adapter smoke test (Odisha candidate):** retrieve the SAMS HTML table once, save a raw snapshot, parse the rows into a reviewable CSV, omit contact numbers, and attach source URL, retrieval timestamp and SHA-256. This validates the adapter approach only; choose the actual multi-state pilot after source availability is compared.
-2. **Second adapter smoke test (Odisha candidate):** extract one official District Employment Exchange statistics page into a fixture/CSV with distinct metrics and explicit period labels. Mark partial-year observations as partial. In parallel, audit national datasets and other states for comparable demand signals.
-3. **Canonical output:** normalize both datasets through the existing capability-aware observation model without joining them into an unsupported skill gap.
+1. **National table first:** obtain and parse the MSDE PMKVY Annexure-II PDF to a raw table/CSV with state, district, financial-year columns and a provenance record. Validate the extracted rows against several source PDF pages and preserve dashes until their meaning is established. This produces training-output context, not skill demand.
+2. **National API smoke test:** get the exact API URL/resource ID for the newer e-Shram district-wise demographic resource and test one small page with a data.gov.in API key. Record the actual response fields and pagination; do not use the older occupation-wise resource as though it had an API.
+3. **Capability-aware normalization:** normalize the PMKVY rows to State × District × FY training-output observations, and e-Shram observations only at the grain its actual response supports. Do not join either to an unsupported skill gap.
 4. **PLFS access setup in parallel:** create the portal account and API key, then run a separate download smoke test for the selected catalog dataset. Keep the key in local environment configuration; never commit it.
-5. **Tests:** include valid row, missing field, invalid number, duplicate row, unmapped trade, partial period, and repeatable-run tests.
-6. **Demo path:** keep the synthetic/demo adapter independent so the full skill-level forecast journey can be demonstrated without misrepresenting synthetic data as official.
+5. **State-specific adapter validation:** use Odisha SAMS and a district Employment Exchange page as optional HTML adapter fixtures, not as the product's state boundary.
+6. **Tests/demo:** include missing fields, invalid numbers, duplicate rows, unresolved district mappings, unknown dashes, partial periods and deterministic reruns. Keep the synthetic/demo adapter separate.
 
 ## 4. Definition of done for Issue #9
 
