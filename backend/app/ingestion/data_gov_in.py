@@ -116,7 +116,7 @@ class DataGovInClient:
                     "limit": limit,
                 },
             )
-        except httpx.HTTPError as exc:
+        except httpx.HTTPError:
             raise DataGovInError("Could not reach the data.gov.in API.") from None
 
         if not 200 <= response.status_code < 300:
