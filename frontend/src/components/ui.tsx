@@ -16,9 +16,10 @@ export function Badge({ children, tone = 'neutral', dot = false }: { children: R
 }
 type PanelProps = HTMLAttributes<HTMLElement> & { title?: string; subtitle?: string; action?: ReactNode };
 export function Panel({ children, className = '', title, subtitle, action, ...props }: PanelProps) {
+  const hasHeader = Boolean(title || subtitle || action);
   return <section className={'panel ' + className} {...props}>
-    {(title || subtitle || action) && <div className="panel-header"><div>{title && <h3>{title}</h3>}{subtitle && <p>{subtitle}</p>}</div>{action}</div>}
-    <div className="panel-body">{children}</div>
+    {hasHeader && <div className="panel-header"><div>{title && <h3>{title}</h3>}{subtitle && <p>{subtitle}</p>}</div>{action}</div>}
+    {hasHeader ? <div className="panel-body">{children}</div> : children}
   </section>;
 }
 export function Field({ label, hint, error, id, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string; error?: string; id: string }) {
