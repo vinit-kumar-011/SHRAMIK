@@ -4,6 +4,16 @@
 **Scope:** Public/official data source discoverability, supported retrieval method, useful grain, and immediate ingestion path.  
 **Status:** Portal metadata and access routes verified; authenticated PLFS download and source extraction have not yet been executed from the project environment. Do not describe any adapter as operational until a real retrieval and parser test succeeds.
 
+## National scope — non-negotiable
+
+The product and canonical data model are **India-wide**. Odisha is only one candidate state/source adapter used to prove the first ingestion path because public structured examples were identified there. It is not the product boundary, canonical geography, final state selection, or an Odisha-only architecture.
+
+The SIH expected outcomes ask for a functioning dashboard covering **at least a few pilot sectors and States**, plus national-to-district drill-down. Therefore:
+- Build a national-capable model, taxonomy/geography mapping, API and frontend hierarchy from the beginning.
+- Select a small multi-state pilot by verified source accessibility and useful coverage; do not promise complete, current data for every Indian district unless we actually have it.
+- A national dashboard may roll up only the compatible observations/forecasts available in the pilot. Show coverage and missingness clearly; never present partial pilot coverage as complete all-India coverage.
+- Odisha-first in the steps below means **adapter/access smoke test only**. It must not cause the forecast model or shared tables to become Odisha-specific.
+
 ## Executive decision
 
 Data access should not block the whole team. Build the ingestion pipeline around **source adapters**, not around a requirement that every government source expose a live API.
@@ -145,8 +155,8 @@ The current database/ML contracts remain authoritative:
 
 ## 3. Recommended first vertical slice
 
-1. **Supply snapshot:** retrieve the SAMS HTML table once, save a raw snapshot, parse the rows into a reviewable CSV, omit contact numbers, and attach source URL, retrieval timestamp and SHA-256.
-2. **Aggregate demand parser:** extract one official District Employment Exchange statistics page into a fixture/CSV with distinct metrics and explicit period labels. Mark partial-year observations as partial.
+1. **First adapter smoke test (Odisha candidate):** retrieve the SAMS HTML table once, save a raw snapshot, parse the rows into a reviewable CSV, omit contact numbers, and attach source URL, retrieval timestamp and SHA-256. This validates the adapter approach only; choose the actual multi-state pilot after source availability is compared.
+2. **Second adapter smoke test (Odisha candidate):** extract one official District Employment Exchange statistics page into a fixture/CSV with distinct metrics and explicit period labels. Mark partial-year observations as partial. In parallel, audit national datasets and other states for comparable demand signals.
 3. **Canonical output:** normalize both datasets through the existing capability-aware observation model without joining them into an unsupported skill gap.
 4. **PLFS access setup in parallel:** create the portal account and API key, then run a separate download smoke test for the selected catalog dataset. Keep the key in local environment configuration; never commit it.
 5. **Tests:** include valid row, missing field, invalid number, duplicate row, unmapped trade, partial period, and repeatable-run tests.
