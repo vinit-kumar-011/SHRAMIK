@@ -85,9 +85,9 @@ class _RowParser(HTMLParser):
 
 def _html_response_summary(html: str) -> str:
     """Return a bounded text-only preview to diagnose non-catalogue responses."""
-    title_match = re.search(r"<title\\b[^>]*>(.*?)</title\\s*>", html, flags=re.I | re.S)
+    title_match = re.search(r"<title\b[^>]*>(.*?)</title\\s*>", html, flags=re.I | re.S)
     title = clean_text(unescape(re.sub(r"<[^>]+>", " ", title_match.group(1)))) if title_match else "(no title tag)"
-    without_scripts = re.sub(r"<(script|style)\\b[^>]*>.*?</\\1\\s*>", " ", html, flags=re.I | re.S)
+    without_scripts = re.sub(r"<(script|style)\b[^>]*>.*?</\1\s*>", " ", html, flags=re.I | re.S)
     visible = clean_text(unescape(re.sub(r"<[^>]+>", " ", without_scripts)))
     return f"title={title[:160]!r}; body_preview={visible[:400]!r}; html_chars={len(html)}"
 
