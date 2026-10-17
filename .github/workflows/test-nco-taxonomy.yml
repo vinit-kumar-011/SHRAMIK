@@ -14,8 +14,10 @@ on:
   pull_request:
     paths:
       - "scripts/import_nco_2015.py"
+      - "scripts/import_nco_2015_csv.py"
       - "scripts/build_cts_nco_candidates.py"
       - "tests/test_nco_2015_import.py"
+      - "tests/test_nco_2015_csv_import.py"
       - "tests/test_cts_nco_candidates.py"
       - ".github/workflows/test-nco-taxonomy.yml"
 
