@@ -56,6 +56,15 @@ def read_and_validate_csv(
             raise ValueError(f"CSV is missing required columns: {sorted(missing_fields)}")
         records = [{field: (row.get(field) or "").strip() for field in CSV_FIELDS} for row in reader]
 
+    # Store absent concordance/hierarchy fields as SQL NULL, not empty strings.
+    optional_text_fields = (
+        "nco_2004_code", "division", "sub_division",
+        "occupation_group", "occupation_family",
+    )
+    for row in records:
+        for field in optional_text_fields:
+            row[field] = row[field] or None
+
     if expected_count > 0 and len(records) != expected_count:
         raise ValueError(
             f"Row count mismatch: expected exactly {expected_count}, found {len(records)}. "
@@ -185,6 +194,48 @@ def sync_database(records: list[dict[str, Any]], database_url: str, snapshot_has
     return len(records)
 
 
+def find_database_url(env_file: Path | None = None) -> str | None:
+    """Read DATABASE_URL from the process environment or a local dotenv file.
+
+    Secrets are used in memory only and are never printed. The importer does
+    not create or modify any environment files.
+    """
+    value = os.getenv("DATABASE_URL")
+    if value:
+        return value.strip()
+
+    candidates = [env_file] if env_file else []
+    candidates.extend([Path(".env"), Path(".env.local"), Path("backend/.env")])
+    seen: set[Path] = set()
+    for path in candidates:
+        if path is None:
+            continue
+        try:
+            resolved = path.resolve()
+        except OSError:
+            continue
+        if resolved in seen or not path.is_file():
+            continue
+        seen.add(resolved)
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+            key, raw_value = stripped.split("=", 1)
+            if key.strip() != "DATABASE_URL":
+                continue
+            candidate = raw_value.strip()
+            if len(candidate) >= 2 and candidate[0] == candidate[-1] and candidate[0] in {"'", '"'}:
+                candidate = candidate[1:-1]
+            if candidate:
+                return candidate
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", type=Path, required=True, help="Path to nco_2015_occupations_validated.csv")
@@ -195,6 +246,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--sync-db", action="store_true",
         help="Explicitly replace the current staging snapshot in Supabase after all local validation passes.",
+    )
+    parser.add_argument(
+        "--env-file", type=Path, default=None,
+        help="Optional local dotenv file containing DATABASE_URL (searched after the process environment).",
     )
     args = parser.parse_args(argv)
     if args.expected_count < 0:
@@ -209,10 +264,11 @@ def main(argv: list[str] | None = None) -> int:
             print("Dry run only: Supabase was not changed. Add --sync-db to perform the transactional staging import.")
             return 0
 
-        database_url = os.getenv("DATABASE_URL")
+        database_url = find_database_url(args.env_file)
         if not database_url:
             raise RuntimeError(
-                "--sync-db requires DATABASE_URL in the local environment. Set it locally; do not paste credentials into chat."
+                "--sync-db requires DATABASE_URL in the process environment or a local .env/.env.local/backend/.env file. "
+                "Set it locally; do not paste credentials into chat."
             )
         count = sync_database(records, database_url, snapshot_hash)
         print(f"Imported and verified {count} current rows in public.stg_nco_2015_occupations.")
