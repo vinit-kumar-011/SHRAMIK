@@ -6,6 +6,7 @@ import pytest
 from scripts.import_nco_2015_csv import (
     CSV_FIELDS,
     canonical_snapshot_hash,
+    find_database_url,
     read_and_validate_csv,
 )
 
@@ -110,3 +111,36 @@ def test_invalid_code_and_blank_title_fail_closed(tmp_path):
     write_rows(path, rows)
     with pytest.raises(ValueError, match="Blank occupation_title"):
         read_and_validate_csv(path, expected_count=2)
+
+
+
+def test_blank_optional_fields_are_normalized_to_null(tmp_path):
+    path = tmp_path / "optional-null.csv"
+    rows = sample_rows()
+    rows[0]["nco_2004_code"] = ""
+    rows[0]["occupation_family"] = ""
+    digest = canonical_snapshot_hash(rows)
+    for row in rows:
+        row["source_snapshot_sha256"] = digest
+    write_rows(path, rows)
+
+    parsed, _ = read_and_validate_csv(path, expected_count=2)
+    first = next(row for row in parsed if row["nco_code"] == "7321.1100")
+    assert first["nco_2004_code"] is None
+    assert first["occupation_family"] is None
+
+
+def test_database_url_can_be_read_from_explicit_env_file_without_printing(tmp_path, monkeypatch):
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    env_file = tmp_path / ".env.local"
+    env_file.write_text('OTHER_SETTING=x\\nDATABASE_URL="postgresql://user:pass@localhost/db?sslmode=require"\\n', encoding="utf-8")
+
+    assert find_database_url(env_file) == "postgresql://user:pass@localhost/db?sslmode=require"
+
+
+def test_process_environment_database_url_takes_precedence_over_dotenv(tmp_path, monkeypatch):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DATABASE_URL=postgresql://file-url\\n", encoding="utf-8")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://environment-url")
+
+    assert find_database_url(env_file) == "postgresql://environment-url"
