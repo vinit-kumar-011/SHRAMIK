@@ -8,8 +8,8 @@ This small pilot establishes stable canonical job-role records and attaches exac
 
 The official Directorate General of Employment NCO-2015 occupation browser and classification download page are the source of the occupation titles and codes:
 
-- https://www.dge.gov.in/nat
-- https://www.dge.gov.in/nco-2015
+- https://dge.gov.in/nat
+- https://dge.gov.in/nco-2015
 
 ## Pilot records
 
