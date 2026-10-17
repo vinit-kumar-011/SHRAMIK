@@ -148,6 +148,33 @@ def _find_header(rows: list[list[str]], html: str = "") -> tuple[int, dict[str, 
     )
 
 
+def is_terminal_empty_page(html: str, requested_page: int) -> bool:
+    """Recognize an out-of-range final pager request, not a mid-run parse failure.
+
+    Requires official DGE page branding, no actual table rows, and pagination
+    links proving the requested page exceeds the last available page.
+    """
+    if requested_page < 1:
+        return False
+    if not re.search(r"<\\s*tr(?:\\s|>)", html, flags=re.I):
+        has_dge_branding = (
+            "National Classification of Occupations" in html
+            and "Directorate General of Employment" in html
+        )
+        if not has_dge_branding:
+            return False
+        hrefs = re.findall(r"""href\\s*=\\s*(['"])(.*?)\\1""", html, flags=re.I | re.S)
+        linked_pages: list[int] = []
+        for _, href in hrefs:
+            decoded_href = unescape(href).replace("&amp;", "&")
+            if re.search(r"(?:[?&])page=\\d+", decoded_href):
+                match = re.search(r"(?:[?&])page=(\\d+)", decoded_href)
+                if match:
+                    linked_pages.append(int(match.group(1)))
+        return bool(linked_pages) and requested_page > max(linked_pages)
+    return False
+
+
 def parse_nco_page(html: str, page: int, page_url: str) -> list[dict[str, object]]:
     parser = _RowParser()
     parser.feed(html)
@@ -255,8 +282,25 @@ def fetch_catalogue(max_pages: int = 30, minimum_records: int = 2000, delay_seco
                 errors.append(str(exc))
 
         if page_records is None:
+            # A request beyond the last Drupal pager page can return the normal
+            # DGE site shell with no table at all. Treat that as end-of-data only
+            # when a linked pager proves this page is out of range and we've
+            # already collected enough records to satisfy the completeness floor.
+            terminal_match = False
+            for base_url in (BASE_URL, *FALLBACK_BASE_URLS):
+                try:
+                    html, _candidate_url = fetch_page(page, base_url=base_url)
+                except RuntimeError:
+                    continue
+                if is_terminal_empty_page(html, page):
+                    terminal_match = True
+                    break
+            if terminal_match and len(collected) >= minimum_records:
+                reached_end = True
+                break
             raise RuntimeError(
                 f"Could not parse DGE page {page} from the primary or fallback official route. "
+                f"Records collected so far: {len(collected)}; required minimum: {minimum_records}. "
                 + " | ".join(errors)
             )
 
