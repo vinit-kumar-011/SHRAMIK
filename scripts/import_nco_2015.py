@@ -286,7 +286,8 @@ def sync_database(records: list[dict[str, object]], database_url: str) -> int:
             if not source:
                 raise RuntimeError(f"Missing data source registry entry: {SOURCE_NAME}")
             conn.execute("update public.stg_nco_2015_occupations set is_current = false")
-            conn.executemany(sql, [{**row, "source_id": source[0]} for row in records])
+            with conn.cursor() as cur:
+                cur.executemany(sql, [{**row, "source_id": source[0]} for row in records])
             snapshot_hash = str(records[0]["source_snapshot_sha256"])
             actual = conn.execute(
                 """select count(*) from public.stg_nco_2015_occupations
