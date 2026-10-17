@@ -1,0 +1,29 @@
+name: NCO taxonomy importer tests
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "scripts/import_nco_2015.py"
+      - "scripts/build_cts_nco_candidates.py"
+      - "tests/test_nco_2015_import.py"
+      - "tests/test_cts_nco_candidates.py"
+      - ".github/workflows/test-nco-taxonomy.yml"
+  pull_request:
+    paths:
+      - "scripts/import_nco_2015.py"
+      - "scripts/build_cts_nco_candidates.py"
+      - "tests/test_nco_2015_import.py"
+      - "tests/test_cts_nco_candidates.py"
+      - ".github/workflows/test-nco-taxonomy.yml"
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip pytest
+      - run: python -m pytest tests/test_nco_2015_import.py tests/test_cts_nco_candidates.py -q
