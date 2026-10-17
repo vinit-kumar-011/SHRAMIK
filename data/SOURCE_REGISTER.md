@@ -261,3 +261,18 @@ This dataset build is ready for downstream development only when:
 - the final dataset can be regenerated without manual spreadsheet edits
 
 Until then, do not use synthetic coverage to claim official data sufficiency.
+
+
+## 2B. Data-source decision update (17 October 2026)
+
+### PLFS 2025 benchmark reconciliation
+
+The source-corrected Stage 1A reconciliation was rerun on 17 October 2026. It contains 3,987 benchmark registry rows: 3,960 published numeric cells, 3,928 matching to one decimal, 32 remaining mismatches and 27 not-published/not-applicable cells. All 32 remaining mismatches are in the aggregate person category. This is a broad regression result, not full statistical approval. The numerator-only sex-code-3 sensitivity diagnostic is not approved as a correction.
+
+Use published MoSPI aggregate cells as source-attributed context where the report's table, geography, period, age domain, sector and category are retained. Do not claim all derived State/UT estimates are fully validated. Design-based standard errors, confidence intervals, RSE and district rankings remain blocked until the controlling 2025 Appendix D procedure and unresolved FSU/SSS disposition rules are reconciled. Details: docs/data/PLFS_AND_ESHRAM_NEXT_STEPS_2026-10-17.md.
+
+### e-Shram: optional bounded source context
+
+Further semantic investigation is deferred beyond the MVP. A local-only capture helper has been added at scripts/capture_eshram_snapshot.py. It uses the DATA_GOV_IN_API_KEY environment variable, bounds each run, keeps raw page files in the Git-ignored data/raw/eshram directory, and writes a privacy-minimized summary under data/processed/eshram. It can record source metadata and frequencies among returned API rows; these frequencies are not population counts.
+
+The resource's reported total remains uninterpreted. Do not describe it as unique registered workers, active jobseekers, available supply or vacancies, and do not feed it into official forecasts. Only use separately published e-Shram aggregate tables as registered-worker metrics when their unit and reference date are explicitly stated. Official source: https://www.data.gov.in/resource/district-wise-demographic-data-unorganised-workers-registered-eshram-previous-day.
