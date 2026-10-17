@@ -1,0 +1,38 @@
+{
+  "dataset_name": "NCO-2015 merged, source-reviewed occupation catalogue",
+  "source_name": "National Classification of Occupations 2015",
+  "official_source_landing_page": "https://dge.gov.in/nco-2015",
+  "created_at": "2026-10-17T16:16:05+00:00",
+  "row_count": 3451,
+  "volume_i_concordance_records": 3447,
+  "volume_ii_only_occupations_added": 4,
+  "likely_volume_ii_a_code_typo_excluded": 1,
+  "volume_i_only_records_retained_with_review_note": 2,
+  "unique_codes": 3451,
+  "invalid_code_count": 0,
+  "blank_title_count": 0,
+  "blank_nco_2004_code_count": 774,
+  "source_snapshot_sha256": "2ec0571104b4a68e8e65491c4eb84c2f973bba41a223b3eb804f3b128f67de71",
+  "source_pdfs": {
+    "Volume I": {
+      "filename": "National_Classification_of_Occupations_Vol_I-2015.pdf",
+      "sha256": "4543dede4ac9a8e6d7c5ea82914382c00e39755c778472e69f3186da4546d839"
+    },
+    "Volume II-A": {
+      "filename": "National_Classification_of_Occupations_Vol_II-A-2015.pdf",
+      "sha256": "7e90fa42f4a55d35c3031a0d29ca998aa369040410b7dd555571313800173c51"
+    },
+    "Volume II-B": {
+      "filename": "National_Classification_of_Occupations_Vol_II-B-2015.pdf",
+      "sha256": "d9147732f98c48c5353658f22580e495895e20f4682368035c6a7cfd252ae7f4"
+    }
+  },
+  "validation_notes": [
+    "Base records were transcribed from Volume I concordance table; four explicit Volume-II-only occupation codes were added after cross-checking Vol II-B.",
+    "3127.9900 in Vol II-A was not treated as a separate canonical code because the same title is listed as 3123.9900 in Volume I and Vol II-A places 3127.9900 under ISCO unit group 3123.",
+    "8190.0100 is retained from Volume I with its NCO-2004 mapping even though no exact detailed-description code was found in Volume II-A/B extracted text.",
+    "For Volume-II-only entries, NCO-2004 mapping is intentionally blank rather than inferred.",
+    "source_page is the printed page number shown in the relevant PDF; source_row_number is an extraction ordinal within that printed page, not an HTML table row number.",
+    "No NIC sector or CTS crosswalk is inferred."
+  ]
+}
