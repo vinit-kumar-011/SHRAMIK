@@ -1,4 +1,8 @@
-from scripts.import_nco_2015 import merge_and_validate, parse_nco_page
+from scripts.import_nco_2015 import (
+    is_terminal_empty_page,
+    merge_and_validate,
+    parse_nco_page,
+)
 
 
 FIXTURE = """
@@ -60,3 +64,47 @@ def test_unrecognized_page_reports_observed_structure_without_db_side_effects():
     except ValueError as exc:
         assert "Parsed 0 HTML table row(s)" in str(exc)
         assert "No database changes were made" in str(exc)
+
+
+
+def test_out_of_range_official_dge_pager_page_is_terminal():
+    html = """
+    <html><body>
+      Directorate General of Employment
+      National Classification of Occupations
+      <a href="/nat?page=0">1</a>
+      <a href="/nat?page=1">2</a>
+      <a href="/nat?page=6">7</a>
+    </body></html>
+    """
+    assert is_terminal_empty_page(html, 7)
+    assert not is_terminal_empty_page(html, 6)
+
+
+def test_midrun_missing_table_is_not_mistaken_for_end_of_data():
+    html = """
+    <html><body>
+      Directorate General of Employment
+      National Classification of Occupations
+      <a href="/nat?page=0">1</a>
+      <a href="/nat?page=6">7</a>
+    </body></html>
+    """
+    assert not is_terminal_empty_page(html, 3)
+
+
+def test_empty_non_dge_response_is_not_treated_as_terminal_page():
+    html = '<html><body>Access denied <a href="/?page=7">next</a></body></html>'
+    assert not is_terminal_empty_page(html, 8)
+
+
+def test_page_with_table_rows_is_not_treated_as_empty_terminal_page():
+    html = """
+    <html><body>
+      Directorate General of Employment
+      National Classification of Occupations
+      <a href="/nat?page=6">7</a>
+      <table><tr><td>occupation row</td></tr></table>
+    </body></html>
+    """
+    assert not is_terminal_empty_page(html, 7)
