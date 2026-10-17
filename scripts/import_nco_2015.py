@@ -156,19 +156,19 @@ def is_terminal_empty_page(html: str, requested_page: int) -> bool:
     """
     if requested_page < 1:
         return False
-    if not re.search(r"<\\s*tr(?:\\s|>)", html, flags=re.I):
+    if not re.search(r"<\s*tr(?:\s|>)", html, flags=re.I):
         has_dge_branding = (
             "National Classification of Occupations" in html
             and "Directorate General of Employment" in html
         )
         if not has_dge_branding:
             return False
-        hrefs = re.findall(r"""href\\s*=\\s*(['"])(.*?)\\1""", html, flags=re.I | re.S)
+        hrefs = re.findall(r"""href\s*=\s*(['"])(.*?)\1""", html, flags=re.I | re.S)
         linked_pages: list[int] = []
         for _, href in hrefs:
             decoded_href = unescape(href).replace("&amp;", "&")
-            if re.search(r"(?:[?&])page=\\d+", decoded_href):
-                match = re.search(r"(?:[?&])page=(\\d+)", decoded_href)
+            if re.search(r"(?:[?&])page=\d+", decoded_href):
+                match = re.search(r"(?:[?&])page=(\d+)", decoded_href)
                 if match:
                     linked_pages.append(int(match.group(1)))
         return bool(linked_pages) and requested_page > max(linked_pages)
