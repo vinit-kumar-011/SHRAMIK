@@ -39,3 +39,24 @@ def test_conflicting_duplicate_code_fails_closed():
         assert False, "expected conflicting duplicate to raise"
     except ValueError as exc:
         assert "Conflicting catalogue rows" in str(exc)
+
+
+def test_header_parser_tolerates_minor_dge_label_changes():
+    variant = (
+        FIXTURE.replace("Occupational Title", "Occupation Title")
+        .replace("NCO 2015</th>", "NCO 2015 Code</th>")
+        .replace("<th>Group</th>", "<th>Occupation Group</th>")
+    )
+    rows = parse_nco_page(variant, 0, "https://dge.gov.in/nat")
+    assert len(rows) == 2
+    assert rows[0]["nco_code"] == "7411.0100"
+    assert rows[0]["occupation_group"] == "Electrical Equipment Installers and Repairers"
+
+
+def test_unrecognized_page_reports_observed_structure_without_db_side_effects():
+    try:
+        parse_nco_page("<html><title>Access check</title><body>Please verify</body></html>", 0, "https://dge.gov.in/nat")
+        assert False, "expected header discovery to fail"
+    except ValueError as exc:
+        assert "Parsed 0 HTML table row(s)" in str(exc)
+        assert "No database changes were made" in str(exc)
