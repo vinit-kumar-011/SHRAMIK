@@ -77,14 +77,18 @@ def read_and_validate_csv(
         if not row["source_url"].startswith("https://dge.gov.in/"):
             raise ValueError(f"Unexpected/non-HTTPS source URL at CSV row {row_number} ({code})")
         try:
-            if int(row["source_page"]) < 1 or int(row["source_row_number"]) < 1:
+            source_page = int(row["source_page"])
+            source_row_number = int(row["source_row_number"])
+            if source_page < 1 or source_row_number < 1:
                 raise ValueError
         except (TypeError, ValueError):
             raise ValueError(f"Invalid source page/ordinal at CSV row {row_number} ({code})")
+        row["source_page"] = source_page
+        row["source_row_number"] = source_row_number
         if not SHA256_RE.fullmatch(row["source_snapshot_sha256"]):
             raise ValueError(f"Invalid snapshot SHA-256 at CSV row {row_number} ({code})")
         try:
-            datetime.fromisoformat(row["retrieved_at"].replace("Z", "+00:00"))
+            row["retrieved_at"] = datetime.fromisoformat(row["retrieved_at"].replace("Z", "+00:00"))
         except ValueError as exc:
             raise ValueError(f"Invalid retrieved_at at CSV row {row_number} ({code})") from exc
 
