@@ -21,9 +21,9 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-BASE_URL = "https://www.dge.gov.in/nat"
+BASE_URL = "https://dge.gov.in/nat"
 SOURCE_NAME = "National Classification of Occupations 2015"
-SOURCE_CODE_URL = "https://www.dge.gov.in/nco-2015"
+SOURCE_CODE_URL = "https://dge.gov.in/nco-2015"
 NCO_CODE_RE = re.compile(r"^\d{4}\.\d{4}$")
 USER_AGENT = "SHRAMIK-NCO2015-importer/1.0"
 CORE_FIELDS = (
