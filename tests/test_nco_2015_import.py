@@ -108,3 +108,16 @@ def test_page_with_table_rows_is_not_treated_as_empty_terminal_page():
     </body></html>
     """
     assert not is_terminal_empty_page(html, 7)
+
+
+
+def test_empty_final_page_uses_last_verified_pager_bound_when_it_has_no_pager_links():
+    html = """
+    <html><body>
+      Directorate General of Employment
+      National Classification of Occupations
+      <!-- empty out-of-range page has no result table and no pager controls -->
+    </body></html>
+    """
+    assert is_terminal_empty_page(html, 7, last_known_page=6)
+    assert not is_terminal_empty_page(html, 6, last_known_page=6)
