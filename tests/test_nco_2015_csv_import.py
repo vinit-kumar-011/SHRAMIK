@@ -133,7 +133,7 @@ def test_blank_optional_fields_are_normalized_to_null(tmp_path):
 def test_database_url_can_be_read_from_explicit_env_file_without_printing(tmp_path, monkeypatch):
     monkeypatch.delenv("DATABASE_URL", raising=False)
     env_file = tmp_path / ".env.local"
-    env_file.write_text("\\n".join([
+    env_file.write_text("\n".join([
         "OTHER_SETTING=x",
         'DATABASE_URL="postgresql://user:pass@localhost/db?sslmode=require"',
         "",
@@ -144,7 +144,7 @@ def test_database_url_can_be_read_from_explicit_env_file_without_printing(tmp_pa
 
 def test_process_environment_database_url_takes_precedence_over_dotenv(tmp_path, monkeypatch):
     env_file = tmp_path / ".env"
-    env_file.write_text("DATABASE_URL=postgresql://file-url" + "\\n", encoding="utf-8")
+    env_file.write_text("DATABASE_URL=postgresql://file-url" + "\n", encoding="utf-8")
     monkeypatch.setenv("DATABASE_URL", "postgresql://environment-url")
 
     assert find_database_url(env_file) == "postgresql://environment-url"
