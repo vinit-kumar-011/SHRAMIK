@@ -2,7 +2,7 @@
 
 ## Why a separate staging catalogue exists
 
-The Directorate General of Employment's NCO-2015 browser (https://www.dge.gov.in/nat) and NCO-2015 download page (https://www.dge.gov.in/nco-2015) publish occupation titles, NCO 2015 codes, NCO 2004 concordance codes, and the occupation hierarchy: division, sub-division, group, and family.
+The Directorate General of Employment's NCO-2015 browser (https://dge.gov.in/nat) and NCO-2015 download page (https://dge.gov.in/nco-2015) publish occupation titles, NCO 2015 codes, NCO 2004 concordance codes, and the occupation hierarchy: division, sub-division, group, and family.
 
 An occupation taxonomy is not an industry taxonomy. Do not force every NCO occupation into a NIC sector just to store the official title and code. The new RLS-enabled table public.stg_nco_2015_occupations stores source-faithful records without sector assignments and has no public read policy.
 
