@@ -15,6 +15,7 @@ import re
 import sys
 import time
 from datetime import datetime, timezone
+from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -22,10 +23,14 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 BASE_URL = "https://dge.gov.in/nat"
+# Alternate official Drupal route if the path alias returns a non-catalogue page.
+FALLBACK_BASE_URLS = ("https://dge.gov.in/index.php/nat",)
 SOURCE_NAME = "National Classification of Occupations 2015"
 SOURCE_CODE_URL = "https://dge.gov.in/nco-2015"
 NCO_CODE_RE = re.compile(r"^\d{4}\.\d{4}$")
-USER_AGENT = "SHRAMIK-NCO2015-importer/1.0"
+USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+              "AppleWebKit/537.36 (KHTML, like Gecko) "
+              "Chrome/130.0.0.0 Safari/537.36")
 CORE_FIELDS = (
     "nco_code", "occupation_title", "nco_2004_code",
     "division", "sub_division", "occupation_group", "occupation_family",
@@ -78,7 +83,16 @@ class _RowParser(HTMLParser):
             self._cell_parts = None
 
 
-def _find_header(rows: list[list[str]]) -> tuple[int, dict[str, int]]:
+def _html_response_summary(html: str) -> str:
+    """Return a bounded text-only preview to diagnose non-catalogue responses."""
+    title_match = re.search(r"<title\\b[^>]*>(.*?)</title\\s*>", html, flags=re.I | re.S)
+    title = clean_text(unescape(re.sub(r"<[^>]+>", " ", title_match.group(1)))) if title_match else "(no title tag)"
+    without_scripts = re.sub(r"<(script|style)\\b[^>]*>.*?</\\1\\s*>", " ", html, flags=re.I | re.S)
+    visible = clean_text(unescape(re.sub(r"<[^>]+>", " ", without_scripts)))
+    return f"title={title[:160]!r}; body_preview={visible[:400]!r}; html_chars={len(html)}"
+
+
+def _find_header(rows: list[list[str]], html: str = "") -> tuple[int, dict[str, int]]:
     """Find the occupation table header while tolerating harmless label variations."""
     aliases = {
         "occupation_title": {"occupationaltitle", "occupationtitle"},
@@ -128,8 +142,8 @@ def _find_header(rows: list[list[str]]) -> tuple[int, dict[str, int]]:
     raise ValueError(
         "Could not find the DGE occupation-table header. "
         f"Parsed {len(rows)} HTML table row(s); first row samples={samples!r}. "
-        "If the samples show a block/cookie page or no table rows, the response "
-        "may be a site/network interstitial rather than the catalogue. "
+        f"Response summary: {_html_response_summary(html)}. "
+        "The response may be an interstitial or JavaScript shell rather than the catalogue. "
         "No database changes were made."
     )
 
@@ -137,7 +151,7 @@ def _find_header(rows: list[list[str]]) -> tuple[int, dict[str, int]]:
 def parse_nco_page(html: str, page: int, page_url: str) -> list[dict[str, object]]:
     parser = _RowParser()
     parser.feed(html)
-    header_row, indices = _find_header(parser.rows)
+    header_row, indices = _find_header(parser.rows, html)
     records: list[dict[str, object]] = []
     required_idx = max(indices.values())
 
@@ -172,13 +186,15 @@ def parse_nco_page(html: str, page: int, page_url: str) -> list[dict[str, object
     return records
 
 
-def fetch_page(page: int, timeout: int = 45) -> tuple[str, str]:
+def fetch_page(page: int, timeout: int = 45, base_url: str = BASE_URL) -> tuple[str, str]:
     # Drupal's first pager page is the canonical route with no query string.
-    # Some front-door caches return a different/interstitial response for ?page=0.
-    url = BASE_URL if page == 0 else f"{BASE_URL}?{urlencode({'page': page})}"
+    # Subsequent pages use Drupal's page query parameter.
+    url = base_url if page == 0 else f"{base_url}?{urlencode({'page': page})}"
     request = Request(url, headers={
         "User-Agent": USER_AGENT,
-        "Accept": "text/html,application/xhtml+xml",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-IN,en;q=0.9",
+        "Cache-Control": "no-cache",
     })
     try:
         with urlopen(request, timeout=timeout) as response:
@@ -220,9 +236,31 @@ def fetch_catalogue(max_pages: int = 30, minimum_records: int = 2000, delay_seco
     reached_end = False
 
     for page in range(max_pages):
-        html, final_url = fetch_page(page)
+        page_records = None
+        final_url = ""
+        errors: list[str] = []
+
+        for base_url in (BASE_URL, *FALLBACK_BASE_URLS):
+            try:
+                html, candidate_url = fetch_page(page, base_url=base_url)
+                try:
+                    candidate_records = parse_nco_page(html, page, candidate_url)
+                except ValueError as exc:
+                    errors.append(f"{candidate_url}: {exc}")
+                    continue
+                page_records = candidate_records
+                final_url = candidate_url
+                break
+            except RuntimeError as exc:
+                errors.append(str(exc))
+
+        if page_records is None:
+            raise RuntimeError(
+                f"Could not parse DGE page {page} from the primary or fallback official route. "
+                + " | ".join(errors)
+            )
+
         page_urls.append(final_url)
-        page_records = parse_nco_page(html, page, final_url)
         if not page_records:
             if page == 0:
                 raise RuntimeError("DGE page 0 returned no parseable NCO rows.")
@@ -268,7 +306,7 @@ def write_outputs(records, snapshot_hash, retrieved_at, page_urls, csv_path: Pat
         "unique_occupation_count": len(records),
         "page_count": len(page_urls),
         "page_urls": page_urls,
-        "parser_version": "1.0.0",
+        "parser_version": "1.1.0",
         "notes": "No NIC sector assignments are inferred or emitted.",
     }
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
