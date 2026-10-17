@@ -79,28 +79,58 @@ class _RowParser(HTMLParser):
 
 
 def _find_header(rows: list[list[str]]) -> tuple[int, dict[str, int]]:
+    """Find the occupation table header while tolerating harmless label variations."""
     aliases = {
         "occupation_title": {"occupationaltitle", "occupationtitle"},
-        "nco_code": {"nco2015"},
-        "nco_2004_code": {"nco2004"},
+        "nco_code": {"nco2015", "nco2015code", "nco2015occupationcode"},
+        "nco_2004_code": {"nco2004", "nco2004code"},
         "division": {"division"},
-        "sub_division": {"subdivision"},
-        "occupation_group": {"group"},
-        "occupation_family": {"family"},
+        "sub_division": {"subdivision", "subdivisionname"},
+        "occupation_group": {"group", "occupationgroup"},
+        "occupation_family": {"family", "occupationfamily"},
     }
+
+    def matches(field: str, key: str) -> bool:
+        if key in aliases[field]:
+            return True
+        # DGE has changed minor display labels over time. Match by unambiguous
+        # normalized tokens, but never confuse NCO-2004 with NCO-2015.
+        if field == "occupation_title":
+            return ("occupation" in key and "title" in key) or key == "occupation"
+        if field == "nco_code":
+            return "nco" in key and "2015" in key and "2004" not in key
+        if field == "nco_2004_code":
+            return "nco" in key and "2004" in key
+        if field == "sub_division":
+            return "subdivision" in key
+        if field == "occupation_group":
+            return key.endswith("group")
+        if field == "occupation_family":
+            return key.endswith("family")
+        return False
+
     for row_index, row in enumerate(rows):
         keys = [header_key(cell) for cell in row]
-        indices = {}
-        for field, values in aliases.items():
+        indices: dict[str, int] = {}
+        for field in aliases:
             for idx, key in enumerate(keys):
-                if key in values:
+                if matches(field, key):
                     indices[field] = idx
                     break
         if {"occupation_title", "nco_code"} <= set(indices):
             return row_index, indices
+
+    samples = [
+        [clean_text(cell)[:80] for cell in row[:8]]
+        for row in rows[:8]
+        if any(clean_text(cell) for cell in row)
+    ]
     raise ValueError(
-        "Could not find expected DGE NCO headers. The site layout may have changed; "
-        "no database changes were made."
+        "Could not find the DGE occupation-table header. "
+        f"Parsed {len(rows)} HTML table row(s); first row samples={samples!r}. "
+        "If the samples show a block/cookie page or no table rows, the response "
+        "may be a site/network interstitial rather than the catalogue. "
+        "No database changes were made."
     )
 
 
@@ -143,7 +173,9 @@ def parse_nco_page(html: str, page: int, page_url: str) -> list[dict[str, object
 
 
 def fetch_page(page: int, timeout: int = 45) -> tuple[str, str]:
-    url = f"{BASE_URL}?{urlencode({'page': page})}"
+    # Drupal's first pager page is the canonical route with no query string.
+    # Some front-door caches return a different/interstitial response for ?page=0.
+    url = BASE_URL if page == 0 else f"{BASE_URL}?{urlencode({'page': page})}"
     request = Request(url, headers={
         "User-Agent": USER_AGENT,
         "Accept": "text/html,application/xhtml+xml",
