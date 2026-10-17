@@ -148,31 +148,40 @@ def _find_header(rows: list[list[str]], html: str = "") -> tuple[int, dict[str, 
     )
 
 
-def is_terminal_empty_page(html: str, requested_page: int) -> bool:
-    """Recognize an out-of-range final pager request, not a mid-run parse failure.
+def _linked_pager_pages(html: str) -> list[int]:
+    """Extract numeric Drupal pager page indices from anchor hrefs."""
+    hrefs = re.findall(r"""href\s*=\s*(['"])(.*?)\1""", html, flags=re.I | re.S)
+    linked_pages: list[int] = []
+    for _, href in hrefs:
+        decoded_href = unescape(href).replace("&amp;", "&")
+        match = re.search(r"(?:[?&])page=(\d+)", decoded_href)
+        if match:
+            linked_pages.append(int(match.group(1)))
+    return linked_pages
 
-    Requires official DGE page branding, no actual table rows, and pagination
-    links proving the requested page exceeds the last available page.
+
+def is_terminal_empty_page(
+    html: str,
+    requested_page: int,
+    last_known_page: int | None = None,
+) -> bool:
+    """Recognize a verified out-of-range empty page, never a mid-run parse failure.
+
+    Requires official DGE branding, no HTML table rows, and proof that the
+    requested page lies beyond the pager links found either on this page or on
+    a previously parsed page.
     """
-    if requested_page < 1:
+    if requested_page < 1 or re.search(r"<\s*tr(?:\s|>)", html, flags=re.I):
         return False
-    if not re.search(r"<\s*tr(?:\s|>)", html, flags=re.I):
-        has_dge_branding = (
-            "National Classification of Occupations" in html
-            and "Directorate General of Employment" in html
-        )
-        if not has_dge_branding:
-            return False
-        hrefs = re.findall(r"""href\s*=\s*(['"])(.*?)\1""", html, flags=re.I | re.S)
-        linked_pages: list[int] = []
-        for _, href in hrefs:
-            decoded_href = unescape(href).replace("&amp;", "&")
-            if re.search(r"(?:[?&])page=\d+", decoded_href):
-                match = re.search(r"(?:[?&])page=(\d+)", decoded_href)
-                if match:
-                    linked_pages.append(int(match.group(1)))
-        return bool(linked_pages) and requested_page > max(linked_pages)
-    return False
+    has_dge_branding = (
+        "National Classification of Occupations" in html
+        and "Directorate General of Employment" in html
+    )
+    if not has_dge_branding:
+        return False
+    linked_pages = _linked_pager_pages(html)
+    known_pages = linked_pages + ([last_known_page] if last_known_page is not None else [])
+    return bool(known_pages) and requested_page > max(known_pages)
 
 
 def parse_nco_page(html: str, page: int, page_url: str) -> list[dict[str, object]]:
@@ -261,10 +270,12 @@ def fetch_catalogue(max_pages: int = 30, minimum_records: int = 2000, delay_seco
     collected: list[dict[str, object]] = []
     page_urls: list[str] = []
     reached_end = False
+    last_known_page: int | None = None
 
     for page in range(max_pages):
         page_records = None
         final_url = ""
+        page_html = ""
         errors: list[str] = []
 
         for base_url in (BASE_URL, *FALLBACK_BASE_URLS):
@@ -277,6 +288,7 @@ def fetch_catalogue(max_pages: int = 30, minimum_records: int = 2000, delay_seco
                     continue
                 page_records = candidate_records
                 final_url = candidate_url
+                page_html = html
                 break
             except RuntimeError as exc:
                 errors.append(str(exc))
@@ -292,7 +304,7 @@ def fetch_catalogue(max_pages: int = 30, minimum_records: int = 2000, delay_seco
                     html, _candidate_url = fetch_page(page, base_url=base_url)
                 except RuntimeError:
                     continue
-                if is_terminal_empty_page(html, page):
+                if is_terminal_empty_page(html, page, last_known_page):
                     terminal_match = True
                     break
             if terminal_match and len(collected) >= minimum_records:
@@ -303,6 +315,10 @@ def fetch_catalogue(max_pages: int = 30, minimum_records: int = 2000, delay_seco
                 f"Records collected so far: {len(collected)}; required minimum: {minimum_records}. "
                 + " | ".join(errors)
             )
+
+        current_pager_pages = _linked_pager_pages(page_html)
+        if current_pager_pages:
+            last_known_page = max(current_pager_pages + ([last_known_page] if last_known_page is not None else []))
 
         page_urls.append(final_url)
         if not page_records:
