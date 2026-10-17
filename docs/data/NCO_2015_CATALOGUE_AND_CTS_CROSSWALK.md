@@ -8,6 +8,40 @@ An occupation taxonomy is not an industry taxonomy. Do not force every NCO occup
 
 ## 1. Export/import the official catalogue
 
+### Preferred path: source-reviewed PDF snapshot
+
+The DGE browser endpoint has intermittently returned its site shell instead of table rows at the end of pagination. A PDF-derived snapshot was therefore extracted from the three official PDFs on DGE's [NCO-2015 download page](https://dge.gov.in/nco-2015). Use that reviewed snapshot rather than repeatedly scraping the live browser:
+
+1. Save the provided `nco_2015_occupations_validated.csv` into `data/raw/nco_2015_occupations_validated.csv`.
+2. Run a validation-only pass:
+   ```powershell
+   python scripts/import_nco_2015_csv.py --csv data/raw/nco_2015_occupations_validated.csv
+   ```
+3. Once the validation output reports 3,451 unique records and the expected snapshot SHA-256, sync only the staging table:
+   ```powershell
+   python scripts/import_nco_2015_csv.py --csv data/raw/nco_2015_occupations_validated.csv --sync-db
+   ```
+
+The CSV importer validates the exact row count, unique NCO code format, nonblank titles, official DGE source URLs, page/record ordinals, uniform snapshot metadata, and the canonical SHA-256 before opening the database transaction. On sync it requires exactly one `data_sources` registry row named `National Classification of Occupations 2015`, upserts all rows in one transaction, and verifies the final current-row count. Blank NCO-2004 concordances and unavailable hierarchy values are stored as SQL NULLs, not guessed.
+
+The importer reads `DATABASE_URL` from the process environment, or from a local `.env`, `.env.local`, or `backend/.env` file. An explicit local dotenv path can be supplied with `--env-file`. Never commit a connection string or paste credentials into chat.
+
+### Document review decisions
+
+The reviewed merged snapshot contains **3,451 unique codes**: 3,447 Volume I concordance records plus four explicitly coded Volume II-B records missing from the concordance. The following seven discrepancies were inspected against the PDF text and kept visible in `nco_2015_discrepancy_review.csv`:
+
+- `7321.1100` Router, `7322.0100` Job Printer, `7323.0500` Book Binding Operatives, and `7421.0200` Electronics Fitters, Other: include as Volume II-B-backed records; leave NCO-2004 mapping blank because Volume I concordance does not list them.
+- `3127.9900`: do not load as a separate code. Volume II-A prints it with the identical title under ISCO unit group 3123, while Volume I concordance lists that title as `3123.9900` (NCO-2004 `7148.90`). This is treated as a likely source-code inconsistency, not an official correction.
+- `3123.9900`: retain the Volume I concordance record and mapping.
+- `8190.0100` Saw Grinder, Machine: retain the Volume I concordance record and NCO-2004 `8290.40`; group/family headings remain blank because no exact detailed-description code or heading was found in Volumes II-A/II-B searchable text.
+
+No NIC-sector, demand, supply, or CTS mapping is inferred by this catalogue import.
+
+### Live browser fetch (fallback/diagnostic only)
+
+The browser importer remains available for future source snapshots when DGE pagination behaves normally. It fetches pages and writes its own CSV/manifest without DB changes by default. It is not the preferred route for loading the PDF-reviewed snapshot.
+
+
 From the SHRAMIK repository root, install the backend dependencies:
 
 ~~~powershell
