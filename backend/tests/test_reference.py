@@ -117,7 +117,7 @@ def test_unconfigured_database_uses_service_unavailable_envelope(monkeypatch):
     app.dependency_overrides.clear()
     monkeypatch.setattr(db_session, "SessionLocal", None)
 
-    response = client.get("/api/v1/districts")
+    response = TestClient(app).get("/api/v1/districts")
 
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
