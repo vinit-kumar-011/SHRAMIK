@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.db import session as db_session
 from app.db.session import get_db
 from app.main import app
 
@@ -110,3 +111,14 @@ def test_skill_mapping_query_is_skipped_for_empty_page():
     assert response.json()["data"] == []
     assert response.json()["meta"]["total"] == 0
     assert len(db.calls) == 2
+
+
+def test_unconfigured_database_uses_service_unavailable_envelope(monkeypatch):
+    app.dependency_overrides.clear()
+    monkeypatch.setattr(db_session, "SessionLocal", None)
+
+    response = client.get("/api/v1/districts")
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+    assert response.json()["error"]["request_id"]
