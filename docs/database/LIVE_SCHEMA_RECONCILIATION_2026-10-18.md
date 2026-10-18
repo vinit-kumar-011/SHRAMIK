@@ -186,13 +186,17 @@ Supabase docs clarify that the migration ledger is tracking metadata and `migrat
 
 ### Preferred path — recover exact historical migration SQL
 
-1. Search the local SHRAMIK folder, team member's clone, Git history/branches, backups, and any earlier PR artifacts for the 19 missing migration files.
-2. Restore the original SQL files at their exact recorded timestamps/names; do not recreate files from the migration names alone.
+A GitHub path-history check for `supabase/migrations` on `develop` returned only the four commits that introduced the four current NCO-related migration files. The other 19 SQL files are not present in the current `develop` tree or the other visible feature branches checked. This makes recovery from a teammate's local clone, ignored/untracked files, backup, earlier archive, or terminal-generated file output the remaining low-risk recovery option; do not infer the SQL from ledger names.
+
+1. On the repository owner's and backend teammate's machines, search their local SHRAMIK folders and backups for `supabase/migrations/*.sql`, including untracked files and other cloned directories.
+2. If found, compare each recovered file's version/name with the remote ledger below and restore the original SQL under its exact timestamp/name.
 3. Inspect each SQL file against the current live schema and data history.
 4. Run `supabase migration list` and verify local/remote versions match.
 5. Build and reset a **disposable local database only**. Confirm every migration applies from empty state and the final schema is equivalent to the captured live schema.
 6. Add an explicit reviewed migration for the NCO source-FK index and any approved documentation/schema changes.
 7. Apply only approved migrations to the live project after a backup and a written review.
+
+If this local search finds no copies, move to the reviewed-baseline fallback. Do not spend time trying to fetch SQL from the Supabase migration ledger; it stores history metadata, not the original migration bodies.
 
 ### Fallback — a reviewed baseline if original SQL cannot be recovered
 
