@@ -18,7 +18,7 @@ Read-only queries against the active Supabase project verified:
 - 25 public base tables; RLS enabled on all 25.
 - Reference catalogue: 36 states/UTs, 784 districts, 21 sectors, 7 canonical pilot skills.
 - Source-specific staging data: 29,372 DGT CTS seat-matrix rows, 16,815 NCVT/ITI listing rows, 538 PLFS 2025 benchmark cells, 2 e-Shram metadata rows, and 3,451 current NCO-2015 occupation rows.
-- Supporting provenance: 12 source retrievals, 12 evidence items, and 23 source-capability records.
+- Supporting provenance/context: 12 source retrievals, 12 evidence items, 23 source-capability records, 21 sector-taxonomy mappings, 1,498 source-geography mappings, and 2,087 source-metric observations (these are contextual metrics, not demand/supply series).
 - Empty analytical tables at snapshot time: `demand_observations`, `supply_observations`, `model_versions`, `forecast_results`, `emerging_skill_signals`, `early_warnings`, `evidence_links`, and `synthetic_generation_runs`.
 - NCO staging integrity: 3,451 current unique codes, 774 blank NCO-2004 concordance mappings deliberately left uninferred, all current rows share snapshot SHA-256 `2ec0571104b4a68e8e65491c4eb84c2f973bba41a223b3eb804f3b128f67de71`, and all current rows have source IDs and DGE URLs. The four reviewed Volume II-B additions are present.
 
