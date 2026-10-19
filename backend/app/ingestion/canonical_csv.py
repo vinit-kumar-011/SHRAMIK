@@ -27,7 +27,7 @@ SKILL_GRAINS = {g for g in ALLOWED_GRAINS if "SKILL" in g}
 
 COMMON_COLUMNS = {
     "state_id", "district_id", "sector_id", "skill_id", "observation_grain",
-    "period_type", "period_year", "source_id", "source_date", "retrieval_id",
+    "period_type", "period_year", "source_id", "source_release", "source_date", "retrieval_id",
     "evidence_item_id", "provenance_state", "is_synthetic", "generation_run_id",
     "transformation_note", "unit", "flow_stock_semantics",
 }
@@ -63,6 +63,7 @@ class CanonicalObservation:
     signal_type: str
     value: Decimal | None
     source_id: str | None
+    source_release: str | None
     source_date: date | None
     retrieval_id: str | None
     evidence_item_id: str | None
@@ -87,6 +88,7 @@ class CanonicalObservation:
             "period_type": self.period_type,
             "period_year": self.period_year,
             "source_id": self.source_id,
+            "source_release": self.source_release,
             "source_date": self.source_date,
             "retrieval_id": self.retrieval_id,
             "evidence_item_id": self.evidence_item_id,
@@ -207,7 +209,7 @@ def parse_canonical_csv(
                 synthetic_raw = (_text(row, "is_synthetic") or "").lower()
                 synthetic = synthetic_raw in {"true", "1", "yes"}
                 unit = _text(row, "unit")
-                flow_semantics = _text(row, "flow_stock_semantics")
+                flow_semantics = (_text(row, "flow_stock_semantics") or "").upper()
 
                 if not state_id:
                     issues.append(ValidationIssue(row_num, "state_id", "is required"))
@@ -234,6 +236,8 @@ def parse_canonical_csv(
                     issues.append(ValidationIssue(row_num, signal_col, "is required"))
                 if not unit:
                     issues.append(ValidationIssue(row_num, "unit", "is required to preserve measurement semantics"))
+                if flow_semantics not in {"FLOW", "STOCK", "CAPACITY"}:
+                    issues.append(ValidationIssue(row_num, "flow_stock_semantics", "must be FLOW, STOCK, or CAPACITY to match canonical quantity_semantics"))
                 if provenance not in {"SOURCE_BACKED", "SYNTHETIC_DEMO"}:
                     issues.append(ValidationIssue(row_num, "provenance_state", "must be SOURCE_BACKED or SYNTHETIC_DEMO"))
                 if synthetic_raw not in {"true", "false", "1", "0", "yes", "no"}:
@@ -244,6 +248,7 @@ def parse_canonical_csv(
                     issues.append(ValidationIssue(row_num, "flow_stock_semantics", "is required for synthetic rows"))
 
                 source_id = _uuid_or_none(_text(row, "source_id"), row_num, "source_id", issues)
+                source_release = _text(row, "source_release")
                 retrieval_id = _uuid_or_none(_text(row, "retrieval_id"), row_num, "retrieval_id", issues)
                 evidence_item_id = _uuid_or_none(_text(row, "evidence_item_id"), row_num, "evidence_item_id", issues)
                 generation_run_id = _uuid_or_none(_text(row, "generation_run_id"), row_num, "generation_run_id", issues)
@@ -280,21 +285,31 @@ def parse_canonical_csv(
                     value = _decimal(_text(row, "demand_quantity"), row_num, "demand_quantity", issues)
                     if value is None and not any(i.row_number == row_num and i.field == "demand_quantity" for i in issues):
                         issues.append(ValidationIssue(row_num, "demand_quantity", "is required for the initial quantitative demand pipeline"))
+                    if flow_semantics not in {"FLOW", "STOCK"}:
+                        issues.append(ValidationIssue(row_num, "flow_stock_semantics", "demand_quantity requires FLOW or STOCK semantics"))
                     training_capacity = enrollment = completions = None
                 else:
                     value = _decimal(_text(row, "supply_quantity"), row_num, "supply_quantity", issues)
                     training_capacity = _decimal(_text(row, "training_capacity"), row_num, "training_capacity", issues)
                     enrollment = _decimal(_text(row, "enrollment"), row_num, "enrollment", issues)
                     completions = _decimal(_text(row, "completions"), row_num, "completions", issues)
-                    if all(v is None for v in (value, training_capacity, enrollment, completions)):
-                        issues.append(ValidationIssue(row_num, "supply_quantity", "provide at least one quantitative supply/training measure; the engine only treats supply_quantity as current supply"))
+                    measure_values = (value, training_capacity, enrollment, completions)
+                    non_null_measures = sum(v is not None for v in measure_values)
+                    if non_null_measures != 1:
+                        issues.append(ValidationIssue(row_num, "supply_quantity", "exactly one of supply_quantity, training_capacity, enrollment, or completions must be populated per row"))
+                    if value is not None and flow_semantics not in {"FLOW", "STOCK"}:
+                        issues.append(ValidationIssue(row_num, "flow_stock_semantics", "supply_quantity requires FLOW or STOCK semantics"))
+                    if training_capacity is not None and flow_semantics != "CAPACITY":
+                        issues.append(ValidationIssue(row_num, "flow_stock_semantics", "training_capacity requires CAPACITY semantics"))
+                    if (enrollment is not None or completions is not None) and flow_semantics != "FLOW":
+                        issues.append(ValidationIssue(row_num, "flow_stock_semantics", "enrollment and completions require FLOW semantics"))
 
                 if len(issues) == row_issues_before:
                     observations.append(CanonicalObservation(
                         kind=kind, state_id=state_id or "", district_id=district_id,
                         sector_id=sector_id, skill_id=skill_id, observation_grain=grain,
                         period_type=period_type, period_year=year, signal_type=signal_type or "",
-                        value=value, source_id=source_id, source_date=source_date,
+                        value=value, source_id=source_id, source_release=source_release, source_date=source_date,
                         retrieval_id=retrieval_id, evidence_item_id=evidence_item_id,
                         provenance_state=provenance, is_synthetic=synthetic,
                         generation_run_id=generation_run_id, transformation_note=transformation_note,
