@@ -23,6 +23,9 @@ import DemandInsightsPage from './demand/DemandInsightsPage.jsx';
 import { DataSourcesPage } from './data-sources/DataSourcesPage.jsx';
 import { mockDataSourcesAdapter } from './data-sources/mock-adapter.js';
 import { createRestDataSourcesAdapter } from './data-sources/rest-adapter.js';
+import SupplyInsightsPage from './supply/SupplyInsightsPage';
+import DataQualityPage from './data-quality/DataQualityPage';
+import AdministrationPage from './administration/AdministrationPage';
 
 type Tone = 'navy' | 'teal' | 'orange';
 
@@ -265,38 +268,12 @@ function DetailDrawer({ detail, loading, error, onClose }: { detail: DetailPaylo
 
 
 function ModuleRouteFallback({ route }: { route: ShramikRouteId }) {
-  const labels: Partial<Record<ShramikRouteId, { description: string; next: string }>> = {
-    supply: {
-      description: 'The standalone Supply Insights deliverable still needs to be migrated into this shared React shell. This route is real, but the old standalone page is not embedded here yet.',
-      next: 'Next: migrate the Supply Insights page and its typed data adapter.',
-    },
-    'data-sources': {
-      description: 'The React Data Sources module exists separately, but its styling, adapter and page state still need to be integrated into this shared shell without duplicating navigation.',
-      next: 'Next: integrate the Data Sources component and scope its styles to this route.',
-    },
-    'data-quality': {
-      description: 'The Data Quality module components exist in the reference package but still need their shared-shell integration and adapter contract verified.',
-      next: 'Next: migrate the Data Quality page, adapter and page-scoped styles.',
-    },
-    administration: {
-      description: 'The Administration deliverable is currently a standalone HTML page. It must be ported to a React page component before it can use the shared navigation.',
-      next: 'Next: convert user access, roles, audit and review interactions into a typed React module.',
-    },
-    'not-found': {
-      description: 'This URL does not match a registered SHRAMIK application route.',
-      next: 'Use the shared sidebar to open a known application module.',
-    },
-  };
-  const content = labels[route] ?? {
-    description: 'This module is registered in the central route table, but it is not yet integrated into the production React shell.',
-    next: 'No source-backed or demo metrics are displayed in this integration placeholder.',
-  };
   return <section className="module-route-placeholder" aria-labelledby="module-route-title">
-    <div className="module-route-eyebrow">SHRAMIK / MODULE INTEGRATION</div>
+    <div className="module-route-eyebrow">SHRAMIK / NAVIGATION</div>
     <h1 id="module-route-title">{getRouteLabel(route)}</h1>
-    <p>{content.description}</p>
-    <div className="module-route-status"><span className="module-route-dot"/> Integration in progress</div>
-    <p className="module-route-next">{content.next}</p>
+    <p>This URL does not match a registered SHRAMIK application route.</p>
+    <div className="module-route-status"><span className="module-route-dot"/> Page unavailable</div>
+    <p className="module-route-next">Use the shared sidebar to open a known application module.</p>
   </section>;
 }
 
@@ -544,6 +521,9 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
               if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
             }}/>
           : activePage === 'data-sources' ? <DataSourcesPage adapter={dataSourcesAdapter}/>
+          : activePage === 'supply' ? <SupplyInsightsPage />
+          : activePage === 'data-quality' ? <DataQualityPage />
+          : activePage === 'administration' ? <AdministrationPage />
           : activePage === 'dashboard' ? <>
         <section className="hero-band" aria-labelledby="page-title">
           <div className="hero-copy"><div className="breadcrumb">DASHBOARD <span>/</span> {regionLabel.toUpperCase()}</div><h1 id="page-title">India’s Labour Market<br className="desktop-break"/> at a Glance</h1><div className="title-underline"/><p>Key insights on demand, supply, skill gaps and emerging opportunities across sectors and regions.</p></div>
