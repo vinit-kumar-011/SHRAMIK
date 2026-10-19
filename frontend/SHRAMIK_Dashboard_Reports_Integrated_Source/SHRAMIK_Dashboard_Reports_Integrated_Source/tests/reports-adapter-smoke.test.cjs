@@ -203,7 +203,7 @@ test('Reports page is content-only and the canonical app owns its shared route/s
   assert.doesNotMatch(page, /<Sidebar\b|<Header\b/, 'Reports must not render a duplicate application shell');
   assert.match(shell, /import ReportsPage from '\.\/reports\/ReportsPage'/);
   assert.match(shell, /section: 'reports'/);
-  assert.match(shell, /activePage === 'reports' \\? \\(!demoMode[\\s\\S]*?<ReportsPage \\/>/, 'live mode gates report fixtures and explicit demo mode can render the Reports page');
+  assert.match(shell, /activePage === 'reports' \? \(!demoMode[\s\S]*?<ReportsPage \/>/, 'live mode gates report fixtures and explicit demo mode can render the Reports page');
   assert.match(shell, /reports\.html|#reports/);
 });
 
