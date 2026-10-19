@@ -14,9 +14,10 @@
     "test:adapter": "node --test tests/adapter-smoke.test.cjs tests/skill-gap-adapter-smoke.test.cjs tests/forecasts-adapter-smoke.test.cjs tests/reports-adapter-smoke.test.cjs",
     "test": "node --test tests/*.test.cjs",
     "scope:styles": "node scripts/scope-data-sources-css.mjs",
-    "predev": "npm run scope:styles",
-    "pretypecheck": "npm run scope:styles",
-    "prebuild": "npm run scope:styles"
+    "predev": "npm run prepare:modules && npm run scope:styles",
+    "pretypecheck": "npm run prepare:modules && npm run scope:styles",
+    "prebuild": "npm run prepare:modules && npm run scope:styles",
+    "prepare:modules": "node scripts/prepare-react-modules.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
