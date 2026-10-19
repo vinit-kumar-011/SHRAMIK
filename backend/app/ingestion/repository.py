@@ -3,7 +3,8 @@
 This repository is deliberately disabled for writes by default. It uses the
 existing SQLAlchemy session, checks every referenced canonical/provenance ID
 and the live source_capabilities registry before inserting anything. The caller
-owns the outer transaction and must apply the natural-key migration first.
+owns the outer transaction. The repository uses the canonical natural-key indexes
+already defined for source-backed and synthetic observations.
 """
 from __future__ import annotations
 
@@ -103,13 +104,14 @@ class ObservationRepository:
         signal_column = "demand_signal_type" if row.kind == "demand" else "supply_signal_type"
         if row.is_synthetic:
             return (*dimensions, signal_column, "generation_run_id")
+        # Must exactly match uq_{kind}_source_key in the live schema.
+        # Retrieval/evidence IDs are payload/provenance, not the source observation's
+        # natural identity; changing them for the same release must fail closed.
         return (
             *dimensions,
-            signal_column,
             "source_id",
             "source_release",
-            "retrieval_id",
-            "evidence_item_id",
+            signal_column,
         )
 
     @staticmethod
