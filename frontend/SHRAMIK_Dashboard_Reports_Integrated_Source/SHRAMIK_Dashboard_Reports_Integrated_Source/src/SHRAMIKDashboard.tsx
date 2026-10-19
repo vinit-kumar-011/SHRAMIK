@@ -61,6 +61,7 @@ function formatUpdated(value: string | null | undefined): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
 }
+// src/routing.ts owns canonical and legacy direct links (including reports.html and #reports).
 function getInitialPage(): ShramikRouteId {
   if (typeof window === 'undefined') return 'dashboard';
   return getRouteFromLocation(window.location);
