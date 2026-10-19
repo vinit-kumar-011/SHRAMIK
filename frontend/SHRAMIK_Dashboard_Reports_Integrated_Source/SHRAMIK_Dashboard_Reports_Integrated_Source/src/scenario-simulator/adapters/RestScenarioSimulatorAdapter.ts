@@ -3,7 +3,17 @@ import type { ScenarioSimulatorDataAdapter } from "./ScenarioSimulatorDataAdapte
 
 /** REST adapter for the proposed API contract. Paths are configurable because the handoff calls them proposals. */
 export class RestScenarioSimulatorAdapter implements ScenarioSimulatorDataAdapter {
-  constructor(private readonly baseUrl = "", private readonly fetcher: typeof fetch = fetch) {}
+  private readonly baseUrl: string;
+
+  constructor(baseUrl = "", private readonly fetcher: typeof fetch = fetch) {
+    // Endpoint paths below already include /api/v1. Accept either the API host
+    // or a host ending in /api/v1, without accidentally duplicating the prefix.
+    const trimmed = baseUrl.trim().replace(/\\/+$/, "");
+    this.baseUrl = trimmed.endsWith("/api/v1") ? trimmed.slice(0, -"/api/v1".length) : trimmed;
+    if (this.baseUrl && !/^https?:\\/\\//i.test(this.baseUrl)) {
+      throw new Error("Scenario API base URL must be an absolute HTTP(S) URL.");
+    }
+  }
 
   private async request<T>(path: string, init: RequestInit = {}, signal?: AbortSignal): Promise<T> {
     const response = await this.fetcher(`${this.baseUrl}${path}`, {

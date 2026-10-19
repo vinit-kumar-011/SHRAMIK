@@ -56,7 +56,27 @@ try {
     }
   }
 
-  console.log(`Passed: ${routes.length} direct-route and asset smoke checks against Vite preview.`);
+  const geometryResponse = await request(`${origin}${basePath}/assets/india-states.geojson`, 'application/geo+json, application/json');
+  const geometryType = geometryResponse.headers.get('content-type') ?? '';
+  if (!geometryType.includes('json')) throw new Error(`Bundled state/UT geometry did not return JSON (${geometryType}).`);
+  const geometry = await geometryResponse.json();
+  if (geometry?.type !== 'FeatureCollection' || !Array.isArray(geometry.features) || geometry.features.length !== 36) {
+    throw new Error('Bundled state/UT geometry must be a 36-feature GeoJSON FeatureCollection.');
+  }
+  for (const code of ['IN-OD', 'IN-WB', 'IN-AN']) {
+    if (!geometry.features.some(feature => feature?.properties?.code === code)) {
+      throw new Error(`Bundled GeoJSON is missing canonical feature ${code}.`);
+    }
+  }
+
+  const attributionResponse = await request(`${origin}${basePath}/assets/INDIA_STATES_ATTRIBUTION.md`, 'text/plain, text/markdown');
+  const attribution = await attributionResponse.text();
+  if (!/OpenStreetMap contributors/i.test(attribution) || !/ODbL 1\\.0/i.test(attribution) ||
+      !/not a Survey of India product/i.test(attribution)) {
+    throw new Error('Bundled boundary attribution must contain OSM credit, the ODbL licence and the non-official-boundary disclaimer.');
+  }
+
+  console.log(`Passed: ${routes.length} direct-route, bundled geometry and asset smoke checks against Vite preview.`);
 } finally {
   server.kill('SIGTERM');
 }
