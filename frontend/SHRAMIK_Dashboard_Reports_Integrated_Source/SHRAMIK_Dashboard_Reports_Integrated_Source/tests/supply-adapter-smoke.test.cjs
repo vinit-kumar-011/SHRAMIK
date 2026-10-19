@@ -76,6 +76,14 @@ test('Supply REST adapter uses versioned endpoint and validates requested geogra
   assert.equal(calls[0].init.credentials, 'include');
 });
 
+test('Supply REST adapter rejects invalid units, enums and percentage ranges', async () => {
+  const invalid = snapshot('IN');
+  invalid.sectors[0].level = 'Outstanding';
+  invalid.sectors[0].coveragePct = 120;
+  const adapter = new RestSupplyInsightsDataAdapter('https://api.example.test', async () => new Response(JSON.stringify(invalid), { status: 200, headers: { 'content-type': 'application/json' } }));
+  await assert.rejects(adapter.getSnapshot('IN'), error => error instanceof SupplyInsightsApiError && /invalid sector fields/.test(error.message));
+});
+
 test('Supply REST adapter refuses mismatched geography and does not silently use fixtures on errors', async () => {
   const wrongScope = new RestSupplyInsightsDataAdapter('https://api.example.test', async () => new Response(JSON.stringify(snapshot('IN')), { status: 200, headers: { 'content-type': 'application/json' } }));
   await assert.rejects(wrongScope.getSnapshot('IN-OD'), error => error instanceof SupplyInsightsApiError && /geography does not match/.test(error.message));

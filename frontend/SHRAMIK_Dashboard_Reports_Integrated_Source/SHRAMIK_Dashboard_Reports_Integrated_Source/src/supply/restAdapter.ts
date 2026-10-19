@@ -52,15 +52,42 @@ function validateSnapshot(snapshot: SupplySnapshot, requestedGeography: string, 
       !Array.isArray(snapshot.pipeline) || !Array.isArray(snapshot.readiness) || !snapshot.meta?.provenance) {
     throw new SupplyInsightsApiError('Supply overview response does not match the agreed frontend contract.', 200, path);
   }
+
+  const allowedProvenance = ['SOURCE_BACKED', 'DERIVED', 'MIXED', 'SYNTHETIC_DEMO'];
+  if (!allowedProvenance.includes(snapshot.meta.provenance)) {
+    throw new SupplyInsightsApiError('Supply overview response contains an unknown provenance value.', 200, path);
+  }
   const summaryValues = [
     snapshot.summary.workforceSupplyEstimate,
     snapshot.summary.trainingPipeline,
     snapshot.summary.credentialCoveragePct,
   ];
   if (summaryValues.some(value => typeof value !== 'number' || !Number.isFinite(value)) ||
-      snapshot.sectors.some(row => !row || typeof row.id !== 'string' || typeof row.name !== 'string' ||
-        !Number.isFinite(row.availableSupply) || !Number.isFinite(row.changePct) || !Number.isFinite(row.coveragePct))) {
-    throw new SupplyInsightsApiError('Supply overview response contains missing or non-numeric analytical fields.', 200, path);
+      snapshot.summary.workforceSupplyEstimate < 0 || snapshot.summary.trainingPipeline < 0 ||
+      snapshot.summary.credentialCoveragePct < 0 || snapshot.summary.credentialCoveragePct > 100 ||
+      typeof snapshot.summary.workforceSupplyUnit !== 'string' || !snapshot.summary.workforceSupplyUnit.trim() ||
+      typeof snapshot.summary.trainingPipelineUnit !== 'string' || !snapshot.summary.trainingPipelineUnit.trim()) {
+    throw new SupplyInsightsApiError('Supply overview response contains invalid summary values or missing units.', 200, path);
+  }
+  const allowedLevels = ['High', 'Moderate', 'Limited'];
+  if (snapshot.sectors.some(row => !row || typeof row.id !== 'string' || !row.id ||
+      typeof row.name !== 'string' || !row.name || typeof row.unitCode !== 'string' || !row.unitCode.trim() ||
+      typeof row.availableSupply !== 'number' || !Number.isFinite(row.availableSupply) || row.availableSupply < 0 ||
+      typeof row.changePct !== 'number' || !Number.isFinite(row.changePct) ||
+      typeof row.coveragePct !== 'number' || !Number.isFinite(row.coveragePct) || row.coveragePct < 0 || row.coveragePct > 100 ||
+      !allowedLevels.includes(row.level))) {
+    throw new SupplyInsightsApiError('Supply overview response contains invalid sector fields, units, or readiness values.', 200, path);
+  }
+  if (snapshot.pipeline.some(row => !row || typeof row.id !== 'string' || !row.id ||
+      typeof row.label !== 'string' || !row.label || typeof row.note !== 'string' ||
+      typeof row.valuePct !== 'number' || !Number.isFinite(row.valuePct) || row.valuePct < 0 || row.valuePct > 100)) {
+    throw new SupplyInsightsApiError('Supply overview response contains invalid pipeline fields or percentages.', 200, path);
+  }
+  const allowedReadiness = ['ready', 'moderate', 'limited'];
+  if (snapshot.readiness.some(row => !row || typeof row.id !== 'string' || !row.id ||
+      typeof row.label !== 'string' || !row.label || typeof row.value !== 'string' ||
+      !allowedReadiness.includes(row.status))) {
+    throw new SupplyInsightsApiError('Supply overview response contains invalid readiness fields.', 200, path);
   }
   if (snapshot.geographyCode !== requestedGeography) {
     throw new SupplyInsightsApiError('Supply overview response geography does not match the requested filter.', 200, path);
