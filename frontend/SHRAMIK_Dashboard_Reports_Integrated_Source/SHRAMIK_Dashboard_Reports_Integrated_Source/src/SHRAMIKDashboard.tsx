@@ -451,7 +451,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   const handleNavigate = useCallback((item: typeof NAV_ITEMS[number] | { label: string; section: string }) => {
     const route = item.section as Exclude<ShramikRouteId, 'not-found'>;
     const label = getRouteLabel(route);
-    const path = getPathForRoute(route);
+    const path = getPathForRoute(route, import.meta.env.BASE_URL);
     setActive(label);
     setActivePage(route);
     setMobileOpen(false);
