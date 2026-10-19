@@ -55,3 +55,16 @@
   font-size: 13px;
   font-weight: 600;
 }
+
+
+.module-error-boundary .module-error-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+.module-error-boundary .module-error-actions button {
+  min-height: 38px;
+  padding: 8px 13px;
+}

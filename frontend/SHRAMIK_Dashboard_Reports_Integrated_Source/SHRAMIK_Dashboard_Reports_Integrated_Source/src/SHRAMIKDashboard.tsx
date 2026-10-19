@@ -31,6 +31,7 @@ import DataQualityPage from './data-quality/DataQualityPage';
 import { createDataQualityDataAdapter } from './data-quality/adapter';
 import AdministrationPage from './administration/AdministrationPage';
 import { createAdministrationDataAdapter } from './administration/adapter';
+import ModuleErrorBoundary from './ModuleErrorBoundary';
 
 type Tone = 'navy' | 'teal' | 'orange';
 
@@ -213,7 +214,7 @@ function Sidebar({ active, onNavigate, mobileOpen, onClose }: { active: string; 
           const Icon = item.icon;
           return <span className="nav-wrapper" key={item.label}>
             {index === 8 && <span className="nav-divider"/>}
-            <button className={`nav-item ${active === item.label ? 'active' : ''}`} type="button" onClick={() => { onNavigate(item); onClose(); }}><Icon size={19}/><span>{item.label}</span></button>
+            <button className={`nav-item ${active === item.label ? 'active' : ''}`} aria-current={active === item.label ? 'page' : undefined} type="button" onClick={() => { onNavigate(item); onClose(); }}><Icon size={19}/><span>{item.label}</span></button>
           </span>;
         })}
       </nav>
@@ -524,6 +525,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
     <div className="app-layout">
       <Sidebar active={active} onNavigate={handleNavigate} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)}/>
       <main className={activePage === 'dashboard' ? 'dashboard-main' : 'dashboard-main module-main'} aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
+        <ModuleErrorBoundary key={activePage} moduleName={getRouteLabel(activePage)} onReturnDashboard={() => handleNavigate({ label: 'Dashboard', section: 'dashboard' })}>
         {activePage === 'skill-gaps' ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>
           : activePage === 'forecasts' ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/>
           : activePage === 'reports' ? <ReportsPage />
@@ -563,6 +565,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
         </section>
         <footer className="method-note"><span className="note-marker">i</span><p><strong>{dashboard?.meta.provenance === 'source-backed' ? 'Data notes:' : 'Prototype preview:'}</strong> {dashboard?.meta.provenance === 'source-backed' ? `${dashboard.meta.sourceLabel}. Check the detail panels for source notes, units and coverage.` : 'All numbers currently visible come from an illustrative adapter unless a source-backed API is configured; do not treat them as verified labour-market statistics.'}</p><span className={`data-status-footer ${dashboard?.meta.provenance ?? 'mock'}`}><span className="status-dot"/>{dashboard?.meta.provenance === 'source-backed' ? 'Source-backed' : dashboard?.meta.provenance === 'mixed' ? 'Mixed provenance' : dashboard?.meta.provenance === 'derived' ? 'Derived values' : 'Illustrative data'}</span><span className="updated"><CalendarDays size={14}/>{dashboard?.meta.updatedAt ? formatUpdated(dashboard.meta.updatedAt) : 'Update unavailable'}</span><span className="updated"><Database size={14}/>{adapter.mode === 'rest' ? 'REST API' : 'Mock adapter'}</span><button className="refresh-button" type="button" onClick={refresh} disabled={loading || refreshing} aria-label="Refresh dashboard data"><RefreshCw size={13} className={refreshing ? 'spin-icon' : ''}/> Refresh</button></footer>
         </> : <ModuleRouteFallback route={activePage} />}
+        </ModuleErrorBoundary>
       </main>
     </div>
     {toast && <div role="status" className="toast-message"><span>{toast}</span><button type="button" aria-label="Dismiss notification" onClick={() => setToast('')}><X size={15}/></button></div>}
