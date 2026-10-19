@@ -100,12 +100,12 @@ test('module preparation uses the canonical React source files in this app packa
   assert.doesNotMatch(prepare, /SHRAMIK_Data_Sources_Source_and_Build/);
 });
 
-test('Supply page uses the shared API mode with explicit demo provenance', () => {
+test('Supply adapter has an independent API switch and explicit demo provenance', () => {
   const factory = read('src/supply/adapter.ts');
   const mock = read('src/supply/mockAdapter.ts');
   const rest = read('src/supply/restAdapter.ts');
   const shellSource = read('src/SHRAMIKDashboard.tsx');
-  assert.match(factory, /VITE_SHRAMIK_API_BASE_URL/);
+  assert.match(factory, /VITE_SUPPLY_API_BASE_URL/);
   assert.match(factory, /RestSupplyInsightsDataAdapter/);
   assert.match(mock, /SYNTHETIC_DEMO/);
   assert.match(rest, /\/supply\/overview/);
@@ -114,20 +114,20 @@ test('Supply page uses the shared API mode with explicit demo provenance', () =>
   assert.match(shellSource, /<SupplyInsightsPage adapter=\{supplyAdapter\}/);
 });
 
-test('Emerging Skills uses the shared API mode when configured', () => {
+test('Emerging Skills has an independent API switch when configured', () => {
   const factory = read('src/emerging-skills/adapter.ts');
   const shellSource = read('src/SHRAMIKDashboard.tsx');
-  assert.match(factory, /VITE_SHRAMIK_API_BASE_URL/);
+  assert.match(factory, /VITE_EMERGING_SKILLS_API_BASE_URL/);
   assert.match(factory, /new RestEmergingSkillsDataAdapter/);
   assert.match(factory, /demoEmergingSkillsDataAdapter/);
   assert.match(shellSource, /createEmergingSkillsDataAdapter/);
   assert.match(shellSource, /<EmergingSkillsPage dataAdapter=\{emergingSkillsAdapter\}/);
 });
 
-test('Demand Insights reads the same Vite API base as the other live-mode modules', () => {
+test('Demand Insights uses its isolated Vite API host and mode indicator', () => {
   const demand = read('src/demand/DemandInsightsPage.jsx');
   assert.match(demand, /const getConfiguredApiBase = \(\) =>/);
-  assert.match(demand, /import\.meta\.env\?\.VITE_SHRAMIK_API_BASE_URL/);
+  assert.match(demand, /import\.meta\.env\?\.VITE_DEMAND_API_BASE_URL/);
   assert.match(demand, /const base = getConfiguredApiBase\(\)/);
   assert.match(demand, /Boolean\(getConfiguredApiBase\(\)\)/);
   assert.doesNotMatch(demand, /const base = window\.SHRAMIK_API_BASE_URL \|\| window\.SHRAMIK_CONFIG/);
