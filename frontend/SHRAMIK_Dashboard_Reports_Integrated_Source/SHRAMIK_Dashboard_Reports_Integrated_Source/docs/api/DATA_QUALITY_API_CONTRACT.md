@@ -6,7 +6,7 @@
 
 `GET /api/v1/data-quality/overview`
 
-The shared `VITE_SHRAMIK_API_BASE_URL` points to the API host; the adapter adds `/api/v1` when required. Requests include credentials. The adapter accepts a raw JSON body or `{ "data": ... }` envelope. HTTP/network/contract failures are shown to the user without mock fallback.
+The frontend uses `VITE_DATA_QUALITY_API_BASE_URL` for this module; the adapter adds `/api/v1` when required. Requests include credentials. The adapter accepts a raw JSON body or `{ "data": ... }` envelope. HTTP/network/contract failures are shown to the user without mock fallback.
 
 ## Response shape
 

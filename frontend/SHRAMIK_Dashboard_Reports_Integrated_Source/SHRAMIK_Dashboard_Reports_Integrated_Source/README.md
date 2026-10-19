@@ -125,6 +125,10 @@ npm run preview
 The GitHub Actions workflow `.github/workflows/frontend-unified-build.yml` runs the clean install, type-check, automated tests, production build and basic output checks, smoke-tests direct module routes and their bundled JavaScript through Vite preview, then uploads the build artifact. A passing workflow verifies reproducible bundling and static checks; it does not replace browser QA at desktop/mobile breakpoints or live-backend contract validation.
 
 
+## Scenario Simulator API integration
+
+The simulator adapter contract and backend acceptance checks are documented in `docs/api/SCENARIO_SIMULATOR_API_CONTRACT.md`. Configure `VITE_SCENARIO_SIMULATOR_API_BASE_URL` independently; leave it blank until the backend implements and verifies the run lifecycle and result schema.
+
 ## Scenario Simulator boundary data and attribution
 
 The production app bundles a 36-feature state/UT GeoJSON for the regional-impact visualization. The data is OpenStreetMap-derived (ODbL 1.0) and has visible attribution in the map; its provenance and limitations are documented in `public/assets/INDIA_STATES_ATTRIBUTION.md`. It is best-effort, not an official/survey-grade boundary source. The map provides geometry only; it never derives missing labour-market metrics from shapes, and only adapter-returned comparable scenario results may colour regions.

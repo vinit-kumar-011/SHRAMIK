@@ -6,7 +6,7 @@
 
 `GET /api/v1/admin/overview`
 
-The shared `VITE_SHRAMIK_API_BASE_URL` points to the API host; the adapter adds `/api/v1` when needed. Requests include credentials. The adapter accepts a raw JSON body or `{ "data": ... }` envelope. HTTP/network/contract errors are shown as errors; no mock fixture fallback occurs in REST mode.
+The frontend uses `VITE_ADMINISTRATION_API_BASE_URL` for this module; the adapter adds `/api/v1` when needed. Requests include credentials. The adapter accepts a raw JSON body or `{ "data": ... }` envelope. HTTP/network/contract errors are shown as errors; no mock fixture fallback occurs in REST mode.
 
 ## Response shape
 

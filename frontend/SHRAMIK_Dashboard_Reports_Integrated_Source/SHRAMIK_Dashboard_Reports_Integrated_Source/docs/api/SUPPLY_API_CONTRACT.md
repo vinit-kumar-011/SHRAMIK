@@ -6,7 +6,7 @@
 
 `GET /api/v1/supply/overview?geography={canonicalGeographyCode}`
 
-The frontend's shared `VITE_SHRAMIK_API_BASE_URL` points to the service host. The adapter appends `/api/v1` unless the configured URL already ends with that prefix. The geography code is encoded as a query parameter.
+The frontend uses `VITE_SUPPLY_API_BASE_URL` for this module. It may point to the same API origin as other modules, but it is configured separately so a partial backend does not switch unrelated modules to REST mode. The adapter appends `/api/v1` unless the configured URL already ends with that prefix. The geography code is encoded as a query parameter.
 
 Requests use `Accept: application/json` and credentials. The frontend accepts a raw JSON response or a `{ "data": ... }` envelope. HTTP/network errors and invalid payloads are surfaced to the user; REST failures never fall back silently to the demo adapter.
 

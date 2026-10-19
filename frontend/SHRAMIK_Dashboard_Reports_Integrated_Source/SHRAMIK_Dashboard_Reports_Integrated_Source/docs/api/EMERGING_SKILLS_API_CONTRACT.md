@@ -4,7 +4,7 @@
 
 ## Base URL and conventions
 
-The shared `VITE_SHRAMIK_API_BASE_URL` points to the API host (for example, `http://localhost:8000`). The adapter adds `/api/v1` unless the configured URL already ends in that prefix. Requests include credentials and request JSON. The frontend accepts either a plain JSON body or a `{ "data": ... }` envelope for successful responses.
+The shared `VITE_EMERGING_SKILLS_API_BASE_URL` points to the API host (for example, `http://localhost:8000`). The adapter adds `/api/v1` unless the configured URL already ends in that prefix. Requests include credentials and request JSON. The frontend accepts either a plain JSON body or a `{ "data": ... }` envelope for successful responses.
 
 Query filters are optional: `period`, `geography`, `sector`, and `category`. The adapter omits `category=ALL` from requests. Error responses should use the project's standard envelope, preferably `{ "error": { "code": "...", "message": "..." } }`. HTTP and network errors are shown as errors; they do not trigger mock-data fallback.
 
