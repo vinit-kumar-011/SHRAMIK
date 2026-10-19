@@ -17,7 +17,8 @@
     "predev": "npm run prepare:modules && npm run scope:styles",
     "pretypecheck": "npm run prepare:modules && npm run scope:styles",
     "prebuild": "npm run prepare:modules && npm run scope:styles",
-    "prepare:modules": "node scripts/prepare-react-modules.mjs"
+    "prepare:modules": "node scripts/prepare-react-modules.mjs",
+    "test:preview": "node scripts/smoke-preview.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
