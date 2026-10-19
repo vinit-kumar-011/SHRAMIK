@@ -362,8 +362,12 @@ class ObservationRepository:
                         )
                     if existing_rows:
                         existing = existing_rows[0]
+                        # A replay allocates a candidate UUID before lookup. The stored
+                        # primary key is intentionally not part of payload equality.
                         if all(
-                            column in existing and self._same_value(existing[column], value)
+                            column != "id"
+                            and column in existing
+                            and self._same_value(existing[column], value)
                             for column, value in values.items()
                         ):
                             skipped += 1
