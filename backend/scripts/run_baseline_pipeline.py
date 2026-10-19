@@ -8,12 +8,17 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
 
 from app.analytics.engine import AnalyticsConfig, AnalyticsInputError, run_baseline_analytics
-from app.ingestion.canonical_csv import ParsedBatch, parse_canonical_csv
+from app.ingestion.canonical_csv import ParsedBatch, parse_canonical_csv, sha256_file
+from app.ingestion.capability_validation import (
+    CapabilityValidationError,
+    load_capabilities,
+    validate_source_capabilities,
+)
 
 
 def _load_compatibility_pairs(path: Path | None) -> frozenset[tuple[str, str]]:
@@ -74,11 +79,23 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Reviewed JSON list of explicitly approved demand/supply signal pairs; without it, gaps remain ineligible.",
     )
+    parser.add_argument(
+        "--capabilities-json",
+        type=Path,
+        help="Read-only JSON export of source_capabilities; required whenever source-backed rows are present.",
+    )
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
+    if not args.demand_csv.is_file():
+        print(f"demand CSV does not exist: {args.demand_csv}", file=sys.stderr)
+        return 2
+    if not args.supply_csv.is_file():
+        print(f"supply CSV does not exist: {args.supply_csv}", file=sys.stderr)
+        return 2
+
     generation_run_id = str(uuid4())
     try:
         demand = parse_canonical_csv(
@@ -89,6 +106,24 @@ def main() -> int:
         )
         _check_batch(demand, "demand")
         _check_batch(supply, "supply")
+
+        source_backed_present = any(
+            not observation.is_synthetic
+            for observation in (*demand.observations, *supply.observations)
+        )
+        capability_snapshot_sha256 = None
+        if source_backed_present:
+            if args.capabilities_json is None:
+                raise CapabilityValidationError(
+                    "source-backed rows require --capabilities-json so unit, grain, "
+                    "geographic scope and period coverage can be verified against "
+                    "source_capabilities; the pipeline will not trust CSV metadata alone"
+                )
+            capabilities = load_capabilities(args.capabilities_json)
+            validate_source_capabilities(demand, capabilities)
+            validate_source_capabilities(supply, capabilities)
+            capability_snapshot_sha256 = sha256_file(args.capabilities_json)
+
         approved_pairs = _load_compatibility_pairs(args.compatibility_json)
         result = run_baseline_analytics(
             demand,
@@ -103,6 +138,11 @@ def main() -> int:
                 approved_gap_signal_pairs=approved_pairs,
             ),
         )
+        synthetic_run_ids = sorted({
+            observation.generation_run_id
+            for observation in (*demand.observations, *supply.observations)
+            if observation.is_synthetic and observation.generation_run_id
+        })
         result["ingestion"] = {
             "demand": {
                 "source_file": demand.source_path,
@@ -116,20 +156,15 @@ def main() -> int:
                 "rows_validated": len(supply.observations),
                 "synthetic_capabilities": supply.synthetic_capabilities,
             },
-            "synthetic_generation_run_id": generation_run_id
-            if args.analysis_mode == "DEMO"
-            and (
-                any(row.is_synthetic for row in demand.observations)
-                or any(row.is_synthetic for row in supply.observations)
-            )
-            else None,
+            "capability_snapshot_sha256": capability_snapshot_sha256,
+            "synthetic_generation_run_ids": synthetic_run_ids,
         }
         args.output_json.parent.mkdir(parents=True, exist_ok=True)
         args.output_json.write_text(
             json.dumps(result, indent=2, ensure_ascii=False, default=str) + "\n",
             encoding="utf-8",
         )
-    except (OSError, ValueError, InvalidOperation, json.JSONDecodeError, AnalyticsInputError) as exc:
+    except (OSError, ValueError, CapabilityValidationError, AnalyticsInputError) as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
