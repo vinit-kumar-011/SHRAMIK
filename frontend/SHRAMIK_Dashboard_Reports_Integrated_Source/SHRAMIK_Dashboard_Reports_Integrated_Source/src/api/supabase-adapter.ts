@@ -1,5 +1,5 @@
 import type {
-  DashboardPeriod, DashboardRow, DashboardSummary, DataMeta, DetailPayload, DetailQuery,
+  DashboardPeriod, DashboardSummary, DataMeta, DetailPayload, DetailQuery,
   LabourMarketDataAdapter, MetricCardData, NotificationItem, RankedRegion, RankedRegionsResponse,
   RankingsQuery, RegionMetric, RegionOption, SearchQuery, SearchResult, UserProfile,
 } from './contracts';
