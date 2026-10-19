@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from app.ingestion.canonical_csv import CanonicalObservation, ParsedBatch
 
@@ -44,9 +45,15 @@ def validate_source_capabilities(
         if observation.is_synthetic:
             continue
 
+        def canonical_uuid(value: Any) -> str:
+            try:
+                return str(UUID(str(value)))
+            except (ValueError, TypeError, AttributeError):
+                return str(value)
+
         matches = [
             capability for capability in capabilities
-            if str(capability.get("source_id", "")) == str(observation.source_id)
+            if canonical_uuid(capability.get("source_id", "")) == canonical_uuid(observation.source_id)
             and str(capability.get("signal_type", "")) == observation.signal_type
             and str(capability.get("observation_grain", "")).upper()
                 == observation.observation_grain
