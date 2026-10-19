@@ -376,7 +376,14 @@ def _emerging_record(
     }
     if len(rows) < config.min_history or latest is None:
         return base
-    if len(rows) < 2 or rows[-2].quantity is None or rows[-2].quantity <= 0:
+    if (
+        len(rows) < 2
+        or rows[-2].quantity is None
+        or rows[-2].quantity <= 0
+        or latest.period_year != rows[-2].period_year + 1
+    ):
+        # Growth is annual only when the latest two observed years are consecutive.
+        # Do not silently annualize across a missing period.
         base.update({"data_status": "INSUFFICIENT_DATA", "emerging_skill_status": "INSUFFICIENT_DATA"})
         return base
 
