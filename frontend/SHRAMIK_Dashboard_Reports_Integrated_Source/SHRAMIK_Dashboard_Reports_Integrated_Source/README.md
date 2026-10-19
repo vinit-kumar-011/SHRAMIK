@@ -1,6 +1,6 @@
-# SHRAMIK Integrated Dashboard + Skill Gap Analysis
+# SHRAMIK Unified React Application
 
-This application now contains the refreshed **Dashboard** and the specified **Skill Gap Analysis** page in one React application. Both are rendered by the same `SHRAMIKDashboard` shell; the sidebar and topbar are not duplicated in the gap page.
+This package is the canonical Vite/React single-page application for SHRAMIK. The Dashboard, Demand, Supply, Skill Gaps, Forecasts, Emerging Skills, Scenario Simulator, Reports, Data Sources, Data Quality, and Administration modules render inside one `SHRAMIKDashboard` shell with one shared topbar and sidebar. Module pages own only their content; route state is centralized in `src/routing.ts`.
 
 ## Canonical shell and routes
 
