@@ -57,9 +57,13 @@ The API handoff in `docs/skill-gap-analysis/SHRAMIK_SKILL_GAP_ANALYSIS_API_CONTR
 
 `docs/skill-gap-analysis/` contains the provided implementation specification, API contract, design-system references, sidebar consistency lock, QA checklist and reference images. `reference/baseline/SHRAMIK_Skill_Gap_Analysis_Baseline.html` preserves the exact uploaded baseline for comparison.
 
-## Build status
+## Production build and verification
 
-The npm registry could not be resolved in the current build environment (`EAI_AGAIN registry.npmjs.org`), so a normal Vite build could not be run here. The `dist/` directory included in the delivered archive was created by `scripts/build-static-fallback.cjs`, which precompiles the same TypeScript/JSX sources and uses React/ReactDOM from cdnjs. Its build report is `dist/BUILD_REPORT.json`. This fallback is included for review and preview; **the preferred production release is the Vite build above**, which bundles React and Lucide locally. Do not represent the fallback as Vite build output.
+The preferred production release is the Vite build generated from this package; do not deploy the older CDN-based static fallback as a production bundle. CI performs a clean `npm ci`, TypeScript check, automated tests, Vite production build, generated-entry checks, and production-preview route/asset smoke tests.
+
+An earlier unified integration revision passed clean install, type-check, tests, production build, and legacy-entry checks. The current branch adds bundled Demand icons, configurable root/subpath deep links, and production-preview smoke tests; the exact latest revision must pass the full workflow—including preview smoke tests—before it is considered verified. GitHub Actions uploads the `dist/` artifact from successful runs; build artifacts are outputs, not source files to hand-edit.
+
+The `scripts/build-static-fallback.cjs` path is for constrained review environments only. It loads React/ReactDOM from a CDN and is not equivalent to the self-contained Vite production bundle.
 
 
 ## Unified SHRAMIK application integration status
