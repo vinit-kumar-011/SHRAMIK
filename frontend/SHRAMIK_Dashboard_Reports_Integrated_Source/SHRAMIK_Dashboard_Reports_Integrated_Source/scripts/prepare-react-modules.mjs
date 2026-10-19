@@ -29,6 +29,9 @@ async function ensureParent(filePath) {
 async function copy(sourceRelative, targetRelative) {
   const sourcePath = path.resolve(frontendRoot, sourceRelative);
   const targetPath = path.resolve(appRoot, targetRelative);
+  if (sourcePath === targetPath) {
+    return { sourceRelative, targetRelative, kind: 'reuse' };
+  }
   await ensureParent(targetPath);
   await copyFile(sourcePath, targetPath);
   return { sourceRelative, targetRelative, kind: 'copy' };
@@ -54,10 +57,10 @@ async function transpile(sourceRelative, targetRelative) {
   return { sourceRelative, targetRelative, kind: 'transpile' };
 }
 
-// Bring independently authored React page modules into this app package before
-// TypeScript/Vite run. This prevents the app compiler from resolving sibling
-// handoff sources against their own missing node_modules directories. Their
-// data contracts are still adapter-driven; this script only prepares source.
+// Prepare canonical in-app TSX modules into JavaScript entry files before
+// TypeScript/Vite run. Keeping the source modules under this package makes the
+// app build independent of the original handoff folders. JSON/CSS fixtures
+// already in the canonical package are reused without copying a file onto itself.
 const moduleFiles = [
   // Emerging Skills page
   {

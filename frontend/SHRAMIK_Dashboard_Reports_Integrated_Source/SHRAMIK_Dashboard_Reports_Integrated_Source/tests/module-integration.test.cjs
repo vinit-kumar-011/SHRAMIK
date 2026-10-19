@@ -75,6 +75,12 @@ test('canonical shell imports and mounts all eleven navigation modules', () => {
   assert.match(shell, /<Sidebar /, 'shared sidebar must be provided by the shell');
 });
 
+test('module preparation safely reuses canonical JSON/CSS files', () => {
+  const prepare = read('scripts/prepare-react-modules.mjs');
+  assert.match(prepare, /if \(sourcePath === targetPath\)/);
+  assert.match(prepare, /kind: 'reuse'/);
+});
+
 test('module preparation uses the canonical React source files in this app package', () => {
   const prepare = read('scripts/prepare-react-modules.mjs');
   assert.match(prepare, /src\/emerging-skills\/EmergingSkillsPage\.tsx/);
