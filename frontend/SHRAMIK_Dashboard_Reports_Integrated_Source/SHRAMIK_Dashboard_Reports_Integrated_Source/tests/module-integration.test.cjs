@@ -148,8 +148,15 @@ test('demo-only modules prominently disclose synthetic data and local-only actio
   assert.match(supply, /Supply data unavailable/i);
   assert.match(supply, /active adapter/i);
   assert.match(quality, /SYNTHETIC_DEMO/);
-  assert.match(quality, /local fixtures/i);
+  assert.match(quality, /SYNTHETIC_DEMO/);
+  assert.match(quality, /read-only until issue-mutation endpoints/i);
   assert.match(quality, /does not update a backend/i);
+  const qualityMock = read('src/data-quality/mockAdapter.ts');
+  const qualityRest = read('src/data-quality/restAdapter.ts');
+  assert.match(qualityMock, /SYNTHETIC_DEMO/);
+  assert.match(qualityRest, /data-quality\/overview/);
+  assert.match(shell, /createDataQualityDataAdapter/);
+  assert.match(shell, /<DataQualityPage adapter=\{dataQualityAdapter\}/);
   assert.match(administration, /SYNTHETIC_DEMO/);
   assert.match(administration, /No account, authentication policy, or permission is changed on a server/i);
   assert.match(administration, /no authentication account was modified/i);

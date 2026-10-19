@@ -27,6 +27,7 @@ import { createRestDataSourcesAdapter } from './data-sources/rest-adapter.js';
 import SupplyInsightsPage from './supply/SupplyInsightsPage';
 import { createSupplyInsightsDataAdapter } from './supply/adapter';
 import DataQualityPage from './data-quality/DataQualityPage';
+import { createDataQualityDataAdapter } from './data-quality/adapter';
 import AdministrationPage from './administration/AdministrationPage';
 
 type Tone = 'navy' | 'teal' | 'orange';
@@ -291,6 +292,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
   const [emergingSkillsAdapter] = useState(() => createEmergingSkillsDataAdapter());
   const [supplyAdapter] = useState(() => createSupplyInsightsDataAdapter());
+  const [dataQualityAdapter] = useState(() => createDataQualityDataAdapter());
   const scenarioApiConfigured = Boolean((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL?.trim());
   const scenarioDataAdapter = scenarioApiConfigured ? undefined : scenarioMockAdapter;
   const [dataSourcesAdapter] = useState(() => {
@@ -530,7 +532,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
             }}/>
           : activePage === 'data-sources' ? <DataSourcesPage adapter={dataSourcesAdapter}/>
           : activePage === 'supply' ? <SupplyInsightsPage adapter={supplyAdapter} />
-          : activePage === 'data-quality' ? <DataQualityPage />
+          : activePage === 'data-quality' ? <DataQualityPage adapter={dataQualityAdapter} />
           : activePage === 'administration' ? <AdministrationPage />
           : activePage === 'dashboard' ? <>
         <section className="hero-band" aria-labelledby="page-title">
