@@ -430,13 +430,6 @@ def _natural_keyed_existing(
     table = "demand_observations" if kind == "demand" else "supply_observations"
     found: list[dict[str, Any]] = []
     if source_ids:
-        found.extend(_select_in(
-            session,
-            f"SELECT * FROM public.{table} WHERE provenance_state = 'SOURCE_BACKED' "
-            f"AND source_CAST(id AS TEXT) IN :ids AND period_year IN :years AND {signal_column} IN :signals",
-            "ids",
-            source_ids,
-        ) if False else [])
         stmt = text(
             f"SELECT * FROM public.{table} WHERE provenance_state = 'SOURCE_BACKED' "
             f"AND CAST(source_id AS TEXT) IN :source_ids AND period_year IN :years AND {signal_column} IN :signals"
