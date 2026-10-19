@@ -377,6 +377,18 @@ def persist_analytics(conn: Connection, result: dict) -> dict[str, int]:
             "district_id": forecast["district_id"], "skill_id": forecast["skill_id"],
             "period_year": period_year, "analysis_mode": result["analysis_mode"],
         })
+        conn.execute(text("""
+            UPDATE early_warnings SET is_active = false
+            WHERE forecast_result_id IN (
+                SELECT id FROM forecast_results
+                WHERE district_id = :district_id AND skill_id = :skill_id
+                  AND period_type = 'YEAR' AND period_year = :period_year
+                  AND analysis_mode = :analysis_mode
+            )
+        """), {
+            "district_id": forecast["district_id"], "skill_id": forecast["skill_id"],
+            "period_year": period_year, "analysis_mode": result["analysis_mode"],
+        })
 
         if model_id:
             existing_id = conn.execute(text("""
