@@ -67,7 +67,7 @@ function formatUpdated(value: string | null | undefined): string {
 // src/routing.ts owns canonical and legacy direct links (including reports.html and #reports).
 function getInitialPage(): ShramikRouteId {
   if (typeof window === 'undefined') return 'dashboard';
-  return getRouteFromLocation(window.location);
+  return getRouteFromLocation(window.location, import.meta.env.BASE_URL);
 }
 
 function sectionForTarget(target: string): string {
