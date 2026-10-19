@@ -67,7 +67,8 @@ def validate_source_capabilities(
             )
         cap_flow = cap.get("flow_stock_semantics")
         cap_flow = str(cap_flow).strip() if cap_flow is not None else None
-        if cap_flow != observation.flow_stock_semantics:
+        observed_flow = observation.flow_stock_semantics
+        if (cap_flow or "").casefold() != (observed_flow or "").casefold():
             errors.append(
                 f"row {row_number}: flow_stock_semantics "
                 f"{observation.flow_stock_semantics!r} does not match registered "
