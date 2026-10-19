@@ -36,7 +36,7 @@ test('canonical shell imports and mounts all eleven navigation modules', () => {
 test('Demand Insights bundles its icons and does not rely on an undeclared browser global', () => {
   const demand = read('src/demand/DemandInsightsPage.jsx');
   assert.match(demand, /from ['"]lucide-react['"]/);
-  assert.doesNotMatch(demand, /window\\.lucide/);
+  assert.doesNotMatch(demand, /window\.lucide/);
   assert.doesNotMatch(demand, /mkIcon/);
 });
 
