@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Check, ClipboardCheck, FileText, Search, ShieldCheck, UserCog, Users, X } from 'lucide-react';
+import { Check, FileText, Search, ShieldCheck, UserCog, Users, X } from 'lucide-react';
 import './administration.css';
 
 type RequestStatus = 'pending' | 'approved' | 'denied';
