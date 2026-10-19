@@ -75,6 +75,16 @@ test('canonical shell imports and mounts all eleven navigation modules', () => {
   assert.match(shell, /<Sidebar /, 'shared sidebar must be provided by the shell');
 });
 
+test('module preparation uses the canonical React source files in this app package', () => {
+  const prepare = read('scripts/prepare-react-modules.mjs');
+  assert.match(prepare, /src\/emerging-skills\/EmergingSkillsPage\.tsx/);
+  assert.match(prepare, /src\/scenario-simulator\/ScenarioSimulatorPage\.tsx/);
+  assert.match(prepare, /src\/data-sources\/DataSourcesPage\.tsx/);
+  assert.doesNotMatch(prepare, /SHRAMIK_Emerging_Skills_React_Integrated/);
+  assert.doesNotMatch(prepare, /SHRAMIK_Scenario_Simulator_Deliverable/);
+  assert.doesNotMatch(prepare, /SHRAMIK_Data_Sources_Source_and_Build/);
+});
+
 test('Demand Insights bundles its icons and does not rely on an undeclared browser global', () => {
   const demand = read('src/demand/DemandInsightsPage.jsx');
   assert.match(demand, /from ['"]lucide-react['"]/);

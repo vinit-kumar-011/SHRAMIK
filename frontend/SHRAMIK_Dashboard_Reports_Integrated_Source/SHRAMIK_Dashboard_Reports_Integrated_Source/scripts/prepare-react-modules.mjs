@@ -62,64 +62,64 @@ const moduleFiles = [
   // Emerging Skills page
   {
     kind: 'transpile',
-    source: 'SHRAMIK_Emerging_Skills_React_Integrated/SHRAMIK_Emerging_Skills_React_Integrated/src/pages/EmergingSkillsPage.tsx',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/emerging-skills/EmergingSkillsPage.tsx',
     target: 'src/emerging-skills/EmergingSkillsPage.jsx',
   },
   // Scenario Simulator page, adapters and fixture
   {
     kind: 'transpile',
-    source: 'SHRAMIK_Scenario_Simulator_Deliverable/SHRAMIK_Scenario_Simulator_Deliverable/source/src/ScenarioSimulatorPage.tsx',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/scenario-simulator/ScenarioSimulatorPage.tsx',
     target: 'src/scenario-simulator/ScenarioSimulatorPage.jsx',
   },
   {
     kind: 'transpile',
-    source: 'SHRAMIK_Scenario_Simulator_Deliverable/SHRAMIK_Scenario_Simulator_Deliverable/source/src/adapters/MockScenarioSimulatorAdapter.ts',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/scenario-simulator/adapters/MockScenarioSimulatorAdapter.ts',
     target: 'src/scenario-simulator/adapters/MockScenarioSimulatorAdapter.js',
   },
   {
     kind: 'transpile',
-    source: 'SHRAMIK_Scenario_Simulator_Deliverable/SHRAMIK_Scenario_Simulator_Deliverable/source/src/adapters/RestScenarioSimulatorAdapter.ts',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/scenario-simulator/adapters/RestScenarioSimulatorAdapter.ts',
     target: 'src/scenario-simulator/adapters/RestScenarioSimulatorAdapter.js',
   },
   {
     kind: 'copy',
-    source: 'SHRAMIK_Scenario_Simulator_Deliverable/SHRAMIK_Scenario_Simulator_Deliverable/source/src/contracts/example-synthetic-run.json',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/scenario-simulator/contracts/example-synthetic-run.json',
     target: 'src/scenario-simulator/contracts/example-synthetic-run.json',
   },
   {
     kind: 'copy',
-    source: 'SHRAMIK_Scenario_Simulator_Deliverable/SHRAMIK_Scenario_Simulator_Deliverable/source/src/scenario-simulator.css',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/scenario-simulator/scenario-simulator.css',
     target: 'src/scenario-simulator/scenario-simulator.css',
   },
   // Data Sources page, adapters, types and JSON fixture
   {
     kind: 'transpile',
-    source: 'SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/DataSourcesPage.tsx',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/data-sources/DataSourcesPage.tsx',
     target: 'src/data-sources/DataSourcesPage.jsx',
   },
   {
     kind: 'transpile',
-    source: 'SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/DataSourcesDataAdapter.ts',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/data-sources/DataSourcesDataAdapter.ts',
     target: 'src/data-sources/DataSourcesDataAdapter.js',
   },
   {
     kind: 'transpile',
-    source: 'SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/mock-adapter.ts',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/data-sources/mock-adapter.ts',
     target: 'src/data-sources/mock-adapter.js',
   },
   {
     kind: 'transpile',
-    source: 'SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/rest-adapter.ts',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/data-sources/rest-adapter.ts',
     target: 'src/data-sources/rest-adapter.js',
   },
   {
     kind: 'transpile',
-    source: 'SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/data-sources.types.ts',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/data-sources/data-sources.types.ts',
     target: 'src/data-sources/data-sources.types.js',
   },
   {
     kind: 'copy',
-    source: 'SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/mock-data-sources.json',
+    source: 'SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/data-sources/mock-data-sources.json',
     target: 'src/data-sources/mock-data-sources.json',
   },
 ];

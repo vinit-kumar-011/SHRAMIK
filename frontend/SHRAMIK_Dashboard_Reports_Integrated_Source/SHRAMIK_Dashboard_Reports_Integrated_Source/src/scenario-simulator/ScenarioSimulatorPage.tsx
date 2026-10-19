@@ -30,7 +30,7 @@ const fmt = (value: number | null | undefined, unit?: string) => {
 };
 const apiBase = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL ?? "";
 
-export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, boundaryGeoJsonUrl = "/assets/india-states.geojson" }: ScenarioSimulatorPageProps) {
+export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, boundaryGeoJsonUrl = `${import.meta.env.BASE_URL}assets/india-states.geojson` }: ScenarioSimulatorPageProps) {
   const adapter = useMemo(() => dataAdapter ?? new RestScenarioSimulatorAdapter(apiBase), [dataAdapter]);
   const [options, setOptions] = useState<ScenarioSimulatorOptions | null>(null);
   const [entityType, setEntityType] = useState<EntityType>(initialScope?.entityType ?? "skill");
