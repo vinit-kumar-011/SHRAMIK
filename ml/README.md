@@ -45,8 +45,12 @@ Expected: `40 passed`.
 ## Generate DEMO data
 
 1. Copy `data/demo/demo_config.example.json` to `data/demo/demo_config.json`.
-2. Replace every `REPLACE_WITH_*` value with a **real id from the database** (`states.id`, `districts.id`, `skills.id`)
-   and the agreed signal-type names. The generator refuses to run while a placeholder remains.
+2. Replace every `REPLACE_WITH_*` value with a **real id from the database** (`states.id`, `districts.id`, `skills.id`).
+   The generator refuses to run while a placeholder remains. The config must also state
+   `demand_/supply_quantity_unit` and `demand_/supply_quantity_semantics`: both columns are NOT NULL in the
+   live `demand_observations` / `supply_observations` tables. Proposed names (`DEMO_SKILL_DEMAND`,
+   `DEMO_SKILL_COMPLETIONS`, unit `persons`, semantics `annual_flow`) follow the style already used in
+   `source_capabilities`; confirm with the database owner before loading.
 3. Run:
    ```
    python -m ml.demo_generator --config data/demo/demo_config.json --out data/processed/demo

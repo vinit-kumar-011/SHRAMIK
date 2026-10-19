@@ -12,6 +12,8 @@ Rules it enforces (schema sections 6.3, 7, 14; dataset plan section 10):
   generation_run_id set, source_id NULL (no fake source), transformation_note set.
 - Yearly only. No months or quarters.
 - Same generator version + seed + parameters ⇒ identical rows and identical ids.
+- quantity_unit and quantity_semantics are NOT NULL in the live tables
+  (checked 2026-10-20), so the config must state them for demand and supply.
 - Signal types must be given explicitly (their vocabulary is owned by
   Issues #13/#17); there is no default to hide behind.
 
@@ -42,13 +44,14 @@ DEMAND_COLUMNS = (
     "id", "state_id", "district_id", "sector_id", "skill_id", "observation_grain", "period_type",
     "period_year", "demand_quantity", "demand_signal_type", "source_id", "source_date",
     "retrieval_id", "evidence_item_id", "provenance_state", "is_synthetic", "generation_run_id",
-    "transformation_note",
+    "transformation_note", "quantity_unit", "quantity_semantics",
 )
 SUPPLY_COLUMNS = (
     "id", "state_id", "district_id", "sector_id", "skill_id", "observation_grain", "period_type",
     "period_year", "supply_quantity", "training_capacity", "enrollment", "completions",
     "supply_signal_type", "source_id", "source_date", "retrieval_id", "evidence_item_id",
     "provenance_state", "is_synthetic", "generation_run_id", "transformation_note",
+    "quantity_unit", "quantity_semantics",
 )
 RUN_COLUMNS = ("id", "generator_name", "generator_version", "random_seed", "parameters",
                "generated_at", "source_context")
@@ -64,7 +67,8 @@ def _canonical(obj) -> str:
 
 def validate_config(cfg: dict) -> dict:
     need = ("seed", "years", "demand_signal_type", "supply_signal_type", "supply_measure", "cells",
-            "source_context")
+            "source_context", "demand_quantity_unit", "demand_quantity_semantics",
+            "supply_quantity_unit", "supply_quantity_semantics")
     missing = [k for k in need if k not in cfg or cfg[k] in (None, "", [])]
     if missing:
         raise ConfigError(f"config is missing: {', '.join(missing)}")
@@ -115,7 +119,9 @@ def _series(rng: random.Random, spec: dict, years: list) -> dict:
 def generate(cfg: dict, generated_at: str | None = None):
     cfg = validate_config(cfg)
     params = {k: cfg[k] for k in ("seed", "years", "demand_signal_type", "supply_signal_type",
-                                  "supply_measure", "cells")}
+                                  "supply_measure", "cells", "demand_quantity_unit",
+                                  "demand_quantity_semantics", "supply_quantity_unit",
+                                  "supply_quantity_semantics")}
     run_id = str(uuid.uuid5(NAMESPACE, f"{GENERATOR_NAME}|{GENERATOR_VERSION}|{_canonical(params)}"))
     run = {
         "id": run_id,
@@ -148,9 +154,13 @@ def generate(cfg: dict, generated_at: str | None = None):
             key = f"{run_id}|{cell['district_id']}|{cell['skill_id']}|{year}"
             demand_rows.append(dict(base, id=str(uuid.uuid5(NAMESPACE, key + "|demand")),
                                     period_year=year, demand_quantity=dvals[year],
-                                    demand_signal_type=cfg["demand_signal_type"]))
+                                    demand_signal_type=cfg["demand_signal_type"],
+                                    quantity_unit=cfg["demand_quantity_unit"],
+                                    quantity_semantics=cfg["demand_quantity_semantics"]))
             srow = dict(base, id=str(uuid.uuid5(NAMESPACE, key + "|supply")), period_year=year,
                         supply_signal_type=cfg["supply_signal_type"],
+                        quantity_unit=cfg["supply_quantity_unit"],
+                        quantity_semantics=cfg["supply_quantity_semantics"],
                         supply_quantity=None, training_capacity=None, enrollment=None, completions=None)
             srow[cfg["supply_measure"]] = svals[year]
             supply_rows.append(srow)
