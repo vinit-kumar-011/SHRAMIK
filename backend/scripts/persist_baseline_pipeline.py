@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import sys
+from decimal import Decimal
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
 
@@ -127,7 +128,7 @@ def main() -> int:
                 analysis_mode=args.analysis_mode,
                 forecast_horizon=args.forecast_horizon,
                 min_history=args.min_history,
-                balance_tolerance=__import__("decimal").Decimal(str(args.balance_tolerance)),
+                balance_tolerance=Decimal(str(args.balance_tolerance)),
                 approved_gap_signal_pairs=approved_pairs,
             ),
         )
