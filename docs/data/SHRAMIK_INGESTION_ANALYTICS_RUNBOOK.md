@@ -30,14 +30,17 @@ Every source-backed row needs a registered source ID. Synthetic rows need explic
 
 ## Run the pipeline
 
-From the repository root:
+From the repository root, run the tests:
 
     python -m pytest backend/tests/test_analytics_pipeline.py -q
 
+Then run the CLI from the backend directory so the package imports resolve:
+
+    cd backend
     python -m scripts.run_baseline_pipeline ^
-      --demand-csv data/processed/demand_observations.csv ^
-      --supply-csv data/processed/supply_observations.csv ^
-      --output-json data/processed/baseline-results.json ^
+      --demand-csv ../data/processed/demand_observations.csv ^
+      --supply-csv ../data/processed/supply_observations.csv ^
+      --output-json ../data/processed/baseline-results.json ^
       --analysis-mode DEMO ^
       --demand-signal-type VACANCY_HEADCOUNT ^
       --supply-signal-type WORKER_HEADCOUNT
