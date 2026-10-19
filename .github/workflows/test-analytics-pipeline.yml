@@ -1,0 +1,31 @@
+name: SHRAMIK ingestion and baseline analytics tests
+
+on:
+  push:
+    branches: [develop, "feature/**"]
+    paths:
+      - "backend/app/ingestion/**"
+      - "backend/app/analytics/**"
+      - "backend/scripts/run_baseline_pipeline.py"
+      - "backend/tests/test_analytics_pipeline.py"
+      - ".github/workflows/test-analytics-pipeline.yml"
+  pull_request:
+    paths:
+      - "backend/app/ingestion/**"
+      - "backend/app/analytics/**"
+      - "backend/scripts/run_baseline_pipeline.py"
+      - "backend/tests/test_analytics_pipeline.py"
+      - ".github/workflows/test-analytics-pipeline.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip pytest
+      - run: python -m pytest backend/tests/test_analytics_pipeline.py -q
+        env:
+          PYTHONPATH: backend
