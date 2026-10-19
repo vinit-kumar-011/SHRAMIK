@@ -59,7 +59,10 @@ class ObservationRepository:
                     name,
                     self._metadata,
                     schema=self._schema,
-                    autoload_with=self.session.get_bind(),
+                    # Reflect on the Session's active connection. Opening a separate
+                    # Engine connection can interfere with SQLite SAVEPOINT tests and
+                    # does not share the caller's transaction boundary.
+                    autoload_with=self.session.connection(),
                 )
             except Exception as exc:
                 raise PersistenceValidationError(
