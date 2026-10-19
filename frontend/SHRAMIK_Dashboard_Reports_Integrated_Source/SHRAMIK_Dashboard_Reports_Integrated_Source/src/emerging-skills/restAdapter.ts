@@ -3,7 +3,6 @@ import type {
 } from './EmergingSkillsPage';
 
 type ApiErrorPayload = { error?: { message?: string; code?: string }; message?: string };
-type ApiEnvelope<T> = T | { data: T; meta?: unknown };
 
 /**
  * REST adapter for the proposed Emerging Skills API. The backend must implement
