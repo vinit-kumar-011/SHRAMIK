@@ -29,7 +29,7 @@ COMMON_COLUMNS = {
     "state_id", "district_id", "sector_id", "skill_id", "observation_grain",
     "period_type", "period_year", "source_id", "source_release", "source_date", "retrieval_id",
     "evidence_item_id", "provenance_state", "is_synthetic", "generation_run_id",
-    "transformation_note", "unit", "flow_stock_semantics",
+    "transformation_note", "unit", "flow_stock_semantics", "quantity_semantics",
 }
 KIND_COLUMNS = {
     "demand": {"demand_quantity", "demand_signal_type"},
@@ -73,6 +73,7 @@ class CanonicalObservation:
     transformation_note: str | None
     unit: str
     flow_stock_semantics: str | None
+    quantity_semantics: str = "FLOW"
     training_capacity: Decimal | None = None
     enrollment: Decimal | None = None
     completions: Decimal | None = None
@@ -88,7 +89,7 @@ class CanonicalObservation:
             "period_type": self.period_type,
             "period_year": self.period_year,
             "quantity_unit": self.unit,
-            "quantity_semantics": self.flow_stock_semantics,
+            "quantity_semantics": self.quantity_semantics,
             "source_id": self.source_id,
             "source_release": self.source_release,
             "source_date": self.source_date,
@@ -211,7 +212,8 @@ def parse_canonical_csv(
                 synthetic_raw = (_text(row, "is_synthetic") or "").lower()
                 synthetic = synthetic_raw in {"true", "1", "yes"}
                 unit = _text(row, "unit")
-                flow_semantics = (_text(row, "flow_stock_semantics") or "").upper()
+                flow_semantics = _text(row, "flow_stock_semantics")
+                quantity_semantics = (_text(row, "quantity_semantics") or "").upper()
 
                 if not state_id:
                     issues.append(ValidationIssue(row_num, "state_id", "is required"))
@@ -225,6 +227,13 @@ def parse_canonical_csv(
                     issues.append(ValidationIssue(row_num, "sector_id", f"is required for {grain}"))
                 if grain in SKILL_GRAINS and not skill_id:
                     issues.append(ValidationIssue(row_num, "skill_id", f"is required for {grain}"))
+                if grain in ALLOWED_GRAINS:
+                    if grain not in DISTRICT_GRAINS and district_id:
+                        issues.append(ValidationIssue(row_num, "district_id", f"must be empty for {grain}"))
+                    if grain not in SECTOR_GRAINS and sector_id:
+                        issues.append(ValidationIssue(row_num, "sector_id", f"must be empty for {grain}"))
+                    if grain not in SKILL_GRAINS and skill_id:
+                        issues.append(ValidationIssue(row_num, "skill_id", f"must be empty for {grain}"))
                 if period_type != "YEAR":
                     issues.append(ValidationIssue(row_num, "period_type", "must be YEAR for the MVP; do not fabricate monthly or quarterly periods"))
                 try:
@@ -238,8 +247,11 @@ def parse_canonical_csv(
                     issues.append(ValidationIssue(row_num, signal_col, "is required"))
                 if not unit:
                     issues.append(ValidationIssue(row_num, "unit", "is required to preserve measurement semantics"))
-                if flow_semantics not in {"FLOW", "STOCK", "CAPACITY"}:
-                    issues.append(ValidationIssue(row_num, "flow_stock_semantics", "must be FLOW, STOCK, or CAPACITY to match canonical quantity_semantics"))
+                if not flow_semantics:
+                    issues.append(ValidationIssue(row_num, "flow_stock_semantics", "is required to preserve source-specific temporal meaning"))
+                allowed_quantity_semantics = {"FLOW", "STOCK"} if kind == "demand" else {"FLOW", "STOCK", "CAPACITY"}
+                if quantity_semantics not in allowed_quantity_semantics:
+                    issues.append(ValidationIssue(row_num, "quantity_semantics", "must be one of " + ", ".join(sorted(allowed_quantity_semantics)) + f" for {kind} observations"))
                 if provenance not in {"SOURCE_BACKED", "SYNTHETIC_DEMO"}:
                     issues.append(ValidationIssue(row_num, "provenance_state", "must be SOURCE_BACKED or SYNTHETIC_DEMO"))
                 if synthetic_raw not in {"true", "false", "1", "0", "yes", "no"}:
@@ -270,6 +282,8 @@ def parse_canonical_csv(
                 else:
                     if provenance == "SOURCE_BACKED" and not source_id:
                         issues.append(ValidationIssue(row_num, "source_id", "is required for source-backed observations"))
+                    if provenance == "SOURCE_BACKED" and not retrieval_id:
+                        issues.append(ValidationIssue(row_num, "retrieval_id", "is required for source-backed observations so re-imports are traceable"))
                     if generation_run_id:
                         issues.append(ValidationIssue(row_num, "generation_run_id", "must be empty for source-backed observations"))
 
@@ -287,8 +301,8 @@ def parse_canonical_csv(
                     value = _decimal(_text(row, "demand_quantity"), row_num, "demand_quantity", issues)
                     if value is None and not any(i.row_number == row_num and i.field == "demand_quantity" for i in issues):
                         issues.append(ValidationIssue(row_num, "demand_quantity", "is required for the initial quantitative demand pipeline"))
-                    if flow_semantics not in {"FLOW", "STOCK"}:
-                        issues.append(ValidationIssue(row_num, "flow_stock_semantics", "demand_quantity requires FLOW or STOCK semantics"))
+                    if quantity_semantics not in {"FLOW", "STOCK"}:
+                        issues.append(ValidationIssue(row_num, "quantity_semantics", "demand_quantity requires FLOW or STOCK semantics"))
                     training_capacity = enrollment = completions = None
                 else:
                     value = _decimal(_text(row, "supply_quantity"), row_num, "supply_quantity", issues)
@@ -299,12 +313,12 @@ def parse_canonical_csv(
                     non_null_measures = sum(v is not None for v in measure_values)
                     if non_null_measures != 1:
                         issues.append(ValidationIssue(row_num, "supply_quantity", "exactly one of supply_quantity, training_capacity, enrollment, or completions must be populated per row"))
-                    if value is not None and flow_semantics not in {"FLOW", "STOCK"}:
-                        issues.append(ValidationIssue(row_num, "flow_stock_semantics", "supply_quantity requires FLOW or STOCK semantics"))
-                    if training_capacity is not None and flow_semantics != "CAPACITY":
-                        issues.append(ValidationIssue(row_num, "flow_stock_semantics", "training_capacity requires CAPACITY semantics"))
-                    if (enrollment is not None or completions is not None) and flow_semantics != "FLOW":
-                        issues.append(ValidationIssue(row_num, "flow_stock_semantics", "enrollment and completions require FLOW semantics"))
+                    if value is not None and quantity_semantics not in {"FLOW", "STOCK"}:
+                        issues.append(ValidationIssue(row_num, "quantity_semantics", "supply_quantity requires FLOW or STOCK semantics"))
+                    if training_capacity is not None and quantity_semantics != "CAPACITY":
+                        issues.append(ValidationIssue(row_num, "quantity_semantics", "training_capacity requires CAPACITY semantics"))
+                    if (enrollment is not None or completions is not None) and quantity_semantics != "FLOW":
+                        issues.append(ValidationIssue(row_num, "quantity_semantics", "enrollment and completions require FLOW semantics"))
 
                 if len(issues) == row_issues_before:
                     observations.append(CanonicalObservation(
@@ -316,6 +330,7 @@ def parse_canonical_csv(
                         provenance_state=provenance, is_synthetic=synthetic,
                         generation_run_id=generation_run_id, transformation_note=transformation_note,
                         unit=unit or "", flow_stock_semantics=flow_semantics,
+                        quantity_semantics=quantity_semantics,
                         training_capacity=training_capacity, enrollment=enrollment, completions=completions,
                     ))
     except OSError as exc:
