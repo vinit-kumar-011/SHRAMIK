@@ -1,0 +1,55 @@
+name: SHRAMIK unified frontend
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/**'
+      - '.github/workflows/frontend-unified-build.yml'
+  push:
+    branches: [feature/frontend-unified-app]
+    paths:
+      - 'frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/**'
+      - '.github/workflows/frontend-unified-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+          cache: npm
+          cache-dependency-path: frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Type-check
+        run: npm run typecheck
+      - name: Test adapters and routing
+        run: npm test
+      - name: Build production application
+        run: npm run build
+      - name: Verify generated static entry points
+        run: |
+          test -s dist/index.html
+          test -s dist/skill-gap-analysis.html
+          test -s dist/forecasts.html
+          test -s dist/reports.html
+          test -d dist/assets
+      - name: Upload production build
+        uses: actions/upload-artifact@v4
+        with:
+          name: shramik-unified-frontend
+          path: frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/dist/
+          if-no-files-found: error
+          retention-days: 14
