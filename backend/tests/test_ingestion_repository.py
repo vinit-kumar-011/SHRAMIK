@@ -16,6 +16,7 @@ from sqlalchemy import (
     Table,
     Uuid,
     create_engine,
+    event,
     select,
 )
 from sqlalchemy.orm import Session
@@ -108,6 +109,7 @@ def make_observation(
     retrieval_id: UUID | None = RETRIEVAL_ID,
     evidence_item_id: UUID | None = EVIDENCE_ID,
     generation_run_id: UUID | None = None,
+    source_release: str = "release-2023",
     is_synthetic: bool = False,
 ) -> CanonicalObservation:
     return CanonicalObservation(
@@ -122,7 +124,7 @@ def make_observation(
         signal_type="VACANCY_HEADCOUNT",
         value=value,
         source_id=str(source_id) if source_id else None,
-        source_release="release-2023",
+        source_release=source_release,
         source_date=date(2023, 12, 31),
         retrieval_id=str(retrieval_id) if retrieval_id else None,
         evidence_item_id=str(evidence_item_id) if evidence_item_id else None,
@@ -150,6 +152,18 @@ def make_batch(row: CanonicalObservation) -> ParsedBatch:
 @pytest.fixture
 def session():
     engine = create_engine("sqlite+pysqlite:///:memory:")
+
+    # sqlite3's legacy transaction mode does not begin a database transaction
+    # for SAVEPOINT alone. Emit BEGIN explicitly so rollback-to-savepoint tests
+    # exercise the repository's transaction boundary correctly.
+    @event.listens_for(engine, "connect")
+    def _disable_legacy_transaction_mode(dbapi_connection, _connection_record):
+        dbapi_connection.isolation_level = None
+
+    @event.listens_for(engine, "begin")
+    def _begin_transaction(connection):
+        connection.exec_driver_sql("BEGIN")
+
     metadata.create_all(engine)
     with Session(engine) as db:
         db.execute(metadata.tables["states"].insert().values(id="state-1"))
