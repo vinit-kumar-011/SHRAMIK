@@ -234,7 +234,6 @@ function VerifiedRegionalMap({ geometry, geometryUnavailableReason, rows, metric
   const { features, bounds } = mapModel;
   const codeKey = geometry?.codeProperty ?? '';
   const metricValue = (row: RegionalGapValue) => metric === 'demand' ? row.demand : metric === 'supply' ? row.supply : metric === 'gap_percent' ? row.gapPercent ?? null : row.gap;
-  const mapped = new Map(rows.map((row) => [row.regionCode, row]));
   const width = 320; const height = 330; const pad = 8;
   const lonScale = Math.cos(((bounds.minY + bounds.maxY) / 2) * Math.PI / 180);
   const spanX = Math.max(.0001, (bounds.maxX - bounds.minX) * Math.max(.2, lonScale));
@@ -278,7 +277,7 @@ function RegionalGapPanel({ data, loading, error, stale, metric, onMetricChange,
   const maximum = Math.max(1, ...validValues.map((value) => Math.abs(value)));
   const sorted = [...rows].sort((a, b) => (valueOf(b) ?? -Infinity) - (valueOf(a) ?? -Infinity));
   return <section className="gap-card gap-region-card" aria-labelledby="gap-regions-title" aria-busy={loading}>
-    <div className="gap-panel-heading"><div><h2 id="gap-regions-title">Skill Gap by State / UT</h2><p>Regional rankings use canonical codes</p></div><label className="gap-metric-select"><span className="sr-only">Regional metric</span><select value={metric} onChange={(event) => onMetric(event.target.value as GapMetricKey)}><option value="gap_absolute">Gap (absolute)</option><option value="gap_percent">Gap % of demand</option><option value="demand">Demand</option><option value="supply">Supply</option></select><ChevronDown size={13}/></label></div>
+    <div className="gap-panel-heading"><div><h2 id="gap-regions-title">Skill Gap by State / UT</h2><p>Regional rankings use canonical codes</p></div><label className="gap-metric-select"><span className="sr-only">Regional metric</span><select value={metric} onChange={(event) => onMetricChange(event.target.value as GapMetricKey)}><option value="gap_absolute">Gap (absolute)</option><option value="gap_percent">Gap % of demand</option><option value="demand">Demand</option><option value="supply">Supply</option></select><ChevronDown size={13}/></label></div>
     <PanelState loading={loading} error={error} stale={stale} onRetry={onRetry}>
       {data ? <VerifiedRegionalMap geometry={data.geometry} geometryUnavailableReason={data.geometryUnavailableReason} rows={rows} metric={metric} onSelectRegion={onSelectRegion}/> : <div className="gap-map-unavailable"><MapPin size={23}/><div><strong>Regional geometry unavailable</strong><p>Geometry metadata has not been returned by the data service.</p></div></div>}
       <div className="gap-map-legend">{(data?.scale ?? []).filter((item) => ['high_shortage', 'moderate_shortage', 'balanced', 'moderate_surplus', 'high_surplus', 'no_data', 'suppressed'].includes(item.key)).map((item) => <span key={item.key}><i className={`gap-legend-dot ${stateClass(item.key)}`}/>{item.label}</span>)}</div>
