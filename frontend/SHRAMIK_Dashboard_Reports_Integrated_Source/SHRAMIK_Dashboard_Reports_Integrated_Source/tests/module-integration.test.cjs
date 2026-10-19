@@ -33,6 +33,13 @@ test('canonical shell imports and mounts all eleven navigation modules', () => {
   assert.match(shell, /<Sidebar /, 'shared sidebar must be provided by the shell');
 });
 
+test('Demand Insights bundles its icons and does not rely on an undeclared browser global', () => {
+  const demand = read('src/demand/DemandInsightsPage.jsx');
+  assert.match(demand, /from ['"]lucide-react['"]/);
+  assert.doesNotMatch(demand, /window\\.lucide/);
+  assert.doesNotMatch(demand, /mkIcon/);
+});
+
 test('demo-only modules prominently disclose synthetic data and local-only actions', () => {
   const supply = read('src/supply/SupplyInsightsPage.tsx');
   const quality = read('src/data-quality/DataQualityPage.tsx');
