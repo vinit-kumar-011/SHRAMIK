@@ -23,7 +23,6 @@ import DemandInsightsPage from './demand/DemandInsightsPage.jsx';
 import { DataSourcesPage } from './data-sources/DataSourcesPage.jsx';
 import { mockDataSourcesAdapter } from './data-sources/mock-adapter.js';
 import { createRestDataSourcesAdapter } from './data-sources/rest-adapter.js';
-import type { DataSourcesDataAdapter } from './data-sources/DataSourcesDataAdapter.js';
 
 type Tone = 'navy' | 'teal' | 'orange';
 
@@ -308,7 +307,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
   const scenarioApiConfigured = Boolean((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL?.trim());
   const scenarioDataAdapter = scenarioApiConfigured ? undefined : scenarioMockAdapter;
-  const [dataSourcesAdapter] = useState<DataSourcesDataAdapter>(() => {
+  const [dataSourcesAdapter] = useState(() => {
     const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
     const apiBase = env?.VITE_DATA_SOURCES_API_BASE_URL?.trim();
     return apiBase
