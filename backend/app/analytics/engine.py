@@ -106,7 +106,10 @@ def _collect_series(
             by_year[row.period_year] = row
 
         # A series must have a consistent documented measurement over time.
-        capabilities = {(row.unit, row.flow_stock_semantics) for row in rows}
+        capabilities = {
+            (row.unit, (row.flow_stock_semantics or "").casefold(), row.quantity_semantics)
+            for row in rows
+        }
         if len(capabilities) > 1:
             raise AnalyticsInputError(
                 f"{expected_kind} series for target {key} changes unit or flow/stock "
@@ -192,8 +195,10 @@ def run_baseline_analytics(
             "supply_quantity": float(s_last.value) if s_last and s_last.value is not None else None,
             "demand_unit": d_last.unit if d_last else None,
             "supply_unit": s_last.unit if s_last else None,
-            "demand_temporal_semantics": d_last.flow_stock_semantics if d_last else None,
-            "supply_temporal_semantics": s_last.flow_stock_semantics if s_last else None,
+            "demand_temporal_semantics": d_last.quantity_semantics if d_last else None,
+            "supply_temporal_semantics": s_last.quantity_semantics if s_last else None,
+            "demand_flow_stock_semantics": d_last.flow_stock_semantics if d_last else None,
+            "supply_flow_stock_semantics": s_last.flow_stock_semantics if s_last else None,
             "demand_index": None,
             "supply_index": None,
             "forecast_demand": float(d_last.value) if history_ok and d_last and d_last.value is not None else None,
@@ -218,7 +223,8 @@ def run_baseline_analytics(
         elif (
             not d_last.flow_stock_semantics
             or not s_last.flow_stock_semantics
-            or d_last.flow_stock_semantics != s_last.flow_stock_semantics
+            or d_last.flow_stock_semantics.casefold() != s_last.flow_stock_semantics.casefold()
+            or d_last.quantity_semantics != s_last.quantity_semantics
         ):
             gap_reason = "INCOMPATIBLE_FLOW_STOCK"
         elif d_last.period_year != s_last.period_year:
