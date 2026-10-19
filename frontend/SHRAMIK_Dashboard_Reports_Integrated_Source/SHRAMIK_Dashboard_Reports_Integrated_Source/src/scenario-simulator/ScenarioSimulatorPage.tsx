@@ -50,7 +50,7 @@ export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, b
   const [viewError, setViewError] = useState("");
   const [draftStale, setDraftStale] = useState(false);
   const [mapSelected, setMapSelected] = useState<string | null>(null);
-  const [mapRows, setMapRows] = useState<ScenarioResults["regionalImpact"]>([]);
+  const [, setMapRows] = useState<ScenarioResults["regionalImpact"]>([]);
   const [sensitivityLoading, setSensitivityLoading] = useState(false);
   const [sensitivityError, setSensitivityError] = useState("");
   const [advancedParameters, setAdvancedParameters] = useState<Record<string, string | number | boolean>>({});
@@ -172,7 +172,6 @@ export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, b
     catch (error) { setSensitivityError(errorMessage(error)); } finally { setSensitivityLoading(false); }
   };
 
-  const outcomes = useMemo(() => results?.outcomes ?? [], [results]);
   const busy = status === "submitting" || status === "running" || status === "validating";
 
   return <div className="ss-page">
