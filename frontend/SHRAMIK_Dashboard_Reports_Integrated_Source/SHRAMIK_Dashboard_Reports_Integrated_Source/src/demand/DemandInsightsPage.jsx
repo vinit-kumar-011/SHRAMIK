@@ -1,15 +1,12 @@
 import * as React from 'react';
-
-
+import {
+  LayoutDashboard, BarChart3, Users, Target, TrendingUp, Star, SlidersHorizontal,
+  FileText, Database, ShieldCheck, Search, MapPin, Bell, ChevronDown, ArrowUpRight,
+  ArrowRight, Lightbulb, Menu, X, Cpu, Leaf, Factory, HardHat, Building2,
+  ShoppingCart, HeartPulse, Wheat, Truck, Wrench, Stethoscope, Zap, LineChart, Check, UserRound,
+} from 'lucide-react';
 
 const { useState, useEffect, useRef, useCallback, useId, useMemo } = React;
-const mkIcon = (n) => ({ size = 24, color = 'currentColor', ...p }) => {
-  const L = (window.lucide && window.lucide.icons) || {};
-  const node = L[n] || L.Star || [];
-  return React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', ...p },
-    node.map(([t, a], i) => React.createElement(t, { key: i, ...a })));
-};
-const { LayoutDashboard, BarChart3, Users, Target, TrendingUp, Star, SlidersHorizontal, FileText, Database, ShieldCheck, Search, MapPin, Bell, ChevronDown, ArrowUpRight, ArrowRight, Lightbulb, Menu, X, Cpu, Leaf, Factory, HardHat, Building2, ShoppingCart, HeartPulse, Wheat, Truck, Wrench, Stethoscope, Zap, LineChart, Check, UserRound } = Object.fromEntries(["LayoutDashboard", "BarChart3", "Users", "Target", "TrendingUp", "Star", "SlidersHorizontal", "FileText", "Database", "ShieldCheck", "Search", "MapPin", "Bell", "ChevronDown", "ArrowUpRight", "ArrowRight", "Lightbulb", "Menu", "X", "Cpu", "Leaf", "Factory", "HardHat", "Building2", "ShoppingCart", "HeartPulse", "Wheat", "Truck", "Wrench", "Stethoscope", "Zap", "LineChart", "Check", "UserRound"].map((n) => [n, mkIcon(n)]));
 
 
 /* ============ ICON REGISTRY (safe: keys only, never API HTML) ============ */
