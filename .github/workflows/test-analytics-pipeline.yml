@@ -7,8 +7,10 @@ on:
       - "backend/app/ingestion/**"
       - "backend/app/analytics/**"
       - "backend/scripts/run_baseline_pipeline.py"
+      - "backend/scripts/ingest_canonical_observations.py"
       - "backend/tests/test_analytics_pipeline.py"
       - "backend/tests/test_ingestion_repository.py"
+      - "backend/tests/test_ingestion_cli.py"
       - "backend/tests/test_canonical_ingestion.py"
       - "supabase/migrations/**"
       - ".github/workflows/test-analytics-pipeline.yml"
@@ -32,6 +34,6 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install --upgrade pip pytest sqlalchemy
-      - run: python -m pytest backend/tests/test_analytics_pipeline.py backend/tests/test_ingestion_repository.py backend/tests/test_canonical_ingestion.py -q
+      - run: python -m pytest backend/tests/test_analytics_pipeline.py backend/tests/test_ingestion_repository.py backend/tests/test_ingestion_cli.py backend/tests/test_canonical_ingestion.py -q
         env:
           PYTHONPATH: backend
