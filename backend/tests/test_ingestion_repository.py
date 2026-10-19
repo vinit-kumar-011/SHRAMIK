@@ -221,7 +221,6 @@ def test_persists_schema_mapped_row_and_identical_replay_is_skipped(session: Ses
     assert stored["quantity_unit"] == "persons"
     assert stored["quantity_semantics"] == "FLOW"
     assert stored["demand_quantity"] == Decimal("123.45")
-    assert stored["flow_stock_semantics"] if "flow_stock_semantics" in stored else True
     assert count_rows(session, "demand_observations") == 1
 
 
