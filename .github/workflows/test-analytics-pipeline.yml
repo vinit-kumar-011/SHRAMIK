@@ -6,6 +6,8 @@ on:
     paths:
       - "backend/app/ingestion/**"
       - "backend/app/analytics/**"
+      - "backend/app/db/**"
+      - "docs/data/SHRAMIK_INGESTION_ANALYTICS_RUNBOOK.md"
       - "backend/scripts/run_baseline_pipeline.py"
       - "backend/tests/test_analytics_pipeline.py"
       - ".github/workflows/test-analytics-pipeline.yml"
