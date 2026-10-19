@@ -37,6 +37,7 @@ def make_observation(
         signal_type=signal or ("VACANCY_HEADCOUNT" if kind == "demand" else "WORKER_HEADCOUNT"),
         value=Decimal(value),
         source_id=None if synthetic else f"00000000-0000-0000-0000-{1 if kind == 'demand' else 2:012d}",
+        source_release=None,
         source_date=date(year, 12, 31),
         retrieval_id=None,
         evidence_item_id=evidence,
