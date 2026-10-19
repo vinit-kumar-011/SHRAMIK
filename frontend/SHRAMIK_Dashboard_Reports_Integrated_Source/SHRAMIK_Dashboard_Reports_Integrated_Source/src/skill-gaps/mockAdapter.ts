@@ -193,7 +193,14 @@ export class MockSkillGapDataAdapter implements SkillGapDataAdapter {
     return {
       demand: makeMetric('Estimated demand', s.demandTotal, UNIT, 'Sum of the listed skill-demand estimates for the current filter snapshot. Demonstration only.', m),
       supply: makeMetric('Estimated supply', s.supplyTotal, UNIT, 'Sum of the listed skill-supply estimates for the current filter snapshot. Demonstration only.', m),
-      gap: makeMetric('Estimated gap / shortage', s.skillGapTotal, UNIT, 'Observed-period estimate, calculated in the mock adapter as comparable demand minus supply; it is not a forecast.', m, { kind: 'observed_estimate', formulaId: 'demo-demand-minus-supply-v1', gapPercent: gapPercent(s.demandTotal, s.supplyTotal), gapPercentFormula: 'gap / demand; unavailable when demand is zero', denominator: s.demandTotal }),
+      gap: {
+        ...makeMetric('Estimated gap / shortage', s.skillGapTotal, UNIT, 'Observed-period estimate, calculated in the mock adapter as comparable demand minus supply; it is not a forecast.', m),
+        kind: 'observed_estimate',
+        formulaId: 'demo-demand-minus-supply-v1',
+        gapPercent: gapPercent(s.demandTotal, s.supplyTotal),
+        gapPercentFormula: 'gap / demand; unavailable when demand is zero',
+        denominator: s.demandTotal,
+      },
       significantGaps: makeMetric('Skills with significant gaps', s.significantCount, 'skills', 'Count of currently listed skills classified high shortage using the adapter demo threshold.', m),
       balancedTolerance: { value: .05, unit: 'share of demand', configId: 'demo-thresholds-v1' },
       dataStatus: 'partial', meta: { ...m, notes: [...(m.notes ?? []), 'Only 12 of 36 State/UTs are listed by this illustrative adapter.'] },
@@ -210,7 +217,7 @@ export class MockSkillGapDataAdapter implements SkillGapDataAdapter {
   async getRegionalGaps(filters: GapFilters, metric: RegionalGapResponse['metric'], signal?: AbortSignal): Promise<RegionalGapResponse> {
     if (signal?.aborted) throw new DOMException('The request was aborted.', 'AbortError');
     const snapshot = createSnapshot(filters);
-    const items = snapshot.regions.map((item) => ({ ...item, rank: item.gap == null ? null : null }));
+    const items: RegionalGapValue[] = snapshot.regions.map((item): RegionalGapValue => ({ ...item, rank: null }));
     const val = (item: RegionalGapValue) => metric === 'demand' ? item.demand : metric === 'supply' ? item.supply : metric === 'gap_percent' ? item.gapPercent : item.gap;
     items.sort((a, b) => (val(b) ?? -Infinity) - (val(a) ?? -Infinity));
     let rank = 0;
