@@ -87,6 +87,8 @@ class CanonicalObservation:
             "observation_grain": self.observation_grain,
             "period_type": self.period_type,
             "period_year": self.period_year,
+            "quantity_unit": self.unit,
+            "quantity_semantics": self.flow_stock_semantics,
             "source_id": self.source_id,
             "source_release": self.source_release,
             "source_date": self.source_date,
