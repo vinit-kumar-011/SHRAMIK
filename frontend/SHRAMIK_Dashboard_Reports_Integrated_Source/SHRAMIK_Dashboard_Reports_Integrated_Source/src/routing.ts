@@ -21,6 +21,7 @@ const routeById = new Map<string, ShramikRouteId>(
 
 const legacyAliases: Record<string, ShramikRouteId> = {
   '/index.html': 'dashboard',
+  '/dashboard': 'dashboard',
   '/skill-gap-analysis.html': 'skill-gaps',
   '/skill-gaps.html': 'skill-gaps',
   '/forecasts.html': 'forecasts',
