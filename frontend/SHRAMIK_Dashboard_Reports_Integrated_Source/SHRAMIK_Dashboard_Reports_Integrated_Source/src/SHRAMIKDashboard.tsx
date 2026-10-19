@@ -20,6 +20,10 @@ import EmergingSkillsPage from '../../../SHRAMIK_Emerging_Skills_React_Integrate
 import { ScenarioSimulatorPage } from '../../../SHRAMIK_Scenario_Simulator_Deliverable/SHRAMIK_Scenario_Simulator_Deliverable/source/src/ScenarioSimulatorPage';
 import { MockScenarioSimulatorAdapter } from '../../../SHRAMIK_Scenario_Simulator_Deliverable/SHRAMIK_Scenario_Simulator_Deliverable/source/src/adapters/MockScenarioSimulatorAdapter';
 import DemandInsightsPage from './demand/DemandInsightsPage.jsx';
+import { DataSourcesPage } from '../../../SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/DataSourcesPage';
+import { mockDataSourcesAdapter } from '../../../SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/mock-adapter';
+import { createRestDataSourcesAdapter } from '../../../SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/rest-adapter';
+import type { DataSourcesDataAdapter } from '../../../SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/DataSourcesDataAdapter';
 
 type Tone = 'navy' | 'teal' | 'orange';
 
@@ -304,6 +308,16 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
   const scenarioApiConfigured = Boolean((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL?.trim());
   const scenarioDataAdapter = scenarioApiConfigured ? undefined : scenarioMockAdapter;
+  const [dataSourcesAdapter] = useState<DataSourcesDataAdapter>(() => {
+    const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+    const apiBase = env?.VITE_DATA_SOURCES_API_BASE_URL?.trim();
+    return apiBase
+      ? createRestDataSourcesAdapter(apiBase, {
+          createSource: env?.VITE_DATA_SOURCES_ENABLE_CREATE === 'true',
+          ingestion: env?.VITE_DATA_SOURCES_ENABLE_INGESTION === 'true',
+        })
+      : mockDataSourcesAdapter;
+  });
   const [regions, setRegions] = useState<RegionOption[]>([]);
   const [region, setRegion] = useState('IN');
   const [periodYears, setPeriodYears] = useState<DashboardPeriod>(5);
@@ -532,6 +546,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
               const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
               if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
             }}/>
+          : activePage === 'data-sources' ? <DataSourcesPage adapter={dataSourcesAdapter}/>
           : activePage === 'dashboard' ? <>
         <section className="hero-band" aria-labelledby="page-title">
           <div className="hero-copy"><div className="breadcrumb">DASHBOARD <span>/</span> {regionLabel.toUpperCase()}</div><h1 id="page-title">India’s Labour Market<br className="desktop-break"/> at a Glance</h1><div className="title-underline"/><p>Key insights on demand, supply, skill gaps and emerging opportunities across sectors and regions.</p></div>
