@@ -96,10 +96,6 @@ function riskClassFor(gap: number, demand: number): RiskClass {
   return 'high-surplus';
 }
 function fmt(value: number | null | undefined): string { return value == null ? '—' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(value); }
-function currentPoint(filters: ForecastFilters): ForecastPoint {
-  const data = makeSeries(filters, 'total');
-  return data.points.find((point) => point.year === data.horizon.endYear) ?? data.points[data.points.length - 1];
-}
 function makeWarning(id: string, title: string, entityCode: string, entityLabel: string, entityType: EarlyWarning['entityType'], regionCode: string, regionLabel: string, severity: EarlyWarning['severity'], category: EarlyWarning['category'], startYear: number, endYear: number, status: EarlyWarning['status'], ruleId: string, ruleLabel: string, thresholdDescription: string, summary: string, assigneeId: string | null = null, assigneeLabel: string | null = null): EarlyWarning {
   return { id, title, entityCode, entityLabel, entityType, regionCode, regionLabel, severity, category, expectedHorizon: { startYear, endYear }, status, rule: { id: ruleId, label: ruleLabel, thresholdDescription }, summary, provenance: 'mock', sourceLabels: ['Illustrative forecast fixture'], createdAt: '2026-10-15T08:00:00.000Z', updatedAt: '2026-10-17T09:30:00.000Z', assigneeId, assigneeLabel };
 }
