@@ -346,14 +346,6 @@ class ObservationRepository:
                 self._validate(batch)
                 for row in batch.observations:
                     values = self._database_values(row)
-                    # Generate the primary key explicitly so persistence also works
-                    # with reflected schemas that do not expose client-side defaults.
-                    row_id = uuid4()
-                    values["id"] = (
-                        row_id.hex
-                        if self.session.get_bind().dialect.name == "sqlite"
-                        else row_id
-                    )
                     key_columns = self._identity_keys(row)
                     predicates = [
                         table.c[column].is_not_distinct_from(values[column])
@@ -381,6 +373,14 @@ class ObservationRepository:
                             "with different content. The importer will not overwrite it."
                         )
 
+                    # Generate the primary key only after replay comparison;
+                    # primary IDs are not part of the observation's natural payload.
+                    row_id = uuid4()
+                    values["id"] = (
+                        row_id.hex
+                        if self.session.get_bind().dialect.name == "sqlite"
+                        else row_id
+                    )
                     self.session.execute(table.insert().values(**values))
                     inserted += 1
         except IntegrityError as exc:
