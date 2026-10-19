@@ -658,10 +658,14 @@ const makeRestAdapter = (base) => {
     search: ({ query, regionCode, signal }) => request('/search', { params: new URLSearchParams({ q: query, region: regionCode || 'IN' }).toString(), signal })
   };
 };
+const getConfiguredApiBase = () => {
+  const viteBase = import.meta.env?.VITE_SHRAMIK_API_BASE_URL;
+  return String(viteBase || window.SHRAMIK_API_BASE_URL || window.SHRAMIK_CONFIG?.apiBaseUrl || '').trim();
+};
 const getDefaultAdapter = () => {
   const injected = window.SHRAMIK_DATA_ADAPTER;
   if (injected) return injected;
-  const base = window.SHRAMIK_API_BASE_URL || window.SHRAMIK_CONFIG?.apiBaseUrl || '';
+  const base = getConfiguredApiBase();
   return base ? makeRestAdapter(base) : MockDemandAdapter;
 };
 const normalizeOptionList = (list = [], labelKeys = ['label', 'name', 'title']) => (Array.isArray(list) ? list : []).map((x) => {
@@ -995,7 +999,7 @@ function DemandInsightsPage({ dataAdapter, onNavigate: onRoute, embedded = true 
   const overviewHasOldFilters = Boolean(overviewData?.appliedFilters && stableFilterKey(overviewData.appliedFilters) !== filterKey);
   const resourceSnapshotIds = [overviewData?.meta?.snapshotId, regions.data?.meta?.snapshotId, (insights.data?.snapshotId || insights.data?.meta?.snapshotId)].filter(Boolean);
   const snapshotMismatch = new Set(resourceSnapshotIds).size > 1;
-  const restMode = A.mode === 'rest' || Boolean(window.SHRAMIK_API_BASE_URL || window.SHRAMIK_CONFIG?.apiBaseUrl);
+  const restMode = A.mode === 'rest' || Boolean(getConfiguredApiBase());
   const injectedMode = !restMode && A !== MockDemandAdapter;
   const trendOptions = options?.trendMetrics || [{ value: 'estimated-demand', label: 'Estimated demand' }];
   const regionalMetricOptions = regions.data?.metrics || options?.regionalMetrics || [{ value: 'estimated-demand', label: 'Estimated demand' }];
