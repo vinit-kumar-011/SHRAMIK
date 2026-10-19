@@ -64,6 +64,10 @@ function formatUpdated(value: string | null | undefined): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
 }
+function appAsset(path: string): string {
+  const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+  return `${base}${path.replace(/^\\/+/, '')}`;
+}
 // src/routing.ts owns canonical and legacy direct links (including reports.html and #reports).
 function getInitialPage(): ShramikRouteId {
   if (typeof window === 'undefined') return 'dashboard';
@@ -156,7 +160,7 @@ function RegionalPanel({ rankings, metric, onMetricChange, onOpenDetail, busy }:
       <SelectControl label="Regional metric" value={metric} onChange={onMetricChange} compact options={[{ value: 'demand', label: 'Demand' }, { value: 'supply', label: 'Supply' }, { value: 'skill-gap', label: 'Skill gap' }]} />
     </div>
     <div className="regional-content">
-      <div className="map-block"><img src="./assets/india-map-illustrative.png" alt="Decorative illustration of India; state shading does not represent the selected metric"/>
+      <div className="map-block"><img src={appAsset("assets/india-map-illustrative.png")} alt="Decorative illustration of India; state shading does not represent the selected metric"/>
         <div className="map-legend map-legend-note"><span><i className="map-dot high"/>Regional</span><span><i className="map-dot medium"/>ranking</span><span><i className="map-dot low"/>data below</span></div>
       </div>
       <div className="state-list"><h3>Top States by {metricLabels[metric]}</h3>
@@ -208,7 +212,7 @@ function Sidebar({ active, onNavigate, mobileOpen, onClose }: { active: string; 
           </span>;
         })}
       </nav>
-      <div className="sidebar-art" aria-hidden="true"><img src="./assets/sidebar-workers.png" alt=""/></div>
+      <div className="sidebar-art" aria-hidden="true"><img src={appAsset("assets/sidebar-workers.png")} alt=""/></div>
       <div className="mission-note"><span className="mission-icon"><Lightbulb size={19}/></span><p>Data for people.<br/>Opportunities for a stronger India.</p></div>
     </aside>
   </>;
@@ -527,7 +531,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
           : activePage === 'dashboard' ? <>
         <section className="hero-band" aria-labelledby="page-title">
           <div className="hero-copy"><div className="breadcrumb">DASHBOARD <span>/</span> {regionLabel.toUpperCase()}</div><h1 id="page-title">India’s Labour Market<br className="desktop-break"/> at a Glance</h1><div className="title-underline"/><p>Key insights on demand, supply, skill gaps and emerging opportunities across sectors and regions.</p></div>
-          <div className="hero-art-wrap" style={{ transform: `translate3d(0, ${parallax}px, 0)` }} aria-hidden="true"><img className="hero-art" src="./assets/hero-worker-industrial.png" alt=""/><img className="sticky-note-art" src="./assets/sticky-note-decorative.png" alt=""/><span className="hero-accent-dot"/></div>
+          <div className="hero-art-wrap" style={{ transform: `translate3d(0, ${parallax}px, 0)` }} aria-hidden="true"><img className="hero-art" src={appAsset("assets/hero-worker-industrial.png")} alt=""/><img className="sticky-note-art" src={appAsset("assets/sticky-note-decorative.png")} alt=""/><span className="hero-accent-dot"/></div>
         </section>
         {error && <div role="alert" className="data-error"><AlertCircle size={17}/><span><strong>Dashboard data unavailable.</strong> {error}</span><button type="button" onClick={refresh}>Retry</button></div>}
         {rankingsError && <div role="status" className="data-error subtle-error"><AlertCircle size={16}/><span>Regional rankings: {rankingsError}</span><button type="button" onClick={refresh}>Retry</button></div>}
