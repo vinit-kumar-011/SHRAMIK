@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Briefcase, Map as MapIcon, Network, ShieldAlert,
   TrendingUp, ChevronRight, Info, Activity, Layers, CheckCircle2,
-  AlertCircle, Filter, Globe, Hash, Star, X
+  AlertCircle, Filter, Globe, Hash, Star
 } from 'lucide-react';
 import {
   ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid,
@@ -241,11 +241,11 @@ class MockEmergingSkillsDataAdapter implements EmergingSkillsDataAdapter {
   }
   async getSkillDetail(skillId: string, filters?: Partial<EmergingSkillsFilters>, signal?: AbortSignal): Promise<EmergingSkill | null> {
     await abortableDelay(120, signal);
-    return MOCK_SKILLS.find(s => s.skillId === skillId) || null;
+    return filterMockSkills(filters ?? {}).find(s => s.skillId === skillId) || null;
   }
   async getRelationships(skillId: string, filters?: Partial<EmergingSkillsFilters>, signal?: AbortSignal): Promise<{ nodes: any[]; edges: any[]; meta: any } | null> {
     await abortableDelay(120, signal);
-    const skill = MOCK_SKILLS.find(s => s.skillId === skillId);
+    const skill = filterMockSkills(filters ?? {}).find(s => s.skillId === skillId);
     if (!skill) return null;
     const nodes = [
       { id: skillId, type: 'SKILL', label: skill.canonicalName, code: skillId, metrics: { momentum: skill.momentumScore } },
@@ -267,7 +267,7 @@ class MockEmergingSkillsDataAdapter implements EmergingSkillsDataAdapter {
   }
   async getEvidence(skillId: string, filters?: Partial<EmergingSkillsFilters>, signal?: AbortSignal): Promise<any | null> {
     await abortableDelay(120, signal);
-    const skill = MOCK_SKILLS.find(s => s.skillId === skillId);
+    const skill = filterMockSkills(filters ?? {}).find(s => s.skillId === skillId);
     return skill ? {
       ruleVersion: skill.ruleVersion, observationWindow: skill.observationWindow,
       provenanceState: skill.provenanceState,
@@ -614,7 +614,7 @@ const MomentumView = ({ skills, onSelectSkill }: { skills: EmergingSkill[]; onSe
 // ------------------------------------------------------------------
 // View 3 — Occupation & Sector Connections
 // ------------------------------------------------------------------
-const ConnectionsView = ({ skill, skills, dataAdapter, onSelectSkill, filters }: {
+const ConnectionsView = ({ skill, dataAdapter, onSelectSkill, filters }: {
   skill: EmergingSkill | null;
   skills: EmergingSkill[];
   dataAdapter: EmergingSkillsDataAdapter;
@@ -650,7 +650,7 @@ const ConnectionsView = ({ skill, skills, dataAdapter, onSelectSkill, filters }:
   const edges = graph?.edges || [];
   const center = nodes.find(n => n.id === skill.skillId) || { id: skill.skillId, type: 'SKILL', label: skill.canonicalName };
   const related = nodes.filter(n => n.id !== center.id);
-  const position = (node: any, i: number) => ({ x: related.length <= 1 ? 320 : 55 + (i * 530 / (related.length - 1)), y: 225 });
+  const position = (_node: any, i: number) => ({ x: related.length <= 1 ? 320 : 55 + (i * 530 / (related.length - 1)), y: 225 });
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
   const byId = new Map(nodes.map(n => [n.id, n]));
 
@@ -743,7 +743,7 @@ const RegionalSignalsView = ({ skill, dataAdapter, onSelectGeography, filters }:
 // View 5 — Skill Profiles & Evidence
 // ------------------------------------------------------------------
 const ProfileEvidenceView = ({
-  skill, skills, watchlist, compareIds, onCompareToggle, onWatchlistToggle, dataAdapter, onOpenSource
+  skill, skills, watchlist, compareIds, onCompareToggle, onWatchlistToggle, dataAdapter, filters, onOpenSource
 }: {
   skill: EmergingSkill | null;
   skills: EmergingSkill[];
