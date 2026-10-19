@@ -37,7 +37,7 @@ function prefixSelector(selector) {
   if (value === prefix || value.startsWith(prefix + ' ') || value.startsWith(prefix + '>') || value.startsWith(prefix + ':')) return value;
   if (value === ':root') return prefix;
   if (value.startsWith(':root')) return prefix + value.slice(5);
-  if (/^(html|body)\\b/.test(value)) return prefix + value.replace(/^(html|body)\\b/, '');
+  if (/^(html|body)\b/.test(value)) return prefix + value.replace(/^(html|body)\b/, '');
   if (value.startsWith('#root')) return prefix + value.slice(5);
   return `${prefix} ${value}`;
 }
@@ -57,6 +57,6 @@ root.walkRules((rule) => {
   if (insideKeyframes(rule)) return;
   rule.selector = splitSelectorList(rule.selector).map(prefixSelector).join(', ');
 });
-const scoped = `${prefix}{box-sizing:border-box;width:100%;min-width:0;}\\n${root.toString()}\\n`;
+const scoped = `${prefix}{box-sizing:border-box;width:100%;min-width:0;}\n${root.toString()}\n`;
 await writeFile(outputPath, scoped, 'utf8');
 console.log(`Scoped Data Sources styles: ${path.relative(process.cwd(), outputPath)}`);
