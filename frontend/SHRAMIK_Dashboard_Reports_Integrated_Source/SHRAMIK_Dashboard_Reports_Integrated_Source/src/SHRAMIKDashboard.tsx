@@ -16,14 +16,14 @@ import ForecastsPage from './forecasts/ForecastsPage';
 import ReportsPage from './reports/ReportsPage';
 import type { GapDetailPayload } from './skill-gaps/types';
 import { getPathForRoute, getRouteFromLocation, getRouteLabel, type ShramikRouteId } from './routing';
-import EmergingSkillsPage from '../../../SHRAMIK_Emerging_Skills_React_Integrated/SHRAMIK_Emerging_Skills_React_Integrated/src/pages/EmergingSkillsPage';
-import { ScenarioSimulatorPage } from '../../../SHRAMIK_Scenario_Simulator_Deliverable/SHRAMIK_Scenario_Simulator_Deliverable/source/src/ScenarioSimulatorPage';
-import { MockScenarioSimulatorAdapter } from '../../../SHRAMIK_Scenario_Simulator_Deliverable/SHRAMIK_Scenario_Simulator_Deliverable/source/src/adapters/MockScenarioSimulatorAdapter';
+import EmergingSkillsPage from './emerging-skills/EmergingSkillsPage.jsx';
+import { ScenarioSimulatorPage } from './scenario-simulator/ScenarioSimulatorPage.jsx';
+import { MockScenarioSimulatorAdapter } from './scenario-simulator/adapters/MockScenarioSimulatorAdapter.js';
 import DemandInsightsPage from './demand/DemandInsightsPage.jsx';
-import { DataSourcesPage } from '../../../SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/DataSourcesPage';
-import { mockDataSourcesAdapter } from '../../../SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/mock-adapter';
-import { createRestDataSourcesAdapter } from '../../../SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/rest-adapter';
-import type { DataSourcesDataAdapter } from '../../../SHRAMIK_Data_Sources_Source_and_Build/src/data-sources/DataSourcesDataAdapter';
+import { DataSourcesPage } from './data-sources/DataSourcesPage.jsx';
+import { mockDataSourcesAdapter } from './data-sources/mock-adapter.js';
+import { createRestDataSourcesAdapter } from './data-sources/rest-adapter.js';
+import type { DataSourcesDataAdapter } from './data-sources/DataSourcesDataAdapter.js';
 
 type Tone = 'navy' | 'teal' | 'orange';
 
@@ -534,15 +534,15 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
         {activePage === 'skill-gaps' ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>
           : activePage === 'forecasts' ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/>
           : activePage === 'reports' ? <ReportsPage />
-          : activePage === 'demand' ? <DemandInsightsPage embedded onNavigate={(path, label) => {
+          : activePage === 'demand' ? <DemandInsightsPage embedded onNavigate={(path: string, label?: string) => {
               const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
               if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
             }}/>
-          : activePage === 'emerging-skills' ? <EmergingSkillsPage onNavigate={(path, label) => {
+          : activePage === 'emerging-skills' ? <EmergingSkillsPage onNavigate={(path: string, label?: string) => {
               const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
               if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
             }}/>
-          : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} onNavigate={(path) => {
+          : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} onNavigate={(path: string) => {
               const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
               if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
             }}/>
