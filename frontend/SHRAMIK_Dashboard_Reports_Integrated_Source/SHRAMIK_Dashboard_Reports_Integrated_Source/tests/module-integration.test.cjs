@@ -109,7 +109,7 @@ test('Demand Insights bundles its icons and does not rely on an undeclared brows
 
 test('Demand Insights inline styles cannot leak into the shared shell', () => {
   const demand = read('src/demand/DemandInsightsPage.jsx');
-  const styles = [...demand.matchAll(/const CSS2? = `([\\s\\S]*?)`;/g)];
+  const styles = [...demand.matchAll(/const CSS2? = `([\s\S]*?)`;/g)];
   assert.equal(styles.length, 2, 'expected the two canonical Demand style constants');
   for (let index = 0; index < styles.length; index++) {
     assertCssScoped(styles[index][1], `Demand CSS ${index + 1}`, '.sh.embedded');
