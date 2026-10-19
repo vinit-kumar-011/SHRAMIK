@@ -20,10 +20,11 @@ npm run dev
 npm run typecheck
 npm test
 npm run build
+npm run test:preview
 npm run preview
 ```
 
-`npm run build` runs `tsc -b`, Vite production bundling, and then creates `dist/skill-gap-analysis.html` as a direct entry to the same app. Vite's `base: './'` supports static hosting under a project subpath.
+`npm run build` runs `tsc -b`, Vite production bundling, and then creates `dist/skill-gap-analysis.html`, `dist/forecasts.html`, and `dist/reports.html` as legacy entry points to the same app. The default deployment base is `/` so deep links and trailing-slash routes resolve the bundled assets correctly. For a project-subpath deployment, set `VITE_BASE_PATH=/shramik/` before running the build; route resolution uses the matching Vite base.
 
 ## Data modes
 
@@ -105,4 +106,4 @@ npm run build
 npm run preview
 ```
 
-The GitHub Actions workflow `.github/workflows/frontend-unified-build.yml` runs the clean install, type-check, automated tests, production build and basic output checks, then uploads the build artifact. A passing workflow verifies reproducible bundling and static checks; it does not replace browser QA at desktop/mobile breakpoints or live-backend contract validation.
+The GitHub Actions workflow `.github/workflows/frontend-unified-build.yml` runs the clean install, type-check, automated tests, production build and basic output checks, smoke-tests direct module routes and their bundled JavaScript through Vite preview, then uploads the build artifact. A passing workflow verifies reproducible bundling and static checks; it does not replace browser QA at desktop/mobile breakpoints or live-backend contract validation.
