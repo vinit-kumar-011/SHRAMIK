@@ -52,39 +52,39 @@ BEGIN
 END;
 $$;
 
-CREATE UNIQUE INDEX IF NOT EXISTS demand_observations_source_identity_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS uq_demand_source_key
   ON public.demand_observations (
     state_id, district_id, sector_id, skill_id, observation_grain,
-    period_type, period_year, demand_signal_type, source_id, source_release
+    period_type, period_year, source_id, source_release, demand_signal_type
   ) NULLS NOT DISTINCT
-  WHERE is_synthetic IS FALSE;
+  WHERE provenance_state = 'SOURCE_BACKED';
 
-CREATE UNIQUE INDEX IF NOT EXISTS demand_observations_synthetic_identity_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS uq_demand_synthetic_key
   ON public.demand_observations (
     state_id, district_id, sector_id, skill_id, observation_grain,
-    period_type, period_year, demand_signal_type, generation_run_id
+    period_type, period_year, generation_run_id, demand_signal_type
   ) NULLS NOT DISTINCT
-  WHERE is_synthetic IS TRUE;
+  WHERE provenance_state = 'SYNTHETIC_DEMO';
 
-CREATE UNIQUE INDEX IF NOT EXISTS supply_observations_source_identity_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS uq_supply_source_key
   ON public.supply_observations (
     state_id, district_id, sector_id, skill_id, observation_grain,
-    period_type, period_year, supply_signal_type, source_id, source_release
+    period_type, period_year, source_id, source_release, supply_signal_type
   ) NULLS NOT DISTINCT
-  WHERE is_synthetic IS FALSE;
+  WHERE provenance_state = 'SOURCE_BACKED';
 
-CREATE UNIQUE INDEX IF NOT EXISTS supply_observations_synthetic_identity_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS uq_supply_synthetic_key
   ON public.supply_observations (
     state_id, district_id, sector_id, skill_id, observation_grain,
-    period_type, period_year, supply_signal_type, generation_run_id
+    period_type, period_year, generation_run_id, supply_signal_type
   ) NULLS NOT DISTINCT
-  WHERE is_synthetic IS TRUE;
+  WHERE provenance_state = 'SYNTHETIC_DEMO';
 
-COMMENT ON INDEX public.demand_observations_source_identity_uidx IS
+COMMENT ON INDEX public.uq_demand_source_key IS
   'Natural identity for source-backed demand facts; NULLs are treated as equal.';
-COMMENT ON INDEX public.demand_observations_synthetic_identity_uidx IS
+COMMENT ON INDEX public.uq_demand_synthetic_key IS
   'Natural identity for replay-safe synthetic demand facts within a generation run.';
-COMMENT ON INDEX public.supply_observations_source_identity_uidx IS
+COMMENT ON INDEX public.uq_supply_source_key IS
   'Natural identity for source-backed supply facts; NULLs are treated as equal.';
-COMMENT ON INDEX public.supply_observations_synthetic_identity_uidx IS
+COMMENT ON INDEX public.uq_supply_synthetic_key IS
   'Natural identity for replay-safe synthetic supply facts within a generation run.';
