@@ -1,6 +1,6 @@
 import type {
   GapClassificationDefinition, GapDataMeta, GapDetailPayload, GapEntityType, GapFilterOptions, GapFilters,
-  GapInsight, GapLandscape, GapLandscapePoint, GapMetric, GapOverview, GapProvenance, GapClass,
+  GapInsight, GapLandscape, GapLandscapePoint, GapMetric, GapOverview, GapClass,
   RankedSkillGap, RankedSkillsQuery, RankedSkillsResponse, RegionalGapResponse, RegionalGapValue,
   SectorFlowResponse, SkillGapDataAdapter,
 } from './types';
