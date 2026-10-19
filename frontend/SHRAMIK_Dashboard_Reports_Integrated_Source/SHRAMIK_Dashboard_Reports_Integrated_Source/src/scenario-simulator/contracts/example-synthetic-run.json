@@ -1,0 +1,68 @@
+{
+  "notice": "ILLUSTRATIVE DEMO DATA ONLY — not a verified labour-market estimate or valid SHRAMIK simulation result",
+  "run": {
+    "simulationRunId": "demo-run-data-analysis-2030",
+    "runStatus": "SUCCEEDED",
+    "baselineForecastRunId": "demo-baseline-2025-2035",
+    "modelName": "mock-interface-fixture",
+    "modelVersion": "0.1-demo",
+    "evaluationYear": 2030,
+    "qualityStatus": "CAUTION",
+    "provenance": "SYNTHETIC_DEMO",
+    "limitations": [
+      "Deterministic frontend fixture only; does not run a calibrated forecasting model.",
+      "The example demonstrates a supply-side-only intervention, so demand remains unchanged.",
+      "Training seats are not converted one-for-one to workers; the scenario supply curve is a pre-authored fixture.",
+      "Replace this fixture with backend results once the simulation service is implemented and validated."
+    ]
+  },
+  "scope": {
+    "entityType": "skill",
+    "entityId": "demo-skill-data-analysis",
+    "geographyId": "INDIA"
+  },
+  "metricDefinitions": [
+    { "metricCode": "DEMAND_ESTIMATE", "label": "Projected demand", "definition": "Illustrative projected demand under selected scope.", "unitCode": "persons", "temporalBasis": "OTHER" },
+    { "metricCode": "SUPPLY_ESTIMATE", "label": "Projected supply", "definition": "Illustrative projected supply under selected scope.", "unitCode": "persons", "temporalBasis": "OTHER" },
+    { "metricCode": "SKILL_GAP", "label": "Projected skill gap", "definition": "Demand minus supply; positive is shortage and negative is surplus, when metrics are comparable.", "unitCode": "persons", "temporalBasis": "OTHER" }
+  ],
+  "series": {
+    "baselineDemand": [
+      { "periodStart": "2028-01-01", "periodEnd": "2028-12-31", "value": 1320000, "unitCode": "persons", "calculationKind": "FORECAST", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" },
+      { "periodStart": "2029-01-01", "periodEnd": "2029-12-31", "value": 1370000, "unitCode": "persons", "calculationKind": "FORECAST", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" },
+      { "periodStart": "2030-01-01", "periodEnd": "2030-12-31", "value": 1420000, "unitCode": "persons", "calculationKind": "FORECAST", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" }
+    ],
+    "scenarioDemand": [
+      { "periodStart": "2028-01-01", "periodEnd": "2028-12-31", "value": 1320000, "unitCode": "persons", "calculationKind": "SCENARIO", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" },
+      { "periodStart": "2029-01-01", "periodEnd": "2029-12-31", "value": 1370000, "unitCode": "persons", "calculationKind": "SCENARIO", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" },
+      { "periodStart": "2030-01-01", "periodEnd": "2030-12-31", "value": 1420000, "unitCode": "persons", "calculationKind": "SCENARIO", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" }
+    ],
+    "baselineSupply": [
+      { "periodStart": "2028-01-01", "periodEnd": "2028-12-31", "value": 850000, "unitCode": "persons", "calculationKind": "FORECAST", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" },
+      { "periodStart": "2029-01-01", "periodEnd": "2029-12-31", "value": 900000, "unitCode": "persons", "calculationKind": "FORECAST", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" },
+      { "periodStart": "2030-01-01", "periodEnd": "2030-12-31", "value": 950000, "unitCode": "persons", "calculationKind": "FORECAST", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" }
+    ],
+    "scenarioSupply": [
+      { "periodStart": "2028-01-01", "periodEnd": "2028-12-31", "value": 850000, "unitCode": "persons", "calculationKind": "SCENARIO", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" },
+      { "periodStart": "2029-01-01", "periodEnd": "2029-12-31", "value": 930000, "unitCode": "persons", "calculationKind": "SCENARIO", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" },
+      { "periodStart": "2030-01-01", "periodEnd": "2030-12-31", "value": 1050000, "unitCode": "persons", "calculationKind": "SCENARIO", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" }
+    ],
+    "baselineGap": [
+      { "periodStart": "2030-01-01", "periodEnd": "2030-12-31", "value": 470000, "unitCode": "persons", "calculationKind": "FORECAST", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" }
+    ],
+    "scenarioGap": [
+      { "periodStart": "2030-01-01", "periodEnd": "2030-12-31", "value": 370000, "unitCode": "persons", "calculationKind": "SCENARIO", "lowerBound": null, "upperBound": null, "qualityStatus": "CAUTION", "provenance": "SYNTHETIC_DEMO" }
+    ]
+  },
+  "outcomes": [
+    { "metricCode": "DEMAND_ESTIMATE", "label": "Projected demand", "unitCode": "persons", "baselineValue": 1420000, "scenarioValue": 1420000, "deltaValue": 0, "displayValue": "1.42M", "comparisonDisplay": "Unchanged in a supply-only scenario", "qualityStatus": "CAUTION" },
+    { "metricCode": "SUPPLY_ESTIMATE", "label": "Projected supply", "unitCode": "persons", "baselineValue": 950000, "scenarioValue": 1050000, "deltaValue": 100000, "displayValue": "1.05M", "comparisonDisplay": "+100K vs baseline", "qualityStatus": "CAUTION" },
+    { "metricCode": "SKILL_GAP", "label": "Projected skill gap", "unitCode": "persons", "baselineValue": 470000, "scenarioValue": 370000, "deltaValue": -100000, "displayValue": "370K shortage", "comparisonDisplay": "100K lower than baseline", "qualityStatus": "CAUTION" },
+    { "metricCode": "GAP_TO_DEMAND_RATIO", "label": "Gap-to-demand ratio", "unitCode": "percent", "baselineValue": 33.1, "scenarioValue": 26.1, "deltaValue": -7.0, "displayValue": "26.1%", "comparisonDisplay": "Illustrative; denominator is demand", "qualityStatus": "CAUTION" }
+  ],
+  "regionalImpact": [],
+  "sectorBreakdown": [],
+  "occupationImpact": [],
+  "coverageSummary": ["No source coverage: synthetic UI fixture."],
+  "limitations": ["All values are fabricated for interface testing only; never use as a SHRAMIK finding."]
+}
