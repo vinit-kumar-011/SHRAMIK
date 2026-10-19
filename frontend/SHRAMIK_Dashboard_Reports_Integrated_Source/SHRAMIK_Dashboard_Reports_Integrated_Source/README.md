@@ -59,3 +59,50 @@ The API handoff in `docs/skill-gap-analysis/SHRAMIK_SKILL_GAP_ANALYSIS_API_CONTR
 ## Build status
 
 The npm registry could not be resolved in the current build environment (`EAI_AGAIN registry.npmjs.org`), so a normal Vite build could not be run here. The `dist/` directory included in the delivered archive was created by `scripts/build-static-fallback.cjs`, which precompiles the same TypeScript/JSX sources and uses React/ReactDOM from cdnjs. Its build report is `dist/BUILD_REPORT.json`. This fallback is included for review and preview; **the preferred production release is the Vite build above**, which bundles React and Lucide locally. Do not represent the fallback as Vite build output.
+
+
+## Unified SHRAMIK application integration status
+
+The canonical app shell is in this package. It owns the single topbar/header, sidebar, route state, shared dashboard adapter and the page content mount. Run all commands from this package directory, not from one of the standalone handoff folders.
+
+### Canonical module routes
+
+| Route | Module | Integration status |
+| --- | --- | --- |
+| `/` | Dashboard | Existing shared-shell page |
+| `/demand` | Demand Insights | Embedded page module |
+| `/supply` | Supply Insights | React page integrated; synthetic preview data |
+| `/skill-gaps` | Skill Gaps | Existing integrated React module |
+| `/forecasts` | Forecasts & Early Warnings | Existing integrated React module |
+| `/emerging-skills` | Emerging Skills | Embedded page module |
+| `/scenario-simulator` | Scenario Simulator | Embedded React module |
+| `/reports` | Reports | Existing integrated React module |
+| `/data-sources` | Data Sources | Embedded React module with mock/REST adapter selection |
+| `/data-quality` | Data Quality | React page integrated; synthetic preview state |
+| `/administration` | Administration | React page integrated; synthetic preview state |
+
+All routes are registered centrally in `src/routing.ts` and rendered by `src/SHRAMIKDashboard.tsx`; page modules do not introduce a second global shell.
+
+### Production deployment and direct links
+
+This is a history-API single-page React app. Configure the production host to rewrite requests for module paths (for example `/administration` or `/supply`) to the built `index.html`, while leaving real static assets untouched. Vite preview provides the expected SPA fallback. Static hosts without rewrite support need an equivalent fallback rule before direct-link refresh can be considered verified.
+
+The build still emits the legacy direct entry files for `skill-gap-analysis.html`, `forecasts.html`, and `reports.html`. These load the same React shell; they are not separate applications.
+
+### Data truth and backend boundaries
+
+The Supply, Data Quality and Administration pages have active local interactions to make the integrated prototype reviewable, but they currently use explicit `SYNTHETIC_DEMO` fixtures. Filtering and status changes on these pages are client-side demo state only. They do not execute live supply analytics, create validation runs, change production access grants, modify authentication accounts, or write audit events to the backend.
+
+Before production use, replace those demo adapters with approved backend contracts and server-confirmed operations. Authorization must be enforced by the backend. Do not treat UI state, fixture data, or a visible button as evidence that a server operation has succeeded.
+
+### Required release checks
+
+```bash
+npm ci
+npm run typecheck
+npm test
+npm run build
+npm run preview
+```
+
+The GitHub Actions workflow `.github/workflows/frontend-unified-build.yml` runs the clean install, type-check, automated tests, production build and basic output checks, then uploads the build artifact. A passing workflow verifies reproducible bundling and static checks; it does not replace browser QA at desktop/mobile breakpoints or live-backend contract validation.
