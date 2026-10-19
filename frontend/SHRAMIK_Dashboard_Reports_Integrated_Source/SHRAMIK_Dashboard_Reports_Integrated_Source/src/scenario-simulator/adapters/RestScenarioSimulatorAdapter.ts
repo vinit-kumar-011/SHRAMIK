@@ -8,9 +8,9 @@ export class RestScenarioSimulatorAdapter implements ScenarioSimulatorDataAdapte
   constructor(baseUrl = "", private readonly fetcher: typeof fetch = fetch) {
     // Endpoint paths below already include /api/v1. Accept either the API host
     // or a host ending in /api/v1, without accidentally duplicating the prefix.
-    const trimmed = baseUrl.trim().replace(/\\/+$/, "");
+    const trimmed = baseUrl.trim().replace(/\/+$/, "");
     this.baseUrl = trimmed.endsWith("/api/v1") ? trimmed.slice(0, -"/api/v1".length) : trimmed;
-    if (this.baseUrl && !/^https?:\\/\\//i.test(this.baseUrl)) {
+    if (this.baseUrl && !/^https?:\/\//i.test(this.baseUrl)) {
       throw new Error("Scenario API base URL must be an absolute HTTP(S) URL.");
     }
   }
