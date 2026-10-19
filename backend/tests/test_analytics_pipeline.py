@@ -100,7 +100,7 @@ def test_last_value_forecast_and_gap_contract():
     assert record["gap_eligible"] is True
     assert record["model"]["name"] == "naive_last_value"
     assert record["confidence_level"] == "LOW"
-    assert record["metadata"]["database_modified"] is False
+    assert result["metadata"]["database_modified"] is False
 
 
 def test_gap_is_not_allowed_without_explicit_signal_pair_approval():
