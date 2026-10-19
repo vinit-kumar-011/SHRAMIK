@@ -533,15 +533,12 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
         {activePage === 'skill-gaps' ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>
           : activePage === 'forecasts' ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/>
           : activePage === 'reports' ? <ReportsPage />
-          : activePage === 'demand' ? <DemandInsightsPage embedded onNavigate={(path: string, label?: string) => {
+          : activePage === 'demand' ? <DemandInsightsPage dataAdapter={undefined} embedded onNavigate={(path: string, label?: string) => {
               const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
               if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
             }}/>
-          : activePage === 'emerging-skills' ? <EmergingSkillsPage onNavigate={(path: string, label?: string) => {
-              const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
-              if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
-            }}/>
-          : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} onNavigate={(path: string) => {
+          : activePage === 'emerging-skills' ? <EmergingSkillsPage />
+          : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} initialScope={undefined} onNavigate={(path: string) => {
               const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
               if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
             }}/>
