@@ -25,7 +25,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: python -m pip install --upgrade pip pytest
-      - run: python -m pytest backend/tests/test_analytics_pipeline.py -q
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r backend/requirements.txt
+      - run: python -m pytest backend/tests/test_analytics_pipeline.py backend/tests/test_write_safety.py backend/tests/test_pipeline_repository.py -q
         env:
           PYTHONPATH: backend
