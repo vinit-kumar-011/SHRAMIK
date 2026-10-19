@@ -100,6 +100,16 @@ test('module preparation uses the canonical React source files in this app packa
   assert.doesNotMatch(prepare, /SHRAMIK_Data_Sources_Source_and_Build/);
 });
 
+test('Emerging Skills uses the shared API mode when configured', () => {
+  const factory = read('src/emerging-skills/adapter.ts');
+  const shellSource = read('src/SHRAMIKDashboard.tsx');
+  assert.match(factory, /VITE_SHRAMIK_API_BASE_URL/);
+  assert.match(factory, /new RestEmergingSkillsDataAdapter/);
+  assert.match(factory, /demoEmergingSkillsDataAdapter/);
+  assert.match(shellSource, /createEmergingSkillsDataAdapter/);
+  assert.match(shellSource, /<EmergingSkillsPage dataAdapter=\{emergingSkillsAdapter\}/);
+});
+
 test('Demand Insights bundles its icons and does not rely on an undeclared browser global', () => {
   const demand = read('src/demand/DemandInsightsPage.jsx');
   assert.match(demand, /from ['"]lucide-react['"]/);
