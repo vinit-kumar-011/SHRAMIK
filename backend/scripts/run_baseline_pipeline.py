@@ -12,6 +12,11 @@ from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
 
+# Support invocation from the repository root as documented in the runbook.
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
+
 from app.analytics.engine import AnalyticsConfig, AnalyticsInputError, run_baseline_analytics
 from app.ingestion.canonical_csv import ParsedBatch, parse_canonical_csv, sha256_file
 from app.ingestion.capability_validation import (
