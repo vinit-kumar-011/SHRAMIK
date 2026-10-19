@@ -25,6 +25,7 @@ import { DataSourcesPage } from './data-sources/DataSourcesPage.jsx';
 import { mockDataSourcesAdapter } from './data-sources/mock-adapter.js';
 import { createRestDataSourcesAdapter } from './data-sources/rest-adapter.js';
 import SupplyInsightsPage from './supply/SupplyInsightsPage';
+import { createSupplyInsightsDataAdapter } from './supply/adapter';
 import DataQualityPage from './data-quality/DataQualityPage';
 import AdministrationPage from './administration/AdministrationPage';
 
@@ -289,6 +290,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   const [active, setActive] = useState(() => getRouteLabel(getInitialPage()));
   const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
   const [emergingSkillsAdapter] = useState(() => createEmergingSkillsDataAdapter());
+  const [supplyAdapter] = useState(() => createSupplyInsightsDataAdapter());
   const scenarioApiConfigured = Boolean((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL?.trim());
   const scenarioDataAdapter = scenarioApiConfigured ? undefined : scenarioMockAdapter;
   const [dataSourcesAdapter] = useState(() => {
@@ -527,7 +529,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
               if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
             }}/>
           : activePage === 'data-sources' ? <DataSourcesPage adapter={dataSourcesAdapter}/>
-          : activePage === 'supply' ? <SupplyInsightsPage />
+          : activePage === 'supply' ? <SupplyInsightsPage adapter={supplyAdapter} />
           : activePage === 'data-quality' ? <DataQualityPage />
           : activePage === 'administration' ? <AdministrationPage />
           : activePage === 'dashboard' ? <>
