@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from scripts import ingest_canonical_observations as cli
+from backend.scripts import ingest_canonical_observations as cli
 
 
 def test_importer_defaults_to_read_only_validation():
