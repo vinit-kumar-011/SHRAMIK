@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { DataSourcesAdapterError, type DataSourcesDataAdapter } from './DataSourcesDataAdapter';
 import type {
-  CoverageSummary, DataSourceRecord, FieldMappingRecord, FreshnessStatus,
-  IngestionRunRecord, IngestionRunStatus, MappingStatus, PagedResult,
+  CoverageSummary, DataSourceRecord, FieldMappingRecord,
+  IngestionRunRecord, PagedResult,
   Provenance, SourceLifecycleStatus, SourceSummary, SourceType,
 } from './data-sources.types';
 
@@ -206,7 +206,6 @@ function SourceDrawer({id,adapter,onClose,onNotify}:{id:string;adapter:DataSourc
   };window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);},[onClose]);
   useEffect(()=>{setTab('overview');},[id]);
   const src=source.data;
-  const title=src?.name??'Source details';
   return <div className="drawer-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
     <aside ref={drawerRef} className="source-drawer" role="dialog" aria-modal="true" aria-labelledby="source-drawer-title">
       <div className="drawer-topline"><span>DATA SOURCE / DETAILS</span><button ref={closeRef} className="icon-button close-drawer" aria-label="Close details" onClick={onClose}>×</button></div>
