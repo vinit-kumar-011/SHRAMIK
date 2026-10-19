@@ -45,6 +45,8 @@ jobs:
           test -s dist/forecasts.html
           test -s dist/reports.html
           test -d dist/assets
+      - name: Smoke-test production preview routes
+        run: npm run test:preview
       - name: Upload production build
         uses: actions/upload-artifact@v4
         with:
