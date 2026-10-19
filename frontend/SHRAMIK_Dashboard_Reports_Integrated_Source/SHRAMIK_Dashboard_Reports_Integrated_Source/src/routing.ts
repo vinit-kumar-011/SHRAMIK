@@ -61,6 +61,10 @@ export function getRouteFromLocation(location: LocationSnapshot): ShramikRouteId
   const direct = SHRAMIK_ROUTES.find((route) => route.path === path);
   if (direct) return direct.id;
 
+  // Keep detail routes inside their owning module instead of sending them to a 404.
+  const nested = SHRAMIK_ROUTES.find((route) => route.path !== '/' && path.startsWith(`${route.path}/`));
+  if (nested) return nested.id;
+
   return legacyAliases[path] ?? 'not-found';
 }
 
