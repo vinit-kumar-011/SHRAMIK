@@ -282,10 +282,6 @@ function ModuleRouteFallback({ route }: { route: ShramikRouteId }) {
       description: 'This URL does not match a registered SHRAMIK application route.',
       next: 'Use the shared sidebar to open a known application module.',
     },
-    supply: {
-      description: 'The standalone Supply Insights deliverable still needs to be migrated into this shared React shell.',
-      next: 'Next: migrate the Supply Insights page and its typed data adapter.',
-    },
   };
   const content = labels[route] ?? {
     description: 'This module is registered in the central route table, but it is not yet integrated into the production React shell.',
@@ -520,7 +516,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
     <Header regions={regions} region={region} onRegionChange={handleRegionChange} onMenu={() => setMobileOpen(true)} profile={profile} query={query} onQueryChange={setQuery} searchResults={searchResults} searchBusy={searchBusy} searchOpen={searchOpen} onSearchOpenChange={setSearchOpen} onSearchSelect={handleSearchSelect} notifications={notifications} notificationsOpen={notificationsOpen} onNotificationsToggle={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} onNotificationRead={(id) => void markRead(id)} profileOpen={profileOpen} onProfileToggle={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} onOpenSection={(section) => void openSection(section)} adapterMode={adapter.mode}/>
     <div className="app-layout">
       <Sidebar active={active} onNavigate={handleNavigate} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)}/>
-      <main className="dashboard-main" aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
+      <main className={activePage === 'dashboard' ? 'dashboard-main' : 'dashboard-main module-main'} aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
         {activePage === 'skill-gaps' ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>
           : activePage === 'forecasts' ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/>
           : activePage === 'reports' ? <ReportsPage />
