@@ -305,8 +305,13 @@ class ObservationRepository:
                     table.c.coverage_end,
                 ).where(table.c.source_id.in_(source_ids))
             ).mappings()
+            capability_snapshot = []
+            for row in capability_rows:
+                item = dict(row)
+                item["source_id"] = self._normalise_id(item["source_id"])
+                capability_snapshot.append(item)
             try:
-                validate_source_capabilities(batch, [dict(row) for row in capability_rows])
+                validate_source_capabilities(batch, capability_snapshot)
             except CapabilityValidationError as exc:
                 raise PersistenceValidationError(str(exc)) from exc
 
