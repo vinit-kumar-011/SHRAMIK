@@ -26,6 +26,16 @@ npm run preview
 
 `npm run build` runs `tsc -b`, Vite production bundling, and then creates `dist/skill-gap-analysis.html`, `dist/forecasts.html`, and `dist/reports.html` as legacy entry points to the same app. The default deployment base is `/` so deep links and trailing-slash routes resolve the bundled assets correctly. For a project-subpath deployment, set `VITE_BASE_PATH=/shramik/` before running the build; route resolution uses the matching Vite base.
 
+## Environment configuration
+
+Copy `.env.example` to `.env.local` in this package before local development. Leave the API host values blank to use clearly labelled demo/mock data.
+
+- `VITE_BASE_PATH` defaults to root hosting. Use `/shramik/` only if the production host serves the app from that subpath; build and preview with the same value.
+- `VITE_SHRAMIK_API_BASE_URL` is shared by the dashboard, Skill Gaps and Scenario Simulator REST adapters. The current FastAPI scaffold does not yet implement all of their analytical endpoints, so setting this to the scaffold alone will result in unavailable states rather than live analytics.
+- `VITE_DATA_SOURCES_API_BASE_URL` selects the separate Data Sources REST adapter. Create-source and ingestion controls remain disabled unless the corresponding feature flags are explicitly enabled; do not enable them until the endpoints, auth, and server-side authorization have been implemented and tested.
+
+Supply, Data Quality and Administration currently remain UI/demo modules. Their fixture interactions do not send writes to the backend. The UI is integrated; server-side production readiness is still dependent on implementing and contract-testing their API endpoints.
+
 ## Data modes
 
 The dashboard and gap page use typed adapter interfaces. By default, the app uses visibly labelled illustrative mock data; mock values must never be described as source-backed labour-market findings. To activate the REST adapters, set `VITE_SHRAMIK_API_BASE_URL` in `.env.local` (the adapters add `/api/v1` and `/api/v1/skill-gaps` respectively). Authentication remains the host application's responsibility; no access token is hard-coded or stored in local storage.

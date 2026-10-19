@@ -75,6 +75,15 @@ test('canonical shell imports and mounts all eleven navigation modules', () => {
   assert.match(shell, /<Sidebar /, 'shared sidebar must be provided by the shell');
 });
 
+test('production-sensitive API write flags default to disabled', () => {
+  const env = read('.env.example');
+  assert.match(env, /^VITE_BASE_PATH=$/m);
+  assert.match(env, /^VITE_SHRAMIK_API_BASE_URL=$/m);
+  assert.match(env, /^VITE_DATA_SOURCES_API_BASE_URL=$/m);
+  assert.match(env, /^VITE_DATA_SOURCES_ENABLE_CREATE=false$/m);
+  assert.match(env, /^VITE_DATA_SOURCES_ENABLE_INGESTION=false$/m);
+});
+
 test('module preparation safely reuses canonical JSON/CSS files', () => {
   const prepare = read('scripts/prepare-react-modules.mjs');
   assert.match(prepare, /if \(sourcePath === targetPath\)/);
