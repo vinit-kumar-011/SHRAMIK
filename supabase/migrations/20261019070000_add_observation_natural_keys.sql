@@ -10,7 +10,7 @@ BEGIN
     WHERE is_synthetic IS FALSE
     GROUP BY state_id, district_id, sector_id, skill_id, observation_grain,
              period_type, period_year, demand_signal_type, source_id,
-             source_release, retrieval_id, evidence_item_id
+             source_release
     HAVING COUNT(*) > 1
   ) THEN
     RAISE EXCEPTION 'Duplicate source-backed demand observation identities exist; review before adding natural-key indexes';
@@ -33,7 +33,7 @@ BEGIN
     WHERE is_synthetic IS FALSE
     GROUP BY state_id, district_id, sector_id, skill_id, observation_grain,
              period_type, period_year, supply_signal_type, source_id,
-             source_release, retrieval_id, evidence_item_id
+             source_release
     HAVING COUNT(*) > 1
   ) THEN
     RAISE EXCEPTION 'Duplicate source-backed supply observation identities exist; review before adding natural-key indexes';
@@ -55,8 +55,7 @@ $$;
 CREATE UNIQUE INDEX IF NOT EXISTS demand_observations_source_identity_uidx
   ON public.demand_observations (
     state_id, district_id, sector_id, skill_id, observation_grain,
-    period_type, period_year, demand_signal_type, source_id, source_release,
-    retrieval_id, evidence_item_id
+    period_type, period_year, demand_signal_type, source_id, source_release
   ) NULLS NOT DISTINCT
   WHERE is_synthetic IS FALSE;
 
@@ -70,8 +69,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS demand_observations_synthetic_identity_uidx
 CREATE UNIQUE INDEX IF NOT EXISTS supply_observations_source_identity_uidx
   ON public.supply_observations (
     state_id, district_id, sector_id, skill_id, observation_grain,
-    period_type, period_year, supply_signal_type, source_id, source_release,
-    retrieval_id, evidence_item_id
+    period_type, period_year, supply_signal_type, source_id, source_release
   ) NULLS NOT DISTINCT
   WHERE is_synthetic IS FALSE;
 
