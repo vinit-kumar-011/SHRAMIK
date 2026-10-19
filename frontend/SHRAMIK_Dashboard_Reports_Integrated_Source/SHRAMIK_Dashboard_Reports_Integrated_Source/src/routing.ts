@@ -74,8 +74,11 @@ export function getRouteFromLocation(location: LocationSnapshot, basePath = '/')
   return legacyAliases[path] ?? 'not-found';
 }
 
-export function getPathForRoute(route: Exclude<ShramikRouteId, 'not-found'>): string {
-  return SHRAMIK_ROUTES.find((item) => item.id === route)?.path ?? '/';
+export function getPathForRoute(route: Exclude<ShramikRouteId, 'not-found'>, basePath = '/'): string {
+  const routePath = SHRAMIK_ROUTES.find((item) => item.id === route)?.path ?? '/';
+  const normalizedBase = normalizePath(basePath);
+  if (normalizedBase === '/') return routePath;
+  return routePath === '/' ? `${normalizedBase}/` : `${normalizedBase}${routePath}`;
 }
 
 export function getRouteLabel(route: ShramikRouteId): string {
