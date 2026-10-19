@@ -1,19 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const appRoot = fileURLToPath(new URL('.', import.meta.url));
-const frontendRoot = resolve(appRoot, '../..');
-
-// Some migrated page modules still live in their handoff folders. Allow Vite's
-// dev server to read those files while the integration consolidates them.
+// Migrated pages are prepared into this package before dev/build. Keep Vite's
+// browser file access confined to this app rather than exposing sibling folders.
 export default defineConfig({
   base: './',
   plugins: [react()],
-  server: {
-    host: '0.0.0.0',
-    fs: { allow: [frontendRoot] },
-  },
+  server: { host: '0.0.0.0' },
   preview: { host: '0.0.0.0' },
 });
