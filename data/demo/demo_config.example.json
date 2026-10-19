@@ -1,0 +1,26 @@
+{
+  "_read_me": "Copy to demo_config.json. Replace every REPLACE_WITH_* value with a real id from the live database (states.id, districts.id, skills.id). The generator never invents ids. Signal types must match the vocabulary agreed in Issues #13/#17. Numbers below are demo shapes only and must never be used to choose official thresholds.",
+  "seed": 20261019,
+  "years": [2021, 2022, 2023, 2024, 2025],
+  "demand_signal_type": "REPLACE_WITH_AGREED_DEMAND_SIGNAL_TYPE",
+  "supply_signal_type": "REPLACE_WITH_AGREED_SUPPLY_SIGNAL_TYPE",
+  "supply_measure": "completions",
+  "source_context": "DEMO series for the SIH demo where source-backed district x skill history is shorter than 3 years. Ranges chosen for illustration only.",
+  "cells": [
+    {
+      "state_id": "REPLACE_WITH_STATE_ID",
+      "district_id": "REPLACE_WITH_DISTRICT_ID",
+      "skill_id": "REPLACE_WITH_SKILL_ID",
+      "demand": {"start": 180, "annual_growth": 0.12, "noise": 0.06},
+      "supply": {"start": 140, "annual_growth": 0.02, "noise": 0.04}
+    },
+    {
+      "state_id": "REPLACE_WITH_STATE_ID",
+      "district_id": "REPLACE_WITH_DISTRICT_ID",
+      "skill_id": "REPLACE_WITH_ANOTHER_SKILL_ID",
+      "demand": {"start": 90, "annual_growth": -0.03, "noise": 0.05},
+      "supply": {"start": 160, "annual_growth": 0.04, "noise": 0.04},
+      "skip_years": [2023]
+    }
+  ]
+}
