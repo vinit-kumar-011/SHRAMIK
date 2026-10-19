@@ -250,7 +250,7 @@ def _validate_references(
                   AND c.observation_grain = :observation_grain
                   AND c.signal_type = :signal_type
                   AND c.unit = :unit
-                  AND c.flow_stock_semantics IS NOT DISTINCT FROM :flow_stock_semantics
+                  AND lower(coalesce(c.flow_stock_semantics, '')) = lower(coalesce(:flow_stock_semantics, ''))
                   AND (
                        c.state_scope IS NULL
                        OR upper(c.state_scope) = 'NATIONAL'
