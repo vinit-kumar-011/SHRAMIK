@@ -39,6 +39,12 @@ test('direct paths and trailing slashes resolve to canonical routes', () => {
   assert.equal(getRouteFromLocation(loc('/data-sources/source-123')), 'data-sources');
 });
 
+test('route links preserve a configured deployment base', () => {
+  assert.equal(getPathForRoute('dashboard', '/shramik/'), '/shramik/');
+  assert.equal(getPathForRoute('supply', '/shramik/'), '/shramik/supply');
+  assert.equal(getPathForRoute('administration', '/shramik/'), '/shramik/administration');
+});
+
 test('direct links also resolve when deployed under a configured subpath', () => {
   const base = '/shramik/';
   assert.equal(getRouteFromLocation(loc('/shramik/'), base), 'dashboard');
