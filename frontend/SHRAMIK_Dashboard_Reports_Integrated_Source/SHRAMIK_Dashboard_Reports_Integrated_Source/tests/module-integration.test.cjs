@@ -124,6 +124,15 @@ test('Emerging Skills uses the shared API mode when configured', () => {
   assert.match(shellSource, /<EmergingSkillsPage dataAdapter=\{emergingSkillsAdapter\}/);
 });
 
+test('Demand Insights reads the same Vite API base as the other live-mode modules', () => {
+  const demand = read('src/demand/DemandInsightsPage.jsx');
+  assert.match(demand, /const getConfiguredApiBase = \(\) =>/);
+  assert.match(demand, /import\.meta\.env\?\.VITE_SHRAMIK_API_BASE_URL/);
+  assert.match(demand, /const base = getConfiguredApiBase\(\)/);
+  assert.match(demand, /Boolean\(getConfiguredApiBase\(\)\)/);
+  assert.doesNotMatch(demand, /const base = window\.SHRAMIK_API_BASE_URL \|\| window\.SHRAMIK_CONFIG/);
+});
+
 test('Demand Insights bundles its icons and does not rely on an undeclared browser global', () => {
   const demand = read('src/demand/DemandInsightsPage.jsx');
   assert.match(demand, /from ['"]lucide-react['"]/);
