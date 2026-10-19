@@ -145,7 +145,8 @@ test('demo-only modules prominently disclose synthetic data and local-only actio
   const quality = read('src/data-quality/DataQualityPage.tsx');
   const administration = read('src/administration/AdministrationPage.tsx');
   assert.match(supply, /SYNTHETIC_DEMO/);
-  assert.match(supply, /no live Supply API is connected/i);
+  assert.match(supply, /Supply data unavailable/i);
+  assert.match(supply, /active adapter/i);
   assert.match(quality, /SYNTHETIC_DEMO/);
   assert.match(quality, /local fixtures/i);
   assert.match(quality, /does not update a backend/i);
