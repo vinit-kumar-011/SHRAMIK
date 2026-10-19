@@ -71,7 +71,7 @@ try {
 
   const attributionResponse = await request(`${origin}${basePath}/assets/INDIA_STATES_ATTRIBUTION.md`, 'text/plain, text/markdown');
   const attribution = await attributionResponse.text();
-  if (!/OpenStreetMap contributors/i.test(attribution) || !/ODbL 1\\.0/i.test(attribution) ||
+  if (!/OpenStreetMap contributors/i.test(attribution) || !/ODbL 1\.0/i.test(attribution) ||
       !/not a Survey of India product/i.test(attribution)) {
     throw new Error('Bundled boundary attribution must contain OSM credit, the ODbL licence and the non-official-boundary disclaimer.');
   }
