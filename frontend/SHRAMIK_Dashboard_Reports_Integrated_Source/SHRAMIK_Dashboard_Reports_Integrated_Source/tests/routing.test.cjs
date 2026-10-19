@@ -39,6 +39,15 @@ test('direct paths and trailing slashes resolve to canonical routes', () => {
   assert.equal(getRouteFromLocation(loc('/data-sources/source-123')), 'data-sources');
 });
 
+test('direct links also resolve when deployed under a configured subpath', () => {
+  const base = '/shramik/';
+  assert.equal(getRouteFromLocation(loc('/shramik/'), base), 'dashboard');
+  assert.equal(getRouteFromLocation(loc('/shramik/supply'), base), 'supply');
+  assert.equal(getRouteFromLocation(loc('/shramik/administration/'), base), 'administration');
+  assert.equal(getRouteFromLocation(loc('/shramik/reports.html'), base), 'reports');
+  assert.equal(getRouteFromLocation(loc('/shramik/data-sources/source-123'), base), 'data-sources');
+});
+
 test('legacy multi-entry links remain compatible', () => {
   assert.equal(getRouteFromLocation(loc('/skill-gap-analysis.html')), 'skill-gaps');
   assert.equal(getRouteFromLocation(loc('/forecasts.html')), 'forecasts');
