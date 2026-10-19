@@ -28,7 +28,7 @@ const fmt = (value: number | null | undefined, unit?: string) => {
   if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(value);
 };
-const apiBase = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL ?? "";
+const apiBase = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SCENARIO_SIMULATOR_API_BASE_URL ?? "";
 
 export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, boundaryGeoJsonUrl = `${import.meta.env.BASE_URL}assets/india-states.geojson` }: ScenarioSimulatorPageProps) {
   const adapter = useMemo(() => dataAdapter ?? new RestScenarioSimulatorAdapter(apiBase), [dataAdapter]);

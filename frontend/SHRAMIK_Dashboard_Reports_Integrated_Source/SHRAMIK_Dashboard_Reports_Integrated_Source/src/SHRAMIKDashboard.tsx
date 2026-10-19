@@ -20,6 +20,7 @@ import EmergingSkillsPage from './emerging-skills/EmergingSkillsPage.jsx';
 import { createEmergingSkillsDataAdapter } from './emerging-skills/adapter';
 import { ScenarioSimulatorPage } from './scenario-simulator/ScenarioSimulatorPage.jsx';
 import { MockScenarioSimulatorAdapter } from './scenario-simulator/adapters/MockScenarioSimulatorAdapter.js';
+import { RestScenarioSimulatorAdapter } from './scenario-simulator/adapters/RestScenarioSimulatorAdapter.js';
 import DemandInsightsPage from './demand/DemandInsightsPage.jsx';
 import { DataSourcesPage } from './data-sources/DataSourcesPage.jsx';
 import { mockDataSourcesAdapter } from './data-sources/mock-adapter.js';
@@ -291,12 +292,15 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   const [activePage, setActivePage] = useState<ShramikRouteId>(getInitialPage);
   const [active, setActive] = useState(() => getRouteLabel(getInitialPage()));
   const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
+  const [scenarioDataAdapter] = useState(() => {
+    const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+    const apiBase = env?.VITE_SCENARIO_SIMULATOR_API_BASE_URL?.trim();
+    return apiBase ? new RestScenarioSimulatorAdapter(apiBase) : scenarioMockAdapter;
+  });
   const [emergingSkillsAdapter] = useState(() => createEmergingSkillsDataAdapter());
   const [supplyAdapter] = useState(() => createSupplyInsightsDataAdapter());
   const [dataQualityAdapter] = useState(() => createDataQualityDataAdapter());
   const [administrationAdapter] = useState(() => createAdministrationDataAdapter());
-  const scenarioApiConfigured = Boolean((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL?.trim());
-  const scenarioDataAdapter = scenarioApiConfigured ? undefined : scenarioMockAdapter;
   const [dataSourcesAdapter] = useState(() => {
     const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
     const apiBase = env?.VITE_DATA_SOURCES_API_BASE_URL?.trim();

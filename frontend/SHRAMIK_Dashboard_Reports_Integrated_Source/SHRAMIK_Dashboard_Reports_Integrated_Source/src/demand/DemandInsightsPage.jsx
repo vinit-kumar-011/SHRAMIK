@@ -659,7 +659,7 @@ const makeRestAdapter = (base) => {
   };
 };
 const getConfiguredApiBase = () => {
-  const viteBase = import.meta.env?.VITE_SHRAMIK_API_BASE_URL;
+  const viteBase = import.meta.env?.VITE_DEMAND_API_BASE_URL;
   return String(viteBase || window.SHRAMIK_API_BASE_URL || window.SHRAMIK_CONFIG?.apiBaseUrl || '').trim();
 };
 const getDefaultAdapter = () => {
