@@ -293,3 +293,42 @@ def test_mismatched_retrieval_source_is_rejected(session: Session):
     with pytest.raises(PersistenceValidationError, match="retrieval_id belongs to a different source"):
         repo.persist_batch(batch)
     assert count_rows(session, "demand_observations") == 0
+
+
+def test_changed_retrieval_for_same_source_release_is_not_a_second_observation(session: Session):
+    other_retrieval = UUID("20000000-0000-0000-0000-000000000002")
+    session.execute(
+        metadata.tables["source_retrievals"].insert().values(
+            id=other_retrieval, source_id=SOURCE_ID, retrieval_status="SUCCESS"
+        )
+    )
+    session.commit()
+
+    repo = ObservationRepository(session, allow_writes=True)
+    repo.persist_batch(make_batch(make_observation()))
+    changed_provenance = make_batch(make_observation(retrieval_id=other_retrieval))
+
+    # The database natural key does not include retrieval/evidence IDs. A replay for
+    # the same source release must be compared to the existing row and fail closed.
+    with pytest.raises(PersistenceValidationError, match="different content"):
+        repo.persist_batch(changed_provenance)
+
+    session.commit()
+    assert count_rows(session, "demand_observations") == 1
+
+
+def test_new_source_release_is_a_distinct_version(session: Session):
+    repo = ObservationRepository(session, allow_writes=True)
+    first = make_batch(make_observation(value=Decimal("123.45")))
+    revised = make_batch(
+        make_observation(
+            value=Decimal("130.00"),
+            source_release="release-2023-revised",
+        )
+    )
+
+    assert repo.persist_batch(first).inserted_rows == 1
+    assert repo.persist_batch(revised).inserted_rows == 1
+
+    session.commit()
+    assert count_rows(session, "demand_observations") == 2
