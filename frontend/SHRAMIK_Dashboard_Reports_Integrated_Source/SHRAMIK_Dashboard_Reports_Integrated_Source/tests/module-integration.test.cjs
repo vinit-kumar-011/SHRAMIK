@@ -139,6 +139,27 @@ test('Emerging Skills keeps its content inside the shared shell instead of claim
   assert.doesNotMatch(emerging, /className="min-h-screen bg/);
 });
 
+test('Scenario Simulator has bundled state/UT map geometry and visible source attribution', () => {
+  const geometry = JSON.parse(fs.readFileSync(path.join(root, 'public/assets/india-states.geojson'), 'utf8'));
+  assert.equal(geometry.type, 'FeatureCollection');
+  assert.equal(geometry.features.length, 36);
+  const codes = new Set(geometry.features.map(feature => feature.properties?.code));
+  assert.ok(codes.has('IN-OD'));
+  assert.ok(codes.has('IN-WB'));
+  for (const feature of geometry.features) {
+    assert.equal(typeof feature.properties?.name, 'string');
+    assert.equal(typeof feature.properties?.code, 'string');
+    assert.ok(feature.geometry && ['Polygon', 'MultiPolygon'].includes(feature.geometry.type));
+  }
+  const scenario = read('src/scenario-simulator/ScenarioSimulatorPage.tsx');
+  const attribution = read('public/assets/INDIA_STATES_ATTRIBUTION.md');
+  assert.match(scenario, /ss-map-attribution/);
+  assert.match(scenario, /OpenStreetMap contributors/);
+  assert.match(scenario, /ODbL 1\.0/);
+  assert.match(attribution, /OpenStreetMap contributors/);
+  assert.match(attribution, /best-effort visualization dataset, not a Survey of India product/i);
+});
+
 test('Demand Insights bundles its icons and does not rely on an undeclared browser global', () => {
   const demand = read('src/demand/DemandInsightsPage.jsx');
   assert.match(demand, /from ['"]lucide-react['"]/);
