@@ -11,8 +11,8 @@ const server = spawn(process.execPath, [
   '--host', host, '--port', String(port), '--strictPort',
 ], { stdio: 'ignore', env: process.env });
 
-async function request(url) {
-  const response = await fetch(url);
+async function request(url, accept = '*/*') {
+  const response = await fetch(url, { headers: { Accept: accept } });
   if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
   return response;
 }
@@ -22,7 +22,7 @@ try {
   for (let attempt = 0; attempt < 80; attempt++) {
     if (server.exitCode !== null) throw new Error(`Vite preview exited early (code ${server.exitCode}).`);
     try {
-      const response = await fetch(`${origin}${basePath}/`);
+      const response = await fetch(`${origin}${basePath}/`, { headers: { Accept: 'text/html' } });
       if (response.ok && (await response.text()).includes('id="root"')) { ready = true; break; }
     } catch {
       // The server is still starting; retry briefly.
@@ -40,7 +40,7 @@ try {
   ];
 
   for (const route of routes) {
-    const response = await request(`${origin}${basePath}${route}`);
+    const response = await request(`${origin}${basePath}${route}`, 'text/html');
     const type = response.headers.get('content-type') ?? '';
     if (!type.includes('text/html')) throw new Error(`Expected HTML for ${route}; received ${type || 'unknown content type'}.`);
     const html = await response.text();
