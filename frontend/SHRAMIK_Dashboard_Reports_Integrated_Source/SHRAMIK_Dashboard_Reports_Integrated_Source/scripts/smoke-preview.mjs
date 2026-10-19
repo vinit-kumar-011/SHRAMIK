@@ -71,9 +71,13 @@ try {
 
   const attributionResponse = await request(`${origin}${basePath}/assets/INDIA_STATES_ATTRIBUTION.md`, 'text/plain, text/markdown');
   const attribution = await attributionResponse.text();
-  if (!/OpenStreetMap contributors/i.test(attribution) || !/ODbL 1\.0/i.test(attribution) ||
-      !/not a Survey of India product/i.test(attribution)) {
-    throw new Error('Bundled boundary attribution must contain OSM credit, the ODbL licence and the non-official-boundary disclaimer.');
+  const attributionChecks = {
+    openStreetMapCredit: attribution.includes('OpenStreetMap contributors'),
+    odblLicense: attribution.includes('ODbL 1.0'),
+    nonOfficialDisclaimer: attribution.toLowerCase().includes('not a survey of india product'),
+  };
+  if (Object.values(attributionChecks).some(passed => !passed)) {
+    throw new Error(`Bundled boundary attribution checks failed: ${JSON.stringify(attributionChecks)}`);
   }
 
   console.log(`Passed: ${routes.length} direct-route, bundled geometry and asset smoke checks against Vite preview.`);
