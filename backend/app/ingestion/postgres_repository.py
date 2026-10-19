@@ -8,7 +8,6 @@ validation/dry run.
 from __future__ import annotations
 
 import json
-from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
@@ -263,22 +262,22 @@ def _load_references(
     districts = _select_in(session, "SELECT id, state_id FROM public.districts WHERE id IN :ids", "ids", district_ids)
     sectors = _select_in(session, "SELECT id FROM public.sectors WHERE id IN :ids", "ids", sector_ids)
     skills = _select_in(session, "SELECT id, sector_id FROM public.skills WHERE id IN :ids", "ids", skill_ids)
-    sources = _select_in(session, "SELECT id::text AS id FROM public.data_sources WHERE id::text IN :ids", "ids", source_ids)
+    sources = _select_in(session, "SELECT CAST(id AS TEXT) AS id FROM public.data_sources WHERE CAST(id AS TEXT) IN :ids", "ids", source_ids)
     retrievals = _select_in(
         session,
-        "SELECT id::text AS id, source_id::text AS source_id, retrieval_status FROM public.source_retrievals WHERE id::text IN :ids",
+        "SELECT CAST(id AS TEXT) AS id, CAST(source_id AS TEXT) AS source_id, retrieval_status FROM public.source_retrievals WHERE CAST(id AS TEXT) IN :ids",
         "ids",
         retrieval_ids,
     )
     evidence = _select_in(
         session,
-        "SELECT id::text AS id, source_id::text AS source_id FROM public.evidence_items WHERE id::text IN :ids",
+        "SELECT CAST(id AS TEXT) AS id, CAST(source_id AS TEXT) AS source_id FROM public.evidence_items WHERE CAST(id AS TEXT) IN :ids",
         "ids",
         evidence_ids,
     )
     runs = _select_in(
         session,
-        "SELECT id::text AS id, generator_name, generator_version, random_seed, parameters, source_context FROM public.synthetic_generation_runs WHERE id::text IN :ids",
+        "SELECT CAST(id AS TEXT) AS id, generator_name, generator_version, random_seed, parameters, source_context FROM public.synthetic_generation_runs WHERE CAST(id AS TEXT) IN :ids",
         "ids",
         run_ids,
     )
@@ -355,9 +354,9 @@ def _validate_references(
         signals = sorted({row.signal_type for row in source_rows})
         grains = sorted({row.observation_grain for row in source_rows})
         stmt = text(
-            "SELECT id::text AS id, source_id::text AS source_id, state_scope, "
+            "SELECT CAST(id AS TEXT) AS id, CAST(source_id AS TEXT) AS source_id, state_scope, "
             "observation_grain, signal_type, unit, flow_stock_semantics, coverage_start, coverage_end "
-            "FROM public.source_capabilities WHERE source_id::text IN :source_ids "
+            "FROM public.source_capabilities WHERE CAST(source_id AS TEXT) IN :source_ids "
             "AND signal_type IN :signals AND observation_grain IN :grains"
         ).bindparams(
             bindparam("source_ids", expanding=True),
@@ -385,8 +384,9 @@ def _validate_references(
             if str(cap.get("unit", "")).strip() != row.unit:
                 issues.append(f"row {idx}: unit does not match the registered source capability")
             cap_semantics = cap.get("flow_stock_semantics")
-            cap_semantics = str(cap_semantics).strip() if cap_semantics is not None else None
-            if cap_semantics != row.flow_stock_semantics:
+            cap_semantics = str(cap_semantics).strip().casefold() if cap_semantics is not None else None
+            row_semantics = str(row.flow_stock_semantics).strip().casefold() if row.flow_stock_semantics is not None else None
+            if cap_semantics != row_semantics:
                 issues.append(
                     f"row {idx}: flow_stock_semantics does not match the registered source capability"
                 )
@@ -433,13 +433,13 @@ def _natural_keyed_existing(
         found.extend(_select_in(
             session,
             f"SELECT * FROM public.{table} WHERE provenance_state = 'SOURCE_BACKED' "
-            f"AND source_id::text IN :ids AND period_year IN :years AND {signal_column} IN :signals",
+            f"AND source_CAST(id AS TEXT) IN :ids AND period_year IN :years AND {signal_column} IN :signals",
             "ids",
             source_ids,
         ) if False else [])
         stmt = text(
             f"SELECT * FROM public.{table} WHERE provenance_state = 'SOURCE_BACKED' "
-            f"AND source_id::text IN :source_ids AND period_year IN :years AND {signal_column} IN :signals"
+            f"AND CAST(source_id AS TEXT) IN :source_ids AND period_year IN :years AND {signal_column} IN :signals"
         ).bindparams(
             bindparam("source_ids", expanding=True),
             bindparam("years", expanding=True),
@@ -451,7 +451,7 @@ def _natural_keyed_existing(
     if run_ids:
         stmt = text(
             f"SELECT * FROM public.{table} WHERE provenance_state = 'SYNTHETIC_DEMO' "
-            f"AND generation_run_id::text IN :run_ids AND period_year IN :years AND {signal_column} IN :signals"
+            f"AND CAST(generation_run_id AS TEXT) IN :run_ids AND period_year IN :years AND {signal_column} IN :signals"
         ).bindparams(
             bindparam("run_ids", expanding=True),
             bindparam("years", expanding=True),
