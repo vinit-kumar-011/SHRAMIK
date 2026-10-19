@@ -160,4 +160,12 @@ test('demo-only modules prominently disclose synthetic data and local-only actio
   assert.match(administration, /SYNTHETIC_DEMO/);
   assert.match(administration, /No account, authentication policy, or permission is changed on a server/i);
   assert.match(administration, /no authentication account was modified/i);
+  assert.match(administration, /read-only/i);
+  const adminMock = read('src/administration/mockAdapter.ts');
+  const adminRest = read('src/administration/restAdapter.ts');
+  assert.match(adminMock, /SYNTHETIC_DEMO/);
+  assert.match(adminRest, /admin\/overview/);
+  assert.doesNotMatch(adminRest, /method:\\s*['"](?:POST|PUT|PATCH|DELETE)/i);
+  assert.match(shell, /createAdministrationDataAdapter/);
+  assert.match(shell, /<AdministrationPage adapter=\{administrationAdapter\}/);
 });

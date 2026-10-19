@@ -29,6 +29,7 @@ import { createSupplyInsightsDataAdapter } from './supply/adapter';
 import DataQualityPage from './data-quality/DataQualityPage';
 import { createDataQualityDataAdapter } from './data-quality/adapter';
 import AdministrationPage from './administration/AdministrationPage';
+import { createAdministrationDataAdapter } from './administration/adapter';
 
 type Tone = 'navy' | 'teal' | 'orange';
 
@@ -293,6 +294,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   const [emergingSkillsAdapter] = useState(() => createEmergingSkillsDataAdapter());
   const [supplyAdapter] = useState(() => createSupplyInsightsDataAdapter());
   const [dataQualityAdapter] = useState(() => createDataQualityDataAdapter());
+  const [administrationAdapter] = useState(() => createAdministrationDataAdapter());
   const scenarioApiConfigured = Boolean((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL?.trim());
   const scenarioDataAdapter = scenarioApiConfigured ? undefined : scenarioMockAdapter;
   const [dataSourcesAdapter] = useState(() => {
@@ -533,7 +535,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
           : activePage === 'data-sources' ? <DataSourcesPage adapter={dataSourcesAdapter}/>
           : activePage === 'supply' ? <SupplyInsightsPage adapter={supplyAdapter} />
           : activePage === 'data-quality' ? <DataQualityPage adapter={dataQualityAdapter} />
-          : activePage === 'administration' ? <AdministrationPage />
+          : activePage === 'administration' ? <AdministrationPage adapter={administrationAdapter} />
           : activePage === 'dashboard' ? <>
         <section className="hero-band" aria-labelledby="page-title">
           <div className="hero-copy"><div className="breadcrumb">DASHBOARD <span>/</span> {regionLabel.toUpperCase()}</div><h1 id="page-title">India’s Labour Market<br className="desktop-break"/> at a Glance</h1><div className="title-underline"/><p>Key insights on demand, supply, skill gaps and emerging opportunities across sectors and regions.</p></div>
