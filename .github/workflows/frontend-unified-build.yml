@@ -6,12 +6,11 @@ on:
     paths:
       - 'frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/**'
       - '.github/workflows/frontend-unified-build.yml'
-  push:
-    branches: [feature/frontend-unified-app]
-    paths:
-      - 'frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/**'
-      - '.github/workflows/frontend-unified-build.yml'
   workflow_dispatch:
+
+concurrency:
+  group: shramik-unified-frontend-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -35,7 +34,7 @@ jobs:
         run: npm ci
       - name: Type-check
         run: npm run typecheck
-      - name: Test adapters and routing
+      - name: Test adapters, routes, and module integration
         run: npm test
       - name: Build production application
         run: npm run build
