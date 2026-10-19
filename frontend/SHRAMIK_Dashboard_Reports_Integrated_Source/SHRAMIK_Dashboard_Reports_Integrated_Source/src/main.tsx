@@ -5,6 +5,7 @@ import './shramik-dashboard.css';
 import './module-utilities.css';
 import './module-route-placeholder.css';
 import './data-sources-scoped.css';
+import './auth/auth.css';
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

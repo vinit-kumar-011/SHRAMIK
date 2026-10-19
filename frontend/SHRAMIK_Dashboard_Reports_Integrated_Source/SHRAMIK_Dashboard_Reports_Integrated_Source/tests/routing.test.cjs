@@ -25,7 +25,7 @@ test('canonical route table covers every required application module', () => {
   const ids = SHRAMIK_ROUTES.map((route) => route.id);
   for (const id of [
     'dashboard', 'demand', 'supply', 'skill-gaps', 'forecasts', 'emerging-skills',
-    'scenario-simulator', 'reports', 'data-sources', 'data-quality', 'administration',
+    'scenario-simulator', 'reports', 'data-sources', 'data-quality', 'administration', 'login', 'request-access',
   ]) assert.ok(ids.includes(id), `missing route: ${id}`);
 });
 
@@ -35,6 +35,9 @@ test('direct paths and trailing slashes resolve to canonical routes', () => {
   assert.equal(getRouteFromLocation(loc('/skill-gaps/')), 'skill-gaps');
   assert.equal(getRouteFromLocation(loc('/scenario-simulator')), 'scenario-simulator');
   assert.equal(getRouteFromLocation(loc('/administration')), 'administration');
+  assert.equal(getRouteFromLocation(loc('/login')), 'login');
+  assert.equal(getRouteFromLocation(loc('/request-access')), 'request-access');
+  assert.equal(getRouteFromLocation(loc('/grant-access')), 'request-access');
   assert.equal(getRouteFromLocation(loc('/demand/occupations')), 'demand');
   assert.equal(getRouteFromLocation(loc('/data-sources/source-123')), 'data-sources');
 });
@@ -71,5 +74,7 @@ test('unknown paths are explicit and route links use canonical paths', () => {
   assert.equal(getRouteFromLocation(loc('/made-up-module')), 'not-found');
   assert.equal(getPathForRoute('scenario-simulator'), '/scenario-simulator');
   assert.equal(getPathForRoute('dashboard'), '/');
+  assert.equal(getPathForRoute('login'), '/login');
+  assert.equal(getPathForRoute('request-access'), '/request-access');
   assert.equal(getRouteLabel('administration'), 'Administration');
 });

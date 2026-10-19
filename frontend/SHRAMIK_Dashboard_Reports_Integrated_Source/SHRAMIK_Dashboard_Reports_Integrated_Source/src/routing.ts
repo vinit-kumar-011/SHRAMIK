@@ -10,6 +10,8 @@ export const SHRAMIK_ROUTES = [
   { id: 'data-sources', path: '/data-sources', label: 'Data Sources' },
   { id: 'data-quality', path: '/data-quality', label: 'Data Quality' },
   { id: 'administration', path: '/administration', label: 'Administration' },
+  { id: 'login', path: '/login', label: 'Sign in' },
+  { id: 'request-access', path: '/request-access', label: 'Request access' },
 ] as const;
 
 export type ShramikRouteId = typeof SHRAMIK_ROUTES[number]['id'] | 'not-found';
@@ -31,6 +33,8 @@ const legacyAliases: Record<string, ShramikRouteId> = {
   '/data-sources.html': 'data-sources',
   '/data-quality.html': 'data-quality',
   '/administration.html': 'administration',
+  '/grant-access': 'request-access',
+  '/access-request': 'request-access',
 };
 
 function safeDecode(value: string): string {

@@ -1,6 +1,7 @@
 import type { LabourMarketDataAdapter } from './contracts';
 import { MockLabourMarketDataAdapter } from './mock-adapter';
 import { RestLabourMarketDataAdapter } from './rest-adapter';
+import { SupabaseLabourMarketDataAdapter } from './supabase-adapter';
 
 /**
  * One switch controls data mode for the entire dashboard.
@@ -9,6 +10,7 @@ import { RestLabourMarketDataAdapter } from './rest-adapter';
 export function createLabourMarketDataAdapter(): LabourMarketDataAdapter {
   const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
   const baseUrl = env?.VITE_SHRAMIK_API_BASE_URL?.trim();
+  if (env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true') return new MockLabourMarketDataAdapter();
   if (baseUrl) {
     return new RestLabourMarketDataAdapter({
       baseUrl,
@@ -17,7 +19,7 @@ export function createLabourMarketDataAdapter(): LabourMarketDataAdapter {
       getAccessToken: () => null,
     });
   }
-  return new MockLabourMarketDataAdapter();
+  return new SupabaseLabourMarketDataAdapter();
 }
 
 export type { LabourMarketDataAdapter } from './contracts';

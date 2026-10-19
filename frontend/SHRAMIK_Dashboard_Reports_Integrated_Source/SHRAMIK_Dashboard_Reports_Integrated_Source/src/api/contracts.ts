@@ -25,7 +25,7 @@ export interface MetricCardData {
   value: number;
   formattedValue: string;
   unit: string;
-  deltaPct: number;
+  deltaPct: number | null;
   context: string;
   trend: number[];
   meta: DataMeta;

@@ -6,6 +6,10 @@ import {
   Settings, Star, TrendingUp, Truck, Users, Wrench, X, type LucideIcon,
 } from 'lucide-react';
 import { createLabourMarketDataAdapter } from './api/adapter';
+import { SupabaseLabourMarketDataAdapter } from './api/supabase-adapter';
+import LoginPage from './auth/LoginPage';
+import RequestAccessPage from './auth/RequestAccessPage';
+import { restoreAuthSession, signOut as signOutAuth, type AuthSession } from './auth/session';
 import type {
   DashboardPeriod, DashboardRow, DashboardSummary, DetailPayload, LabourMarketDataAdapter,
   MetricCardData, NotificationItem, RankedRegionsResponse, RegionMetric, RegionOption,
@@ -58,6 +62,23 @@ const NAV_ITEMS = [
   { label: 'Data Quality', section: 'data-quality', icon: HeartPulse, group: 'secondary' },
   { label: 'Administration', section: 'administration', icon: Settings, group: 'secondary' },
 ] as const;
+
+function profileForSession(session: AuthSession | null, fallback: UserProfile | null): UserProfile | null {
+  if (!session) return fallback;
+  const metadata = session.user.user_metadata ?? {};
+  const metadataName = metadata.full_name;
+  const displayName = typeof metadataName === 'string' && metadataName.trim()
+    ? metadataName.trim()
+    : (session.user.email?.split('@')[0] || 'Authenticated user');
+  const parts = displayName.split(/\s+/).filter(Boolean);
+  return {
+    id: session.user.id,
+    displayName,
+    role: 'Authenticated user',
+    initials: parts.slice(0, 2).map(part => part[0]?.toUpperCase() || '').join('') || 'U',
+    organisation: typeof metadata.organization === 'string' ? metadata.organization : 'SHRAMIK workspace',
+  };
+}
 
 function toneForKpi(item: MetricCardData, index: number): Tone {
   if (item.key === 'supply') return 'teal';
@@ -113,7 +134,7 @@ function KpiCard({ item, index, onOpen }: { item: MetricCardData; index: number;
       <div className="eyebrow">{item.title}</div>
       <div className="kpi-subtitle">{item.subtitle}</div>
       <div className="kpi-value">{item.formattedValue}</div>
-      <div className={`kpi-change ${item.deltaPct < 0 ? 'change-negative' : ''}`}><TrendingUp size={18} strokeWidth={2.8}/><strong>{item.deltaPct > 0 ? '+' : ''}{item.deltaPct}%</strong><span>{item.context}</span></div>
+      {item.deltaPct === null ? <div className="kpi-change source-context"><span>{item.context}</span></div> : <div className={`kpi-change ${item.deltaPct < 0 ? 'change-negative' : ''}`}><TrendingUp size={18} strokeWidth={2.8}/><strong>{item.deltaPct > 0 ? '+' : ''}{item.deltaPct}%</strong><span>{item.context}</span></div>}
     </div>
     <div className="kpi-spark"><Sparkline values={item.trend} tone={tone} id={item.id} /></div>
     <span className="card-open"><ChevronRight size={15}/></span>
@@ -151,7 +172,7 @@ function ChartPanel({ data, periodYears, onPeriodChange, onOpenDetail }: {
         <polyline points={demandPts} className="chart-demand"/><polyline points={supplyPts} className="chart-supply"/>
         {points.map((point, i) => <circle key={`d-${point.year}`} cx={xFor(i, points.length)} cy={yFor(point.demand)} r="4.2" className="point-demand"/>)}
         {points.map((point, i) => <circle key={`s-${point.year}`} cx={xFor(i, points.length)} cy={yFor(point.supply)} r="4.2" className="point-supply"/>)}
-      </svg> : <div className="panel-empty">Trend data is not available for this filter.</div>}
+      </svg> : <div className="panel-empty">No validated demand/supply time-series is published yet. The dashboard shows source-backed indicators instead of estimating missing values.</div>}
       <button className="chart-next" type="button" aria-label="Open detailed demand and supply trends" onClick={() => onOpenDetail('demand')}><ChevronRight size={18}/></button>
     </div>
   </section>;
@@ -160,10 +181,13 @@ function ChartPanel({ data, periodYears, onPeriodChange, onOpenDetail }: {
 function RegionalPanel({ rankings, metric, onMetricChange, onOpenDetail, busy }: {
   rankings: RankedRegionsResponse | null; metric: RegionMetric; onMetricChange: (metric: RegionMetric) => void; onOpenDetail: (section: string) => void; busy: boolean;
 }) {
-  const metricLabels: Record<RegionMetric, string> = { demand: 'Demand', supply: 'Supply', 'skill-gap': 'Skill gap' };
+  const sourceBacked = Boolean(rankings?.meta.sourceLabel.startsWith('SHRAMIK Supabase source observations'));
+  const metricLabels: Record<RegionMetric, string> = sourceBacked
+    ? { demand: 'e-Shram registrations', supply: 'Provisional CTS seats', 'skill-gap': 'ITI count' }
+    : { demand: 'Demand', supply: 'Supply', 'skill-gap': 'Skill gap' };
   return <section className="panel regional-panel" aria-labelledby="regional-title" aria-busy={busy}>
-    <div className="panel-header"><div><h2 id="regional-title">Regional Intelligence</h2><p>Labour market ranking by state</p></div>
-      <SelectControl label="Regional metric" value={metric} onChange={onMetricChange} compact options={[{ value: 'demand', label: 'Demand' }, { value: 'supply', label: 'Supply' }, { value: 'skill-gap', label: 'Skill gap' }]} />
+    <div className="panel-header"><div><h2 id="regional-title">Regional Intelligence</h2><p>{sourceBacked ? 'Published state / UT indicators · source coverage applies' : 'Labour market ranking by state'}</p></div>
+      <SelectControl label="Regional metric" value={metric} onChange={onMetricChange} compact options={[{ value: 'demand', label: metricLabels.demand }, { value: 'supply', label: metricLabels.supply }, { value: 'skill-gap', label: metricLabels['skill-gap'] }]} />
     </div>
     <div className="regional-content">
       <div className="map-block"><img src={appAsset("assets/india-map-illustrative.png")} alt="Decorative illustration of India; state shading does not represent the selected metric"/>
@@ -233,12 +257,14 @@ function SearchResults({ results, busy, onSelect }: { results: SearchResult[]; b
 function Header({
   regions, region, onRegionChange, onMenu, profile, query, onQueryChange, searchResults, searchBusy, searchOpen, onSearchOpenChange, onSearchSelect,
   notifications, notificationsOpen, onNotificationsToggle, onNotificationRead, profileOpen, onProfileToggle, onOpenSection, adapterMode,
+  authSession, onNavigateRoute, onSignOut,
 }: {
   regions: RegionOption[]; region: string; onRegionChange: (v: string) => void; onMenu: () => void; profile: UserProfile | null;
   query: string; onQueryChange: (v: string) => void; searchResults: SearchResult[]; searchBusy: boolean; searchOpen: boolean;
   onSearchOpenChange: (v: boolean) => void; onSearchSelect: (result: SearchResult) => void;
   notifications: NotificationItem[]; notificationsOpen: boolean; onNotificationsToggle: () => void; onNotificationRead: (id: string) => void;
   profileOpen: boolean; onProfileToggle: () => void; onOpenSection: (section: string) => void; adapterMode: 'mock' | 'rest';
+  authSession: AuthSession | null; onNavigateRoute: (route: 'dashboard' | 'login' | 'request-access') => void; onSignOut: () => void;
 }) {
   const unreadCount = notifications.filter((item) => !item.read).length;
   const visibleRegionOptions = regions.length ? regions : [{ code: region, label: region, level: 'national' as const }];
@@ -254,7 +280,7 @@ function Header({
       {notificationsOpen && <div className="header-popover notifications-popover"><div className="popover-title"><strong>Notifications</strong><span>{unreadCount} unread</span></div>{notifications.length ? notifications.map((item) => <div key={item.id} className={`notification-item ${item.read ? 'is-read' : ''}`}><span className={`notification-mark severity-${item.severity}`}/><div><strong>{item.title}</strong><p>{item.body}</p><small>{formatUpdated(item.createdAt)}</small></div>{!item.read && <button type="button" aria-label={`Mark ${item.title} read`} onClick={() => onNotificationRead(item.id)}><Check size={15}/></button>}</div>) : <p className="popover-empty">No notifications.</p>}</div>}
     </div>
     <div className="header-popover-anchor"><button className="profile-button" type="button" onClick={onProfileToggle} aria-expanded={profileOpen}><span className="avatar">{profile?.initials ?? 'A'}</span><span className="profile-name"><strong>{profile?.displayName ?? 'Research Analyst'}</strong><small>{profile?.role ?? 'Workspace user'}</small></span><ChevronDown size={14}/></button>
-      {profileOpen && <div className="header-popover profile-popover"><div className="profile-card-top"><span className="avatar">{profile?.initials ?? 'A'}</span><div><strong>{profile?.displayName ?? 'Research Analyst'}</strong><small>{profile?.role ?? 'Workspace user'}</small></div></div>{profile?.organisation && <p>{profile.organisation}</p>}<div className="adapter-mode-label">Data adapter: <strong>{adapterMode === 'rest' ? 'Connected REST API' : 'Interactive mock data'}</strong></div><button className="popover-action" type="button" onClick={() => { onOpenSection('profile'); onProfileToggle(); }}>Open profile details <ArrowRight size={14}/></button></div>}
+      {profileOpen && <div className="header-popover profile-popover"><div className="profile-card-top"><span className="avatar">{profile?.initials ?? 'A'}</span><div><strong>{profile?.displayName ?? 'Research Analyst'}</strong><small>{profile?.role ?? 'Workspace user'}</small></div></div>{profile?.organisation && <p>{profile.organisation}</p>}<div className="adapter-mode-label">Data adapter: <strong>{adapterMode === 'rest' ? 'Connected source API' : 'Interactive mock data'}</strong></div>{authSession ? <button className="popover-action" type="button" onClick={onSignOut}>Sign out <ArrowRight size={14}/></button> : <><button className="popover-action" type="button" onClick={() => onNavigateRoute('login')}>Sign in <ArrowRight size={14}/></button><button className="popover-action" type="button" onClick={() => onNavigateRoute('request-access')}>Request workspace access <ArrowRight size={14}/></button></>}<button className="popover-action" type="button" onClick={() => { onOpenSection('profile'); onProfileToggle(); }}>Open profile details <ArrowRight size={14}/></button></div>}
     </div>
   </header>;
 }
@@ -290,6 +316,7 @@ function ModuleRouteFallback({ route }: { route: ShramikRouteId }) {
 export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNavigate?: (path: string, label: string) => void; dataAdapter?: LabourMarketDataAdapter } = {}) {
   const [defaultAdapter] = useState<LabourMarketDataAdapter>(() => createLabourMarketDataAdapter());
   const adapter = dataAdapter ?? defaultAdapter;
+  const [authSession, setAuthSession] = useState<AuthSession | null>(null);
   const [activePage, setActivePage] = useState<ShramikRouteId>(getInitialPage);
   const [active, setActive] = useState(() => getRouteLabel(getInitialPage()));
   const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
@@ -341,7 +368,15 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   const searchQueryController = useRef<AbortController | null>(null);
 
   const notify = useCallback((message: string) => setToast(message), []);
+  const isLiveSupabase = adapter instanceof SupabaseLabourMarketDataAdapter;
+  const headerProfile = useMemo(() => profileForSession(authSession, profile), [authSession, profile]);
   const regionLabel = useMemo(() => regions.find((item) => item.code === region)?.label ?? dashboard?.regionName ?? region, [regions, region, dashboard?.regionName]);
+
+  useEffect(() => {
+    let active = true;
+    void restoreAuthSession().then(session => { if (active) setAuthSession(session); }).catch(() => { if (active) setAuthSession(null); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const syncRoute = () => {
@@ -481,6 +516,20 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
     window.dispatchEvent(new CustomEvent('shramik:navigate', { detail: { path, label } }));
   }, [closeDetail, onNavigate]);
 
+  const navigateAuthRoute = useCallback((route: 'dashboard' | 'login' | 'request-access') => {
+    handleNavigate({ section: route, label: getRouteLabel(route) });
+  }, [handleNavigate]);
+  const handleSignOut = useCallback(() => {
+    void signOutAuth(authSession).then(() => {
+      setAuthSession(null);
+      setProfile(null);
+      notify('Signed out of SHRAMIK.');
+    }).catch(() => {
+      setAuthSession(null);
+      notify('Local sign-in session cleared. The authentication service could not be reached to close the remote session.');
+    });
+  }, [authSession, notify]);
+
   const handleSearchSelect = useCallback(async (result: SearchResult) => {
     setQuery(result.label);
     setSearchOpen(false);
@@ -521,12 +570,14 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   const handleRankingMetricChange = (value: RegionMetric) => setRankingMetric(value);
 
   return <div className={`app-root data-mode-${adapter.mode}`}>
-    <Header regions={regions} region={region} onRegionChange={handleRegionChange} onMenu={() => setMobileOpen(true)} profile={profile} query={query} onQueryChange={setQuery} searchResults={searchResults} searchBusy={searchBusy} searchOpen={searchOpen} onSearchOpenChange={setSearchOpen} onSearchSelect={handleSearchSelect} notifications={notifications} notificationsOpen={notificationsOpen} onNotificationsToggle={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} onNotificationRead={(id) => void markRead(id)} profileOpen={profileOpen} onProfileToggle={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} onOpenSection={(section) => void openSection(section)} adapterMode={adapter.mode}/>
+    <Header regions={regions} region={region} onRegionChange={handleRegionChange} onMenu={() => setMobileOpen(true)} profile={headerProfile} query={query} onQueryChange={setQuery} searchResults={searchResults} searchBusy={searchBusy} searchOpen={searchOpen} onSearchOpenChange={setSearchOpen} onSearchSelect={handleSearchSelect} notifications={notifications} notificationsOpen={notificationsOpen} onNotificationsToggle={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} onNotificationRead={(id) => void markRead(id)} profileOpen={profileOpen} onProfileToggle={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} onOpenSection={(section) => void openSection(section)} adapterMode={adapter.mode} authSession={authSession} onNavigateRoute={navigateAuthRoute} onSignOut={handleSignOut}/>
     <div className="app-layout">
       <Sidebar active={active} onNavigate={handleNavigate} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)}/>
       <main className={activePage === 'dashboard' ? 'dashboard-main' : 'dashboard-main module-main'} aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
         <ModuleErrorBoundary key={activePage} moduleName={getRouteLabel(activePage)} onReturnDashboard={() => handleNavigate({ label: 'Dashboard', section: 'dashboard' })}>
-        {activePage === 'skill-gaps' ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>
+        {activePage === 'login' ? <LoginPage onAuthenticated={(session) => { setAuthSession(session); setProfile(null); notify('Authenticated with Supabase Auth.'); navigateAuthRoute('dashboard'); }} onNavigate={navigateAuthRoute}/>
+          : activePage === 'request-access' ? <RequestAccessPage onNavigate={navigateAuthRoute}/>
+          : activePage === 'skill-gaps' ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>
           : activePage === 'forecasts' ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/>
           : activePage === 'reports' ? <ReportsPage />
           : activePage === 'demand' ? <DemandInsightsPage dataAdapter={undefined} embedded onNavigate={(path: string, label?: string) => {
@@ -544,7 +595,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
           : activePage === 'administration' ? <AdministrationPage adapter={administrationAdapter} />
           : activePage === 'dashboard' ? <>
         <section className="hero-band" aria-labelledby="page-title">
-          <div className="hero-copy"><div className="breadcrumb">DASHBOARD <span>/</span> {regionLabel.toUpperCase()}</div><h1 id="page-title">India’s Labour Market<br className="desktop-break"/> at a Glance</h1><div className="title-underline"/><p>Key insights on demand, supply, skill gaps and emerging opportunities across sectors and regions.</p></div>
+          <div className="hero-copy"><div className="breadcrumb">DASHBOARD <span>/</span> {regionLabel.toUpperCase()}</div><h1 id="page-title">India’s Labour Market<br className="desktop-break"/> at a Glance</h1><div className="title-underline"/><p>{isLiveSupabase ? 'Published workforce indicators, official registration snapshots and training-capacity context, with source dates and limitations.' : 'Key insights on demand, supply, skill gaps and emerging opportunities across sectors and regions.'}</p></div>
           <div className="hero-art-wrap" style={{ transform: `translate3d(0, ${parallax}px, 0)` }} aria-hidden="true"><img className="hero-art" src={appAsset("assets/hero-worker-industrial.png")} alt=""/><img className="sticky-note-art" src={appAsset("assets/sticky-note-decorative.png")} alt=""/><span className="hero-accent-dot"/></div>
         </section>
         {error && <div role="alert" className="data-error"><AlertCircle size={17}/><span><strong>Dashboard data unavailable.</strong> {error}</span><button type="button" onClick={refresh}>Retry</button></div>}
