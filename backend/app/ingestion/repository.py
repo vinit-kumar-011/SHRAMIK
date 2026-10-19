@@ -77,9 +77,30 @@ class ObservationRepository:
         except (ValueError, TypeError, AttributeError) as exc:
             raise PersistenceValidationError("An observation contains an invalid UUID reference.") from exc
 
-    @classmethod
-    def _uuid_values(cls, values: set[str]) -> list[UUID]:
-        return [cls._uuid(value) for value in sorted(values) if value]  # type: ignore[list-item]
+    @staticmethod
+    def _normalise_id(value: Any) -> str:
+        # SQLAlchemy's SQLite reflection reports UUID columns as CHAR(32), while
+        # PostgreSQL reflects them as UUID. Canonicalise both result forms.
+        try:
+            return str(UUID(str(value)))
+        except (ValueError, TypeError, AttributeError):
+            return str(value)
+
+    def _uuid_values(self, values: set[str]) -> list[Any]:
+        parsed = [self._uuid(value) for value in sorted(values) if value]
+        if self.session.get_bind().dialect.name == "sqlite":
+            return [value.hex for value in parsed if value is not None]
+        return [value for value in parsed if value is not None]
+
+    def _database_values(self, row: CanonicalObservation) -> dict[str, Any]:
+        values = row.db_values()
+        if self.session.get_bind().dialect.name == "sqlite":
+            # Reflected SQLite UUID columns are strings; SQLAlchemy Uuid(as_uuid=True)
+            # encodes those as 32 lowercase hex characters.
+            for key, value in values.items():
+                if isinstance(value, UUID):
+                    values[key] = value.hex
+        return values
 
     def _ids(self, table_name: str, column_name: str, values: list[Any]) -> set[str]:
         if not values:
@@ -88,7 +109,7 @@ class ObservationRepository:
         rows = self.session.execute(
             select(table.c[column_name]).where(table.c[column_name].in_(values))
         ).scalars()
-        return {str(value) for value in rows}
+        return {self._normalise_id(value) for value in rows}
 
     @staticmethod
     def _identity_keys(row: CanonicalObservation) -> tuple[str, ...]:
@@ -212,7 +233,9 @@ class ObservationRepository:
                     district_table.c.id.in_(list(districts))
                 )
             ).mappings()
-            district_rows = {str(row["id"]): str(row["state_id"]) for row in rows}
+            district_rows = {
+                self._normalise_id(row["id"]): str(row["state_id"]) for row in rows
+            }
         for row in batch.observations:
             if row.district_id:
                 linked_state = district_rows.get(row.district_id)
@@ -232,7 +255,7 @@ class ObservationRepository:
                     table.c.id.in_(ids)
                 )
             ).mappings()
-            retrieval_rows = {str(row["id"]): dict(row) for row in rows}
+            retrieval_rows = {self._normalise_id(row["id"]): dict(row) for row in rows}
 
         evidence_rows: dict[str, dict[str, Any]] = {}
         if evidence_values:
@@ -242,23 +265,23 @@ class ObservationRepository:
                     table.c.id.in_(self._uuid_values(evidence_values))
                 )
             ).mappings()
-            evidence_rows = {str(row["id"]): dict(row) for row in rows}
+            evidence_rows = {self._normalise_id(row["id"]): dict(row) for row in rows}
 
         for index, row in enumerate(batch.observations, start=2):
             if row.retrieval_id:
-                retrieval = retrieval_rows.get(str(UUID(row.retrieval_id)))
+                retrieval = retrieval_rows.get(self._normalise_id(row.retrieval_id))
                 if retrieval is None:
                     errors.append(f"row {index}: unknown source_retrievals.id reference {row.retrieval_id}")
                 else:
-                    if row.source_id and str(retrieval["source_id"]) != str(UUID(row.source_id)):
+                    if row.source_id and self._normalise_id(retrieval["source_id"]) != self._normalise_id(row.source_id):
                         errors.append(f"row {index}: retrieval_id belongs to a different source_id")
                     if str(retrieval["retrieval_status"]).upper() == "FAILED":
                         errors.append(f"row {index}: cannot ingest observations from a FAILED retrieval")
             if row.evidence_item_id:
-                evidence = evidence_rows.get(str(UUID(row.evidence_item_id)))
+                evidence = evidence_rows.get(self._normalise_id(row.evidence_item_id))
                 if evidence is None:
                     errors.append(f"row {index}: unknown evidence_items.id reference {row.evidence_item_id}")
-                elif row.source_id and str(evidence["source_id"]) != str(UUID(row.source_id)):
+                elif row.source_id and self._normalise_id(evidence["source_id"]) != self._normalise_id(row.source_id):
                     errors.append(f"row {index}: evidence_item_id belongs to a different source_id")
 
         if errors:
@@ -314,7 +337,7 @@ class ObservationRepository:
             with self.session.begin_nested():
                 self._validate(batch)
                 for row in batch.observations:
-                    values = row.db_values()
+                    values = self._database_values(row)
                     key_columns = self._identity_keys(row)
                     predicates = [
                         table.c[column].is_not_distinct_from(values[column])
