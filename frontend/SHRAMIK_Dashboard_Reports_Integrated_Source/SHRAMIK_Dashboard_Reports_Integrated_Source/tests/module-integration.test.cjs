@@ -100,6 +100,20 @@ test('module preparation uses the canonical React source files in this app packa
   assert.doesNotMatch(prepare, /SHRAMIK_Data_Sources_Source_and_Build/);
 });
 
+test('Supply page uses the shared API mode with explicit demo provenance', () => {
+  const factory = read('src/supply/adapter.ts');
+  const mock = read('src/supply/mockAdapter.ts');
+  const rest = read('src/supply/restAdapter.ts');
+  const shellSource = read('src/SHRAMIKDashboard.tsx');
+  assert.match(factory, /VITE_SHRAMIK_API_BASE_URL/);
+  assert.match(factory, /RestSupplyInsightsDataAdapter/);
+  assert.match(mock, /SYNTHETIC_DEMO/);
+  assert.match(rest, /\/supply\/overview/);
+  assert.match(rest, /does not match the requested filter/);
+  assert.match(shellSource, /createSupplyInsightsDataAdapter/);
+  assert.match(shellSource, /<SupplyInsightsPage adapter=\{supplyAdapter\}/);
+});
+
 test('Emerging Skills uses the shared API mode when configured', () => {
   const factory = read('src/emerging-skills/adapter.ts');
   const shellSource = read('src/SHRAMIKDashboard.tsx');
