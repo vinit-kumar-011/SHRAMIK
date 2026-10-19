@@ -190,6 +190,10 @@ def run_baseline_analytics(
             ),
             "demand_quantity": float(d_last.value) if d_last and d_last.value is not None else None,
             "supply_quantity": float(s_last.value) if s_last and s_last.value is not None else None,
+            "demand_unit": d_last.unit if d_last else None,
+            "supply_unit": s_last.unit if s_last else None,
+            "demand_temporal_semantics": d_last.flow_stock_semantics if d_last else None,
+            "supply_temporal_semantics": s_last.flow_stock_semantics if s_last else None,
             "demand_index": None,
             "supply_index": None,
             "forecast_demand": float(d_last.value) if history_ok and d_last and d_last.value is not None else None,
@@ -265,11 +269,13 @@ def run_baseline_analytics(
         # This is input-observation evidence-link coverage, not a probability of
         # correctness. Issue #16 may replace it with the finalized evidence taxonomy.
         record["evidence_coverage"] = round(evidence_coverage, 4)
+        trained_through = max(row.period_year for row in used_rows)
         record["model"] = {
             "name": "naive_last_value",
-            "version": "v1",
+            # The schema makes model versions immutable, including the training cutoff.
+            "version": f"v1-through-{trained_through}",
             "is_baseline": True,
-            "trained_through_period": max(row.period_year for row in used_rows),
+            "trained_through_period": trained_through,
         }
         results.append(record)
 
