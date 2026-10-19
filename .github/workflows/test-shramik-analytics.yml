@@ -26,4 +26,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install --upgrade pip pytest
+      - run: python -m compileall -q ml scripts tests/test_shramik_analytics_pipeline.py
       - run: python -m pytest tests/test_shramik_analytics_pipeline.py -q
