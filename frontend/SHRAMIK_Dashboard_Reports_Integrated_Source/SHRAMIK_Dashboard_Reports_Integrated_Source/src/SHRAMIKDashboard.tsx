@@ -17,6 +17,7 @@ import ReportsPage from './reports/ReportsPage';
 import type { GapDetailPayload } from './skill-gaps/types';
 import { getPathForRoute, getRouteFromLocation, getRouteLabel, type ShramikRouteId } from './routing';
 import EmergingSkillsPage from './emerging-skills/EmergingSkillsPage.jsx';
+import { createEmergingSkillsDataAdapter } from './emerging-skills/adapter';
 import { ScenarioSimulatorPage } from './scenario-simulator/ScenarioSimulatorPage.jsx';
 import { MockScenarioSimulatorAdapter } from './scenario-simulator/adapters/MockScenarioSimulatorAdapter.js';
 import DemandInsightsPage from './demand/DemandInsightsPage.jsx';
@@ -287,6 +288,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   const [activePage, setActivePage] = useState<ShramikRouteId>(getInitialPage);
   const [active, setActive] = useState(() => getRouteLabel(getInitialPage()));
   const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
+  const [emergingSkillsAdapter] = useState(() => createEmergingSkillsDataAdapter());
   const scenarioApiConfigured = Boolean((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL?.trim());
   const scenarioDataAdapter = scenarioApiConfigured ? undefined : scenarioMockAdapter;
   const [dataSourcesAdapter] = useState(() => {
@@ -519,7 +521,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
               const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
               if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
             }}/>
-          : activePage === 'emerging-skills' ? <EmergingSkillsPage />
+          : activePage === 'emerging-skills' ? <EmergingSkillsPage dataAdapter={emergingSkillsAdapter} />
           : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} initialScope={undefined} onNavigate={(path: string) => {
               const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
               if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
