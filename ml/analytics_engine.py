@@ -493,9 +493,27 @@ def compute_analytics(
         if row.district_id is not None
         and row.skill_id is not None
         and row.observation_grain in {"DISTRICT_SKILL", "DISTRICT_SECTOR_SKILL"}
-        and row.kind in {"DEMAND", "SUPPLY"}
         and (mode == "DEMO" or row.provenance_state == "SOURCE_BACKED")
-        and row.signal_type in {demand_signal_type, supply_signal_type}
+        and (
+            (
+                row.kind == "DEMAND"
+                and row.signal_type == demand_signal_type
+                and (
+                    demand_source_id is None
+                    or row.source_id == demand_source_id
+                    or row.provenance_state == "SYNTHETIC_DEMO"
+                )
+            )
+            or (
+                row.kind == "SUPPLY"
+                and row.signal_type == supply_signal_type
+                and (
+                    supply_source_id is None
+                    or row.source_id == supply_source_id
+                    or row.provenance_state == "SYNTHETIC_DEMO"
+                )
+            )
+        )
     }
     if not targets:
         raise AnalyticsInputError(
