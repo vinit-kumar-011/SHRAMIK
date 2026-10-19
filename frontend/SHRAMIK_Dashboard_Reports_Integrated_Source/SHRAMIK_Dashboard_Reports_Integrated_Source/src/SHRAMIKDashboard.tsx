@@ -29,6 +29,8 @@ import DemandInsightsPage from './demand/DemandInsightsPage.jsx';
 import { DataSourcesPage } from './data-sources/DataSourcesPage.jsx';
 import { mockDataSourcesAdapter } from './data-sources/mock-adapter.js';
 import { createRestDataSourcesAdapter } from './data-sources/rest-adapter.js';
+import { SupabaseDataSourcesAdapter } from './data-sources/supabase-adapter';
+import LiveModuleNotice from './LiveModuleNotice';
 import SupplyInsightsPage from './supply/SupplyInsightsPage';
 import { createSupplyInsightsDataAdapter } from './supply/adapter';
 import DataQualityPage from './data-quality/DataQualityPage';
@@ -314,6 +316,8 @@ function ModuleRouteFallback({ route }: { route: ShramikRouteId }) {
 }
 
 export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNavigate?: (path: string, label: string) => void; dataAdapter?: LabourMarketDataAdapter } = {}) {
+  const runtimeEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+  const demoMode = runtimeEnv?.VITE_SHRAMIK_USE_DEMO_DATA === 'true';
   const [defaultAdapter] = useState<LabourMarketDataAdapter>(() => createLabourMarketDataAdapter());
   const adapter = dataAdapter ?? defaultAdapter;
   const [authSession, setAuthSession] = useState<AuthSession | null>(null);
@@ -330,14 +334,14 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   const [dataQualityAdapter] = useState(() => createDataQualityDataAdapter());
   const [administrationAdapter] = useState(() => createAdministrationDataAdapter());
   const [dataSourcesAdapter] = useState(() => {
-    const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
-    const apiBase = env?.VITE_DATA_SOURCES_API_BASE_URL?.trim();
-    return apiBase
-      ? createRestDataSourcesAdapter(apiBase, {
-          createSource: env?.VITE_DATA_SOURCES_ENABLE_CREATE === 'true',
-          ingestion: env?.VITE_DATA_SOURCES_ENABLE_INGESTION === 'true',
-        })
-      : mockDataSourcesAdapter;
+    const apiBase = runtimeEnv?.VITE_DATA_SOURCES_API_BASE_URL?.trim();
+    if (apiBase) {
+      return createRestDataSourcesAdapter(apiBase, {
+        createSource: runtimeEnv?.VITE_DATA_SOURCES_ENABLE_CREATE === 'true',
+        ingestion: runtimeEnv?.VITE_DATA_SOURCES_ENABLE_INGESTION === 'true',
+      });
+    }
+    return demoMode ? mockDataSourcesAdapter : new SupabaseDataSourcesAdapter();
   });
   const [regions, setRegions] = useState<RegionOption[]>([]);
   const [region, setRegion] = useState('IN');
@@ -577,22 +581,40 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
         <ModuleErrorBoundary key={activePage} moduleName={getRouteLabel(activePage)} onReturnDashboard={() => handleNavigate({ label: 'Dashboard', section: 'dashboard' })}>
         {activePage === 'login' ? <LoginPage onAuthenticated={(session) => { setAuthSession(session); setProfile(null); notify('Authenticated with Supabase Auth.'); navigateAuthRoute('dashboard'); }} onNavigate={navigateAuthRoute}/>
           : activePage === 'request-access' ? <RequestAccessPage onNavigate={navigateAuthRoute}/>
-          : activePage === 'skill-gaps' ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>
-          : activePage === 'forecasts' ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/>
-          : activePage === 'reports' ? <ReportsPage />
-          : activePage === 'demand' ? <DemandInsightsPage dataAdapter={undefined} embedded onNavigate={(path: string, label?: string) => {
-              const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
-              if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
-            }}/>
-          : activePage === 'emerging-skills' ? <EmergingSkillsPage dataAdapter={emergingSkillsAdapter} />
-          : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} initialScope={undefined} onNavigate={(path: string) => {
-              const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
-              if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
-            }}/>
+          : activePage === 'skill-gaps' ? (!demoMode && !runtimeEnv?.VITE_SHRAMIK_API_BASE_URL?.trim()
+              ? <LiveModuleNotice title="Skill Gaps" explanation="The live workspace does not have a validated skill-gap computation endpoint configured. Skill-gap outputs require compatible demand and supply observations with comparable units and periods." requiredSetting="VITE_SHRAMIK_API_BASE_URL" neededOutput="Expose the documented dashboard/skill-gap contract from a deployed service, backed by validated inputs and an auditable calculation run."/>
+              : <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>)
+          : activePage === 'forecasts' ? (!demoMode && !runtimeEnv?.VITE_SHRAMIK_API_BASE_URL?.trim()
+              ? <LiveModuleNotice title="Forecasts & Early Warnings" explanation="The published database has source observations but no validated forecast result rows. This route will not substitute mock projections for a model output." requiredSetting="VITE_SHRAMIK_API_BASE_URL" neededOutput="Connect a forecast service that returns forecast values, uncertainty, data eligibility and provenance for each output."/>
+              : <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/>)
+          : activePage === 'reports' ? (!demoMode && !runtimeEnv?.VITE_SHRAMIK_API_BASE_URL?.trim()
+              ? <LiveModuleNotice title="Reports" explanation="Reports need a connected data/export endpoint. This page is held in live-data mode until the report service can return source references and period/coverage metadata." requiredSetting="VITE_SHRAMIK_API_BASE_URL" neededOutput="Expose the documented report API and generate exports only from approved, source-backed or explicitly derived results."/>
+              : <ReportsPage />)
+          : activePage === 'demand' ? (!demoMode && !runtimeEnv?.VITE_DEMAND_API_BASE_URL?.trim()
+              ? <LiveModuleNotice title="Demand Insights" explanation="The live SHRAMIK database currently has no validated demand-observation rows. Published registration counts are not job demand, so they are deliberately not repackaged as demand estimates." requiredSetting="VITE_DEMAND_API_BASE_URL" neededOutput="Connect a service that provides validated posting/industry demand observations, taxonomy mappings, filter options and consistent snapshot metadata."/>
+              : <DemandInsightsPage dataAdapter={undefined} embedded onNavigate={(path: string, label?: string) => {
+                  const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
+                  if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
+                }}/>)
+          : activePage === 'emerging-skills' ? (!demoMode && !runtimeEnv?.VITE_EMERGING_SKILLS_API_BASE_URL?.trim()
+              ? <LiveModuleNotice title="Emerging Skills" explanation="The database has no validated emerging-skill signal rows yet. The interface remains available without inventing growth rates or unsupported skill rankings." requiredSetting="VITE_EMERGING_SKILLS_API_BASE_URL" neededOutput="Connect a service that returns skill signals, growth windows, history coverage, provenance and confidence metadata."/>
+              : <EmergingSkillsPage dataAdapter={emergingSkillsAdapter} />)
+          : activePage === 'scenario-simulator' ? (!demoMode && !runtimeEnv?.VITE_SCENARIO_SIMULATOR_API_BASE_URL?.trim()
+              ? <LiveModuleNotice title="Scenario Simulator" explanation="A scenario result needs baseline forecasts, training-capacity assumptions, a time dimension and explicit uncertainty. No production simulation endpoint is configured." requiredSetting="VITE_SCENARIO_SIMULATOR_API_BASE_URL" neededOutput="Deploy a simulator API with validated baseline, capacity, lag and intervention assumptions; return a baseline comparison and uncertainty."/>
+              : <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} initialScope={undefined} onNavigate={(path: string) => {
+                  const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
+                  if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
+                }}/>)
           : activePage === 'data-sources' ? <DataSourcesPage adapter={dataSourcesAdapter}/>
-          : activePage === 'supply' ? <SupplyInsightsPage adapter={supplyAdapter} />
-          : activePage === 'data-quality' ? <DataQualityPage adapter={dataQualityAdapter} />
-          : activePage === 'administration' ? <AdministrationPage adapter={administrationAdapter} />
+          : activePage === 'supply' ? (!demoMode && !runtimeEnv?.VITE_SUPPLY_API_BASE_URL?.trim()
+              ? <LiveModuleNotice title="Supply Insights" explanation="Provisional training seats, apprenticeship engagements and cumulative registrations are useful supply-context indicators, but they are not a validated count of available workers. No live supply endpoint is configured." requiredSetting="VITE_SUPPLY_API_BASE_URL" neededOutput="Connect a supply service that defines worker stock/flow, period and unit consistently, and identifies source-backed, derived and synthetic observations separately."/>
+              : <SupplyInsightsPage adapter={supplyAdapter} />)
+          : activePage === 'data-quality' ? (!demoMode && !runtimeEnv?.VITE_DATA_QUALITY_API_BASE_URL?.trim()
+              ? <LiveModuleNotice title="Data Quality" explanation="A trustworthy quality dashboard needs actual validation results, validation-run history and a rules catalogue. The public source registry does not expose these operational records." requiredSetting="VITE_DATA_QUALITY_API_BASE_URL" neededOutput="Connect an authorized quality API that returns real validation-run IDs, rule outcomes and source evidence."/>
+              : <DataQualityPage adapter={dataQualityAdapter} />)
+          : activePage === 'administration' ? (!demoMode && !runtimeEnv?.VITE_ADMINISTRATION_API_BASE_URL?.trim()
+              ? <LiveModuleNotice title="Administration" eyebrow="SHRAMIK / GOVERNANCE & ACCESS" explanation="Access-request submissions are stored as pending, but this public client cannot read the queue, approve requests or grant roles. A server-authorized review/provisioning API is not configured." requiredSetting="VITE_ADMINISTRATION_API_BASE_URL" neededOutput="Deploy an authenticated admin API that checks server-side administrator authorization, records review decisions, provisions accounts through Supabase Auth and writes audit events."/>
+              : <AdministrationPage adapter={administrationAdapter} />)
           : activePage === 'dashboard' ? <>
         <section className="hero-band" aria-labelledby="page-title">
           <div className="hero-copy"><div className="breadcrumb">DASHBOARD <span>/</span> {regionLabel.toUpperCase()}</div><h1 id="page-title">India’s Labour Market<br className="desktop-break"/> at a Glance</h1><div className="title-underline"/><p>{isLiveSupabase ? 'Published workforce indicators, official registration snapshots and training-capacity context, with source dates and limitations.' : 'Key insights on demand, supply, skill gaps and emerging opportunities across sectors and regions.'}</p></div>

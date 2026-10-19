@@ -1,0 +1,159 @@
+import { SUPABASE_URL, supabaseHeaders } from '../supabase/config';
+import type { DataSourcesDataAdapter } from './DataSourcesDataAdapter';
+import { DataSourcesAdapterError } from './DataSourcesDataAdapter';
+import type {
+  CoverageSummary, DataSourceRecord, FieldMappingRecord, IngestionRunRecord,
+  PagedResult, SourceListQuery, SourceType,
+} from './data-sources.types';
+
+type RegistryRow = {
+  id: string;
+  name: string;
+  source_type: 'DATASET' | 'REPORT' | 'WEB' | 'SURVEY' | 'OTHER';
+  publisher: string;
+  url: string | null;
+  publication_date: string | null;
+  accessed_at: string | null;
+  coverage_start: number | null;
+  coverage_end: number | null;
+};
+
+const TYPE_MAP: Record<RegistryRow['source_type'], SourceType> = {
+  DATASET: 'GOVERNMENT_DATASET',
+  REPORT: 'REFERENCE_DATA',
+  WEB: 'INDUSTRY_FEED',
+  SURVEY: 'GOVERNMENT_DATASET',
+  OTHER: 'OTHER',
+};
+const PAGE_LIMIT = 1000;
+
+function fail(message: string, code = 'SUPABASE_DATA_SOURCE_ERROR'): never {
+  throw new DataSourcesAdapterError({ code, message, retryable: code === 'NETWORK_ERROR' || code === 'SERVER_ERROR' });
+}
+function toSource(row: RegistryRow): DataSourceRecord {
+  const periods = row.coverage_start != null || row.coverage_end != null
+    ? [{
+        label: String(row.coverage_start ?? 'start not reported') + '–' + String(row.coverage_end ?? 'end not reported'),
+        start: row.coverage_start == null ? null : String(row.coverage_start) + '-01-01',
+        end: row.coverage_end == null ? null : String(row.coverage_end) + '-12-31',
+        grain: 'UNKNOWN' as const,
+      }]
+    : [];
+  return {
+    id: row.id,
+    name: row.name,
+    description: 'Registry type: ' + row.source_type + '. Retrieval health, geography crosswalks and validation history are not exposed through the public read view.',
+    type: TYPE_MAP[row.source_type] ?? 'OTHER',
+    agencyOwner: row.publisher || null,
+    purpose: 'Source registry entry · ' + row.source_type,
+    accessMethod: row.url ? 'Registered source URL' : 'Not reported',
+    geographicCoverage: [],
+    reportingPeriods: periods,
+    sourceReleaseDate: row.publication_date,
+    lastSuccessfulRetrievalAt: row.accessed_at,
+    lastValidatedAt: null,
+    // Do not imply that a registered URL is connected, fresh, validated or ingestible.
+    lifecycleStatus: row.url ? 'UNKNOWN' : 'NOT_CONFIGURED',
+    freshnessStatus: 'UNKNOWN',
+    provenance: 'SOURCE_BACKED',
+    tags: [row.source_type],
+    notes: row.url
+      ? 'Read-only source registry metadata. A registered URL is not proof of a successful retrieval or a validated dataset.'
+      : 'No source URL is registered. Retrieval and validation status are not available from this public registry view.',
+    capabilities: { view: true, edit: false, retryIngestion: false, createIngestionRun: false, delete: false },
+  };
+}
+function emptyPage<T>(page = 1, pageSize = 10, provenance: 'SOURCE_BACKED' | 'UNKNOWN' = 'UNKNOWN'): PagedResult<T> {
+  return { items: [], total: 0, page: Math.max(1, page), pageSize: Math.max(1, pageSize), provenance };
+}
+function hasText(value: string | null | undefined, needle: string): boolean {
+  return (value ?? '').toLocaleLowerCase().includes(needle);
+}
+
+export class SupabaseDataSourcesAdapter implements DataSourcesDataAdapter {
+  readonly capabilities = { createSource: false };
+  constructor(
+    private readonly baseUrl = SUPABASE_URL,
+    private readonly fetcher: typeof fetch = fetch,
+    private readonly headers = supabaseHeaders,
+  ) {}
+
+  private async listRegistryRows(): Promise<RegistryRow[]> {
+    const url = this.baseUrl.replace(/\/+$/, '') + '/rest/v1/data_sources?' + new URLSearchParams({
+      select: 'id,name,source_type,publisher,url,publication_date,accessed_at,coverage_start,coverage_end',
+      order: 'name.asc',
+      limit: String(PAGE_LIMIT),
+    });
+    let response: Response;
+    try {
+      response = await this.fetcher(url, { method: 'GET', headers: this.headers(null) });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      return fail('Cannot reach the live SHRAMIK source registry. Check network access and the Supabase project URL.', 'NETWORK_ERROR');
+    }
+    const payload = await response.json().catch(() => null) as unknown;
+    if (!response.ok) {
+      const body = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
+      return fail(typeof body.message === 'string' ? body.message : 'Source registry request failed (' + response.status + ').', response.status >= 500 ? 'SERVER_ERROR' : 'ACCESS_DENIED');
+    }
+    if (!Array.isArray(payload)) return fail('Supabase returned an invalid source registry response.', 'INVALID_RESPONSE');
+    return payload as RegistryRow[];
+  }
+
+  async listSources(query: SourceListQuery): Promise<PagedResult<DataSourceRecord>> {
+    const all = (await this.listRegistryRows()).map(toSource);
+    const needle = query.query?.trim().toLocaleLowerCase() ?? '';
+    const filtered = all.filter(source =>
+      (!needle || [source.name, source.agencyOwner, source.type, source.purpose, source.accessMethod, ...source.tags].some(value => hasText(value, needle))) &&
+      (!query.status || query.status === 'ALL' || source.lifecycleStatus === query.status) &&
+      (!query.type || query.type === 'ALL' || source.type === query.type) &&
+      (!query.agency || query.agency === 'ALL' || source.agencyOwner === query.agency)
+    );
+    const page = Math.max(1, Math.floor(query.page || 1));
+    const pageSize = Math.max(1, Math.min(100, Math.floor(query.pageSize || 8)));
+    const items = filtered.slice((page - 1) * pageSize, page * pageSize);
+    const agencies = [...new Set(all.map(source => source.agencyOwner).filter((value): value is string => Boolean(value)))].sort((x, y) => x.localeCompare(y));
+    return {
+      items, total: filtered.length, page, pageSize, provenance: 'SOURCE_BACKED',
+      summary: {
+        total: filtered.length,
+        active: filtered.filter(source => source.lifecycleStatus === 'ACTIVE').length,
+        needsAttention: filtered.filter(source => ['PENDING_VALIDATION', 'STALE', 'FAILED'].includes(source.lifecycleStatus)).length,
+        notConfigured: filtered.filter(source => source.lifecycleStatus === 'NOT_CONFIGURED').length,
+      },
+      facets: { agencies },
+    };
+  }
+
+  async getSource(sourceId: string): Promise<DataSourceRecord> {
+    const row = (await this.listRegistryRows()).find(source => source.id === sourceId);
+    if (!row) return fail('That source is not present in the public registry.', 'NOT_FOUND');
+    return toSource(row);
+  }
+
+  async listIngestionRuns(_sourceId: string, options: { page?: number; pageSize?: number } = {}): Promise<PagedResult<IngestionRunRecord>> {
+    // Retrieval/ingestion logs are deliberately not public. Never fabricate run history.
+    return emptyPage(options.page, options.pageSize, 'UNKNOWN');
+  }
+
+  async getCoverage(sourceId: string): Promise<CoverageSummary> {
+    const source = await this.getSource(sourceId);
+    return {
+      sourceId,
+      geography: [],
+      reportingPeriods: source.reportingPeriods,
+      state: 'UNKNOWN',
+      limitations: [
+        'Geographic coverage mappings are not exposed through the public source registry.',
+        'Registered release years are not proof of complete observation coverage.',
+        'Connect the authorized Data Sources API to view validation and retrieval history.',
+      ],
+      provenance: 'SOURCE_BACKED',
+    };
+  }
+
+  async getFieldMappings(_sourceId: string, _schemaVersion?: string): Promise<PagedResult<FieldMappingRecord>> {
+    // Field mapping tables have no browser read grant until an approved safe view is provided.
+    return emptyPage(1, 50, 'UNKNOWN');
+  }
+}
