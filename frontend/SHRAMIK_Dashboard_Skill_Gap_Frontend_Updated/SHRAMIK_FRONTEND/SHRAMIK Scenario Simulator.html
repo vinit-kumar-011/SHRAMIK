@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SHRAMIK — Scenario Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#F7F6F0;--surface:#FFFFFF;--surface-muted:#F0EFE8;
+  --ink:#171717;--ink-muted:#62625C;--border:#292929;--border-muted:#D8D6CD;
+  --yellow:#F2D34F;--yellow-hover:#E6C33C;--navy:#203A5B;
+  --orange:#EB791D;--teal:#20A89C;--success:#35745D;--warning:#B56732;--danger:#B42318;
+  --info:#315D8A;--sidebar-w:200px;--topbar-h:52px;
+  --sb-bg:#141C2E;--sb-text:#C8C4B8;--sb-active-bg:#F2D34F;--sb-active-text:#141C2E;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--canvas);
+  background-image:radial-gradient(circle,#C4C1B5 1px,transparent 1px);
+  background-size:18px 18px;color:var(--ink);min-height:100vh;overflow-x:hidden}
+
+/* TOPBAR */
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-h);background:var(--sb-bg);
+  display:flex;align-items:center;padding:0 14px;z-index:100;border-bottom:2px solid #0A0F1A;gap:14px}
+.tb-brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+.tb-logo{width:34px;height:34px;background:var(--yellow);border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:var(--sb-bg)}
+.tb-wordmark{display:flex;flex-direction:column}
+.tb-name{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;
+  letter-spacing:.08em;color:#fff;line-height:1}
+.tb-sub{font-size:9px;color:var(--sb-text);letter-spacing:.04em;line-height:1;margin-top:2px}
+.tb-search{flex:1;max-width:420px;position:relative}
+.tb-search input{width:100%;padding:7px 10px 7px 32px;border:1px solid #2A3447;border-radius:6px;
+  background:#1E2740;color:#C8C4B8;font-family:inherit;font-size:12px}
+.tb-search input::placeholder{color:#5A6480}
+.tb-search input:focus{outline:none;border-color:#3A4A6A}
+.tb-search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);
+  color:#5A6480;font-size:13px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.tb-icon{width:32px;height:32px;border-radius:5px;background:#1E2740;border:1px solid #2A3447;
+  display:flex;align-items:center;justify-content:center;color:var(--sb-text);
+  font-size:14px;cursor:pointer;position:relative}
+.tb-badge{position:absolute;top:4px;right:4px;width:7px;height:7px;
+  border-radius:50%;background:#EB791D;border:1.5px solid var(--sb-bg)}
+.tb-user{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;
+  border-radius:6px;border:1px solid #2A3447}
+.tb-avatar{width:28px;height:28px;border-radius:50%;background:var(--yellow);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:11px;color:var(--sb-bg);flex-shrink:0}
+.tb-user-info{display:flex;flex-direction:column}
+.tb-user-name{font-size:12px;font-weight:600;color:#fff;line-height:1}
+.tb-user-dept{font-size:9px;color:var(--sb-text);line-height:1;margin-top:2px}
+.tb-caret{color:var(--sb-text);font-size:10px;margin-left:4px}
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:var(--topbar-h);left:0;bottom:0;width:var(--sidebar-w);
+  background:var(--sb-bg);display:flex;flex-direction:column;z-index:50;overflow-y:auto}
+.nav-group{padding:8px 0}
+.nav-label{padding:8px 14px 4px;font-size:9px;font-weight:700;letter-spacing:.1em;
+  color:#3A4A6A;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 14px;
+  font-size:13px;font-weight:500;color:var(--sb-text);cursor:pointer;
+  border-left:3px solid transparent;transition:all .12s;text-decoration:none}
+.nav-item:hover{background:#1E2740;color:#fff;border-left-color:#2A3A5A}
+.nav-item.active{background:var(--sb-active-bg);color:var(--sb-active-text);
+  border-left-color:#B8A010;font-weight:700}
+.nav-item.active .nav-icon{color:var(--sb-active-text)}
+.nav-icon{width:16px;text-align:center;font-size:14px;flex-shrink:0;opacity:.8}
+.nav-divider{height:1px;background:#1E2A40;margin:6px 0}
+.sidebar-art{margin-top:auto;padding:16px 14px;border-top:1px solid #1E2A40}
+.art-block{background:#1A2438;border-radius:8px;padding:14px;text-align:center}
+.art-text{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;
+  color:var(--yellow);letter-spacing:.06em;line-height:1.4}
+.art-sub{font-size:9px;color:#5A6480;margin-top:4px}
+
+/* MAIN */
+.main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);min-height:calc(100vh - var(--topbar-h));padding:0}
+
+/* HERO */
+.hero{background:transparent;padding:22px 24px 20px;border-bottom:2px solid var(--border-muted);
+  display:grid;grid-template-columns:1fr 360px;align-items:stretch;gap:0;overflow:hidden}
+.hero-left{padding-right:24px}
+.breadcrumb{font-size:11px;color:var(--ink-muted);margin-bottom:10px}
+.breadcrumb a{color:var(--ink-muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--navy)}
+.breadcrumb span{margin:0 5px;color:var(--border-muted)}
+.page-heading{font-family:'Barlow Condensed',sans-serif;font-size:46px;font-weight:800;
+  letter-spacing:.05em;color:var(--ink);line-height:1;margin-bottom:8px}
+.page-sub{font-size:13px;color:var(--ink);max-width:540px;line-height:1.5;margin-bottom:4px;font-weight:500}
+.page-sub2{font-size:12px;color:var(--ink-muted);max-width:540px;line-height:1.5}
+.hero-right{position:relative;overflow:hidden;background:var(--sb-bg);border-radius:6px;min-height:140px}
+.hero-art{width:100%;height:100%;display:block}
+
+/* SCOPE STRIP */
+.scope-strip{background:var(--surface);padding:6px 24px;display:flex;align-items:center;
+  gap:0;border-bottom:2px solid var(--border-muted);overflow-x:auto}
+.scope-item{display:flex;flex-direction:column;padding:5px 18px;border-right:1px solid var(--border-muted);flex-shrink:0}
+.scope-item:first-child{padding-left:0}
+.scope-item:last-child{border-right:none}
+.scope-lbl{font-size:9px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;font-weight:700}
+.scope-val{font-size:12px;font-weight:600;color:var(--ink)}
+.scope-val.muted{color:var(--ink-muted);font-style:italic;font-weight:400}
+
+/* WORKSPACE */
+.workspace{padding:16px 16px 24px;display:grid;
+  grid-template-columns:210px 260px 1fr 260px;gap:12px;align-items:start}
+
+/* PANELS */
+.panel{background:var(--surface);border:2px solid var(--border);border-radius:8px;
+  overflow:hidden;box-shadow:4px 4px 0 var(--border)}
+.panel-head{padding:12px 14px 0}
+.panel-title{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;
+  letter-spacing:.05em;color:var(--ink);display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.p-step{width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.panel-body{padding:0 14px 14px}
+
+/* TOGGLE */
+.toggle-row{display:flex;border:2px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:10px}
+.tog-btn{flex:1;padding:6px 4px;font-size:11px;font-weight:600;font-family:inherit;
+  cursor:pointer;border:none;background:none;color:var(--ink-muted);transition:background .12s}
+.tog-btn.active{background:var(--yellow);color:var(--ink)}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:8px}
+.search-inp{width:100%;padding:7px 28px 7px 28px;border:2px solid var(--border-muted);
+  border-radius:6px;font-family:inherit;font-size:12px;background:var(--surface-muted)}
+.search-inp:focus{outline:none;border-color:var(--navy);background:var(--surface)}
+.search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);
+  color:var(--ink-muted);font-size:12px}
+.search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--ink-muted);font-size:14px;display:none}
+
+/* ENTITY LIST */
+.entity-list{max-height:200px;overflow-y:auto}
+.entity-item{padding:8px 8px;font-size:12px;cursor:pointer;border-radius:4px;
+  border-left:3px solid transparent;margin-bottom:1px;color:var(--ink-muted);display:flex;align-items:center;gap:8px}
+.entity-item:hover{background:var(--surface-muted);color:var(--ink)}
+.entity-item.selected{background:#EFF5FB;color:var(--navy);border-left-color:var(--navy);font-weight:600}
+.entity-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:11px;flex-shrink:0;font-weight:700}
+.entity-info{flex:1}
+.entity-name{font-size:12px;font-weight:500;color:inherit}
+.entity-meta{font-size:10px;color:var(--ink-muted)}
+.entity-arrow{font-size:10px;color:var(--border-muted)}
+.selected .entity-arrow{color:var(--navy)}
+
+/* FORM */
+.form-group{margin-bottom:12px}
+.form-label{display:block;font-size:10px;font-weight:700;color:var(--ink-muted);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.form-inp{width:100%;padding:7px 10px;border:2px solid var(--border-muted);border-radius:6px;
+  font-family:inherit;font-size:13px;color:var(--ink);background:var(--surface)}
+.form-inp:focus{outline:none;border-color:var(--navy)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2362625C'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center}
+
+.slider-row{display:flex;align-items:center;gap:8px;margin-top:4px}
+.slider-track{flex:1}
+input[type=range]{width:100%;accent-color:var(--navy);height:4px}
+.slider-num{width:62px;padding:5px 8px;border:2px solid var(--border-muted);border-radius:5px;
+  font-size:12px;font-family:inherit;text-align:right;font-weight:600}
+.slider-num:focus{outline:none;border-color:var(--navy)}
+.slider-minmax{display:flex;justify-content:space-between;font-size:9px;
+  color:var(--ink-muted);margin-top:2px}
+
+/* ADVANCED */
+.adv-toggle{font-size:12px;color:var(--navy);cursor:pointer;background:none;border:none;
+  padding:8px 0 4px;font-weight:500;font-family:inherit;display:flex;align-items:center;gap:5px}
+.adv-body{display:none;padding:10px;background:var(--surface-muted);border-radius:6px;
+  border:1px solid var(--border-muted);margin-bottom:8px;font-size:12px;color:var(--ink-muted)}
+
+/* ACTIONS */
+.btn{padding:10px 18px;border-radius:6px;font-size:13px;font-weight:700;
+  cursor:pointer;border:2px solid var(--border);font-family:inherit;transition:all .12s}
+.btn-run{width:100%;background:var(--yellow);color:var(--ink);font-size:14px;
+  box-shadow:3px 3px 0 var(--border);letter-spacing:.03em}
+.btn-run:hover:not(:disabled){background:var(--yellow-hover);box-shadow:2px 2px 0 var(--border);transform:translate(1px,1px)}
+.btn-run:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:none;color:var(--ink-muted);border-color:var(--border-muted);
+  padding:8px 14px;font-size:12px}
+.btn-ghost:hover{background:var(--surface-muted);color:var(--ink)}
+.action-row{display:flex;gap:8px;margin-top:8px}
+
+/* DEMO BANNER */
+.demo-banner{background:#FFF5E0;border:1.5px solid var(--orange);border-radius:5px;
+  padding:6px 10px;font-size:10px;color:var(--warning);font-weight:700;
+  margin-bottom:10px;display:flex;align-items:center;gap:6px;letter-spacing:.03em}
+
+/* STATUS BANNERS */
+.status-banner{padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600;
+  display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.s-running{background:#EFF5FB;color:var(--navy);border:1.5px solid var(--navy)}
+.s-success{background:#EEF8F3;color:var(--success);border:1.5px solid var(--success)}
+.s-failed{background:#FFF0EE;color:var(--danger);border:1.5px solid var(--danger)}
+.s-stale{background:#FFF8E6;color:var(--warning);border:1.5px solid var(--orange)}
+.s-warn{background:#FFF5E0;color:var(--warning);border:1.5px solid var(--orange)}
+
+/* SPINNER */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;width:14px;height:14px;border-radius:50%;
+  border:2px solid currentColor;border-top-color:transparent;animation:spin .7s linear infinite}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.kpi-card{background:var(--surface-muted);border:2px solid var(--border-muted);
+  border-radius:6px;padding:10px 12px}
+.kpi-label{font-size:9px;color:var(--ink-muted);text-transform:uppercase;
+  letter-spacing:.07em;margin-bottom:2px;font-weight:600}
+.kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;
+  color:var(--ink);line-height:1;margin-bottom:2px}
+.kpi-compare{font-size:10px;color:var(--ink-muted);margin-top:1px}
+.kpi-up{color:var(--success)}
+.kpi-dn{color:var(--warning)}
+.kpi-neu{color:var(--info)}
+
+/* CHART */
+.chart-wrap{background:var(--surface);border:1.5px solid var(--border-muted);border-radius:6px;
+  padding:12px 12px 8px}
+.chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.chart-title{font-size:12px;font-weight:700;color:var(--ink)}
+.chart-note{font-size:10px;color:var(--ink-muted)}
+.chart-legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-muted)}
+.leg-line{width:20px;height:2px}
+.leg-dash{border-top:2px dashed}
+.leg-solid{border-top:2.5px solid}
+.chart-svg-wrap{width:100%;overflow:hidden}
+
+/* RESULTS SECTION */
+.results-section{background:var(--surface-muted);border-top:2px solid var(--border);
+  margin-top:0;display:none}
+.results-header{background:var(--surface);padding:18px 24px;border-bottom:2px solid var(--border-muted)}
+.results-heading{font-family:'Barlow Condensed',sans-serif;font-size:32px;
+  font-weight:800;letter-spacing:.05em;color:var(--ink);margin-bottom:2px}
+.results-sub{font-size:12px;color:var(--ink-muted)}
+.result-tabs{display:flex;border-bottom:2px solid var(--border-muted);
+  background:var(--surface);padding:0 24px;overflow-x:auto}
+.r-tab{padding:11px 16px;font-size:12px;font-weight:600;font-family:inherit;
+  color:var(--ink-muted);cursor:pointer;border:none;background:none;
+  border-bottom:3px solid transparent;white-space:nowrap;transition:color .12s}
+.r-tab:hover{color:var(--ink)}
+.r-tab.active{color:var(--navy);border-bottom-color:var(--navy)}
+.r-tab:disabled{opacity:.38;cursor:not-allowed}
+.result-body{padding:20px 24px}
+
+/* KPIS IN RESULTS */
+.res-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.res-kpi{background:var(--surface);border:2px solid var(--border-muted);border-radius:8px;
+  padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.res-kpi-label{font-size:10px;font-weight:700;color:var(--ink-muted);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.res-kpi-year{font-size:9px;color:var(--border-muted);float:right}
+.res-kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:800;
+  color:var(--ink);line-height:1;display:flex;align-items:baseline;gap:8px}
+.res-kpi-delta{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600}
+.res-kpi-compare{font-size:11px;color:var(--ink-muted);margin-top:4px}
+
+/* FULL CHART WRAP */
+.full-chart{background:var(--surface);border:2px solid var(--border-muted);
+  border-radius:8px;padding:16px;margin-bottom:18px}
+.full-chart-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px}
+
+/* INSIGHTS */
+.insights-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.insight-card{background:var(--surface);border:2px solid var(--border-muted);border-radius:8px;padding:14px}
+.insight-num{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;
+  color:var(--border-muted);margin-bottom:6px}
+.insight-text{font-size:12px;color:var(--ink-muted);line-height:1.5}
+
+/* PROVENANCE PANEL */
+.prov-panel{background:var(--surface);border:1.5px dashed var(--orange);border-radius:6px;
+  padding:10px 14px;margin-bottom:16px;font-size:11px;color:var(--warning);
+  display:flex;align-items:flex-start;gap:8px}
+.prov-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+
+/* REGION TABLE */
+.section-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px}
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{text-align:left;padding:8px 12px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.07em;color:var(--ink-muted);
+  border-bottom:2px solid var(--border-muted);white-space:nowrap}
+.data-table td{padding:9px 12px;border-bottom:1px solid var(--border-muted);color:var(--ink)}
+.data-table tr:hover td{background:var(--surface-muted)}
+.q-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+
+/* MAP PLACEHOLDER */
+.map-placeholder{background:var(--surface);border:2px solid var(--border-muted);
+  border-radius:8px;min-height:280px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;margin-bottom:16px;padding:20px;text-align:center}
+.map-ph-icon{font-size:40px;margin-bottom:10px;opacity:.2}
+.map-ph-title{font-size:13px;font-weight:700;color:var(--ink-muted);margin-bottom:4px}
+.map-ph-sub{font-size:11px;color:var(--border-muted);max-width:280px;line-height:1.5}
+
+/* SECTOR CHART */
+.sector-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+
+/* SENSITIVITY */
+.sensitivity-note{background:var(--surface);border:2px dashed var(--border-muted);
+  border-radius:8px;padding:24px;text-align:center;color:var(--ink-muted);font-size:13px}
+.sensitivity-btn{margin-top:12px;display:inline-block;padding:8px 20px;
+  background:none;border:2px solid var(--border);border-radius:6px;
+  font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+
+/* REGIONAL PREVIEW IN WORKSPACE */
+.region-preview-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.region-rank-table{width:100%;font-size:11px;border-collapse:collapse}
+.region-rank-table th{padding:5px 8px;font-size:9px;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--ink-muted);border-bottom:1.5px solid var(--border-muted);font-weight:700}
+.region-rank-table td{padding:6px 8px;border-bottom:1px solid var(--border-muted)}
+.rank-num{color:var(--ink-muted);font-weight:600}
+.rank-dn{color:var(--success);font-weight:700}
+
+/* RESPONSIVE */
+@media(max-width:1280px){
+  .workspace{grid-template-columns:200px 240px 1fr;row-gap:12px}
+  .workspace>.panel-regional{grid-column:1/-1}
+}
+@media(max-width:900px){
+  :root{--sidebar-w:0px}
+  .sidebar{display:none}
+  .workspace{grid-template-columns:1fr 1fr}
+  .workspace>.panel-outcomes{grid-column:1/-1}
+  .workspace>.panel-regional{grid-column:1/-1}
+  .res-kpi-row{grid-template-columns:1fr 1fr}
+  .insights-row{grid-template-columns:1fr}
+  .sector-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .workspace{grid-template-columns:1fr}
+  .workspace>*{grid-column:1}
+  .main{padding-bottom:24px}
+}
+@media(prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <a class="tb-brand" href="#">
+    <div class="tb-logo">S</div>
+    <div class="tb-wordmark">
+      <div class="tb-name">SHRAMIK</div>
+      <div class="tb-sub">Labour Market Intelligence System</div>
+    </div>
+  </a>
+  <div class="tb-search">
+    <span class="tb-search-icon">⌕</span>
+    <input type="text" placeholder="Search occupations, skills, sectors or regions…" aria-label="Global search">
+  </div>
+  <div class="tb-right">
+    <div class="tb-icon" title="Notifications" role="button" aria-label="Notifications">
+      🔔<span class="tb-badge"></span>
+    </div>
+    <div class="tb-user" role="button">
+      <div class="tb-avatar">AS</div>
+      <div class="tb-user-info">
+        <div class="tb-user-name">A. Sharma</div>
+        <div class="tb-user-dept">State Planning Dept.</div>
+      </div>
+      <span class="tb-caret">▾</span>
+    </div>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" aria-label="Main navigation">
+  <div class="nav-group">
+    <a class="nav-item" href="#"><span class="nav-icon">⊞</span>Dashboard</a>
+    <a class="nav-item" href="#"><span class="nav-icon">📈</span>Demand Insights</a>
+    <a class="nav-item" href="#"><span class="nav-icon">📉</span>Supply Insights</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⚡</span>Skill Gap Analysis</a>
+    <a class="nav-item" href="#"><span class="nav-icon">🔮</span>Forecasts &amp; Warnings</a>
+    <a class="nav-item" href="#"><span class="nav-icon">✦</span>Emerging Skills</a>
+    <a class="nav-item active" href="#" aria-current="page"><span class="nav-icon">⟳</span>Scenario Simulator</a>
+    <a class="nav-item" href="#"><span class="nav-icon">📄</span>Reports</a>
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-group">
+    <div class="nav-label">Data &amp; Admin</div>
+    <a class="nav-item" href="#"><span class="nav-icon">🗄</span>Data Sources</a>
+    <a class="nav-item" href="#"><span class="nav-icon">✓</span>Data Quality</a>
+  </div>
+  <div class="sidebar-art">
+    <div class="art-block">
+      <div class="art-text">PEOPLE · SKILLS<br>OPPORTUNITIES<br><span style="color:#fff">A STRONGER INDIA</span></div>
+      <div class="art-sub">SHRAMIK v1.0 · SYNTHETIC_DEMO</div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-left">
+      <div class="breadcrumb">
+        <a href="#">Home</a><span>›</span>
+        <a href="#">Scenario Simulator</a>
+      </div>
+      <h1 class="page-heading">SCENARIO SIMULATOR</h1>
+      <p class="page-sub">Explore the impact of training and policy interventions on future skill demand and supply.</p>
+      <p class="page-sub2">Adjust training capacity, timing and other parameters to understand potential outcomes and support planning decisions.</p>
+    </div>
+    <div class="hero-right">
+      <!-- Worker / industrial illustration -->
+      <svg class="hero-art" viewBox="0 0 360 152" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Sky/bg -->
+        <rect width="360" height="152" fill="#141C2E"/>
+        <!-- Yellow sun circle -->
+        <circle cx="200" cy="76" r="62" fill="#F2D34F" opacity=".85"/>
+        <!-- Industrial silhouette BG -->
+        <!-- Large factory chimneys -->
+        <rect x="270" y="30" width="14" height="122" fill="#0A0F1A" opacity=".9"/>
+        <rect x="295" y="50" width="10" height="102" fill="#0A0F1A" opacity=".8"/>
+        <rect x="315" y="20" width="18" height="132" fill="#0A0F1A" opacity=".85"/>
+        <rect x="340" y="45" width="12" height="107" fill="#0A0F1A" opacity=".7"/>
+        <!-- Factory roof structures -->
+        <rect x="258" y="28" width="38" height="8" fill="#0A0F1A" opacity=".9"/>
+        <rect x="304" y="46" width="24" height="7" fill="#0A0F1A" opacity=".8"/>
+        <!-- Crane arm -->
+        <line x1="270" y1="30" x2="240" y2="8" stroke="#1E2A40" stroke-width="4"/>
+        <line x1="240" y1="8" x2="310" y2="8" stroke="#1E2A40" stroke-width="3"/>
+        <line x1="280" y1="8" x2="280" y2="35" stroke="#1E2A40" stroke-width="2" stroke-dasharray="4,3"/>
+        <line x1="300" y1="8" x2="300" y2="50" stroke="#1E2A40" stroke-width="2" stroke-dasharray="4,3"/>
+        <!-- Ground line -->
+        <rect x="0" y="138" width="360" height="14" fill="#0A0F1A"/>
+        <!-- Worker 1 (left, helmeted, facing right) -->
+        <!-- Body -->
+        <rect x="72" y="80" width="24" height="58" rx="4" fill="#0F1520"/>
+        <!-- Head -->
+        <circle cx="84" cy="72" r="13" fill="#1A2438"/>
+        <!-- Helmet -->
+        <path d="M71,70 Q84,55 97,70" fill="#203A5B" stroke="#2A4A7A" stroke-width="1"/>
+        <!-- Helmet brim -->
+        <rect x="68" y="69" width="32" height="4" rx="2" fill="#203A5B"/>
+        <!-- Arm holding clipboard -->
+        <rect x="96" y="88" width="22" height="6" rx="3" fill="#0F1520"/>
+        <rect x="114" y="82" width="14" height="20" rx="2" fill="#F0EFE8"/>
+        <!-- Worker 2 (center, taller, facing left) -->
+        <rect x="130" y="72" width="26" height="66" rx="4" fill="#141C2E"/>
+        <circle cx="143" cy="63" r="14" fill="#1E2A3E"/>
+        <path d="M129,61 Q143,46 157,61" fill="#315D8A" stroke="#3A6A9A" stroke-width="1"/>
+        <rect x="126" y="60" width="34" height="4" rx="2" fill="#315D8A"/>
+        <!-- Hi-vis vest stripe -->
+        <rect x="130" y="90" width="26" height="5" rx="1" fill="#F2D34F" opacity=".7"/>
+        <!-- Arm extended -->
+        <rect x="100" y="82" width="30" height="6" rx="3" fill="#141C2E"/>
+        <!-- Worker 3 (right of sun) -->
+        <rect x="228" y="85" width="22" height="53" rx="4" fill="#0F1520"/>
+        <circle cx="239" cy="77" r="12" fill="#1A2438"/>
+        <path d="M227,75 Q239,63 251,75" fill="#203A5B"/>
+        <rect x="224" y="74" width="30" height="4" rx="2" fill="#203A5B"/>
+        <!-- Hi-vis -->
+        <rect x="228" y="100" width="22" height="4" rx="1" fill="#EB791D" opacity=".8"/>
+        <!-- Taglines (right side) -->
+        <text x="298" y="62" font-family="'Barlow Condensed',sans-serif" font-size="13" font-weight="800" fill="#F2D34F" letter-spacing="2" text-anchor="middle">SIMULATE</text>
+        <text x="298" y="80" font-family="'Barlow Condensed',sans-serif" font-size="11" font-weight="700" fill="rgba(200,196,184,.5)" letter-spacing="2" text-anchor="middle">PLAN</text>
+        <text x="298" y="96" font-family="'Barlow Condensed',sans-serif" font-size="10" font-weight="700" fill="rgba(200,196,184,.5)" letter-spacing="1.5" text-anchor="middle">BRIDGE GAPS</text>
+        <text x="298" y="112" font-family="'Barlow Condensed',sans-serif" font-size="9" font-weight="700" fill="#F2D34F" letter-spacing="1" text-anchor="middle" opacity=".9">BUILD A STRONGER INDIA</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- SCOPE STRIP -->
+  <div class="scope-strip" aria-label="Current scenario scope">
+    <div class="scope-item">
+      <div class="scope-lbl">Skill / Occupation</div>
+      <div class="scope-val" id="ss-entity">— Not selected —</div>
+    </div>
+    <div class="scope-item">
+      <div class="scope-lbl">Geography</div>
+      <div class="scope-val" id="ss-geo">India (All States)</div>
+    </div>
+    <div class="scope-item">
+      <div class="scope-lbl">Baseline Reference</div>
+      <div class="scope-val" id="ss-baseline">SHRAMIK Baseline 2025–35</div>
+    </div>
+    <div class="scope-item">
+      <div class="scope-lbl">Evaluation Year</div>
+      <div class="scope-val" id="ss-evalyr">2030</div>
+    </div>
+    <div class="scope-item">
+      <div class="scope-lbl">Run Status</div>
+      <div class="scope-val muted" id="ss-status">Idle — configure and run</div>
+    </div>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div class="workspace" role="main">
+
+    <!-- PANEL 1: SELECT SKILL / OCCUPATION -->
+    <div class="panel panel-entity">
+      <div class="panel-head">
+        <div class="panel-title"><span class="p-step" aria-hidden="true">1</span>Select Skill / Occupation</div>
+      </div>
+      <div class="panel-body">
+        <div class="toggle-row" role="group" aria-label="Entity type">
+          <button class="tog-btn active" id="tog-skill" onclick="setEntityType('skill')" aria-pressed="true">Skill View</button>
+          <button class="tog-btn" id="tog-occ" onclick="setEntityType('occupation')" aria-pressed="false">Occupation View</button>
+        </div>
+        <div class="search-wrap">
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input class="search-inp" id="entity-search" type="text" placeholder="Search skills…"
+            aria-label="Search skills" oninput="handleSearch(this.value)">
+          <button class="search-clear" id="search-clear" onclick="clearSearch()" aria-label="Clear search">✕</button>
+        </div>
+        <div class="entity-list" id="entity-list" role="listbox" aria-label="Available skills and occupations"></div>
+      </div>
+    </div>
+
+    <!-- PANEL 2: CONFIGURE INTERVENTION -->
+    <div class="panel panel-configure">
+      <div class="panel-head">
+        <div class="panel-title"><span class="p-step" aria-hidden="true">2</span>Configure Intervention</div>
+      </div>
+      <div class="panel-body">
+        <div class="form-group">
+          <label class="form-label" for="seats-num">Additional Annual Training Seats
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:9px;color:var(--ink-muted)"> (increment, not total capacity)</span>
+          </label>
+          <div class="slider-row">
+            <div class="slider-track">
+              <input type="range" id="seats-slider" min="0" max="200000" step="1000" value="50000"
+                aria-label="Additional annual training seats" oninput="syncSeats('slider',this.value)">
+              <div class="slider-minmax"><span>0</span><span>100K</span><span>200K</span></div>
+            </div>
+            <input class="slider-num" id="seats-num" type="number" min="0" max="200000" step="1000" value="50000"
+              aria-label="Training seats value" oninput="syncSeats('num',this.value)" onchange="markStale()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="lag-num">Training Lag (Years)
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:9px;color:var(--ink-muted)"> (years to workforce entry)</span>
+          </label>
+          <div class="slider-row">
+            <div class="slider-track">
+              <input type="range" id="lag-slider" min="0" max="5" step="1" value="2"
+                aria-label="Training lag in years" oninput="syncLag('slider',this.value)">
+              <div class="slider-minmax"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+            </div>
+            <input class="slider-num" id="lag-num" type="number" min="0" max="5" step="1" value="2"
+              aria-label="Lag years value" oninput="syncLag('num',this.value)" onchange="markStale()">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="start-year">Intervention Start Year</label>
+          <select class="form-inp form-select" id="start-year" onchange="markStale();updateScopeStrip()">
+            <option>2026</option><option selected>2027</option><option>2028</option><option>2029</option><option>2030</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="eval-year">Evaluation / Result Year
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:9px;color:var(--ink-muted)"> (separate from start year)</span>
+          </label>
+          <select class="form-inp form-select" id="eval-year" onchange="markStale();updateScopeStrip()">
+            <option>2028</option><option>2029</option><option value="2030" selected>2030</option>
+            <option>2031</option><option>2032</option><option>2033</option><option>2034</option><option>2035</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="geo-scope">Geographic Scope</label>
+          <select class="form-inp form-select" id="geo-scope" onchange="markStale()">
+            <option value="INDIA">📍 India (All States)</option>
+            <option value="UP">Uttar Pradesh</option>
+            <option value="MH">Maharashtra</option>
+            <option value="KA">Karnataka</option>
+            <option value="TN">Tamil Nadu</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Baseline Reference</label>
+          <div style="font-size:12px;color:var(--ink-muted);background:var(--surface-muted);border:1px solid var(--border-muted);border-radius:5px;padding:7px 10px;line-height:1.4">
+            SHRAMIK Baseline 2025–2035<br>
+            <span style="font-size:10px;color:var(--border-muted);font-family:monospace">demo-baseline-2025-2035 · v1.0 · CAUTION</span>
+          </div>
+        </div>
+
+        <button class="adv-toggle" onclick="toggleAdvanced()" id="adv-btn" aria-expanded="false">
+          ✎ Advanced Options (Optional) <span id="adv-caret">▾</span>
+        </button>
+        <div class="adv-body" id="adv-body">
+          <p style="margin-bottom:6px">The following advanced parameters are not supported in the current model contract and are shown for illustration only:</p>
+          <p style="color:var(--border-muted)">• Completion rate assumption — <em>unsupported</em><br>
+          • Certification uptake rate — <em>unsupported</em><br>
+          • Workforce entry delay — <em>unsupported</em></p>
+          <p style="margin-top:6px;font-size:10px">Backend/model team must confirm parameters before enabling these controls.</p>
+        </div>
+
+        <div id="validation-msg" style="display:none" role="alert"
+          class="status-banner s-failed" style="margin-bottom:8px"></div>
+
+        <div class="action-row">
+          <button class="btn btn-run" id="run-btn" onclick="handleRun()" aria-label="Run simulation">
+            ▶ Run Simulation
+          </button>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-ghost" onclick="resetForm()">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 3: KEY OUTCOMES + CHART -->
+    <div class="panel panel-outcomes">
+      <div class="panel-head">
+        <div class="panel-title" id="outcomes-title">
+          <span class="p-step" aria-hidden="true">3</span>Key Outcomes
+          <span style="font-size:12px;font-weight:400;color:var(--ink-muted)" id="outcomes-year">(2030)</span>
+        </div>
+      </div>
+      <div class="panel-body" id="outcomes-body">
+
+        <!-- IDLE STATE -->
+        <div id="idle-state">
+          <div style="text-align:center;padding:24px 0;color:var(--ink-muted)">
+            <div style="font-size:36px;margin-bottom:10px;opacity:.2">⟳</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px">No simulation run yet</div>
+            <div style="font-size:12px">Select a skill or occupation, configure the intervention, and click Run Simulation.</div>
+          </div>
+        </div>
+
+        <!-- RUN STATE -->
+        <div id="run-state" style="display:none">
+          <div id="run-status-banner" class="status-banner s-running">
+            <span class="spin"></span>
+            <span id="run-status-text">Preparing simulation…</span>
+          </div>
+          <div style="padding:20px 0;text-align:center;color:var(--ink-muted);font-size:12px">
+            Results will appear here when the run completes.
+          </div>
+        </div>
+
+        <!-- RESULTS STATE -->
+        <div id="results-state" style="display:none">
+          <div id="stale-banner" class="status-banner s-stale" style="display:none">
+            ⚠ STALE — inputs changed; rerun to update
+          </div>
+          <div class="demo-banner">
+            <span>⚠</span> ILLUSTRATIVE DEMO DATA — not a verified SHRAMIK estimate
+          </div>
+          <div class="kpi-grid" aria-label="Key outcome metrics">
+            <div class="kpi-card" style="position:relative">
+              <div style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:#EFF5FB;display:flex;align-items:center;justify-content:center">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 10 L5 6 L8 8 L12 3" stroke="#203A5B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="kpi-label">Projected Demand</div>
+              <div class="kpi-val">1.42M</div>
+              <div class="kpi-compare"><span class="kpi-up">▲ 18%</span> vs. 2025</div>
+            </div>
+            <div class="kpi-card" style="position:relative">
+              <div style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:#EFF8F7;display:flex;align-items:center;justify-content:center">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="4" stroke="#20A89C" stroke-width="1.5"/><path d="M7 4v3l2 1" stroke="#20A89C" stroke-width="1.2" stroke-linecap="round"/></svg>
+              </div>
+              <div class="kpi-label">Projected Supply</div>
+              <div class="kpi-val">1.05M</div>
+              <div class="kpi-compare"><span class="kpi-up">▲ 32%</span> vs. 2025</div>
+            </div>
+            <div class="kpi-card" style="position:relative">
+              <div style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:#FFF5E0;display:flex;align-items:center;justify-content:center">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M7 3v8" stroke="#EB791D" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </div>
+              <div class="kpi-label">Skill Gap</div>
+              <div class="kpi-val">370K</div>
+              <div class="kpi-compare"><span class="kpi-dn">↓ 35%</span> vs. Baseline</div>
+            </div>
+            <div class="kpi-card" style="position:relative">
+              <div style="position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:#F0EDF8;display:flex;align-items:center;justify-content:center">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2a5 5 0 100 10A5 5 0 007 2z" stroke="#6B4FA0" stroke-width="1.5"/><path d="M7 5v2.5l1.5 1" stroke="#6B4FA0" stroke-width="1.2" stroke-linecap="round"/></svg>
+              </div>
+              <div class="kpi-label">Gap-to-Demand Ratio</div>
+              <div class="kpi-val">26%</div>
+              <div class="kpi-compare"><span class="kpi-dn">↓ 14 pp</span> vs. Baseline</div>
+            </div>
+          </div>
+
+          <!-- PROJECTION CHART -->
+          <div class="chart-wrap">
+            <div class="chart-head">
+              <div class="chart-title">Demand vs Supply Projection</div>
+              <div class="chart-note">Persons (thousands) · supply-only intervention · <span style="color:var(--orange);font-weight:600">SYNTHETIC_DEMO</span></div>
+            </div>
+            <div class="chart-legend" role="list">
+              <div class="leg-item" role="listitem"><div class="leg-line leg-dash" style="border-color:var(--navy)"></div>Baseline Demand</div>
+              <div class="leg-item" role="listitem"><div class="leg-line leg-solid" style="border-color:var(--navy)"></div>Scenario Demand</div>
+              <div class="leg-item" role="listitem"><div class="leg-line leg-dash" style="border-color:var(--orange)"></div>Baseline Supply</div>
+              <div class="leg-item" role="listitem"><div class="leg-line leg-solid" style="border-color:var(--teal)"></div>Scenario Supply</div>
+            </div>
+            <div class="chart-svg-wrap">
+              <svg viewBox="0 0 620 200" width="100%" aria-label="Line chart: Demand and supply projection 2025–2035" role="img">
+                <title>Demand vs Supply Projection</title>
+                <!-- Y gridlines -->
+                <line x1="52" y1="20" x2="600" y2="20" stroke="#E8E5DC" stroke-width="1"/>
+                <line x1="52" y1="77" x2="600" y2="77" stroke="#E8E5DC" stroke-width="1"/>
+                <line x1="52" y1="134" x2="600" y2="134" stroke="#E8E5DC" stroke-width="1"/>
+                <line x1="52" y1="161" x2="600" y2="161" stroke="#E8E5DC" stroke-width="1" stroke-dasharray="3,3"/>
+                <!-- Y axis labels -->
+                <text x="46" y="23" text-anchor="end" fill="#62625C" font-size="9">2.0M</text>
+                <text x="46" y="80" text-anchor="end" fill="#62625C" font-size="9">1.5M</text>
+                <text x="46" y="137" text-anchor="end" fill="#62625C" font-size="9">1.0M</text>
+                <text x="46" y="165" text-anchor="end" fill="#62625C" font-size="9">0.8M</text>
+                <!-- X labels -->
+                <text x="52"  y="195" text-anchor="middle" fill="#62625C" font-size="9">2025</text>
+                <text x="157" y="195" text-anchor="middle" fill="#62625C" font-size="9">2027</text>
+                <text x="262" y="195" text-anchor="middle" fill="#62625C" font-size="9">2029</text>
+                <text x="368" y="195" text-anchor="middle" fill="#62625C" font-size="9">2031</text>
+                <text x="473" y="195" text-anchor="middle" fill="#62625C" font-size="9">2033</text>
+                <text x="578" y="195" text-anchor="middle" fill="#62625C" font-size="9">2035</text>
+                <!-- Tick marks -->
+                <line x1="52"  y1="182" x2="52"  y2="186" stroke="#D8D6CD" stroke-width="1"/>
+                <line x1="157" y1="182" x2="157" y2="186" stroke="#D8D6CD" stroke-width="1"/>
+                <line x1="262" y1="182" x2="262" y2="186" stroke="#D8D6CD" stroke-width="1"/>
+                <line x1="368" y1="182" x2="368" y2="186" stroke="#D8D6CD" stroke-width="1"/>
+                <line x1="473" y1="182" x2="473" y2="186" stroke="#D8D6CD" stroke-width="1"/>
+                <line x1="578" y1="182" x2="578" y2="186" stroke="#D8D6CD" stroke-width="1"/>
+                <!-- Y axis line -->
+                <line x1="52" y1="18" x2="52" y2="182" stroke="#D8D6CD" stroke-width="1"/>
+                <!-- X axis line -->
+                <line x1="52" y1="182" x2="600" y2="182" stroke="#D8D6CD" stroke-width="1"/>
+
+                <!-- Baseline Demand (dashed navy) -->
+                <!-- Data: 2025=600K,2026=720,2027=850,2028=1000,2029=1150,2030=1420,2031=1500,2032=1600,2033=1720,2034=1850,2035=2000 (×1000) -->
+                <!-- y = 20 + (2000-v/1000)*162/2000 ... let me use range 0-2100K → height 162px -->
+                <!-- y(v) = 20 + (2100 - v)*162/2100 where v in thousands -->
+                <polyline points="
+                  52,67  104,58  157,49  210,38  262,29
+                " fill="none" stroke="none"/>
+                <!-- Actual: scale 0-2100K to y 182-20 (162px range) -->
+                <!-- y(v_K) = 182 - (v_K/2100)*162 -->
+                <!-- 600K: 182-46.3=135.7 → 136 -->
+                <!-- 720K: 182-55.5=126.5 → 126 -->
+                <!-- 850K: 182-65.6=116.4 → 116 -->
+                <!-- 1000K: 182-77.1=104.9 → 105 -->
+                <!-- 1150K: 182-88.7=93.3 → 93 -->
+                <!-- 1420K: 182-109.5=72.5 → 73 -->
+                <!-- 1500K: 182-115.7=66.3 → 66 -->
+                <!-- 1600K: 182-123.4=58.6 → 59 -->
+                <!-- 1720K: 182-132.6=49.4 → 49 -->
+                <!-- 1850K: 182-142.6=39.4 → 39 -->
+                <!-- 2000K: 182-154.3=27.7 → 28 -->
+                <!-- X positions: x = 52 + i*52.6 (i=0..10) -->
+                <!-- 0=52 1=105 2=157 3=210 4=262 5=315 6=368 7=421 8=473 9=526 10=578 -->
+                <polyline id="bd-line" points="52,136 105,126 157,116 210,105 262,93 315,73 368,66 421,59 473,49 526,39 578,28"
+                  fill="none" stroke="#203A5B" stroke-width="1.5" stroke-dasharray="6,4"/>
+                <!-- Scenario Demand: identical to baseline (supply-only) -->
+                <polyline id="sd-line" points="52,136 105,126 157,116 210,105 262,93 315,73 368,66 421,59 473,49 526,39 578,28"
+                  fill="none" stroke="#203A5B" stroke-width="2" opacity=".5"/>
+                <!-- Label overlap note -->
+                <text x="320" y="68" fill="#203A5B" font-size="8" opacity=".7">Demand unchanged (supply-only)</text>
+
+                <!-- Baseline Supply (dashed orange) -->
+                <!-- 550K: 182-42.4=139.6 → 140 -->
+                <!-- 640K: 182-49.3=132.7 → 133 -->
+                <!-- 730K: 182-56.3=125.7 → 126 -->
+                <!-- 820K: 182-63.2=118.8 → 119 -->
+                <!-- 900K: 182-69.4=112.6 → 113 -->
+                <!-- 950K: 182-73.3=108.7 → 109 -->
+                <!-- 1020K: 182-78.7=103.3 → 103 -->
+                <!-- 1090K: 182-84.1=97.9 → 98 -->
+                <!-- 1150K: 182-88.7=93.3 → 93 -->
+                <!-- 1220K: 182-94.1=87.9 → 88 -->
+                <!-- 1290K: 182-99.5=82.5 → 83 -->
+                <polyline points="52,140 105,133 157,126 210,119 262,113 315,109 368,103 421,98 473,93 526,88 578,83"
+                  fill="none" stroke="#EB791D" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+                <!-- Scenario Supply (solid teal) - diverges from 2029 -->
+                <!-- 550K:140 640K:133 730K:126 820K:119  same until 2028 (idx 0-3) -->
+                <!-- 2029: 930K: 182-71.7=110.3 → 110 -->
+                <!-- 2030: 1050K: 182-81.0=101.0 → 101 -->
+                <!-- 2031: 1140K: 182-87.9=94.1 → 94 -->
+                <!-- 2032: 1225K: 182-94.5=87.5 → 88 -->
+                <!-- 2033: 1300K: 182-100.3=81.7 → 82 -->
+                <!-- 2034: 1380K: 182-106.5=75.5 → 76 -->
+                <!-- 2035: 1460K: 182-112.6=69.4 → 69 -->
+                <polyline points="52,140 105,133 157,126 210,119 262,110 315,101 368,94 421,88 473,82 526,76 578,69"
+                  fill="none" stroke="#20A89C" stroke-width="2"/>
+
+                <!-- Gap fill -->
+                <polygon points="262,93 315,73 368,66 421,59 473,49 526,39 578,28 578,69 526,76 473,82 421,88 368,94 315,101 262,110"
+                  fill="#20A89C" fill-opacity=".07"/>
+
+                <!-- 2030 eval year marker -->
+                <line x1="315" y1="20" x2="315" y2="182" stroke="#F2D34F" stroke-width="1" stroke-dasharray="4,3" opacity=".8"/>
+                <text x="318" y="31" fill="#B8A010" font-size="8" font-weight="600">Eval. 2030</text>
+
+                <!-- Legend dots -->
+                <circle cx="315" cy="73" r="3" fill="#203A5B"/>
+                <circle cx="315" cy="101" r="3" fill="#20A89C"/>
+              </svg>
+            </div>
+            <p style="font-size:10px;color:var(--border-muted);margin-top:4px;text-align:right">
+              Scenario demand = baseline demand (supply-only intervention). Scenario supply diverges after lag period.
+            </p>
+          </div>
+
+          <!-- RUN METADATA -->
+          <div class="run-badge" id="run-meta">
+            Run: <span id="run-id">demo-run-data-analysis-2030</span> ·
+            Model: mock-interface-fixture v0.1-demo ·
+            <span style="color:var(--warning)">Quality: CAUTION</span>
+          </div>
+        </div><!-- /results-state -->
+
+        <!-- FAILED STATE -->
+        <div id="failed-state" style="display:none">
+          <div class="status-banner s-failed" role="alert">
+            ✕ Simulation failed — please check your inputs and try again.
+          </div>
+          <div style="font-size:12px;color:var(--ink-muted);padding:8px 0" id="error-detail"></div>
+        </div>
+
+      </div>
+    </div><!-- /outcomes panel -->
+
+    <!-- PANEL 4: REGIONAL IMPACT PREVIEW -->
+    <div class="panel panel-regional">
+      <div class="panel-head">
+        <div class="region-preview-head">
+          <div class="panel-title" style="margin-bottom:0">Regional Impact
+            <span style="font-size:11px;font-weight:400;color:var(--ink-muted)">(2030)</span>
+          </div>
+          <select class="form-inp form-select" style="width:auto;font-size:11px;padding:4px 24px 4px 8px;margin-left:8px">
+            <option>Gap Reduction (%)</option>
+            <option>Absolute Gap Δ</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel-body" id="regional-preview-body">
+        <div id="regional-idle" style="text-align:center;padding:20px 0;color:var(--ink-muted);font-size:12px">
+          <div style="font-size:28px;opacity:.15;margin-bottom:8px">🗺</div>
+          Run a simulation to see regional impact.
+        </div>
+        <div id="regional-results" style="display:none">
+          <!-- India SVG Choropleth (simplified — real GeoJSON needed for production) -->
+          <div style="background:var(--surface);border:1.5px solid var(--border-muted);border-radius:6px;padding:8px;margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:10px;font-weight:700;color:var(--ink-muted)">Gap Reduction (%) · 2030</span>
+              <div style="display:flex;gap:4px;align-items:center">
+                <div style="width:18px;height:18px;border:1.5px solid var(--border-muted);border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px">+</div>
+                <div style="width:18px;height:18px;border:1.5px solid var(--border-muted);border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px">−</div>
+              </div>
+            </div>
+            <svg viewBox="0 0 200 220" width="100%" style="display:block" aria-label="India state choropleth map — simplified">
+              <!-- J&K / Ladakh -->
+              <path d="M72,8 L80,5 L105,5 L118,10 L125,20 L120,30 L105,33 L88,33 L76,26 Z" fill="#C5E8E4" stroke="#fff" stroke-width="1.2"/>
+              <!-- HP / Uttarakhand -->
+              <path d="M88,33 L120,30 L135,35 L130,46 L108,48 L90,46 Z" fill="#D5EDE8" stroke="#fff" stroke-width="1.2"/>
+              <!-- Punjab / Haryana / Delhi -->
+              <path d="M72,33 L88,33 L90,46 L86,55 L72,54 L66,44 Z" fill="#E2F0EA" stroke="#fff" stroke-width="1.2"/>
+              <!-- Rajasthan -->
+              <path d="M42,46 L66,44 L72,54 L78,65 L80,90 L72,104 L52,108 L38,95 L36,70 Z" fill="#7DC8B8" stroke="#fff" stroke-width="1.2"/>
+              <!-- UP -->
+              <path d="M86,55 L108,48 L130,46 L148,52 L152,66 L148,78 L118,84 L98,80 L86,68 Z" fill="#5ABDB0" stroke="#fff" stroke-width="1.2"/>
+              <!-- Bihar / Jharkhand -->
+              <path d="M148,52 L165,52 L172,58 L174,78 L166,88 L152,86 L148,78 L152,66 Z" fill="#A8D8D0" stroke="#fff" stroke-width="1.2"/>
+              <!-- West Bengal -->
+              <path d="M172,58 L184,60 L186,75 L180,96 L170,100 L166,88 L174,78 Z" fill="#C0E0D8" stroke="#fff" stroke-width="1.2"/>
+              <!-- NE States (simplified block) -->
+              <path d="M184,60 L198,55 L200,80 L192,92 L184,88 L186,75 Z" fill="#D5E8E4" stroke="#fff" stroke-width="1.2"/>
+              <!-- Gujarat -->
+              <path d="M36,70 L38,95 L46,108 L42,118 L34,120 L28,108 L28,88 Z" fill="#6DC0B0" stroke="#fff" stroke-width="1.2"/>
+              <!-- MP / Chhattisgarh -->
+              <path d="M72,82 L118,84 L148,78 L158,90 L158,110 L144,122 L115,125 L88,122 L70,110 Z" fill="#45B5A6" stroke="#fff" stroke-width="1.2"/>
+              <!-- Maharashtra -->
+              <path d="M42,118 L68,114 L90,118 L115,120 L144,122 L150,135 L140,155 L112,160 L80,158 L56,145 L44,130 Z" fill="#25A898" stroke="#fff" stroke-width="1.2"/>
+              <!-- Odisha -->
+              <path d="M158,110 L180,108 L180,130 L168,142 L154,140 L144,128 L144,122 L158,110 Z" fill="#A8D0C8" stroke="#fff" stroke-width="1.2"/>
+              <!-- Telangana / AP -->
+              <path d="M144,128 L168,125 L175,140 L170,162 L155,172 L138,168 L128,158 L130,142 Z" fill="#40ACAC" stroke="#fff" stroke-width="1.2"/>
+              <!-- Karnataka -->
+              <path d="M78,158 L112,158 L130,162 L128,178 L114,188 L94,190 L75,182 L65,168 Z" fill="#20A89C" stroke="#fff" stroke-width="1.2"/>
+              <!-- Goa -->
+              <path d="M60,155 L68,152 L70,162 L62,164 Z" fill="#50B8AC" stroke="#fff" stroke-width="1.2"/>
+              <!-- Kerala -->
+              <path d="M68,168 L84,172 L88,188 L80,202 L68,200 L60,186 Z" fill="#35A89C" stroke="#fff" stroke-width="1.2"/>
+              <!-- Tamil Nadu -->
+              <path d="M110,188 L138,168 L148,178 L148,195 L128,208 L110,206 Z" fill="#2AAAA0" stroke="#fff" stroke-width="1.2"/>
+              <!-- Andaman (inset box) -->
+              <rect x="182" y="140" width="14" height="20" rx="3" fill="#B8DDD8" stroke="#fff" stroke-width="1"/>
+              <text x="189" y="155" font-size="5" fill="#62625C" text-anchor="middle">A&amp;N</text>
+              <!-- State labels (key states) -->
+              <text x="57" y="80" font-size="6" fill="#141C2E" text-anchor="middle" font-weight="600">RJ</text>
+              <text x="118" y="68" font-size="6" fill="#fff" text-anchor="middle" font-weight="600">UP</text>
+              <text x="112" y="104" font-size="6" fill="#fff" text-anchor="middle" font-weight="600">MP</text>
+              <text x="100" y="140" font-size="6" fill="#fff" text-anchor="middle" font-weight="600">MH</text>
+              <text x="104" y="174" font-size="6" fill="#fff" text-anchor="middle" font-weight="600">KA</text>
+              <text x="127" y="192" font-size="6" fill="#fff" text-anchor="middle" font-weight="600">TN</text>
+              <text x="72" y="189" font-size="6" fill="#fff" text-anchor="middle" font-weight="600">KL</text>
+              <text x="152" y="150" font-size="5.5" fill="#fff" text-anchor="middle" font-weight="600">AP/TS</text>
+              <text x="160" y="78" font-size="5" fill="#141C2E" text-anchor="middle" font-weight="600">JH</text>
+              <text x="177" y="80" font-size="5" fill="#141C2E" text-anchor="middle" font-weight="600">WB</text>
+              <!-- Outline of entire India approximate border -->
+              <path d="M80,5 L118,10 L125,20 L148,52 L172,58 L184,60 L198,55 L200,80 L192,92 L186,75 L180,96 L180,130 L168,142 L170,162 L148,195 L128,208 L110,206 L80,202 L60,186 L44,130 L28,108 L28,88 L36,70 L42,46 L66,44 L72,33 L80,5 Z"
+                fill="none" stroke="#8A9A9A" stroke-width="1.8" stroke-linejoin="round"/>
+            </svg>
+            <!-- Legend -->
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+              <div style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--ink-muted)"><span style="width:10px;height:10px;border-radius:2px;background:#20A89C;display:inline-block"></span>&gt;60%</div>
+              <div style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--ink-muted)"><span style="width:10px;height:10px;border-radius:2px;background:#5ABDB0;display:inline-block"></span>30–60%</div>
+              <div style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--ink-muted)"><span style="width:10px;height:10px;border-radius:2px;background:#A8D0C8;display:inline-block"></span>10–30%</div>
+              <div style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--ink-muted)"><span style="width:10px;height:10px;border-radius:2px;background:#D5EDE8;display:inline-block"></span>0–10%</div>
+            </div>
+          </div>
+          <!-- Table in right column of map grid -->
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Top States by Gap Reduction</div>
+            <table class="region-rank-table">
+              <thead>
+                <tr><th>#</th><th>State</th><th>Baseline Gap</th><th>Scenario Gap</th><th>Reduction</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="rank-num">1</td><td>Karnataka</td><td>120K</td><td>45K</td><td class="rank-dn">↓ 63%</td></tr>
+                <tr><td class="rank-num">2</td><td>Maharashtra</td><td>110K</td><td>50K</td><td class="rank-dn">↓ 55%</td></tr>
+                <tr><td class="rank-num">3</td><td>Tamil Nadu</td><td>95K</td><td>42K</td><td class="rank-dn">↓ 56%</td></tr>
+                <tr><td class="rank-num">4</td><td>Telangana</td><td>80K</td><td>38K</td><td class="rank-dn">↓ 53%</td></tr>
+                <tr><td class="rank-num">5</td><td>Gujarat</td><td>75K</td><td>40K</td><td class="rank-dn">↓ 47%</td></tr>
+              </tbody>
+            </table>
+            <div style="margin-top:10px;text-align:center">
+              <button class="btn btn-ghost" style="width:100%;font-size:11px" onclick="showTab('regional-impact')">View All States →</button>
+            </div>
+          </div>
+        </div><!-- /map+table grid -->
+      </div>
+    </div>
+
+  </div><!-- /workspace -->
+
+  <!-- RESULTS SECTION (visible after run) -->
+  <div class="results-section" id="results-section">
+    <div class="results-header">
+      <h2 class="results-heading">SIMULATION RESULTS</h2>
+      <p class="results-sub">Detailed analysis of the selected scenario and its impact across regions, sectors and related occupations.</p>
+    </div>
+
+    <!-- TABS -->
+    <div class="result-tabs" role="tablist">
+      <button class="r-tab active" id="tab-overview" role="tab" aria-selected="true" aria-controls="panel-overview" onclick="showTab('overview')">Overview</button>
+      <button class="r-tab" id="tab-regional-impact" role="tab" aria-selected="false" aria-controls="panel-regional-impact" onclick="showTab('regional-impact')">Regional Impact</button>
+      <button class="r-tab" id="tab-sector-breakdown" role="tab" aria-selected="false" aria-controls="panel-sector-breakdown" onclick="showTab('sector-breakdown')">Sector Breakdown</button>
+      <button class="r-tab" id="tab-occupation-impact" role="tab" aria-selected="false" aria-controls="panel-occupation-impact" onclick="showTab('occupation-impact')">Occupation Impact</button>
+      <button class="r-tab" id="tab-sensitivity-analysis" role="tab" aria-selected="false" aria-controls="panel-sensitivity-analysis" onclick="showTab('sensitivity-analysis')">Sensitivity Analysis</button>
+    </div>
+
+    <!-- TAB CONTENT -->
+    <div class="result-body">
+      <div class="prov-banner demo-banner" style="margin-bottom:16px">
+        <span>⚠</span>
+        ILLUSTRATIVE DEMO DATA · Run ID: <span id="result-run-id">demo-run-data-analysis-2030</span> · Model: mock-interface-fixture v0.1-demo · Quality: CAUTION · Provenance: SYNTHETIC_DEMO — not a verified SHRAMIK finding.
+      </div>
+
+      <!-- OVERVIEW -->
+      <div id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
+        <div class="res-kpi-row">
+          <div class="res-kpi">
+            <div class="res-kpi-label">Demand <span class="res-kpi-year">2030</span></div>
+            <div class="res-kpi-val">1.42M <span class="res-kpi-delta kpi-up" aria-label="18% increase">↑18%</span></div>
+            <div class="res-kpi-compare">vs. 2025 baseline</div>
+          </div>
+          <div class="res-kpi">
+            <div class="res-kpi-label">Supply <span class="res-kpi-year">2030</span></div>
+            <div class="res-kpi-val">1.05M <span class="res-kpi-delta kpi-up" aria-label="32% increase">↑32%</span></div>
+            <div class="res-kpi-compare">vs. 2025 baseline</div>
+          </div>
+          <div class="res-kpi">
+            <div class="res-kpi-label">Skill Gap <span class="res-kpi-year">2030</span></div>
+            <div class="res-kpi-val">370K <span class="res-kpi-delta kpi-dn" aria-label="35% reduction">↓35%</span></div>
+            <div class="res-kpi-compare">vs. Baseline (470K)</div>
+          </div>
+          <div class="res-kpi">
+            <div class="res-kpi-label">Gap Ratio <span class="res-kpi-year">2030</span></div>
+            <div class="res-kpi-val">26% <span class="res-kpi-delta kpi-dn" aria-label="14 pp reduction">↓14pp</span></div>
+            <div class="res-kpi-compare">vs. Baseline (33.1%)</div>
+          </div>
+        </div>
+
+        <div class="full-chart" aria-label="Demand, supply and skill gap chart">
+          <div class="full-chart-title">Demand, Supply and Skill Gap · 2025–2035</div>
+          <div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap">
+            <div class="leg-item"><div class="leg-line leg-solid" style="border-color:var(--navy)"></div>Scenario Demand</div>
+            <div class="leg-item"><div class="leg-line leg-solid" style="border-color:var(--orange)"></div>Scenario Supply</div>
+            <div class="leg-item"><span style="display:inline-block;width:12px;height:10px;background:#203A5B;opacity:.15;border-radius:1px;margin-right:2px"></span>Skill Gap</div>
+          </div>
+          <svg viewBox="0 0 760 230" width="100%" aria-hidden="true">
+            <!-- Grid -->
+            <line x1="60" y1="20" x2="740" y2="20" stroke="#E8E5DC" stroke-width="1"/>
+            <line x1="60" y1="77" x2="740" y2="77" stroke="#E8E5DC" stroke-width="1"/>
+            <line x1="60" y1="134" x2="740" y2="134" stroke="#E8E5DC" stroke-width="1"/>
+            <line x1="60" y1="182" x2="740" y2="182" stroke="#D8D6CD" stroke-width="1"/>
+            <!-- Y labels -->
+            <text x="54" y="23" text-anchor="end" fill="#62625C" font-size="10">2.0M</text>
+            <text x="54" y="80" text-anchor="end" fill="#62625C" font-size="10">1.5M</text>
+            <text x="54" y="137" text-anchor="end" fill="#62625C" font-size="10">1.0M</text>
+            <text x="54" y="185" text-anchor="end" fill="#62625C" font-size="10">0.5M</text>
+            <!-- X labels -->
+            <text x="60"  y="220" text-anchor="middle" fill="#62625C" font-size="10">2025</text>
+            <text x="128" y="220" text-anchor="middle" fill="#62625C" font-size="10">2026</text>
+            <text x="196" y="220" text-anchor="middle" fill="#62625C" font-size="10">2027</text>
+            <text x="264" y="220" text-anchor="middle" fill="#62625C" font-size="10">2028</text>
+            <text x="332" y="220" text-anchor="middle" fill="#62625C" font-size="10">2029</text>
+            <text x="400" y="220" text-anchor="middle" fill="#62625C" font-size="10">2030</text>
+            <text x="468" y="220" text-anchor="middle" fill="#62625C" font-size="10">2031</text>
+            <text x="536" y="220" text-anchor="middle" fill="#62625C" font-size="10">2032</text>
+            <text x="604" y="220" text-anchor="middle" fill="#62625C" font-size="10">2033</text>
+            <text x="672" y="220" text-anchor="middle" fill="#62625C" font-size="10">2034</text>
+            <text x="740" y="220" text-anchor="middle" fill="#62625C" font-size="10">2035</text>
+            <!-- Axis -->
+            <line x1="60" y1="18" x2="60" y2="182" stroke="#D8D6CD" stroke-width="1"/>
+            <line x1="60" y1="182" x2="740" y2="182" stroke="#D8D6CD" stroke-width="1"/>
+
+            <!-- y(v_K) = 182 - (v_K-500)*162/1600 ... scale 500K→2100K = 162px height -->
+            <!-- Actually let me use: range 0-2100K, y=182-(v/2100)*162 -->
+            <!-- Demand: 600,720,850,1000,1150,1420,1500,1600,1720,1850,2000 (×1000K) -->
+            <!-- Scenario Supply: 550,640,730,820,930,1050,1140,1225,1300,1380,1460 (×1000K) -->
+
+            <!-- Gap fill (polygon between demand and supply) -->
+            <polygon points="60,136 128,126 196,116 264,106 332,92 400,73 468,65 536,57 604,48 672,38 740,27
+                             740,69 672,76 604,81 536,87 468,93 400,101 332,110 264,118 196,126 128,133 60,140"
+              fill="#203A5B" fill-opacity=".1"/>
+
+            <!-- Scenario Demand (navy solid) -->
+            <polyline points="60,136 128,126 196,116 264,106 332,92 400,73 468,65 536,57 604,48 672,38 740,27"
+              fill="none" stroke="#203A5B" stroke-width="2.5"/>
+            <!-- Scenario Supply (orange solid) -->
+            <polyline points="60,140 128,133 196,126 264,118 332,110 400,101 468,93 536,87 604,81 672,76 740,69"
+              fill="none" stroke="#EB791D" stroke-width="2.5"/>
+
+            <!-- Eval year marker -->
+            <line x1="400" y1="18" x2="400" y2="182" stroke="#F2D34F" stroke-width="1.5" stroke-dasharray="5,4" opacity=".9"/>
+            <rect x="395" y="14" width="58" height="12" fill="#F2D34F" rx="3"/>
+            <text x="398" y="23" fill="#141C2E" font-size="8" font-weight="700">Eval. 2030</text>
+
+            <!-- Data point circles -->
+            <circle cx="400" cy="73" r="4" fill="#203A5B"/>
+            <circle cx="400" cy="101" r="4" fill="#EB791D"/>
+          </svg>
+          <p style="font-size:10px;color:var(--border-muted);margin-top:4px">
+            Shaded area = skill gap (demand − supply). Gap convention: positive = shortage.
+            Scenario demand identical to baseline (supply-only intervention, no demand-side assumption active).
+          </p>
+        </div>
+
+        <!-- Key Insights -->
+        <div class="section-title">Key Insights</div>
+        <div class="insights-row">
+          <div class="insight-card">
+            <div class="insight-num">01</div>
+            <div class="insight-text">The intervention reduces the skill gap by approximately 21% compared to the baseline scenario in 2030.</div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-num">02</div>
+            <div class="insight-text">Supply growth is driven by 50,000 additional annual training seats starting in 2027, taking effect after a 2-year training lag.</div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-num">03</div>
+            <div class="insight-text">The gap remains significant at 370K (26.1%) after 2030, indicating the need for sustained intervention and continued investment.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REGIONAL IMPACT -->
+      <div id="panel-regional-impact" role="tabpanel" aria-labelledby="tab-regional-impact" style="display:none">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div class="section-title" style="margin:0">Regional Impact Analysis · 2030</div>
+          <select class="form-inp form-select" style="width:auto;font-size:12px;padding:6px 28px 6px 10px">
+            <option>Gap Reduction (%)</option>
+            <option>Absolute Gap Change</option>
+            <option>Scenario Gap</option>
+          </select>
+        </div>
+        <!-- Full India Choropleth (larger for this tab) -->
+        <div style="background:var(--surface);border:2px solid var(--border-muted);border-radius:8px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start">
+          <div>
+            <svg viewBox="0 0 200 224" width="100%" aria-label="India state choropleth">
+              <path d="M72,8 L80,5 L105,5 L118,10 L125,20 L120,30 L105,33 L88,33 L76,26 Z" fill="#C5E8E4" stroke="#fff" stroke-width="1.2"/>
+              <path d="M88,33 L120,30 L135,35 L130,46 L108,48 L90,46 Z" fill="#D5EDE8" stroke="#fff" stroke-width="1.2"/>
+              <path d="M72,33 L88,33 L90,46 L86,55 L72,54 L66,44 Z" fill="#E2F0EA" stroke="#fff" stroke-width="1.2"/>
+              <path d="M42,46 L66,44 L72,54 L78,65 L80,90 L72,104 L52,108 L38,95 L36,70 Z" fill="#7DC8B8" stroke="#fff" stroke-width="1.2"/>
+              <path d="M86,55 L108,48 L130,46 L148,52 L152,66 L148,78 L118,84 L98,80 L86,68 Z" fill="#5ABDB0" stroke="#fff" stroke-width="1.2"/>
+              <path d="M148,52 L165,52 L172,58 L174,78 L166,88 L152,86 L148,78 L152,66 Z" fill="#A8D8D0" stroke="#fff" stroke-width="1.2"/>
+              <path d="M172,58 L184,60 L186,75 L180,96 L170,100 L166,88 L174,78 Z" fill="#C0E0D8" stroke="#fff" stroke-width="1.2"/>
+              <path d="M184,60 L198,55 L200,80 L192,92 L184,88 L186,75 Z" fill="#D5E8E4" stroke="#fff" stroke-width="1.2"/>
+              <path d="M36,70 L38,95 L46,108 L42,118 L34,120 L28,108 L28,88 Z" fill="#6DC0B0" stroke="#fff" stroke-width="1.2"/>
+              <path d="M72,82 L118,84 L148,78 L158,90 L158,110 L144,122 L115,125 L88,122 L70,110 Z" fill="#45B5A6" stroke="#fff" stroke-width="1.2"/>
+              <path d="M42,118 L68,114 L90,118 L115,120 L144,122 L150,135 L140,155 L112,160 L80,158 L56,145 L44,130 Z" fill="#25A898" stroke="#fff" stroke-width="1.2"/>
+              <path d="M158,110 L180,108 L180,130 L168,142 L154,140 L144,128 L144,122 L158,110 Z" fill="#A8D0C8" stroke="#fff" stroke-width="1.2"/>
+              <path d="M144,128 L168,125 L175,140 L170,162 L155,172 L138,168 L128,158 L130,142 Z" fill="#40ACAC" stroke="#fff" stroke-width="1.2"/>
+              <path d="M78,158 L112,158 L130,162 L128,178 L114,188 L94,190 L75,182 L65,168 Z" fill="#20A89C" stroke="#fff" stroke-width="1.2"/>
+              <path d="M60,155 L68,152 L70,162 L62,164 Z" fill="#50B8AC" stroke="#fff" stroke-width="1.2"/>
+              <path d="M68,168 L84,172 L88,188 L80,202 L68,200 L60,186 Z" fill="#35A89C" stroke="#fff" stroke-width="1.2"/>
+              <path d="M110,188 L138,168 L148,178 L148,195 L128,208 L110,206 Z" fill="#2AAAA0" stroke="#fff" stroke-width="1.2"/>
+              <text x="57" y="80" font-size="6.5" fill="#141C2E" text-anchor="middle" font-weight="700">RJ</text>
+              <text x="118" y="68" font-size="6.5" fill="#fff" text-anchor="middle" font-weight="700">UP</text>
+              <text x="112" y="104" font-size="6.5" fill="#fff" text-anchor="middle" font-weight="700">MP</text>
+              <text x="100" y="140" font-size="6.5" fill="#fff" text-anchor="middle" font-weight="700">MH</text>
+              <text x="104" y="175" font-size="6.5" fill="#fff" text-anchor="middle" font-weight="700">KA</text>
+              <text x="128" y="194" font-size="6.5" fill="#fff" text-anchor="middle" font-weight="700">TN</text>
+              <text x="71" y="190" font-size="6.5" fill="#fff" text-anchor="middle" font-weight="700">KL</text>
+              <text x="152" y="150" font-size="6" fill="#fff" text-anchor="middle" font-weight="700">AP/TS</text>
+              <path d="M80,5 L118,10 L125,20 L148,52 L172,58 L184,60 L198,55 L200,80 L192,92 L180,96 L180,130 L168,142 L170,162 L148,195 L128,208 L110,206 L80,202 L60,186 L44,130 L28,108 L28,88 L36,70 L42,46 L66,44 L72,33 L80,5 Z"
+                fill="none" stroke="#8A9A9A" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+            <!-- Legend -->
+            <div style="display:flex;flex-direction:column;gap:5px;margin-top:8px">
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-muted)"><span style="width:12px;height:12px;border-radius:2px;background:#20A89C;display:inline-block;flex-shrink:0"></span>&gt; 60% reduction</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-muted)"><span style="width:12px;height:12px;border-radius:2px;background:#5ABDB0;display:inline-block;flex-shrink:0"></span>30% – 60%</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-muted)"><span style="width:12px;height:12px;border-radius:2px;background:#A8D0C8;display:inline-block;flex-shrink:0"></span>10% – 30%</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-muted)"><span style="width:12px;height:12px;border-radius:2px;background:#D5EDE8;display:inline-block;flex-shrink:0"></span>0% – 10%</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-muted)"><span style="width:12px;height:12px;border-radius:2px;background:#E8E5DC;display:inline-block;flex-shrink:0"></span>No significant change</div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-muted)"><span style="width:12px;height:12px;border-radius:2px;background:#EB791D;display:inline-block;flex-shrink:0;opacity:.6"></span>Increase in gap</div>
+            </div>
+          </div>
+          <!-- Right side: rankings table -->
+          <div>
+            <div class="section-title">State Rankings — Gap Reduction (%) · Illustrative Demo</div>
+            <table class="data-table" aria-label="Regional impact ranking table">
+              <thead>
+                <tr><th>#</th><th>State</th><th>Baseline</th><th>Scenario</th><th>Δ Abs.</th><th>Reduction</th><th>Quality</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>Karnataka</td><td>120K</td><td>45K</td><td>−75K</td><td class="rank-dn">↓ 63%</td><td><span class="q-dot" style="background:var(--warning)"></span>CAUTION</td></tr>
+                <tr><td>2</td><td>Tamil Nadu</td><td>95K</td><td>42K</td><td>−53K</td><td class="rank-dn">↓ 56%</td><td><span class="q-dot" style="background:var(--warning)"></span>CAUTION</td></tr>
+                <tr><td>3</td><td>Maharashtra</td><td>110K</td><td>50K</td><td>−60K</td><td class="rank-dn">↓ 55%</td><td><span class="q-dot" style="background:var(--warning)"></span>CAUTION</td></tr>
+                <tr><td>4</td><td>Telangana</td><td>80K</td><td>38K</td><td>−42K</td><td class="rank-dn">↓ 53%</td><td><span class="q-dot" style="background:var(--warning)"></span>CAUTION</td></tr>
+                <tr><td>5</td><td>Gujarat</td><td>75K</td><td>40K</td><td>−35K</td><td class="rank-dn">↓ 47%</td><td><span class="q-dot" style="background:var(--warning)"></span>CAUTION</td></tr>
+                <tr><td>6</td><td>Rajasthan</td><td>55K</td><td>32K</td><td>−23K</td><td class="rank-dn">↓ 42%</td><td><span class="q-dot" style="background:var(--warning)"></span>CAUTION</td></tr>
+                <tr><td>7</td><td>Uttar Pradesh</td><td>48K</td><td>30K</td><td>−18K</td><td class="rank-dn">↓ 38%</td><td><span class="q-dot" style="background:var(--warning)"></span>CAUTION</td></tr>
+                <tr><td>8</td><td>Madhya Pradesh</td><td>35K</td><td>25K</td><td>−10K</td><td class="rank-dn">↓ 29%</td><td><span class="q-dot" style="background:var(--warning)"></span>CAUTION</td></tr>
+                <tr><td>—</td><td>Assam</td><td>—</td><td>—</td><td>—</td><td style="color:var(--border-muted);font-style:italic">No data</td><td><span class="q-dot" style="background:var(--border-muted)"></span>UNSUPPORTED</td></tr>
+              </tbody>
+            </table>
+            <p style="font-size:10px;color:var(--border-muted);margin-top:8px">SYNTHETIC_DEMO data. Missing regions show "No data", never zero.</p>
+          </div>
+        </div><!-- /two-column grid -->
+      </div>
+
+      <!-- SECTOR BREAKDOWN -->
+      <div id="panel-sector-breakdown" role="tabpanel" aria-labelledby="tab-sector-breakdown" style="display:none">
+        <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;letter-spacing:.05em;margin-bottom:4px">SECTOR IMPACT ANALYSIS</h2>
+        <p style="font-size:13px;color:var(--ink-muted);margin-bottom:16px">View how the intervention affects demand, supply and skill gaps across different sectors.</p>
+        <div class="sector-grid">
+          <div>
+            <div class="section-title">Skill Demand by Sector (2030)</div>
+            <svg viewBox="0 0 400 280" width="100%" aria-label="Horizontal bar chart: skill demand by sector" style="background:var(--surface);border-radius:6px;padding:8px">
+              <!-- IT & Software -->
+              <text x="8" y="30" font-size="10" fill="#62625C">IT &amp; Software</text>
+              <rect x="110" y="18" width="196" height="10" fill="#203A5B" rx="2"/>
+              <rect x="110" y="18" width="208" height="10" fill="#F2D34F" rx="2" opacity=".7"/>
+              <text x="322" y="27" font-size="9" fill="#62625C">490K / 520K</text>
+              <!-- BFSI -->
+              <text x="8" y="60" font-size="10" fill="#62625C">BFSI</text>
+              <rect x="110" y="48" width="84" height="10" fill="#203A5B" rx="2"/>
+              <rect x="110" y="48" width="90" height="10" fill="#F2D34F" rx="2" opacity=".7"/>
+              <text x="204" y="57" font-size="9" fill="#62625C">210K</text>
+              <!-- Manufacturing -->
+              <text x="8" y="90" font-size="10" fill="#62625C">Manufacturing</text>
+              <rect x="110" y="78" width="44" height="10" fill="#203A5B" rx="2"/>
+              <rect x="110" y="78" width="76" height="10" fill="#F2D34F" rx="2" opacity=".7"/>
+              <text x="190" y="87" font-size="9" fill="#62625C">110K / 190K</text>
+              <!-- Education -->
+              <text x="8" y="120" font-size="10" fill="#62625C">Education</text>
+              <rect x="110" y="108" width="44" height="10" fill="#203A5B" rx="2"/>
+              <rect x="110" y="108" width="48" height="10" fill="#F2D34F" rx="2" opacity=".7"/>
+              <text x="162" y="117" font-size="9" fill="#62625C">110K / 120K</text>
+              <!-- Healthcare -->
+              <text x="8" y="150" font-size="10" fill="#62625C">Healthcare</text>
+              <rect x="110" y="138" width="39" height="10" fill="#203A5B" rx="2"/>
+              <rect x="110" y="138" width="44" height="10" fill="#F2D34F" rx="2" opacity=".7"/>
+              <text x="158" y="147" font-size="9" fill="#62625C">98K</text>
+              <!-- Govt -->
+              <text x="8" y="180" font-size="10" fill="#62625C">Govt &amp; Public Admin</text>
+              <rect x="110" y="168" width="30" height="10" fill="#203A5B" rx="2"/>
+              <rect x="110" y="168" width="33" height="10" fill="#F2D34F" rx="2" opacity=".7"/>
+              <text x="147" y="177" font-size="9" fill="#62625C">74K</text>
+              <!-- Retail -->
+              <text x="8" y="210" font-size="10" fill="#62625C">Retail &amp; E-commerce</text>
+              <rect x="110" y="198" width="34" height="10" fill="#203A5B" rx="2"/>
+              <rect x="110" y="198" width="30" height="10" fill="#F2D34F" rx="2" opacity=".7"/>
+              <text x="144" y="207" font-size="9" fill="#62625C">86K / 73K</text>
+              <!-- Other -->
+              <text x="8" y="240" font-size="10" fill="#62625C">Other Services</text>
+              <rect x="110" y="228" width="28" height="10" fill="#203A5B" rx="2"/>
+              <rect x="110" y="228" width="30" height="10" fill="#F2D34F" rx="2" opacity=".7"/>
+              <text x="144" y="237" font-size="9" fill="#62625C">70K</text>
+              <!-- Legend -->
+              <rect x="110" y="256" width="12" height="8" fill="#203A5B" rx="1"/>
+              <text x="126" y="263" font-size="9" fill="#62625C">Baseline Demand</text>
+              <rect x="210" y="256" width="12" height="8" fill="#F2D34F" rx="1" opacity=".9"/>
+              <text x="226" y="263" font-size="9" fill="#62625C">Scenario Demand</text>
+            </svg>
+          </div>
+          <div>
+            <div class="section-title">Sector Distribution · 1.42M Total Demand (FY30)</div>
+            <svg viewBox="0 0 300 280" width="100%" aria-label="Donut chart: sector distribution">
+              <!-- Donut placeholder -->
+              <circle cx="150" cy="130" r="90" fill="none" stroke="#F0EFE8" stroke-width="44"/>
+              <!-- Segments (illustrative) -->
+              <circle cx="150" cy="130" r="90" fill="none" stroke="#203A5B" stroke-width="44" stroke-dasharray="210 354" stroke-dashoffset="0"/>
+              <circle cx="150" cy="130" r="90" fill="none" stroke="#EB791D" stroke-width="44" stroke-dasharray="101 354" stroke-dashoffset="-210"/>
+              <circle cx="150" cy="130" r="90" fill="none" stroke="#20A89C" stroke-width="44" stroke-dasharray="73 354" stroke-dashoffset="-311"/>
+              <circle cx="150" cy="130" r="90" fill="none" stroke="#F2D34F" stroke-width="44" stroke-dasharray="62 354" stroke-dashoffset="-27" opacity=".8"/>
+              <!-- Center text -->
+              <text x="150" y="123" text-anchor="middle" font-size="20" font-weight="700" fill="#171717" font-family="Barlow Condensed, sans-serif">1.42M</text>
+              <text x="150" y="138" text-anchor="middle" font-size="9" fill="#62625C">Total Demand</text>
+              <text x="150" y="149" text-anchor="middle" font-size="9" fill="#62625C">(FY30)</text>
+              <!-- Legend items -->
+              <circle cx="14" cy="230" r="5" fill="#203A5B"/>
+              <text x="22" y="234" font-size="9" fill="#62625C">IT &amp; Software 37%</text>
+              <circle cx="14" cy="244" r="5" fill="#EB791D"/>
+              <text x="22" y="248" font-size="9" fill="#62625C">BFSI 18%</text>
+              <circle cx="14" cy="258" r="5" fill="#20A89C"/>
+              <text x="22" y="262" font-size="9" fill="#62625C">Manufacturing 13%</text>
+              <circle cx="155" cy="230" r="5" fill="#F2D34F"/>
+              <text x="163" y="234" font-size="9" fill="#62625C">Education 11%</text>
+              <circle cx="155" cy="244" r="5" fill="#B42318" opacity=".6"/>
+              <text x="163" y="248" font-size="9" fill="#62625C">Healthcare 10%</text>
+              <circle cx="155" cy="258" r="5" fill="#8A9AB8"/>
+              <text x="163" y="262" font-size="9" fill="#62625C">Others 11%</text>
+            </svg>
+            <p style="font-size:10px;color:var(--ink-muted);margin-top:6px;background:var(--surface-muted);padding:8px;border-radius:5px;border-left:3px solid var(--navy)">
+              <strong>ⓘ</strong> IT &amp; Software and BFSI account for 55% of total demand for this skill in 2030 under the selected scenario.
+            </p>
+          </div>
+        </div>
+        <p style="font-size:10px;color:var(--border-muted)">SYNTHETIC_DEMO — sector breakdown values are illustrative fixtures for interface testing. Only aggregate dimensions supported by the backend should be enabled in production.</p>
+      </div>
+
+      <!-- OCCUPATION IMPACT -->
+      <div id="panel-occupation-impact" role="tabpanel" aria-labelledby="tab-occupation-impact" style="display:none">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
+          <div class="section-title" style="margin:0">Occupation Impact Analysis · 2030</div>
+          <select class="form-inp form-select" style="width:auto;font-size:12px;padding:6px 28px 6px 10px">
+            <option>All NCO Categories</option>
+            <option>NCO Group 2 – Professionals</option>
+            <option>NCO Group 4 – Clerical Support</option>
+          </select>
+        </div>
+        <table class="data-table" aria-label="Occupation impact table">
+          <thead>
+            <tr>
+              <th>NCO Code</th><th>Occupation</th><th>Baseline Demand</th><th>Scenario Supply</th>
+              <th>Skill Gap</th><th>Gap Ratio</th><th>Quality</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="font-family:monospace">NCO-2512</td><td>Software Developer</td><td>380K</td><td>310K</td><td class="rank-dn">70K (shortage)</td><td>18.4%</td><td><span class="q-dot" style="background:var(--warning)"></span>CAUTION</td></tr>
+            <tr><td style="font-family:monospace">NCO-2513</td><td>Data Analyst</td><td>210K</td><td>145K</td><td class="rank-dn">65K (shortage)</td><td>31.0%</td><td><span class="q-dot" style="background:var(--warning)"></span>CAUTION</td></tr>
+            <tr><td style="font-family:monospace">NCO-4112</td><td>Database Operator</td><td>95K</td><td>88K</td><td class="rank-dn">7K (shortage)</td><td>7.4%</td><td><span class="q-dot" style="background:var(--success)"></span>APPROVED</td></tr>
+            <tr><td style="font-family:monospace">NCO-2519</td><td>Systems Administrator</td><td>185K</td><td>210K</td><td style="color:var(--info)">−25K (surplus)</td><td>—</td><td><span class="q-dot" style="background:var(--warning)"></span>CAUTION</td></tr>
+            <tr><td style="font-family:monospace">NCO-2411</td><td>Financial Analyst</td><td>—</td><td>—</td><td colspan="2" style="color:var(--border-muted);font-style:italic">No comparable data — scope unsupported</td><td><span class="q-dot" style="background:var(--border-muted)"></span>UNSUPPORTED</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:10px;color:var(--border-muted);margin-top:8px">Negative gap = surplus. Gap-to-demand ratio shown only when demand is nonzero and measures are comparable. SYNTHETIC_DEMO data for interface testing only.</p>
+      </div>
+
+      <!-- SENSITIVITY ANALYSIS -->
+      <div id="panel-sensitivity-analysis" role="tabpanel" aria-labelledby="tab-sensitivity-analysis" style="display:none">
+        <div class="section-title">Sensitivity Analysis</div>
+        <div class="sensitivity-note">
+          <div style="font-size:32px;margin-bottom:10px;opacity:.2">⟳</div>
+          <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:6px">Sensitivity analysis requires a separate analytical run</div>
+          <p style="max-width:400px;margin:0 auto;line-height:1.6;color:var(--ink-muted)">
+            Sensitivity analysis explores how results change as one or more input parameters vary across a declared range.
+            This is computed by the backend/model service — not re-scaled from the current run.
+          </p>
+          <div style="margin-top:14px;padding:10px 14px;background:var(--surface);border-radius:6px;
+            text-align:left;max-width:400px;margin-left:auto;margin-right:auto;font-size:12px;color:var(--ink-muted)">
+            <div style="font-weight:700;color:var(--ink);margin-bottom:6px">What will be analysed:</div>
+            <div>• <strong>Varied:</strong> Additional annual training seats (10K → 200K in 10K steps)</div>
+            <div>• <strong>Fixed:</strong> Training lag 2 yrs, Start 2027, Geo: India, Eval: 2030</div>
+            <div>• <strong>Result metric:</strong> Skill gap at evaluation year</div>
+            <div style="margin-top:6px;color:var(--border-muted)">Model version: pending backend alignment</div>
+          </div>
+          <button class="sensitivity-btn" onclick="alert('POST /api/v1/simulations/demo-run-data-analysis-2030/sensitivity — endpoint pending backend implementation.')" style="border:2px solid var(--border)">
+            ▶ Run Sensitivity Analysis
+          </button>
+          <p style="font-size:10px;color:var(--border-muted);margin-top:10px">
+            Sensitivity analysis is distinct from uncertainty bands or a single run. Curves are not drawn from re-scaling the current run.
+          </p>
+        </div>
+      </div>
+
+    </div><!-- /result-body -->
+  </div><!-- /results-section -->
+
+</main>
+
+<script>
+// ─── MOCK DATA ───────────────────────────────────────────────────────────
+const MOCK_SKILLS = [
+  {id:'skill-001',name:'Data Analysis & Interpretation',icon:'📊',color:'#203A5B',bg:'#EFF5FB'},
+  {id:'skill-002',name:'Cloud Infrastructure Management',icon:'☁',color:'#20A89C',bg:'#EFF8F7'},
+  {id:'skill-003',name:'Machine Learning Operations',icon:'⚡',color:'#EB791D',bg:'#FFF5E0'},
+  {id:'skill-004',name:'Full-Stack Web Development',icon:'💻',color:'#315D8A',bg:'#EFF5FB'},
+  {id:'skill-005',name:'Supply Chain Analytics',icon:'🔗',color:'#35745D',bg:'#EEF8F3'},
+  {id:'skill-006',name:'Digital Financial Services',icon:'💰',color:'#B56732',bg:'#FFF5E0'},
+  {id:'skill-007',name:'Healthcare Information Systems',icon:'🏥',color:'#B42318',bg:'#FFF0EE'},
+];
+const MOCK_OCCUPATIONS = [
+  {id:'occ-001',name:'Data Analyst',icon:'📊',meta:'NCO-2513',color:'#203A5B',bg:'#EFF5FB'},
+  {id:'occ-002',name:'Systems Administrator',icon:'🖥',meta:'NCO-2519',color:'#20A89C',bg:'#EFF8F7'},
+  {id:'occ-003',name:'Software Developer',icon:'💻',meta:'NCO-2512',color:'#315D8A',bg:'#EFF5FB'},
+  {id:'occ-004',name:'Financial Analyst',icon:'💰',meta:'NCO-2411',color:'#B56732',bg:'#FFF5E0'},
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────────
+let state = {
+  entityType: 'skill',
+  selectedEntity: null,
+  searchQuery: '',
+  runState: 'idle', // idle|validating|submitting|running|succeeded|warning|failed
+  isStale: false,
+  runId: null,
+  runTimer: null,
+};
+
+// ─── ENTITY TYPE TOGGLE ───────────────────────────────────────────────────
+function setEntityType(type) {
+  state.entityType = type;
+  state.selectedEntity = null;
+  state.searchQuery = '';
+  document.getElementById('entity-search').value = '';
+  document.getElementById('entity-search').placeholder = type === 'skill' ? 'Search skills…' : 'Search occupations…';
+  document.getElementById('tog-skill').classList.toggle('active', type === 'skill');
+  document.getElementById('tog-occ').classList.toggle('active', type === 'occupation');
+  document.getElementById('tog-skill').setAttribute('aria-pressed', type === 'skill');
+  document.getElementById('tog-occ').setAttribute('aria-pressed', type === 'occupation');
+  renderEntityList('');
+  updateScopeStrip();
+  markStale();
+}
+
+// ─── ENTITY SEARCH ────────────────────────────────────────────────────────
+function handleSearch(q) {
+  state.searchQuery = q;
+  document.getElementById('search-clear').style.display = q ? 'block' : 'none';
+  renderEntityList(q);
+}
+function clearSearch() {
+  document.getElementById('entity-search').value = '';
+  handleSearch('');
+  document.getElementById('entity-search').focus();
+}
+
+function renderEntityList(q) {
+  const data = state.entityType === 'skill' ? MOCK_SKILLS : MOCK_OCCUPATIONS;
+  const filtered = data.filter(e => e.name.toLowerCase().includes(q.toLowerCase()));
+  const list = document.getElementById('entity-list');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="no-results" style="font-size:12px;text-align:center;padding:16px;color:var(--ink-muted)">No results found</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(e => `
+    <div class="entity-item${state.selectedEntity?.id === e.id ? ' selected' : ''}"
+      role="option" aria-selected="${state.selectedEntity?.id === e.id}"
+      tabindex="0" onclick="selectEntity('${e.id}')"
+      onkeydown="if(event.key==='Enter'||event.key===' ')selectEntity('${e.id}')">
+      <div class="entity-icon" style="background:${e.bg};color:${e.color}">${e.icon}</div>
+      <div class="entity-info">
+        <div class="entity-name">${e.name}</div>
+        ${e.meta ? `<div class="entity-meta" style="color:${e.color}60">${e.meta}</div>` : ''}
+      </div>
+      <span class="entity-arrow">›</span>
+    </div>`).join('');
+}
+
+function selectEntity(id) {
+  const data = state.entityType === 'skill' ? MOCK_SKILLS : MOCK_OCCUPATIONS;
+  state.selectedEntity = data.find(e => e.id === id);
+  renderEntityList(state.searchQuery);
+  updateScopeStrip();
+  markStale();
+}
+
+// ─── SLIDERS ──────────────────────────────────────────────────────────────
+function syncSeats(from, val) {
+  val = Math.max(0, Math.min(200000, parseInt(val) || 0));
+  document.getElementById('seats-slider').value = val;
+  document.getElementById('seats-num').value = val;
+  if(from === 'slider') markStale();
+}
+function syncLag(from, val) {
+  val = Math.max(0, Math.min(5, parseInt(val) || 0));
+  document.getElementById('lag-slider').value = val;
+  document.getElementById('lag-num').value = val;
+  if(from === 'slider') markStale();
+}
+
+// ─── ADVANCED ─────────────────────────────────────────────────────────────
+function toggleAdvanced() {
+  const body = document.getElementById('adv-body');
+  const btn = document.getElementById('adv-btn');
+  const caret = document.getElementById('adv-caret');
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  caret.textContent = open ? '▾' : '▴';
+  btn.setAttribute('aria-expanded', !open);
+}
+
+// ─── SCOPE STRIP ─────────────────────────────────────────────────────────
+function updateScopeStrip() {
+  document.getElementById('ss-entity').textContent =
+    state.selectedEntity ? state.selectedEntity.name : '— Not selected —';
+  document.getElementById('ss-evalyr').textContent =
+    document.getElementById('eval-year').value;
+}
+
+// ─── STALE STATE ─────────────────────────────────────────────────────────
+function markStale() {
+  if (state.runState === 'succeeded' || state.runState === 'warning') {
+    state.isStale = true;
+    document.getElementById('stale-banner').style.display = 'flex';
+    document.getElementById('ss-status').textContent = 'STALE — rerun to update';
+    document.getElementById('ss-status').style.color = 'var(--warning)';
+  }
+}
+
+// ─── VALIDATION ───────────────────────────────────────────────────────────
+function validate() {
+  if (!state.selectedEntity) return 'Please select a skill or occupation before running.';
+  const seats = parseInt(document.getElementById('seats-num').value) || 0;
+  if (seats < 0 || seats > 200000) return 'Additional training seats must be between 0 and 200,000.';
+  const start = parseInt(document.getElementById('start-year').value);
+  const eval_ = parseInt(document.getElementById('eval-year').value);
+  if (eval_ <= start) return 'Evaluation year must be later than the intervention start year.';
+  return null;
+}
+
+// ─── RUN SIMULATION ───────────────────────────────────────────────────────
+function handleRun() {
+  const err = validate();
+  const vmsg = document.getElementById('validation-msg');
+  if (err) {
+    vmsg.style.display = 'flex';
+    vmsg.textContent = '✕ ' + err;
+    return;
+  }
+  vmsg.style.display = 'none';
+  clearTimeout(state.runTimer);
+  state.runId = 'demo-run-' + Date.now().toString(36);
+  setState('submitting');
+  state.runTimer = setTimeout(() => {
+    setState('running');
+    state.runTimer = setTimeout(() => { setState('succeeded'); }, 1800);
+  }, 700);
+}
+
+function setState(s) {
+  state.runState = s;
+  state.isStale = false;
+  const btn = document.getElementById('run-btn');
+  const idle = document.getElementById('idle-state');
+  const runDiv = document.getElementById('run-state');
+  const resDiv = document.getElementById('results-state');
+  const failDiv = document.getElementById('failed-state');
+  const stale = document.getElementById('stale-banner');
+  const statusBanner = document.getElementById('run-status-banner');
+  const statusText = document.getElementById('run-status-text');
+  const resultsSection = document.getElementById('results-section');
+  const ssStatus = document.getElementById('ss-status');
+
+  // Hide all
+  [idle,runDiv,resDiv,failDiv].forEach(el => el.style.display = 'none');
+  stale.style.display = 'none';
+  ssStatus.style.color = '';
+
+  if (s === 'idle') {
+    idle.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '▶ Run Simulation';
+    resultsSection.style.display = 'none';
+    ssStatus.textContent = 'Idle — configure and run';
+  } else if (s === 'validating' || s === 'submitting') {
+    runDiv.style.display = 'block';
+    statusBanner.className = 'status-banner s-running';
+    statusText.innerHTML = '<span class="spin"></span> ' + (s === 'validating' ? 'Validating inputs…' : 'Submitting simulation…');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Running…';
+    resultsSection.style.display = 'none';
+    ssStatus.textContent = 'Submitting…';
+  } else if (s === 'running') {
+    runDiv.style.display = 'block';
+    statusBanner.className = 'status-banner s-running';
+    statusText.innerHTML = '<span class="spin"></span> Simulation running — QUEUED';
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Running…';
+    resultsSection.style.display = 'none';
+    ssStatus.textContent = 'Running…';
+    document.getElementById('ss-entity').textContent = state.selectedEntity?.name || '—';
+  } else if (s === 'succeeded' || s === 'warning') {
+    resDiv.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '▶ Run Simulation';
+    resultsSection.style.display = 'block';
+    document.getElementById('result-run-id').textContent = state.runId;
+    document.getElementById('run-id').textContent = state.runId;
+    ssStatus.textContent = '✓ Succeeded (SYNTHETIC_DEMO)';
+    ssStatus.style.color = 'var(--success)';
+    showTab('overview');
+    window.scrollTo({top: resultsSection.offsetTop - 60, behavior: 'smooth'});
+  } else if (s === 'failed') {
+    failDiv.style.display = 'block';
+    document.getElementById('error-detail').textContent =
+      'Simulation service returned an error. Your inputs have been preserved. Please retry or contact support.';
+    btn.disabled = false;
+    btn.innerHTML = '↺ Retry';
+    resultsSection.style.display = 'none';
+    ssStatus.textContent = 'Failed';
+    ssStatus.style.color = 'var(--danger)';
+  }
+
+  // Regional preview
+  document.getElementById('regional-idle').style.display = (s === 'succeeded' || s === 'warning') ? 'none' : 'block';
+  document.getElementById('regional-results').style.display = (s === 'succeeded' || s === 'warning') ? 'block' : 'none';
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────
+function showTab(tabId) {
+  const tabs = ['overview','regional-impact','sector-breakdown','occupation-impact','sensitivity-analysis'];
+  tabs.forEach(t => {
+    const tab = document.getElementById('tab-' + t);
+    const panel = document.getElementById('panel-' + t);
+    if (!tab || !panel) return;
+    const active = t === tabId;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', active);
+    panel.style.display = active ? 'block' : 'none';
+  });
+}
+
+// ─── RESET ────────────────────────────────────────────────────────────────
+function resetForm() {
+  clearTimeout(state.runTimer);
+  state = {entityType: state.entityType, selectedEntity: null,
+    searchQuery: '', runState: 'idle', isStale: false, runId: null, runTimer: null};
+  document.getElementById('seats-slider').value = 50000;
+  document.getElementById('seats-num').value = 50000;
+  document.getElementById('lag-slider').value = 2;
+  document.getElementById('lag-num').value = 2;
+  document.getElementById('start-year').value = '2027';
+  document.getElementById('eval-year').value = '2030';
+  document.getElementById('geo-scope').value = 'INDIA';
+  document.getElementById('entity-search').value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  document.getElementById('validation-msg').style.display = 'none';
+  renderEntityList('');
+  setState('idle');
+  updateScopeStrip();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+renderEntityList('');
+updateScopeStrip();
+</script>
+</body>
+</html>

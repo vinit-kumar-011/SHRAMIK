@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SHRAMIK · Skill Gap Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--canvas:#F7F6F0;--surface:#fff;--muted:#F0EFE8;--ink:#171717;--ink2:#62625C;--bd:#292929;--bd2:#D8D6CD;--yellow:#F2D34F;--yellow2:#E6C33C;--navy:#203A5B;--orange:#EB791D;--teal:#20A89C;--danger:#B42318;--info:#315D8A;--dot:#cfcdc2;--c-hs:#B42318;--c-ms:#EB791D;--c-b:#20A89C;--c-mp:#4A7DB0;--c-hp:#203A5B;--nodata:#C9C7BE;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--canvas:#161613;--surface:#222220;--muted:#2C2C29;--ink:#F2F1EA;--ink2:#B3B2A9;--bd:#8A8980;--bd2:#3D3D38;--navy:#8FB3E0;--info:#8FB3E0;--dot:#34342f;--c-hs:#F0715F;--c-ms:#F29A4E;--c-b:#3FC4B8;--c-mp:#79A8DB;--c-hp:#A9C4EA;--nodata:#55544E;--danger:#F0715F}}
+:root[data-theme="dark"]{color-scheme:dark;--canvas:#161613;--surface:#222220;--muted:#2C2C29;--ink:#F2F1EA;--ink2:#B3B2A9;--bd:#8A8980;--bd2:#3D3D38;--navy:#8FB3E0;--info:#8FB3E0;--dot:#34342f;--c-hs:#F0715F;--c-ms:#F29A4E;--c-b:#3FC4B8;--c-mp:#79A8DB;--c-hp:#A9C4EA;--nodata:#55544E;--danger:#F0715F}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas) radial-gradient(var(--dot) 1px,transparent 1px) 0 0/18px 18px;color:var(--ink);font:400 15px/1.5 "IBM Plex Sans",system-ui,sans-serif;font-variant-numeric:tabular-nums;overflow-x:hidden}
+h1,h2,h3{font-family:"Barlow Condensed","Arial Narrow",sans-serif;margin:0;line-height:1.05}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--info);outline-offset:2px}
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.side{background:var(--surface);border-right:1.5px solid var(--bd);padding:18px 12px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px;overflow:auto}
+.logo{font:700 30px "Barlow Condensed",sans-serif;letter-spacing:.04em;padding:4px 10px 14px}
+.logo i{background:var(--yellow);color:#171717;padding:0 6px;font-style:normal}
+.side a{display:flex;align-items:center;height:44px;padding:0 12px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:500;border:1.5px solid transparent}
+.side a[aria-disabled]{cursor:default;color:var(--ink2)}
+.side a[aria-current]{background:var(--yellow);color:#171717;border-color:var(--bd);font-weight:600}
+.side hr{border:0;border-top:1px solid var(--bd2);margin:8px 6px;width:calc(100% - 12px)}
+.note{margin-top:auto;font-size:12px;color:var(--ink2);padding:10px;border:1px dashed var(--bd2);border-radius:8px}
+.main{padding:20px 28px 48px;min-width:0;max-width:1500px;width:100%}
+.top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.menu{display:none;background:var(--surface);border:1.5px solid var(--bd);border-radius:8px;height:40px;padding:0 12px}
+.badge{display:inline-flex;gap:6px;align-items:center;border:1.5px solid var(--bd);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;background:var(--yellow);color:#171717}
+.badge.alt{background:var(--surface);color:var(--ink)}
+.hero{display:flex;justify-content:space-between;gap:16px;align-items:center;background:var(--surface);border:1.5px solid var(--bd);border-radius:12px;box-shadow:4px 4px 0 var(--bd);padding:20px 24px;margin-bottom:16px}
+.hero h1{font-size:clamp(2.4rem,5vw,4.1rem);font-weight:700;letter-spacing:.01em}
+.hero p{margin:8px 0 0;color:var(--ink2);max-width:62ch}
+.hero svg{flex:none;width:150px;height:90px}
+.card{background:var(--surface);border:1.5px solid var(--bd);border-radius:12px;padding:16px;min-width:0}
+.filters{display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) auto;gap:10px;align-items:end;margin-bottom:16px}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:600;color:var(--ink2)}
+select{height:40px;border:1.5px solid var(--bd);border-radius:8px;background:var(--surface);padding:0 8px;width:100%}
+.btns{display:flex;gap:8px}
+.btn{height:40px;padding:0 16px;border-radius:8px;border:1.5px solid var(--bd);background:var(--surface);font-weight:600;cursor:pointer}
+.btn.pri{background:var(--yellow);color:#171717;box-shadow:2px 2px 0 var(--bd)}
+.btn.pri:hover{background:var(--yellow2)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.kpi{text-align:left;cursor:pointer;box-shadow:3px 3px 0 var(--bd);font:inherit;color:inherit}
+.kpi small{display:block;color:var(--ink2);font-weight:600}
+.kpi b{display:block;font:700 2.3rem/1.1 "Barlow Condensed",sans-serif;margin:4px 0}
+.kpi span{font-size:12.5px;color:var(--ink2)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1.5px solid var(--bd2)}
+.tabs button{background:none;border:1.5px solid transparent;border-bottom:0;border-radius:8px 8px 0 0;padding:8px 16px;font-weight:600;cursor:pointer;color:var(--ink2)}
+.tabs button[aria-selected=true]{background:var(--yellow);color:#171717;border-color:var(--bd)}
+.row3{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.1fr) minmax(0,.9fr);gap:14px;margin-bottom:14px}
+.row2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;margin-bottom:14px}
+.one{margin-bottom:14px}
+.card h2{font-size:1.45rem;margin-bottom:2px}
+.sub{color:var(--ink2);font-size:12.5px;margin:0 0 10px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;margin-top:6px}
+.legend span{display:inline-flex;gap:5px;align-items:center}
+svg text{font-family:inherit;fill:var(--ink2);font-size:11px}
+.pt{cursor:pointer}.pt:focus-visible{outline:none;stroke:var(--ink);stroke-width:3}
+.tip{position:fixed;z-index:30;pointer-events:none;background:var(--ink);color:var(--canvas);padding:6px 9px;border-radius:6px;font-size:12px;max-width:240px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--bd2);text-align:right;white-space:nowrap}
+th:nth-child(2),td:nth-child(2){text-align:left}
+th button{background:none;border:0;font-weight:600;cursor:pointer;padding:0}
+tbody tr{cursor:pointer}tbody tr:hover{background:var(--muted)}
+.pill{display:inline-block;border:1px solid var(--bd);border-radius:999px;padding:0 8px;font-size:12px}
+.empty{border:1.5px dashed var(--bd);border-radius:10px;padding:16px;background:var(--muted);font-size:13.5px}
+.empty b{display:block;margin-bottom:4px}
+.bar{display:grid;grid-template-columns:110px 1fr 74px;gap:8px;align-items:center;font-size:12.5px;padding:3px 0;background:none;border:0;width:100%;text-align:left;cursor:pointer;border-radius:6px}
+.bar:hover,.bar.sel{background:var(--muted)}
+.track{position:relative;height:14px}
+.track:before{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;border-left:1px solid var(--bd)}
+.fill{position:absolute;top:2px;height:10px}
+.ins{border-left:4px solid var(--navy);padding:6px 0 6px 10px;margin-bottom:10px;background:none;border-top:0;border-right:0;border-bottom:0;text-align:left;width:100%;cursor:pointer}
+.ins b{display:block}.ins span{font-size:13px;color:var(--ink2)}
+.prov{font-size:12.5px;color:var(--ink2);display:flex;flex-wrap:wrap;gap:4px 16px}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:min(420px,100%);background:var(--surface);border-left:1.5px solid var(--bd);padding:20px;overflow:auto;z-index:40;transform:translateX(100%);visibility:hidden;transition:transform .2s}
+.drawer.open{transform:none;visibility:visible}
+.drawer dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13.5px}.drawer dt{color:var(--ink2)}.drawer dd{margin:0}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:35;display:none}.scrim.open{display:block}
+.err{border:1.5px solid var(--danger);border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--surface)}
+.sr{position:absolute;left:-9999px}
+details summary{cursor:pointer;font-size:12.5px;margin-top:6px}
+@media(max-width:1180px){.filters{grid-template-columns:repeat(3,minmax(0,1fr))}.btns{grid-column:1/-1}.row3{grid-template-columns:1fr 1fr}.row3>:last-child{grid-column:1/-1}.row2{grid-template-columns:1fr}}
+@media(max-width:900px){.app{grid-template-columns:1fr}.side{position:fixed;z-index:50;left:0;top:0;width:260px;transform:translateX(-100%);visibility:hidden;transition:transform .2s}.side.open{transform:none;visibility:visible}.menu{display:inline-block}.main{padding:14px 14px 40px}.kpis{grid-template-columns:1fr 1fr}.hero svg{display:none}}
+@media(max-width:640px){.filters{grid-template-columns:1fr 1fr}.row3{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.bar{grid-template-columns:90px 1fr 64px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="side" id="side" aria-label="Primary (preview shell)">
+<div class="logo"><i>SH</i>RAMIK</div>
+<a href="#" aria-disabled="true">Dashboard</a><a href="#" aria-disabled="true">Demand</a><a href="#" aria-disabled="true">Supply</a>
+<a href="#" aria-current="page">Skill Gaps</a>
+<a href="#" aria-disabled="true">Forecasts</a><a href="#" aria-disabled="true">Emerging Skills</a><a href="#" aria-disabled="true">Scenario Simulator</a><a href="#" aria-disabled="true">Reports</a>
+<hr><a href="#" aria-disabled="true">Data Sources</a><a href="#" aria-disabled="true">Data Quality</a>
+<p class="note">Preview shell only. In the host app, the shared SHRAMIK sidebar and topbar replace this.</p>
+</nav>
+<main class="main">
+<div class="top"><button class="menu" id="menu" aria-expanded="false" aria-controls="side">Menu</button><span class="badge" id="modeBadge">Illustrative demo data</span></div>
+<section class="hero">
+<div><h1>SKILL GAP ANALYSIS</h1><p>Compare labour demand with workforce supply by skill, occupation, sector and state/UT. Gap = demand − supply: positive means a potential shortage, negative a potential surplus.</p></div>
+<svg viewBox="0 0 150 90" aria-hidden="true"><rect x="0" y="62" width="150" height="6" fill="#171717"/><path d="M10 62V30h14v32M50 62V14h14v48M90 62V38h14v24M126 62V22h14v40" fill="none" stroke="#171717" stroke-width="3"/><circle cx="75" cy="30" r="16" fill="#F2D34F" stroke="#171717" stroke-width="3"/></svg>
+</section>
+<form class="filters" id="filters" aria-label="Analysis filters"></form>
+<div id="msg" aria-live="polite"></div>
+<section class="kpis" id="kpis" aria-label="Key figures"></section>
+<div class="tabs" role="tablist" aria-label="Views" id="tabs"></div>
+<div id="view" role="tabpanel"></div>
+<section class="card" id="prov" aria-label="Data provenance"></section>
+</main>
+</div>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle"></aside>
+<div class="tip" id="tip" hidden></div>
+<script>
+const $=(s,r=document)=>r.querySelector(s),nf=new Intl.NumberFormat('en-IN'),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rng=seed=>{let a=[...seed].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7);return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}};
+const UNIT='persons (demo)',SRC='Illustrative demo data';
+const CLS={high_shortage:['High shortage','--c-hs','▲'],moderate_shortage:['Moderate shortage','--c-ms','▲'],balanced:['Balanced','--c-b','●'],moderate_surplus:['Moderate surplus','--c-mp','■'],high_surplus:['High surplus','--c-hp','■'],not_comparable:['Not comparable','--nodata','?'],no_data:['No data','--nodata','–']};
+/* demo "server" config: tolerance and class thresholds are defined here, not in components */
+const TOL={balanced:.05,high:.20};
+function classify(d,s){if(d==null||s==null||(d===0&&s!==0))return'not_comparable';if(d===0)return'balanced';const p=(d-s)/d;return p>=TOL.high?'high_shortage':p>=TOL.balanced?'moderate_shortage':p>-TOL.balanced?'balanced':p>-TOL.high?'moderate_surplus':'high_surplus'}
+const gp=(d,s)=>d>0?(d-s)/d:null; /* gapPercent = gap / demand; omitted when demand is 0 */
+const SKILLS=[['S01','Welding',48200,31000],['S02','CNC machine operation',36500,22100],['S03','Electrical wiring',52000,47800],['S04','Data entry',30100,41500],['S05','Solar PV installation',18700,9800],['S06','Retail sales',61000,63400],['S07','Plumbing',22400,15900],['S08','Basic digital literacy',44000,52300],['S09','Equipment maintenance',27800,20100],['S10','Warehouse operations',39500,36200],['S11','Patient care assistance',33200,19800],['S12','Garment stitching',41000,43900]];
+const OCCS=[['O1','Welders & flame cutters',26000,17400],['O2','Machine tool operators',31000,21000],['O3','Electricians',44000,40500],['O4','Data entry operators',24000,33000],['O5','Retail salespersons',52000,54500],['O6','Plumbers & pipe fitters',16500,12100],['O7','Nursing associates',29000,18500],['O8','Warehouse workers',35000,34000]];
+const STATES=[['IN-MH','Maharashtra',1.5],['IN-UP','Uttar Pradesh',1.6],['IN-TN','Tamil Nadu',1.2],['IN-GJ','Gujarat',1.2],['IN-KA','Karnataka',1.1],['IN-WB','West Bengal',1],['IN-RJ','Rajasthan',.9],['IN-BR','Bihar',.9],['IN-KL','Kerala',.7],['IN-PB','Punjab',.6],['IN-OD','Odisha',.6],['IN-LA','Ladakh',0]];
+const SECTORS=[['MFG','Manufacturing',.3],['CON','Construction',.2],['RET','Retail & trade',.17],['HLT','Healthcare',.12],['LOG','Logistics',.1],['ENG','Energy',.06]];
+const PERIODS=[['p1','2024-25 (demo period)'],['p0','2023-24 (demo period)']];
+const opt=(a,all)=>[['',all],...a.map(x=>[x[0],x[1]])];
+const OPTS={period:PERIODS,geographyLevel:[['national','All India'],['state','State/UT']],stateCode:opt(STATES,'All states/UTs'),sectorCode:opt(SECTORS,'All sectors'),ncoCode:opt(OCCS,'All occupations'),skillCode:opt(SKILLS,'All skills')};
+const LABELS={period:'Time period',geographyLevel:'Geography',stateCode:'State/UT',sectorCode:'Sector',ncoCode:'Occupation (NCO)',skillCode:'Skill'};
+const DEFAULTS={period:'p1',geographyLevel:'national',stateCode:'',sectorCode:'',ncoCode:'',skillCode:''};
+const META=(f)=>({period:(PERIODS.find(p=>p[0]===f.period)||[])[1],unit:UNIT,provenance:'mock',sourceLabel:SRC,sourceIds:['demo-generator'],updatedAt:'Generated in browser (not a data refresh)'});
+
+/* ---- mock adapter: one applied snapshot -> every panel ---- */
+function build(f){
+ if(location.hash==='#error')throw new Error('Simulated API failure (remove #error from the URL).');
+ const W=STATES.reduce((a,s)=>a+s[2],0),st=STATES.find(s=>s[0]===f.stateCode),sc=SECTORS.find(s=>s[0]===f.sectorCode);
+ const k=(st?st[2]/W*4:1)*(sc?sc[2]*3:1)*(f.period==='p0'?.93:1),r=rng(f.period+f.stateCode+f.sectorCode);
+ const mk=(a)=>a.map(([id,label,d0,s0])=>{const d=Math.round(d0*k*(.92+r()*.16)),s=Math.round(s0*k*(.92+r()*.16)),g=r,t=[];let x=d-s;for(let i=0;i<4;i++){t.push(Math.round(x*(.7+.1*i+r()*.08)))}
+  return{id,label,demand:d,supply:s,gap:d-s,gapPercent:gp(d,s),cls:classify(d,s),trend:t}});
+ let skills=mk(SKILLS),occs=mk(OCCS);
+ if(f.skillCode)skills=skills.filter(x=>x.id===f.skillCode);
+ if(f.ncoCode)occs=occs.filter(x=>x.id===f.ncoCode);
+ skills.sort((a,b)=>b.gap-a.gap);skills.forEach((x,i)=>x.rank=i+1);
+ occs.sort((a,b)=>b.gap-a.gap);occs.forEach((x,i)=>x.rank=i+1);
+ const D=skills.reduce((a,x)=>a+x.demand,0),S=skills.reduce((a,x)=>a+x.supply,0);
+ const wk=STATES.filter(s=>s[2]>0).reduce((a,s)=>a+s[2],0);
+ const regions=STATES.map(([id,label,w])=>{if(!w)return{id,label,cls:'no_data',reason:'Value suppressed in demo (small population).'};
+  const d=Math.round(D*w/wk*(.9+r()*.2)),s=Math.round(S*w/wk*(.85+r()*.3));return{id,label,demand:d,supply:s,gap:d-s,gapPercent:gp(d,s),cls:classify(d,s)}});
+ const sectors=SECTORS.map(([id,label,sh])=>{const d=Math.round(D*sh*(.9+r()*.2)),s=Math.round(S*sh*(.85+r()*.3));return{id,label,demand:d,supply:s,gap:d-s,gapPercent:gp(d,s),cls:classify(d,s)}});
+ const ins=[],top=skills[0],low=[...skills].sort((a,b)=>a.gap-b.gap)[0],rd=regions.filter(x=>x.gap!=null).sort((a,b)=>b.gap-a.gap)[0];
+ if(top&&top.gap>0)ins.push({id:'i1',title:`${top.label} has the largest shortage`,summary:`Demand exceeds supply by ${nf.format(top.gap)} ${UNIT}.`,ent:['skill',top.id]});
+ if(low&&low.gap<0)ins.push({id:'i2',title:`${low.label} shows the largest surplus`,summary:`Supply exceeds demand by ${nf.format(-low.gap)} ${UNIT}.`,ent:['skill',low.id]});
+ const ns=skills.filter(x=>x.gap>0).length;ins.push({id:'i3',title:`${ns} of ${skills.length} skills show a shortage`,summary:`${skills.length-ns} show a surplus or balance under the demo thresholds.`,ent:['kpi','gap']});
+ if(rd)ins.push({id:'i4',title:`${rd.label} has the highest regional gap`,summary:`${nf.format(rd.gap)} ${UNIT} among states/UTs with data.`,ent:['region',rd.id]});
+ return{f,meta:META(f),skills,occs,regions,sectors,D,S,G:D-S,sig:skills.filter(x=>x.cls==='high_shortage').length,insights:ins.slice(0,4)};
+}
+const adapter={mode:'mock',load:f=>new Promise((res,rej)=>setTimeout(()=>{try{res(build(f))}catch(e){rej(e)}},220))};
+
+/* ---- controller state ---- */
+const S0={draft:{...DEFAULTS},applied:{...DEFAULTS},view:'overview',data:null,status:'loading',stale:false,err:null,sort:{k:'gap',d:'desc'},page:0,pageSize:5,metric:'gap_absolute',req:0};
+let st=S0,lastFocus=null;
+const tabsDef=[['overview','Overview'],['occupations','Occupations'],['skills','Skills'],['sectors','Sectors'],['regions','Regions']];
+async function load(){const id=++st.req;st.status='loading';st.err=null;paint();
+ try{const d=await adapter.load({...st.applied});if(id!==st.req)return;st.data=d;st.status='ready';st.stale=false}
+ catch(e){if(id!==st.req)return;st.status='error';st.err=e.message;st.stale=!!st.data}
+ paint()}
+const fmt=n=>n==null?'—':nf.format(n),pct=n=>n==null?'n/a':(n*100).toFixed(1)+'%',sgn=n=>n==null?'—':(n>0?'+':n<0?'−':'')+nf.format(Math.abs(n));
+const chip=c=>`<span class="pill" style="border-color:var(${CLS[c][1]})">${CLS[c][2]} ${CLS[c][0]}</span>`;
+
+/* ---- filters ---- */
+function buildFilters(){$('#filters').innerHTML=Object.keys(LABELS).map(k=>`<label>${LABELS[k]}<select data-k="${k}">${OPTS[k].map(o=>`<option value="${o[0]}">${esc(o[1])}</option>`).join('')}</select></label>`).join('')+`<div class="btns"><button class="btn pri" type="submit">Apply filters</button><button class="btn" type="button" id="reset">Reset</button></div>`;syncFilters()}
+function syncFilters(){document.querySelectorAll('#filters select').forEach(s=>s.value=st.draft[s.dataset.k])}
+$('#filters').addEventListener('change',e=>{const k=e.target.dataset.k;if(!k)return;st.draft[k]=e.target.value;if(k==='stateCode'&&e.target.value)st.draft.geographyLevel='state';if(k==='geographyLevel'&&e.target.value==='national'){st.draft.stateCode=''}syncFilters()});
+$('#filters').addEventListener('submit',e=>{e.preventDefault();st.applied={...st.draft};st.page=0;load()});
+$('#filters').addEventListener('click',e=>{if(e.target.id==='reset'){st.draft={...DEFAULTS};st.applied={...DEFAULTS};st.page=0;syncFilters();load()}});
+
+/* ---- panels ---- */
+function kpis(){const d=st.data;const c=(id,l,v,u,sub)=>`<button class="card kpi" data-kpi="${id}"><small>${l}</small><b>${st.status==='loading'&&!d?'…':v}</b><span>${sub}</span></button>`;
+ $('#kpis').innerHTML=d?c('demand','Estimated demand',fmt(d.D),0,`${UNIT} · observed estimate`)+c('supply','Estimated supply',fmt(d.S),0,`${UNIT} · observed estimate`)+c('gap','Gap / shortage',sgn(d.G),0,`${d.G>0?'Potential shortage':d.G<0?'Potential surplus':'Balanced'} · observed estimate, not a forecast`)+c('sig','Skills with significant gaps',String(d.sig),0,`High-shortage skills of ${d.skills.length} (demo threshold ≥${TOL.high*100}% of demand)`)
+ :['Estimated demand','Estimated supply','Gap / shortage','Skills with significant gaps'].map(l=>`<div class="card kpi"><small>${l}</small><b>…</b><span>Loading</span></div>`).join('')}
+function landscape(type){const pts=(type==='occupation'?st.data.occs:st.data.skills);
+ if(!pts.length)return`<div class="empty"><b>No points for these filters</b>Reset or widen the filters.</div>`;
+ const W=560,H=340,m={l:56,r:14,t:12,b:44},mx=Math.max(...pts.flatMap(p=>[p.demand,p.supply]))*1.08;
+ const X=v=>m.l+v/mx*(W-m.l-m.r),Y=v=>H-m.b-v/mx*(H-m.t-m.b),tk=[0,.25,.5,.75,1].map(t=>Math.round(mx*t/1000)*1000);
+ const g=tk.map(t=>`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--bd2)"/><text x="${m.l-6}" y="${Y(t)+4}" text-anchor="end">${t/1000}k</text><text x="${X(t)}" y="${H-m.b+16}" text-anchor="middle">${t/1000}k</text>`).join('');
+ const dots=pts.map(p=>{const c=`var(${CLS[p.cls][1]})`,x=X(p.supply),y=Y(p.demand),sh=p.gap>0?`<path d="M${x} ${y-8}L${x+8} ${y+7}L${x-8} ${y+7}Z"`:p.gap<0?`<rect x="${x-7}" y="${y-7}" width="14" height="14"`:`<circle cx="${x}" cy="${y}" r="7"`;
+  return`${sh} fill="${c}" stroke="var(--ink)" stroke-width="1.2" class="pt" tabindex="0" role="button" data-ent="${type}:${p.id}" aria-label="${esc(p.label)}: demand ${fmt(p.demand)}, supply ${fmt(p.supply)}, gap ${sgn(p.gap)}, ${CLS[p.cls][0]}"/>`}).join('');
+ return`<div class="scroll"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter of ${type} supply (x) against demand (y), in ${UNIT}. Points above the diagonal have demand above supply." style="min-width:420px;width:100%">${g}<line x1="${X(0)}" y1="${Y(0)}" x2="${X(mx)}" y2="${Y(mx)}" stroke="var(--ink)" stroke-dasharray="5 4"/><text x="${X(mx)-4}" y="${Y(mx)+14}" text-anchor="end">demand = supply</text>${dots}<text x="${(W+m.l)/2}" y="${H-6}" text-anchor="middle">Supply (${UNIT}, thousands)</text><text transform="rotate(-90)" x="${-(H-m.b)/2}" y="14" text-anchor="middle">Demand (${UNIT}, thousands)</text></svg></div>
+ <div class="legend">${['high_shortage','moderate_shortage','balanced','moderate_surplus','high_surplus'].map(c=>`<span><i style="color:var(${CLS[c][1]})">${CLS[c][2]}</i>${CLS[c][0]}</span>`).join('')}</div>
+ <p class="sub">Above the dashed line demand exceeds supply (same unit on both axes). Shape and label repeat the colour.</p>
+ <details><summary>View as table</summary>${tbl(pts,type,true)}</details>`}
+function map(){const rs=st.data.regions,key=st.metric==='gap_percent'?'gapPercent':'gap',vals=rs.filter(r=>r[key]!=null).map(r=>Math.abs(r[key])),mx=Math.max(...vals,1e-9);
+ const rows=[...rs].sort((a,b)=>(b[key]??-Infinity)-(a[key]??-Infinity)).map(r=>{if(r.cls==='no_data')return`<div class="bar" style="cursor:default"><span>${esc(r.label)}</span><span class="track" title="${esc(r.reason)}"><span class="fill" style="left:0;width:100%;background:repeating-linear-gradient(45deg,var(--nodata) 0 4px,transparent 4px 8px);opacity:.7"></span></span><span>No data</span></div>`;
+  const v=r[key],w=Math.abs(v)/mx*50;return`<button class="bar ${st.applied.stateCode===r.id?'sel':''}" data-region="${r.id}" aria-label="${esc(r.label)}: gap ${sgn(r.gap)}, ${CLS[r.cls][0]}. Select to filter."><span>${esc(r.label)}</span><span class="track"><span class="fill" style="background:var(${CLS[r.cls][1]});${v>=0?`left:50%`:`right:50%`};width:${w}%"></span></span><span>${st.metric==='gap_percent'?pct(v):sgn(v)}</span></button>`}).join('');
+ return`<label class="sub" style="display:block">Metric <select id="metric" style="width:auto;height:32px"><option value="gap_absolute" ${st.metric==='gap_absolute'?'selected':''}>Gap (absolute)</option><option value="gap_percent" ${st.metric==='gap_percent'?'selected':''}>Gap % of demand</option></select></label>
+ <div class="empty"><b>Map unavailable</b>No verified, licensed state/UT GeoJSON is attached to this page, so no map is drawn. Values below are ranked and join on canonical codes (ISO 3166-2:IN). Selecting a state sets the State/UT filter.</div><div style="margin-top:8px">${rows}</div>
+ <p class="sub">Right of centre = shortage, left = surplus. Hatched = no data (never treated as low shortage). Demo covers 12 of 36 states/UTs.</p>`}
+function insights(){return st.data.insights.map(i=>`<button class="ins" data-ent="${i.ent[0]}:${i.ent[1]}"><b>${esc(i.title)}</b><span>${esc(i.summary)}</span></button>`).join('')+`<p class="sub">Demo rule-based findings computed from the numbers shown. No AI model and no causal claims.</p>`}
+function spark(t){const w=64,h=20,mn=Math.min(...t),mxv=Math.max(...t),r=mxv-mn||1,pts=t.map((v,i)=>`${i*w/3},${h-2-(v-mn)/r*(h-4)}`).join(' ');return`<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><polyline points="${pts}" fill="none" stroke="var(--navy)" stroke-width="2"/></svg>`}
+function tbl(rows,kind,plain){const cols=[['rank','#'],['label',kind==='occupation'?'Occupation':kind==='sector'?'Sector':kind==='region'?'State/UT':'Skill'],['demand','Demand'],['supply','Supply'],['gap','Gap'],['gapPercent','Gap %']];
+ const head=cols.map(([k,l])=>plain?`<th>${l}</th>`:`<th aria-sort="${st.sort.k===k?(st.sort.d==='asc'?'ascending':'descending'):'none'}"><button data-sort="${k}">${l}${st.sort.k===k?(st.sort.d==='asc'?' ▲':' ▼'):''}</button></th>`).join('')+'<th>Trend</th><th>Status</th>';
+ return`<div class="scroll"><table><thead><tr>${head}</tr></thead><tbody>${rows.map((r,i)=>`<tr ${plain?'':`tabindex="0" data-ent="${kind}:${r.id}"`}><td>${r.rank??i+1}</td><td>${esc(r.label)}</td><td>${fmt(r.demand)}</td><td>${fmt(r.supply)}</td><td>${sgn(r.gap)}</td><td>${pct(r.gapPercent)}</td><td>${r.trend?spark(r.trend):'—'}</td><td>${chip(r.cls)}</td></tr>`).join('')}</tbody></table></div>`}
+function sorted(rows){const{k,d}=st.sort,m=d==='asc'?1:-1;return[...rows].sort((a,b)=>k==='label'?m*a.label.localeCompare(b.label):m*((a[k]??-Infinity)-(b[k]??-Infinity)))}
+function table(rows,kind,title,paged){const all=sorted(rows),ps=paged?st.pageSize:all.length,pages=Math.max(1,Math.ceil(all.length/ps));st.page=Math.min(st.page,pages-1);const sl=all.slice(st.page*ps,st.page*ps+ps);
+ if(!rows.length)return`<div class="card one"><h2>${title}</h2><div class="empty"><b>Nothing to show</b>No rows match the applied filters.</div></div>`;
+ return`<div class="card one"><h2>${title}</h2><p class="sub">${UNIT}; rank is by absolute gap; select a row for details.</p>${tbl(sl,kind)}<div class="btns" style="margin-top:10px;align-items:center">${pages>1?`<button class="btn" data-page="-1" ${st.page===0?'disabled':''}>Previous</button><span class="sub" style="margin:0">Page ${st.page+1} of ${pages}</span><button class="btn" data-page="1" ${st.page>=pages-1?'disabled':''}>Next</button>`:''}${kind==='skill'&&paged?`<button class="btn" data-go="skills" style="margin-left:auto">View all skills</button>`:''}</div></div>`}
+const flow=()=>`<div class="card"><h2>Supply–demand flow</h2><p class="sub">Selected sector: ${esc((SECTORS.find(s=>s[0]===st.applied.sectorCode)||[0,'none selected'])[1])}</p><div class="empty"><b>Flow diagram unavailable</b>A flow is drawn only when the data service returns measured links with compatible units. Demo mode has none, so nothing is inferred. Use the Sectors tab for the sector totals.</div></div>`;
+function view(){const d=st.data,v=st.view;if(!d)return`<div class="card empty">${st.status==='error'?'<b>Could not load data</b>Use Retry above.':'Loading analysis…'}</div>`;
+ const L=(t,ty)=>`<div class="card"><h2>Skill gap landscape</h2><p class="sub">${ty==='occupation'?'Occupations':'Skills'}: demand vs supply, ${UNIT}</p>${landscape(ty)}</div>`;
+ if(v==='overview')return`<div class="row3">${L(0,'skill')}<div class="card"><h2>Skill gap by state/UT</h2>${map()}</div><div class="card"><h2>Key insights</h2>${insights()}</div></div><div class="row2">${table(d.skills,'skill','Top skills by gap',true)}${flow()}</div>`;
+ if(v==='occupations')return`<div class="one">${L(0,'occupation')}</div>${table(d.occs,'occupation','Occupations by gap',false)}`;
+ if(v==='skills')return`<div class="one">${L(0,'skill')}</div>${table(d.skills,'skill','All skills by gap',false)}`;
+ if(v==='sectors')return`<div class="row2">${table(d.sectors,'sector','Sector totals',false)}${flow()}</div>`;
+ return`<div class="row2"><div class="card"><h2>Skill gap by state/UT</h2>${map()}</div>${table(d.regions.filter(r=>r.gap!=null),'region','State/UT values',false)}</div>`}
+function prov(){const d=st.data,m=d?d.meta:META(st.applied);$('#prov').innerHTML=`<div class="prov"><span><b>Period:</b> ${esc(m.period)}</span><span><b>Provenance:</b> ${m.provenance} — ${SRC}</span><span><b>Status:</b> ${st.stale?'Stale (last good result)':st.status==='loading'?'Loading':st.status==='error'?'Error':'Current'}</span><span><b>Coverage:</b> 12 of 36 states/UT in demo; regional values do not sum to the national total</span><span><b>Updated:</b> ${esc(m.updatedAt)}</span></div><p class="sub" style="margin:8px 0 0">Gap = demand − supply, computed only where units, period and geography match. Balanced = within ±${TOL.balanced*100}% of demand; high = ≥${TOL.high*100}% (demo configuration). Gap % = gap ÷ demand, shown as n/a when demand is 0. The occupation filter applies to occupation views. Values are an observed-estimate demo, not a forecast.</p>`}
+function paint(){
+ $('#msg').innerHTML=st.status==='error'?`<div class="err" role="alert"><span><b>Could not load data.</b> ${esc(st.err)}${st.stale?' Showing the previous result, marked stale. No demo fallback is used.':''}</span><button class="btn" id="retry">Retry</button></div>`:st.status==='loading'?'<p class="sub">Loading…</p>':'';
+ kpis();$('#tabs').innerHTML=tabsDef.map(([k,l])=>`<button role="tab" id="t-${k}" aria-selected="${st.view===k}" tabindex="${st.view===k?0:-1}" data-tab="${k}">${l}</button>`).join('');
+ $('#view').setAttribute('aria-labelledby','t-'+st.view);$('#view').innerHTML=view();prov()}
+
+/* ---- drawer ---- */
+function openDetail(ent){const[t,id]=ent.split(':'),d=st.data;let o=null,title,def,rows;
+ const base=(x,l)=>({title:x.label,def:l,demand:x.demand,supply:x.supply,gap:x.gap,gp:x.gapPercent,cls:x.cls});
+ if(t==='skill')o=base(d.skills.find(x=>x.id===id),'Skill-level estimate from the demo skill list.');
+ else if(t==='occupation')o=base(d.occs.find(x=>x.id===id),'Occupation-level estimate from the demo occupation list.');
+ else if(t==='sector')o=base(d.sectors.find(x=>x.id===id),'Sector total from the demo generator.');
+ else if(t==='region'){const r=d.regions.find(x=>x.id===id);o=base(r,`State/UT value, code ${r.id}.`)}
+ else if(t==='kpi'){const m={demand:['Estimated demand',d.D,null,'Sum of demand across the listed skills.'],supply:['Estimated supply',null,d.S,'Sum of supply across the listed skills.'],gap:['Gap / shortage',d.D,d.S,'Observed-estimate gap, not a forecast.'],sig:['Skills with significant gaps',null,null,`Count of skills classed high shortage (gap ≥ ${TOL.high*100}% of demand, demo threshold): ${d.sig}.`]}[id];o={title:m[0],def:m[3],demand:m[1],supply:m[2],gap:m[1]!=null&&m[2]!=null?m[1]-m[2]:null}}
+ const f=st.applied,fl=Object.keys(LABELS).map(k=>`${LABELS[k]}: ${(OPTS[k].find(x=>x[0]===f[k])||[0,'All'])[1]}`).join('; ');
+ lastFocus=document.activeElement;
+ $('#drawer').innerHTML=`<button class="btn" id="close" style="float:right">Close</button><h2 id="dTitle" style="font-size:1.8rem;margin-bottom:10px">${esc(o.title)}</h2><p>${esc(o.def)}</p><dl><dt>Demand</dt><dd>${fmt(o.demand)}</dd><dt>Supply</dt><dd>${fmt(o.supply)}</dd><dt>Gap</dt><dd>${sgn(o.gap)}</dd>${o.gp!==undefined?`<dt>Gap %</dt><dd>${pct(o.gp)}</dd>`:''}${o.cls?`<dt>Status</dt><dd>${chip(o.cls)}</dd>`:''}<dt>Unit</dt><dd>${UNIT}</dd><dt>Rule</dt><dd>gap = demand − supply (positive = shortage, negative = surplus)</dd><dt>Filters</dt><dd>${esc(fl)}</dd><dt>Scope</dt><dd>${f.stateCode?'Selected state/UT':'All India (demo)'}</dd><dt>Period</dt><dd>${esc(d.meta.period)}</dd><dt>Provenance</dt><dd>mock — ${SRC}</dd><dt>Coverage</dt><dd>Demo values only; not source-backed.</dd></dl>`;
+ $('#drawer').classList.add('open');$('#scrim').classList.add('open');$('#close').focus()}
+function closeDetail(){$('#drawer').classList.remove('open');$('#scrim').classList.remove('open');lastFocus&&lastFocus.focus()}
+$('#scrim').onclick=closeDetail;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#drawer').classList.contains('open'))closeDetail();else $('#side').classList.remove('open')}
+ if((e.key==='Enter'||e.key===' ')&&e.target.matches('.pt,tbody tr')){e.preventDefault();openDetail(e.target.dataset.ent)}
+ if(e.target.matches('[role=tab]')&&['ArrowRight','ArrowLeft'].includes(e.key)){const i=tabsDef.findIndex(t=>t[0]===st.view),n=tabsDef[(i+(e.key==='ArrowRight'?1:tabsDef.length-1))%tabsDef.length][0];st.view=n;st.page=0;paint();$('#t-'+n).focus()}});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-kpi],[data-ent],[data-tab],[data-sort],[data-page],[data-go],[data-region],#retry,#close,#menu');if(!t)return;
+ if(t.id==='menu'){const o=$('#side').classList.toggle('open');t.setAttribute('aria-expanded',o)}
+ else if(t.id==='retry')load();else if(t.id==='close')closeDetail();
+ else if(t.dataset.kpi)openDetail('kpi:'+t.dataset.kpi);
+ else if(t.dataset.region){const c=t.dataset.region;st.draft.stateCode=st.applied.stateCode===c?'':c;st.draft.geographyLevel=st.draft.stateCode?'state':'national';st.applied={...st.draft};st.page=0;syncFilters();load()}
+ else if(t.dataset.ent&&st.data)openDetail(t.dataset.ent);
+ else if(t.dataset.tab){st.view=t.dataset.tab;st.page=0;paint()}
+ else if(t.dataset.go){st.view=t.dataset.go;st.page=0;paint();$('#t-'+st.view).focus()}
+ else if(t.dataset.sort){const k=t.dataset.sort;st.sort=st.sort.k===k?{k,d:st.sort.d==='asc'?'desc':'asc'}:{k,d:k==='label'?'asc':'desc'};paint();document.querySelector(`[data-sort="${k}"]`)?.focus()}
+ else if(t.dataset.page){st.page+=+t.dataset.page;paint()}});
+document.addEventListener('change',e=>{if(e.target.id==='metric'){st.metric=e.target.value;paint();$('#metric').focus()}});
+const tip=$('#tip');
+document.addEventListener('mouseover',e=>{const p=e.target.closest('.pt');if(!p){tip.hidden=true;return}tip.textContent=p.getAttribute('aria-label');tip.hidden=false});
+document.addEventListener('mousemove',e=>{if(!tip.hidden){tip.style.left=Math.min(e.clientX+12,innerWidth-250)+'px';tip.style.top=e.clientY+14+'px'}});
+buildFilters();load();
+</script>
+</body>
+</html>

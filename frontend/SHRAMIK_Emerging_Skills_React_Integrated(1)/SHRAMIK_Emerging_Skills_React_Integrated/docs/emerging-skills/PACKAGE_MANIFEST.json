@@ -1,0 +1,123 @@
+{
+  "package": "SHRAMIK Emerging Skills Intelligence handoff",
+  "version": "1.0.0",
+  "generated_on": "2026-10-14",
+  "status": "Specifications and reference assets; no completed React page is included.",
+  "files": [
+    {
+      "path": "BACKEND_SKILL_RELATIONSHIP_GAP_AND_PROPOSAL.md",
+      "bytes": 3596,
+      "sha256": "0604c170289c957423c5a396cd345e7a2eeeaa52d80ca094724da5e7175f05e9"
+    },
+    {
+      "path": "CLAUDE_PROMPT_SHRAMIK_EMERGING_SKILLS.md",
+      "bytes": 7641,
+      "sha256": "a1683cc2239d6ed7e871a6fdff1a58e57d5a2000cccd3d2427f3c201dffb36cb"
+    },
+    {
+      "path": "INTEGRATION_CONTRACT.md",
+      "bytes": 2535,
+      "sha256": "e3584ef5773afba4860974b462facdbceacf5e5a65a941130af2e205615111dd"
+    },
+    {
+      "path": "PACKAGE_VALIDATION.json",
+      "bytes": 459,
+      "sha256": "5c87354392b34b073ec1a2a2ca6a6aa4c1a22cd419fbadcc29a208336153bd37"
+    },
+    {
+      "path": "QA_CHECKLIST.md",
+      "bytes": 2769,
+      "sha256": "fa665997a02cd2e152da13b200d858f6542a3d842173e7d47c815bf0752113b5"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3228,
+      "sha256": "97f21d514a5ae07cacf14bfecf2ecf37504c0593fab225a6a7af03c06c299095"
+    },
+    {
+      "path": "REFERENCE_INDEX.md",
+      "bytes": 628,
+      "sha256": "b5d3103ce4acd41b057b0b79462604c32f88eb47765b0e6c76c8757ba7e3941b"
+    },
+    {
+      "path": "SHRAMIK_COMPONENT_INVENTORY.md",
+      "bytes": 5872,
+      "sha256": "45bc251372b686adc0525f81bff4eb94087381ddfe9c2d5a2f1cc95930923f02"
+    },
+    {
+      "path": "SHRAMIK_DASHBOARD_SPEC.md",
+      "bytes": 8847,
+      "sha256": "532d0e331f43847c5d94acb828542991d85846491e75bda8dbb2d60a753dcca3"
+    },
+    {
+      "path": "SHRAMIK_EMERGING_SKILLS_API_CONTRACT.md",
+      "bytes": 7097,
+      "sha256": "de0879954fc40640bff47569c2e8b17627e587d5c5b6996d6f10315ef123bb4b"
+    },
+    {
+      "path": "SHRAMIK_EMERGING_SKILLS_COMPONENT_INVENTORY.md",
+      "bytes": 4028,
+      "sha256": "b42fb6654e7e57efa08f10a8faf392e5b8ba2c3f1cce696a1c6c73273268e4d3"
+    },
+    {
+      "path": "SHRAMIK_EMERGING_SKILLS_IMPLEMENTATION_SPEC.md",
+      "bytes": 14003,
+      "sha256": "cbf7da961191f997ad6b713b8e41543d3dad7a3abd6f372e1cefe9968e8e50ad"
+    },
+    {
+      "path": "SHRAMIK_GLOBAL_DESIGN_SYSTEM.md",
+      "bytes": 33984,
+      "sha256": "f4b9c4bbc2acd98bb768f39188672c3546c0690c86c698684dccbc4d400c6d7c"
+    },
+    {
+      "path": "SIDEBAR_CONSISTENCY_LOCK.md",
+      "bytes": 2130,
+      "sha256": "986a7e236d8d18b070d81e17d7c244de89db8b6a8529a93304474345f931f779"
+    },
+    {
+      "path": "SKILL_DATA_SEMANTICS_AND_CLASSIFICATION.md",
+      "bytes": 4047,
+      "sha256": "71cf332c04a22d9c37c1ced6f229d5604d12428943028fc561e100e9237ee854"
+    },
+    {
+      "path": "backend/proposed_skill_relationship_schema.sql",
+      "bytes": 6591,
+      "sha256": "2f82a32f9aaabb32ed490caf09b0181f88dac638ad6353b4c4cf7e8b08686267"
+    },
+    {
+      "path": "reference/SHRAMIK_Dashboard_Reference.png",
+      "bytes": 2006822,
+      "sha256": "9e6f775b471d4a68f9931bc077d0e2f5e0617a1552eed340f7367b7d68c5d57a"
+    },
+    {
+      "path": "reference/SHRAMIK_Emerging_Skills_Design_Board.png",
+      "bytes": 2261470,
+      "sha256": "c0f25d5e91fa6970e95c871949f56cbed862ea163046560cb2071ecba11d7950"
+    },
+    {
+      "path": "reference/views/01-skills-overview.png",
+      "bytes": 411928,
+      "sha256": "e0635427525a4a7d1dd7d02cbbe792282b6b78c2240a6b9691c479c53947f32e"
+    },
+    {
+      "path": "reference/views/02-skill-momentum.png",
+      "bytes": 412288,
+      "sha256": "710de1f5cfef9bc30adeb9ea2eb22188a76d987022651c90cc9250fc2d70803a"
+    },
+    {
+      "path": "reference/views/03-occupation-sector-connections.png",
+      "bytes": 391750,
+      "sha256": "3948c39756655855ba7d58e53887578f5349f2cd511a28d6810ea97cee4c235c"
+    },
+    {
+      "path": "reference/views/04-regional-signals.png",
+      "bytes": 368371,
+      "sha256": "6ca6c60c849a30229b7421b7a076a491d4b6b466d406a0c6ec514c8f546d9a28"
+    },
+    {
+      "path": "reference/views/05-skill-profiles-evidence.png",
+      "bytes": 492115,
+      "sha256": "5a4faaec49721b0e8d5e6e19193f06073519d848672a44346979f5994bc85c75"
+    }
+  ]
+}

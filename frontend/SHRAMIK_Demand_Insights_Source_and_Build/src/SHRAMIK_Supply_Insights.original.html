@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#F7F6F0" />
+<title>SHRAMIK · Supply Insights</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" />
+<style>html,body{margin:0;background:#F7F6F0}</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script type="text/babel">
+
+const { useState, useEffect, useRef, useCallback, useId } = React;
+const mkIcon = (n) => ({ size = 24, color = 'currentColor', ...p }) => {
+  const L = (window.lucide && window.lucide.icons) || {};
+  const node = L[n] || L.Star || [];
+  return React.createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', ...p },
+    node.map(([t, a], i) => React.createElement(t, { key: i, ...a })));
+};
+const { LayoutDashboard, BarChart3, Users, Target, TrendingUp, Star, SlidersHorizontal, FileText, Database, ShieldCheck, Search, MapPin, Bell, ChevronDown, ArrowUpRight, ArrowRight, Lightbulb, Menu, X, Cpu, Leaf, Factory, HardHat, Building2, ShoppingCart, HeartPulse, Wheat, Truck, Wrench, Stethoscope, Zap, LineChart, Check, UserRound } = Object.fromEntries(["LayoutDashboard", "BarChart3", "Users", "Target", "TrendingUp", "Star", "SlidersHorizontal", "FileText", "Database", "ShieldCheck", "Search", "MapPin", "Bell", "ChevronDown", "ArrowUpRight", "ArrowRight", "Lightbulb", "Menu", "X", "Cpu", "Leaf", "Factory", "HardHat", "Building2", "ShoppingCart", "HeartPulse", "Wheat", "Truck", "Wrench", "Stethoscope", "Zap", "LineChart", "Check", "UserRound"].map((n) => [n, mkIcon(n)]));
+
+
+/* ============ ICON REGISTRY (safe: keys only, never API HTML) ============ */
+const ICONS = {
+  dashboard: LayoutDashboard, demand: BarChart3, supply: Users, gap: Target, forecasts: TrendingUp,
+  emerging: Star, scenario: SlidersHorizontal, reports: FileText, sources: Database, quality: ShieldCheck,
+  ai: Cpu, green: Leaf, data: LineChart, industrial: Zap, construction: Building2, factory: Factory,
+  retail: ShoppingCart, health: HeartPulse, agri: Wheat, logistics: Truck, worker: HardHat,
+  machine: Wrench, care: Stethoscope, user: UserRound,
+};
+const Icon = ({ k, size = 18, ...p }) => { const C = ICONS[k] || Star; return <C size={size} aria-hidden="true" {...p} />; };
+
+/* ============ MOCK ADAPTER (all values illustrative) ============ */
+const sleep = (ms, signal) => new Promise((res, rej) => {
+  const t = setTimeout(res, ms);
+  signal?.addEventListener('abort', () => { clearTimeout(t); rej(new DOMException('Aborted', 'AbortError')); });
+});
+const lat = (s) => sleep(250 + Math.random() * 250, s);
+const meta = (notes) => ({ provenance: 'mock', sourceLabel: 'SHRAMIK demo dataset', updatedAt: '2026-10-14', notes });
+const REGIONS = [
+  { code: 'IN', name: 'India (National)', f: 1 }, { code: 'MH', name: 'Maharashtra', f: 0.12 },
+  { code: 'UP', name: 'Uttar Pradesh', f: 0.1 }, { code: 'TN', name: 'Tamil Nadu', f: 0.08 },
+  { code: 'KA', name: 'Karnataka', f: 0.07 }, { code: 'GJ', name: 'Gujarat', f: 0.063 },
+];
+const SECTIONS = {
+  demand: 'Demand', supply: 'Supply', 'skill-gaps': 'Skill Gaps', forecasts: 'Forecasts', emerging: 'Emerging Skills',
+  scenario: 'Scenario Simulator', reports: 'Reports', sources: 'Data Sources', quality: 'Data Quality',
+  profile: 'Profile', states: 'All states', 'emerging-skills': 'Emerging Skills', 'sector-gaps': 'Skill Gaps by Sector',
+  'occupation-forecasts': 'Occupation Forecasts',
+};
+const regionOf = (c) => REGIONS.find((r) => r.code === c) || REGIONS[0];
+const M = (n) => `${n.toFixed(1)}M`;
+const TREND = [[2020, 118, 98], [2021, 155, 118], [2022, 188, 148], [2023, 222, 178], [2024, 268, 240]];
+const SKILLS = [['ai', 'Artificial Intelligence', 52, 'ai', 90, 'var(--navy)'], ['green', 'Green Energy Systems', 41, 'green', 72, 'var(--teal)'],
+  ['data', 'Data Analysis', 37, 'data', 64, 'var(--orange)'], ['industrial', 'Industrial Automation', 33, 'industrial', 58, 'var(--navy)'],
+  ['sust', 'Sustainable Construction', 29, 'construction', 50, 'var(--teal)']];
+const SECTORS = [['manufacturing', 'Manufacturing', 2.8, 'factory', 88, 'var(--orange)'], ['construction', 'Construction', 1.9, 'construction', 60, 'var(--orange)'],
+  ['retail', 'Retail & Trade', 1.1, 'retail', 35, 'var(--orange)'], ['healthcare', 'Healthcare', 0.8, 'health', 25, 'var(--navy)'],
+  ['agriculture', 'Agriculture', 0.6, 'agri', 19, 'var(--teal)']];
+const OCCS = [['construction-workers', 'Construction Workers', 22, 'worker', 60, 'var(--navy)'], ['machine-operators', 'Machine Operators', 18, 'machine', 50, 'var(--teal)'],
+  ['healthcare-assistants', 'Healthcare Assistants', 16, 'care', 44, 'var(--orange)'], ['logistics', 'Logistics & Supply Chain', 15, 'logistics', 40, 'var(--navy)'],
+  ['data-ai', 'Data & AI Specialists', 35, 'user', 85, 'var(--teal)']];
+const RANK = { demand: [['Maharashtra', 28.4], ['Uttar Pradesh', 24.1], ['Tamil Nadu', 18.7], ['Karnataka', 16.3], ['Gujarat', 14.9]] };
+const INDEX = [
+  ...REGIONS.slice(1).map((r) => ({ id: r.code, type: 'region', label: r.name })),
+  { id: 'ai', type: 'skill', label: 'Artificial Intelligence' }, { id: 'data', type: 'skill', label: 'Data Analysis' },
+  { id: 'construction-workers', type: 'occupation', label: 'Construction Workers' },
+  { id: 'manufacturing', type: 'sector', label: 'Manufacturing' }, { id: 'healthcare', type: 'sector', label: 'Healthcare' },
+];
+const NOTES = [{ id: 'n1', text: 'Demo data refreshed', read: false }, { id: 'n2', text: 'Skill gap view updated', read: false }, { id: 'n3', text: 'Welcome to SHRAMIK', read: true }];
+
+const MockAdapter = {
+  async getRegions(s) { await lat(s); return REGIONS.map(({ code, name }) => ({ code, name })); },
+  async getProfile(s) { await lat(s); return { name: 'Arjun Mehta', role: 'Research Analyst', email: 'arjun.mehta@example.org', initial: 'A' }; },
+  async getDashboard({ regionCode, periodYears, signal }) {
+    await lat(signal); const f = regionOf(regionCode).f; const t = TREND.slice(-periodYears);
+    const sp = (a) => a.map((v) => v * f);
+    const gap = (268 - 240) * 0.2748 * f; // illustrative
+    return {
+      kpis: [
+        { id: 'demand', iconKey: 'supply', label: 'Total Labour Demand', sub: 'Estimated workforce demand', value: 236.8 * f, formatted: M(236.8 * f), delta: '+4.2%', ctx: 'vs. last year', color: 'var(--navy)', spark: sp([10, 12, 11, 15, 14, 18, 22]) },
+        { id: 'supply', iconKey: 'supply', label: 'Total Labour Supply', sub: 'Estimated workforce supply', value: 229.1 * f, formatted: M(229.1 * f), delta: '+3.1%', ctx: 'vs. last year', color: 'var(--teal)', spark: sp([9, 11, 12, 13, 15, 17, 20]) },
+        { id: 'gap', iconKey: 'gap', label: 'Overall Skill Gap', sub: 'Demand — Supply', value: 7.7 * f, formatted: M(7.7 * f), delta: '+12.6%', ctx: 'vs. last year', color: 'var(--orange)', spark: sp([6, 5, 8, 7, 10, 9, 13]), valueColor: 'var(--orange)' },
+        { id: 'emerging', iconKey: 'emerging', label: 'Emerging Skills', sub: 'High-growth opportunities', value: Math.round(312 * Math.max(f, 0.2)), formatted: String(Math.round(312 * Math.max(f, 0.2))), delta: '+28%', ctx: 'new this year', color: 'var(--teal)', spark: [3, 4, 4, 6, 7, 9, 12], valueColor: 'var(--teal)' },
+      ].map((k) => (k.id === 'gap' ? { ...k, gapCheck: gap } : k)),
+      trend: t.map(([year, demand, supply]) => ({ year, demand: demand * (f > 0.5 ? 1 : 1), supply })),
+      emergingSkills: SKILLS.map(([id, label, v, iconKey, displayScore, color]) => ({ id, label, iconKey, formatted: `+${v}%`, displayScore, color })),
+      sectorGaps: SECTORS.map(([id, label, v, iconKey, displayScore, color]) => ({ id, label, iconKey, formatted: M(v * f).replace(/^0\.0M$/, '<0.1M'), displayScore, color })),
+      occupationForecasts: OCCS.map(([id, label, v, iconKey, displayScore, color]) => ({ id, label, iconKey, formatted: `+${v}%`, displayScore, color })),
+      meta: meta('All figures are placeholders for layout and interaction testing.'),
+    };
+  },
+  async getRegionRankings({ metric, signal }) {
+    await lat(signal); const k = metric === 'supply' ? 0.96 : metric === 'skill-gap' ? 0.034 : 1;
+    return { items: RANK.demand.map(([label, v], i) => ({ id: `r${i}`, label, formatted: M(v * k) })), meta: meta('Ranking values are illustrative.') };
+  },
+  async search({ query, signal }) {
+    await lat(signal); const q = query.trim().toLowerCase();
+    return q ? INDEX.filter((i) => i.label.toLowerCase().includes(q)) : [];
+  },
+  async getNotifications(s) { await lat(s); return NOTES.map((n) => ({ ...n })); },
+  async markNotificationRead(id) { await lat(); const n = NOTES.find((x) => x.id === id); if (n) n.read = true; return { id, read: true }; },
+  async getIndicatorDetail(id, { regionCode, signal } = {}) {
+    await lat(signal);
+    return { title: `Indicator: ${id}`, facts: [{ label: 'Region', value: regionOf(regionCode).name }, { label: 'Status', value: 'Placeholder indicator' }], table: null, meta: meta('Replace with source-backed indicator detail.') };
+  },
+  async getSectionDetail(section, { regionCode, signal } = {}) {
+    await lat(signal);
+    return {
+      title: SECTIONS[section] || section,
+      facts: [{ label: 'Region', value: regionOf(regionCode).name }, { label: 'Coverage', value: 'Demo only' }],
+      table: { columns: ['Item', 'Illustrative value'], rows: [['Sample A', '—'], ['Sample B', '—']] },
+      meta: meta('Detail view for layout testing.'),
+    };
+  },
+};
+
+/* ============ STYLES ============ */
+const CSS = `
+.sh{--canvas:#F7F6F0;--surface:#FFFEFA;--muted:#F0EFE8;--ink:#171717;--out:#292929;--tm:#62625C;--bm:#D8D6CD;--yellow:#F2D34F;--navy:#203A5B;--orange:#EB791D;--teal:#20A89C;--pos:#0E8A5F;
+--disp:'Anton','Bebas Neue','Oswald','Arial Narrow',Impact,sans-serif;--body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+font-family:var(--body);color:var(--ink);min-height:100vh;background-color:var(--canvas);background-image:radial-gradient(rgba(41,41,41,.28) 1px,transparent 1.2px);background-size:22px 22px;background-attachment:fixed;font-size:14px;line-height:1.4}
+.sh *{box-sizing:border-box}.sh button,.sh input,.sh select{font:inherit;color:inherit}
+.sh :focus-visible{outline:3px solid var(--yellow);outline-offset:2px;box-shadow:0 0 0 5px var(--out)}
+.sh h1,.sh h2,.sh h3{margin:0;font-family:var(--disp);font-weight:400;text-transform:uppercase;letter-spacing:.01em}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;padding:10px 20px;background:var(--canvas);border-bottom:1px solid var(--bm)}
+.logo{display:flex;align-items:center;gap:10px}.logo-mark{width:38px;height:38px;border:2px solid var(--out);border-radius:8px;background:var(--yellow);display:grid;place-items:center;font:400 26px var(--disp);box-shadow:2px 2px 0 var(--out)}
+.logo-word{font:400 32px/1 var(--disp);letter-spacing:.01em}.logo-desc{font-size:10px;font-weight:700;line-height:1.2;letter-spacing:.04em;border-left:1px solid var(--out);padding-left:10px}
+.spacer{flex:1}.search{position:relative;flex:0 1 460px}.box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--out);border-radius:10px;padding:0 10px;height:42px;box-shadow:2px 2px 0 var(--out)}
+.box input{border:0;background:none;outline:0;flex:1;min-width:0;height:100%}.box:focus-within{outline:3px solid var(--yellow);box-shadow:0 0 0 5px var(--out)}
+.kbd{font-size:11px;border:1px solid var(--out);border-radius:4px;padding:0 5px;background:var(--muted)}
+.pop{position:absolute;top:calc(100% + 6px);right:0;min-width:240px;max-width:90vw;background:var(--surface);border:1.5px solid var(--out);border-radius:10px;box-shadow:3px 3px 0 var(--out);z-index:40;padding:6px}
+.search .pop{left:0;right:auto;width:100%}.opt{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:6px;cursor:pointer}
+.opt:hover,.opt[aria-selected=true]{background:var(--yellow)}.opt small{color:var(--tm)}
+.sel{position:relative;display:flex;align-items:center;gap:6px;background:var(--surface);border:1.5px solid var(--out);border-radius:8px;padding:0 8px;height:38px}
+.sel select{appearance:none;background:none;border:0;padding:0 18px 0 0;font-weight:600;cursor:pointer;height:100%}.sel .chev{position:absolute;right:8px;pointer-events:none}
+.sel.sm{height:32px;font-size:13px}.sel:focus-within{outline:3px solid var(--yellow);box-shadow:0 0 0 5px var(--out)}
+.ibtn{position:relative;background:none;border:0;cursor:pointer;width:40px;height:40px;display:grid;place-items:center;border-radius:8px}
+.dot{position:absolute;top:7px;right:9px;width:9px;height:9px;border-radius:50%;background:#D93025;border:1.5px solid var(--canvas)}
+.user{display:flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;text-align:left;border-radius:8px}
+.av{width:42px;height:42px;border-radius:50%;background:var(--yellow);border:2px solid var(--out);display:grid;place-items:center;font:400 20px var(--disp)}
+.user b{display:block;font-size:12px}.user span{font-size:11px;color:var(--tm)}.hamb{display:none}
+.shell{display:grid;grid-template-columns:210px minmax(0,1fr);gap:16px;padding:14px 20px 28px;align-items:start}
+.side{position:sticky;top:76px;display:flex;flex-direction:column;gap:12px;background:rgba(255,254,250,.7);border:1px solid var(--bm);border-radius:12px;padding:12px;max-height:calc(100vh - 90px);overflow:auto}
+.nav{display:flex;flex-direction:column;gap:2px}.nav button{display:flex;align-items:center;gap:12px;background:none;border:1.5px solid transparent;border-radius:9px;padding:10px 12px;cursor:pointer;text-align:left;font-weight:600}
+.nav button:hover{background:var(--muted)}.nav button[aria-current=page]{background:var(--yellow);border-color:var(--out);box-shadow:1px 2px 0 var(--out)}
+.nav hr{border:0;border-top:1px solid var(--bm);margin:8px 6px;width:calc(100% - 12px)}.side-art{border:1.5px solid var(--out);border-radius:8px;overflow:hidden;background:#fff;line-height:0}
+.note{display:flex;gap:10px;align-items:center;border:1.5px solid var(--out);border-radius:10px;padding:10px;background:var(--surface);font-size:12px;font-weight:600}
+.scrim{display:none}.main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.hero{position:relative;display:flex;justify-content:space-between;gap:16px;min-height:200px;overflow:hidden}
+.crumb{font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}.hero h1{font-size:clamp(40px,5.4vw,70px);line-height:.95;margin:8px 0 12px;max-width:9em}
+.under{width:min(180px,40%);height:12px;background:var(--yellow);margin-bottom:12px}.hero p{max-width:34em;margin:0;font-size:15px}
+.hero-art{position:absolute;right:0;top:-6px;width:min(58%,640px);will-change:transform;pointer-events:none}.hero-copy{position:relative;z-index:1}
+.sticky{fill:var(--yellow)}.card{background:var(--surface);border:1.5px solid var(--out);border-radius:12px;box-shadow:3px 3px 0 var(--out);padding:14px 16px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.kpi{position:relative;cursor:pointer;text-align:left;width:100%}.kpi:hover{background:#fff}
+.kpi-h{display:flex;gap:12px}.kpi-h h3{font-size:17px}.kpi-h small{color:var(--tm);font-size:13px;display:block}
+.kpi-b{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:6px}.val{font:400 clamp(34px,3.3vw,46px)/1 var(--disp)}
+.delta{display:flex;align-items:center;gap:4px;font-weight:700;color:var(--pos);font-size:13px}.delta small{color:var(--tm);font-weight:500}.kpi .open{position:absolute;top:10px;right:10px;color:var(--tm)}
+.mid{display:grid;grid-template-columns:1.65fr 1fr;gap:14px}.low{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.ph{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}.ph h2{font-size:22px}.ph p{margin:2px 0 0;color:var(--tm);font-size:13px}
+.legend{display:flex;gap:16px;font-size:12px;align-items:center;margin-bottom:2px}.legend i{display:inline-block;width:26px;border-top:3px solid var(--navy);vertical-align:middle;margin-right:6px}.legend i.d{border-top:3px dashed var(--teal)}
+.chart{position:relative}.chart svg{width:100%;height:auto;display:block}.tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;border-radius:6px;padding:4px 8px;font-size:12px;transform:translate(-50%,-120%);white-space:nowrap}
+.round{position:absolute;right:4px;bottom:4px;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--out);background:var(--surface);cursor:pointer;display:grid;place-items:center}
+.reg{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center}.lg{font-size:12px;display:grid;gap:6px}.lg i{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:6px;vertical-align:-2px}
+.rank{list-style:none;margin:0;padding:0;font-size:13px}.rank li{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--bm)}.rank b:first-child{width:14px}.rank span{flex:1}.rank h3{font:700 12px var(--body);text-transform:none;margin-bottom:4px}
+.cta{display:flex;justify-content:center;align-items:center;gap:8px;width:100%;margin-top:10px;background:var(--yellow);border:1.5px solid var(--out);border-radius:8px;padding:8px;font-weight:700;cursor:pointer;box-shadow:2px 2px 0 var(--out)}
+.va{display:flex;align-items:center;gap:6px;background:var(--surface);border:1.5px solid var(--out);border-radius:8px;padding:5px 10px;font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
+.rows{list-style:none;margin:0;padding:0}.row{display:grid;grid-template-columns:24px minmax(0,1.3fr) auto minmax(60px,1fr);gap:10px;align-items:center;width:100%;background:none;border:0;border-bottom:1px solid var(--bm);padding:7px 2px;cursor:pointer;text-align:left}
+.row:hover{background:var(--muted)}.row span{overflow:hidden;text-overflow:ellipsis}.row b{font-size:13px}.pos{color:var(--pos)}.track{height:12px;background:var(--bm);border-radius:3px;overflow:hidden}.track i{display:block;height:100%}
+.skel{background:linear-gradient(90deg,var(--muted),#fff,var(--muted));background-size:200% 100%;animation:sk 1.2s linear infinite;border-radius:6px;height:18px;margin:8px 0}@keyframes sk{to{background-position:-200% 0}}
+.err{border:1.5px dashed #B3261E;background:#fff4f2;border-radius:8px;padding:12px;display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:13px}.err button{background:var(--yellow);border:1.5px solid var(--out);border-radius:6px;padding:4px 10px;font-weight:700;cursor:pointer}
+.empty{color:var(--tm);padding:12px 0;font-size:13px}.prov{display:inline-block;font-size:11px;font-weight:700;background:var(--yellow);border:1px solid var(--out);border-radius:20px;padding:1px 8px}.prov.ok{background:#CFEBDD}
+.foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;color:var(--tm);padding:0 4px}.spin{font-size:12px;font-weight:700}
+.drawer{position:fixed;inset:0;z-index:60;display:flex;justify-content:flex-end;background:rgba(23,23,23,.35)}.dp{width:min(440px,100%);height:100%;background:var(--surface);border-left:2px solid var(--out);padding:18px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.dp h2{font-size:28px}.dp dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0}.dp dt{color:var(--tm)}.dp dd{margin:0;font-weight:600}.dp table{border-collapse:collapse;width:100%}.dp th{background:var(--muted);text-align:left}.dp th,.dp td{border:1px solid var(--bm);padding:6px 8px}
+.pad{padding:8px}.pad .opt{cursor:default}.pad .opt:hover{background:none}
+@media(max-width:1199px){.shell{grid-template-columns:minmax(0,1fr)}.hamb{display:grid}.side{position:fixed;left:0;top:0;bottom:0;z-index:50;width:240px;max-height:none;border-radius:0;background:var(--surface);transform:translateX(-105%);transition:transform .18s}.side.open{transform:none}
+.scrim.on{display:block;position:fixed;inset:0;z-index:45;background:rgba(23,23,23,.35)}.kpis{grid-template-columns:1fr 1fr}.mid{grid-template-columns:1fr}.low{grid-template-columns:1fr 1fr}.low>:last-child{grid-column:1/-1}.logo-desc{display:none}}
+@media(max-width:620px){.top{padding:8px 12px;gap:6px}.search{flex:0 0 auto}.search .box{width:42px;padding:0;justify-content:center}.search .box input,.search .kbd{display:none}.search.exp{position:static}.search.exp .box{position:absolute;left:8px;right:8px;top:8px;width:auto;padding:0 10px;z-index:3}.search.exp .box input{display:block}.search.exp .pop{left:8px;right:8px;width:auto;top:56px;position:fixed}
+.user div,.top .sel span{display:none}.logo-word{font-size:26px}.shell{padding:10px 12px 24px}.hero{min-height:0;flex-direction:column}.hero-art{position:relative;width:100%;top:0;margin-top:-10px}.hero h1{max-width:none}.kpis{gap:10px}.card{padding:10px}.kpi-b{flex-direction:column;align-items:flex-start}.low{grid-template-columns:1fr}.reg{grid-template-columns:1fr}
+.row{grid-template-columns:22px 1fr auto}.row .track{grid-column:2/-1}.ph{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.sh *{animation:none!important;transition:none!important}}
+`;
+
+/* ============ SMALL PARTS ============ */
+const ProvenanceBadge = ({ meta: m }) => (
+  <span className={`prov ${m?.provenance === 'source-backed' ? 'ok' : ''}`}>
+    {m?.provenance === 'mock' ? 'Illustrative data' : m?.provenance === 'mixed' ? 'Mixed data' : 'Source-backed'}
+  </span>
+);
+
+const SelectControl = ({ label, value, onChange, options, icon, small }) => {
+  const id = useId();
+  return (
+    <label className={`sel ${small ? 'sm' : ''}`} htmlFor={id}>
+      {icon}<span className="vh">{label}</span>
+      <select id={id} value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <ChevronDown size={15} className="chev" aria-hidden="true" />
+    </label>
+  );
+};
+
+const Sparkline = ({ data, color, id }) => {
+  if (!data?.length) return null;
+  const w = 130, h = 46, mx = Math.max(...data), mn = Math.min(...data), r = mx - mn || 1;
+  const pts = data.map((v, i) => [(i / (data.length - 1 || 1)) * w, h - 4 - ((v - mn) / r) * (h - 10)]);
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width="120" height="42" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <defs><linearGradient id={`g-${id}`} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={color} stopOpacity=".25" /><stop offset="1" stopColor={color} stopOpacity="0" /></linearGradient></defs>
+      <path d={`${line} L${w},${h} L0,${h} Z`} fill={`url(#g-${id})`} />
+      <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+};
+
+const Skeleton = ({ n = 5 }) => <div aria-busy="true" aria-label="Loading">{Array.from({ length: n }, (_, i) => <div className="skel" key={i} />)}</div>;
+const ErrorBox = ({ msg, onRetry }) => <div className="err" role="alert"><span>{msg}</span><button onClick={onRetry}>Retry</button></div>;
+
+/* ============ ARTWORK (decorative inline SVG) ============ */
+const HeroArt = () => (
+  <svg viewBox="0 0 640 230" aria-hidden="true" focusable="false">
+    <defs>
+      <pattern id="ht" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.1" fill="#171717" /></pattern>
+      <clipPath id="sunclip"><rect x="250" y="0" width="300" height="200" /></clipPath>
+    </defs>
+    <g clipPath="url(#sunclip)"><circle cx="400" cy="200" r="130" fill="#F2D34F" opacity=".95" /></g>
+    <g stroke="#292929" strokeWidth="1.2" fill="none">
+      <path d="M130 215V70M110 70h120M120 70l50-35 50 35M130 60l30-20M225 70v40" />
+      <path d="M270 215V90M255 90h60M262 90l30-28 30 28" />
+      <path d="M560 215V40M545 40h50M552 40l20-25 20 25" /><path d="M520 215v-110h30v110M520 140h30M520 170h30" />
+      <path d="M170 215V120h40v95M170 150h40M170 180h40" />
+    </g>
+    <path d="M330 215c0-50 22-62 58-70h30c36 8 58 20 58 70z" fill="#4a4a46" />
+    <path d="M330 215c0-50 22-62 58-70h30c36 8 58 20 58 70z" fill="url(#ht)" opacity=".55" />
+    <path d="M360 215l22-60 14 60M450 215l-22-60-14 60" fill="#F2D34F" opacity=".85" />
+    <ellipse cx="404" cy="108" rx="30" ry="36" fill="#cfcac0" /><ellipse cx="404" cy="108" rx="30" ry="36" fill="url(#ht)" opacity=".35" />
+    <path d="M370 100c0-30 18-44 36-44s34 14 34 44z" fill="#f5f4ee" stroke="#292929" strokeWidth="2" /><rect x="364" y="98" width="86" height="8" rx="4" fill="#f5f4ee" stroke="#292929" strokeWidth="2" />
+    <g transform="rotate(7 590 80)"><rect x="520" y="10" width="110" height="110" className="sticky" stroke="#171717" strokeWidth="2" />
+      {['EVIDENCE', 'INSIGHTS', 'PLANNING', 'IMPACT ↗'].map((t, i) => <text key={t} x="530" y={42 + i * 22} fontFamily="Anton,Impact,sans-serif" fontSize="18" fill="#171717">{t}</text>)}</g>
+    <rect x="590" y="200" width="30" height="24" fill="#EB791D" opacity=".9" />
+  </svg>
+);
+const SideArt = () => (
+  <svg viewBox="0 0 180 230" role="img" aria-label="Decorative illustration of two construction workers facing a building site" width="100%">
+    <defs><pattern id="ht2" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#171717" /></pattern></defs>
+    <rect width="180" height="230" fill="#ebe9e1" /><circle cx="120" cy="60" r="22" fill="#F2D34F" opacity=".8" />
+    <path d="M130 120V20M115 20h50M125 20l20-14 20 14" stroke="#555" strokeWidth="1.3" fill="none" /><path d="M20 120h30v-40H20zM60 120h30V60H60z" fill="#9a9a94" />
+    <path d="M10 230c0-40 12-62 36-66h8c24 4 36 26 36 66z" fill="#5b5b57" /><path d="M96 230c0-36 10-56 30-60h8c22 4 34 24 34 60z" fill="#77776f" />
+    <path d="M10 230c0-40 12-62 36-66h8c24 4 36 26 36 66z" fill="url(#ht2)" opacity=".4" />
+    <circle cx="50" cy="150" r="16" fill="#3d3d3a" /><path d="M32 148c0-14 8-20 18-20s18 6 18 20z" fill="#d8d6cd" stroke="#171717" strokeWidth="1.5" />
+    <circle cx="130" cy="156" r="15" fill="#3d3d3a" /><path d="M113 154c0-13 8-19 17-19s17 6 17 19z" fill="#d8d6cd" stroke="#171717" strokeWidth="1.5" />
+    <path d="M24 200l12-30M76 200l-12-30M110 205l10-30M156 205l-10-30" stroke="#F2D34F" strokeWidth="5" opacity=".8" />
+  </svg>
+);
+const REGION_SHADE = ['#0F3F78', '#1F5CA8', '#5C8FCB', '#A9C5E6'];
+const IndiaMap = () => (
+  <svg viewBox="0 0 160 190" role="img" aria-label="Decorative stylised map of India. It does not show data; see the ranked list." width="100%" style={{ maxWidth: 190 }}>
+    <path d="M60 8l22 6 8 18 22 6 4 16-12 8 20 12-4 10-24 2-10 24-14 44-12 46-12-30-14-50-26-24 4-16 20-4 6-20 12-8z" fill="#A9C5E6" stroke="#fff" strokeWidth="1.5" />
+    <path d="M36 82l24-4 10 22-14 24-22-14z" fill={REGION_SHADE[2]} stroke="#fff" /><path d="M70 100l24-8 4 22-18 22-14-16z" fill={REGION_SHADE[0]} stroke="#fff" />
+    <path d="M52 124l30 4-8 30-14 22-14-34z" fill={REGION_SHADE[1]} stroke="#fff" /><path d="M64 36l18 4 6 20-22 8-10-18z" fill={REGION_SHADE[1]} stroke="#fff" />
+    <path d="M94 66l24 4-4 14-24 2z" fill={REGION_SHADE[0]} stroke="#fff" />
+  </svg>
+);
+
+/* ============ SHELL ============ */
+function Header({ adapter, regions, regionCode, onRegion, profile, notes, onRead, onMenu, onPick }) {
+  const [q, setQ] = useState(''); const [res, setRes] = useState([]); const [hi, setHi] = useState(-1);
+  const [exp, setExp] = useState(false); const [pop, setPop] = useState(null); const [sErr, setSErr] = useState('');
+  const inp = useRef(null);
+  useEffect(() => {
+    const k = (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setExp(true); inp.current?.focus(); } };
+    window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
+  }, []);
+  useEffect(() => {
+    if (!q.trim()) { setRes([]); setSErr(''); return undefined; }
+    const ac = new AbortController();
+    const t = setTimeout(() => {
+      adapter.search({ query: q, regionCode, signal: ac.signal }).then((r) => { setRes(r); setHi(-1); setSErr(''); })
+        .catch((e) => { if (e.name !== 'AbortError') setSErr('Search failed. Try again.'); });
+    }, 250);
+    return () => { clearTimeout(t); ac.abort(); };
+  }, [q, regionCode, adapter]);
+  const choose = (r) => { setQ(''); setRes([]); setExp(false); onPick(r); };
+  const onKey = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setHi((h) => Math.min(h + 1, res.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setHi((h) => Math.max(h - 1, 0)); }
+    else if (e.key === 'Enter' && res[hi]) choose(res[hi]);
+    else if (e.key === 'Escape') { setQ(''); setRes([]); setExp(false); }
+  };
+  const unread = notes.filter((n) => !n.read).length;
+  return (
+    <header className="top">
+      <button className="ibtn hamb" aria-label="Open navigation menu" onClick={onMenu}><Menu /></button>
+      <div className="logo"><div className="logo-mark" aria-hidden="true">S</div><span className="logo-word">SHRAMIK</span><div className="logo-desc">LABOUR MARKET<br />INTELLIGENCE<br />SYSTEM</div></div>
+      <div className="spacer" />
+      <div className={`search ${exp ? 'exp' : ''}`}>
+        <div className="box" onClick={() => { setExp(true); inp.current?.focus(); }}>
+          <Search size={18} aria-hidden="true" />
+          <input ref={inp} aria-label="Search skills, occupations, sectors or regions" placeholder="Search for skills, occupations, sectors or regions…" value={q}
+            onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} role="combobox" aria-expanded={res.length > 0} aria-controls="sres" aria-autocomplete="list" />
+          <span className="kbd">Ctrl</span><span className="kbd">K</span>
+        </div>
+        {(res.length > 0 || sErr || (q.trim() && !res.length)) && q.trim() && (
+          <div className="pop" id="sres" role="listbox" aria-label="Search results">
+            {sErr ? <div className="empty">{sErr}</div> : res.length ? res.map((r, i) => (
+              <button key={`${r.type}-${r.id}`} role="option" aria-selected={i === hi} className="opt" onClick={() => choose(r)}><span>{r.label}</span><small>{r.type}</small></button>
+            )) : <div className="empty">No results yet. Try a skill, sector or state.</div>}
+          </div>
+        )}
+      </div>
+      <SelectControl label="Region" value={regionCode} onChange={onRegion} icon={<MapPin size={16} aria-hidden="true" />} options={regions.map((r) => ({ value: r.code, label: r.name }))} />
+      <div style={{ position: 'relative' }}>
+        <button className="ibtn" aria-label={`Notifications, ${unread} unread`} aria-expanded={pop === 'n'} onClick={() => setPop(pop === 'n' ? null : 'n')}><Bell />{unread > 0 && <span className="dot" />}</button>
+        {pop === 'n' && <div className="pop" role="dialog" aria-label="Notifications" onKeyDown={(e) => e.key === 'Escape' && setPop(null)}>
+          {notes.map((n) => <div className="opt" key={n.id}><span style={{ fontWeight: n.read ? 400 : 700 }}>{n.text}</span>
+            {!n.read && <button className="va" onClick={() => onRead(n.id)}><Check size={14} />Mark read</button>}</div>)}
+        </div>}
+      </div>
+      <div style={{ position: 'relative' }}>
+        <button className="user" aria-expanded={pop === 'p'} aria-label="Open profile" onClick={() => setPop(pop === 'p' ? null : 'p')}>
+          <span className="av" aria-hidden="true">{profile?.initial || 'A'}</span>
+          <div><b>{profile?.name || '…'}</b><span>{profile?.role || ''}</span></div><ChevronDown size={16} aria-hidden="true" />
+        </button>
+        {pop === 'p' && <div className="pop pad" role="dialog" aria-label="Profile" onKeyDown={(e) => e.key === 'Escape' && setPop(null)}>
+          <b>{profile?.name}</b><div>{profile?.role}</div><div style={{ color: 'var(--tm)' }}>{profile?.email}</div>
+        </div>}
+      </div>
+    </header>
+  );
+}
+
+const NAV = [['dashboard', 'Dashboard'], ['demand', 'Demand'], ['supply', 'Supply'], ['gap', 'Skill Gaps', 'skill-gaps'], ['forecasts', 'Forecasts'],
+  ['emerging', 'Emerging Skills'], ['scenario', 'Scenario Simulator'], ['reports', 'Reports'], ['---'], ['sources', 'Data Sources'], ['quality', 'Data Quality']];
+function Sidebar({ active, onNav, open, onClose }) {
+  return (
+    <>
+      <div className={`scrim ${open ? 'on' : ''}`} onClick={onClose} />
+      <aside className={`side ${open ? 'open' : ''}`}>
+        <nav className="nav" aria-label="Primary">
+          {NAV.map((n, i) => n[0] === '---' ? <hr key={i} /> : (
+            <button key={n[0]} aria-current={active === n[0] ? 'page' : undefined} onClick={() => onNav(n[0], n[2] || n[0], n[1])}><Icon k={n[0]} />{n[1]}</button>))}
+        </nav>
+        <div className="side-art"><SideArt /></div>
+        <div className="note"><Lightbulb size={22} color="#C79A00" aria-hidden="true" /><span>Data for people. Opportunities for a stronger India.</span></div>
+      </aside>
+    </>
+  );
+}
+
+/* ============ DETAIL DRAWER ============ */
+function DetailDrawer({ d, onClose }) {
+  const ref = useRef(null); const prev = useRef(null);
+  useEffect(() => {
+    prev.current = document.activeElement; ref.current?.querySelector('button')?.focus();
+    return () => prev.current?.focus?.();
+  }, []);
+  const key = (e) => {
+    if (e.key === 'Escape') { onClose(); return; }
+    if (e.key !== 'Tab') return;
+    const f = ref.current.querySelectorAll('button,[href],input,select,[tabindex]:not([tabindex="-1"])');
+    if (!f.length) return;
+    const a = f[0], z = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+    else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+  };
+  return (
+    <div className="drawer" onClick={onClose}>
+      <div className="dp" role="dialog" aria-modal="true" aria-labelledby="dp-h" ref={ref} onKeyDown={key} onClick={(e) => e.stopPropagation()}>
+        <div className="ph"><h2 id="dp-h">{d.title}</h2><button className="ibtn" aria-label="Close details" onClick={onClose}><X /></button></div>
+        {d.status === 'loading' && <Skeleton n={4} />}
+        {d.status === 'error' && <ErrorBox msg={d.error} onRetry={d.retry} />}
+        {d.status === 'ready' && <>
+          <dl>{d.data.facts.map((f) => <><dt key={`${f.label}-t`}>{f.label}</dt><dd key={`${f.label}-d`}>{f.value}</dd></>)}</dl>
+          {d.data.table && <table><thead><tr>{d.data.table.columns.map((c) => <th key={c}>{c}</th>)}</tr></thead>
+            <tbody>{d.data.table.rows.map((r) => <tr key={r[0]}>{r.map((c, i) => <td key={i}>{c}</td>)}</tr>)}</tbody></table>}
+          <div><ProvenanceBadge meta={d.data.meta} /></div>
+          <div style={{ fontSize: 12, color: 'var(--tm)' }}>Source: {d.data.meta.sourceLabel} · Updated {d.data.meta.updatedAt}<br />{d.data.meta.notes}</div>
+        </>}
+      </div>
+    </div>
+  );
+}
+
+/* ============ SUPPLY INSIGHTS: extra icons ============ */
+const GraduationCap = mkIcon('GraduationCap'), BadgeCheck = mkIcon('BadgeCheck'), Briefcase = mkIcon('Briefcase'),
+  Calendar = mkIcon('Calendar'), Globe = mkIcon('Globe'), Filter = mkIcon('Filter'), RotateCcw = mkIcon('RotateCcw'), MapOff = mkIcon('MapPin');
+const KPI_ICON = { supply: Users, capacity: GraduationCap, completions: BadgeCheck, formal: Briefcase };
+
+/* ============ SUPPLY MOCK ADAPTER (isolated; every response is "Illustrative demo data") ============ */
+const sm = (extra) => ({ provenance: 'mock', sourceLabel: 'Illustrative demo data', updatedAt: '2026-10-14', coverage: 'Demo only. Not official statistics.', ...extra });
+const STATES = [['UP', 'Uttar Pradesh', 5.8], ['MH', 'Maharashtra', 4.2], ['BR', 'Bihar', 2.9], ['WB', 'West Bengal', 2.7], ['TN', 'Tamil Nadu', 2.5],
+  ['MP', 'Madhya Pradesh', 2.1], ['RJ', 'Rajasthan', 1.9], ['KA', 'Karnataka', 1.8], ['GJ', 'Gujarat', 1.6]];
+const opt = (value, label) => ({ value, label });
+const OPTIONS = {
+  period: [opt('2024', '2024 (Latest)'), opt('2023', '2023'), opt('2022', '2022')],
+  geography: [opt('all', 'All India'), opt('urban', 'Urban'), opt('rural', 'Rural')],
+  state: [opt('', 'All States'), ...STATES.map(([c, n]) => opt(c, n))],
+  sector: [opt('', 'All Sectors'), opt('construction', 'Construction'), opt('manufacturing', 'Manufacturing'), opt('it-ites', 'IT-ITES'), opt('healthcare', 'Healthcare')],
+  occupation: [opt('', 'All Occupations'), opt('demo-01', 'Agricultural Labourers'), opt('demo-02', 'Retail Salespersons'), opt('demo-03', 'Construction Labourers')],
+  skill: [opt('', 'All Skills'), opt('digital', 'Digital skills'), opt('technical', 'Technical skills')],
+};
+const DEFAULTS = { period: '2024', geography: 'all', state: '', sector: '', occupation: '', skill: '' };
+const scaleOf = (f) => {
+  let k = 1 - (2024 - Number(f.period)) * 0.03;
+  if (f.state) k *= (STATES.find((s) => s[0] === f.state)?.[2] || 2) / 32.7;
+  if (f.geography === 'urban') k *= 0.35; if (f.geography === 'rural') k *= 0.65;
+  if (f.sector) k *= 0.28; if (f.occupation) k *= 0.12; if (f.skill) k *= 0.2;
+  return k;
+};
+const snap = (f) => `demo-${Object.values(f).join('.') || 'default'}`;
+const M1 = (v, s = ' Million') => `${v.toFixed(1)}${s}`;
+const KP = [
+  ['supply', 'Estimated Workforce Supply', 32.7, 'million persons', 5.8, 'Demo definition: estimated stock of employed persons in the selected scope.'],
+  ['capacity', 'Training Capacity (Annual)', 12.4, 'million seats per year', 8.1, 'Demo definition: annual sanctioned training seats across covered schemes.'],
+  ['completions', 'Training Completions', 8.6, 'million candidates per year', 10.3, 'Demo definition: candidates certified in covered schemes during the period.'],
+  ['formal', 'Formal Employment Indicator', 18.9, 'million persons', null, 'Demo definition: formal-sector employed persons. Period comparison not supported by source definitions.'],
+];
+const OCC = [['demo-01', 'Agricultural Labourers', 4.8, 4.2, [3, 3.4, 3.2, 3.8, 4.1]], ['demo-02', 'Retail Salespersons', 3.1, 6.8, [2, 2.2, 2.5, 2.8, 3]],
+  ['demo-03', 'Construction Labourers', 2.9, 5.9, [2.2, 2.4, 2.5, 2.7, 2.9]], ['demo-04', 'Teaching Professionals', 1.8, 7.1, [1.2, 1.3, 1.5, 1.6, 1.8]],
+  ['demo-05', 'Drivers and Mobile Plant Operators', 1.6, 6.4, [1.1, 1.2, 1.3, 1.5, 1.6]]];
+const SEC = [['construction', 'Construction', 3.1, 78, 9.2], ['manufacturing', 'Manufacturing', 2.4, 74, 8.6], ['it-ites', 'IT-ITES', 1.8, 69, 11.4],
+  ['healthcare', 'Healthcare', 1.2, 71, 10.1], ['agri', 'Agriculture and Allied', 1.0, 63, 5.7]];
+const MET = { 'workforce-supply': ['Workforce Supply', 1, 'million persons'], 'training-capacity': ['Training Capacity', 0.38, 'million seats per year'], 'training-completions': ['Training Completions', 0.26, 'million candidates per year'] };
+const YEARS = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
+
+const SupplyMock = {
+  async getFilterOptions(signal) { await lat(signal); return { options: OPTIONS, defaults: DEFAULTS, meta: sm() }; },
+  async getOverview({ filters, signal }) {
+    await lat(signal); const k = scaleOf(filters); const prev = String(Number(filters.period) - 1);
+    return {
+      snapshotId: snap(filters), meta: sm(),
+      kpis: KP.map(([id, label, v, unit, d, definition]) => ({ id, label, value: v * k, formatted: M1(v * k), unit, period: filters.period, definition,
+        delta: d == null ? null : { formatted: `+${d}%`, basis: `vs ${prev}` } })),
+      topOccupations: OCC.map(([id, label, v, g, sp]) => ({ id, code: id.toUpperCase(), label, formatted: M1(v * k, 'M'), growth: `+${g}%`, spark: sp.map((x) => x * k) })),
+      topTrainingSectors: SEC.map(([id, label, c, u, g]) => ({ id, label, capacity: M1(c * k, 'M'), utilisation: `${u}%`, growth: `+${g}%` })),
+    };
+  },
+  async getTrend({ view, filters, signal }) {
+    await lat(signal); const k = scaleOf(filters);
+    const mk = (id, label, color, unit, vals, obs, band) => ({ id, label, color, unit, points: YEARS.slice(0, vals.length).map((p, i) => {
+      const o = i < obs, v = vals[i]; return { period: p, value: v, kind: o ? 'observed' : 'forecast', lower: !o && band ? v - band * (i - obs + 1) : null, upper: !o && band ? v + band * (i - obs + 1) : null }; }) });
+    const views = [opt('workforce', 'Workforce supply (stock)'), opt('training', 'Training flows (annual)'), opt('formal', 'Formal employment indicator')];
+    let series;
+    if (view === 'training') series = [mk('cap', 'Training capacity', 'var(--orange)', 'million seats per year', [7.6, 7.9, 9, 10, 11.1, 12.4].map((x) => x * k), 6), mk('cmp', 'Training completions', 'var(--teal)', 'million candidates per year', [3.8, 4.1, 5.2, 6, 7.4, 8.6].map((x) => x * k), 6)];
+    else if (view === 'formal') series = [mk('frm', 'Formal employment share', 'var(--navy)', '% of workforce', [51, 52, 53.5, 55, 56.2, 57.8], 6)];
+    else series = [mk('wf', 'Workforce supply (estimated stock)', 'var(--navy)', 'million persons', [27.1, 27.9, 28.8, 30.9, 31.0, 32.7, 34.1, 35.4].map((x) => x * k), 6, 0.5 * k)];
+    return { views, view: view || 'workforce', series, meta: sm({ notes: view === 'workforce' || !view ? 'Forecast values and intervals are demo values from a mock forecasting service.' : 'Observed demo history only.' }), snapshotId: snap(filters) };
+  },
+  async getRegions({ metric, filters, signal }) {
+    await lat(signal); const [name, mf, unit] = MET[metric] || MET['workforce-supply']; const k = scaleOf({ ...filters, state: '' });
+    const rows = STATES.map(([c, n, v]) => ({ stateCode: c, label: n, value: v * mf * k })); const known = rows.reduce((a, r) => a + r.value, 0); const total = known / 0.78;
+    const mx = Math.max(...rows.map((r) => r.value));
+    return { metric, unit, metrics: Object.entries(MET).map(([v, m]) => opt(v, m[0])), geometry: { status: 'unconfigured' }, period: filters.period, snapshotId: snap(filters), meta: sm(),
+      rows: [...rows.map((r, i) => ({ id: r.stateCode, rank: i + 1, stateCode: r.stateCode, label: r.label, formatted: M1(r.value, 'M'), share: `${((r.value / total) * 100).toFixed(1)}%`, displayScore: (r.value / mx) * 100 })),
+        { id: 'others', rank: 10, stateCode: null, label: 'Others', formatted: M1(total - known, 'M'), share: `${(((total - known) / total) * 100).toFixed(1)}%`, displayScore: ((total - known) / total) * 100 }] };
+  },
+  async getInsights({ filters, signal }) {
+    await lat(signal); const k = scaleOf(filters);
+    return { method: 'Rule-based summary (demo)', generatedAt: '2026-10-14T09:00:00Z', snapshotId: snap(filters), meta: sm(),
+      items: [
+        { id: 'i1', text: `Estimated workforce supply is ${M1(32.7 * k)} in ${filters.period}, up 5.8% on the prior period (demo values).`, evidence: ['supply'] },
+        { id: 'i2', text: `Training capacity is ${M1(12.4 * k)} per year, while completions are ${M1(8.6 * k)}. These are annual flows and are not added to the workforce stock.`, evidence: ['capacity', 'completions'] },
+        { id: 'i3', text: 'Utilisation is highest in Construction among the five listed sectors (demo).', evidence: ['construction'] },
+        { id: 'i4', text: 'A comparable formal employment trend is not available, so no growth is stated.', evidence: ['formal'] },
+      ] };
+  },
+  async getDetail(id, { filters, signal } = {}) {
+    await lat(signal);
+    if (id === 'all-states') return { title: 'All states and UTs (demo)', facts: [{ label: 'Scope', value: 'Demo rows only' }], table: { columns: ['State / UT', 'Code'], rows: STATES.map(([c, n]) => [n, c]) }, meta: sm() };
+    if (id === 'all-occupations') return { title: 'All occupations (demo)', facts: [{ label: 'Taxonomy', value: 'Demo codes' }], table: { columns: ['Occupation', 'Code'], rows: OCC.map(([c, n]) => [n, c.toUpperCase()]) }, meta: sm() };
+    if (id === 'all-sectors') return { title: 'All training sectors (demo)', facts: [{ label: 'Utilisation', value: 'Completions ÷ sanctioned seats (demo definition)' }], table: { columns: ['Sector', 'Capacity'], rows: SEC.map(([c, n, v]) => [n, M1(v, 'M')]) }, meta: sm() };
+    const kp = KP.find((x) => x[0] === id); const oc = OCC.find((x) => x[0] === id); const se = SEC.find((x) => x[0] === id);
+    const title = kp?.[1] || oc?.[1] || se?.[1] || id;
+    return { title, facts: [{ label: 'Definition', value: kp?.[5] || 'Demo item definition.' }, { label: 'Unit', value: kp?.[3] || 'See table' }, { label: 'Period', value: filters?.period || '2024' },
+      { label: 'Geography', value: OPTIONS.state.find((o) => o.value === filters?.state)?.label || 'All India' }, { label: 'Coverage', value: 'Demo only' }], table: null, meta: sm() };
+  },
+};
+const mergeAdapter = (a) => ({ ...MockAdapter, ...SupplyMock, ...(a || {}) });
+
+/* ============ SUPPLY CSS ============ */
+const CSS2 = `
+.intro{position:relative;display:flex;justify-content:space-between;gap:16px;overflow:hidden;min-height:150px}.intro h1{font-size:clamp(44px,6vw,76px);line-height:.95;margin:6px 0 8px}.intro p{margin:0;max-width:36em;font-size:15px}
+.intro-art{width:min(300px,34%);flex-shrink:0;align-self:flex-end}.intro-art svg{width:100%;display:block}
+.filters{display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) auto;gap:10px 12px;align-items:end}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:4px}.field .sel{width:100%;height:40px}.field select{width:100%}
+.fbtn{display:flex;gap:8px}.apply{display:flex;align-items:center;gap:8px;background:var(--yellow);border:1.5px solid var(--out);border-radius:8px;height:40px;padding:0 14px;font-weight:700;cursor:pointer;box-shadow:2px 2px 0 var(--out)}
+.reset{width:40px;height:40px;border:1.5px solid var(--out);border-radius:8px;background:var(--surface);cursor:pointer;display:grid;place-items:center}.dirty{font-size:12px;color:var(--tm);grid-column:1/-1}
+.skpi{cursor:pointer;width:100%;text-align:left;display:flex;gap:12px;align-items:center}.skpi:hover{background:#fff}.badge{width:46px;height:46px;border:1.5px solid var(--out);border-radius:10px;display:grid;place-items:center;flex-shrink:0}
+.skpi h3{font:700 13px var(--body);text-transform:none}.skpi .val{font-size:clamp(28px,2.6vw,38px);margin:2px 0}.skpi small{display:block;color:var(--tm);font-size:12px}
+.stale{font-size:12px;font-weight:700;color:#8a5a00;background:#FFF3CF;border:1px solid #E0B94A;border-radius:6px;padding:2px 8px;display:inline-flex;gap:8px;align-items:center;margin-bottom:6px}.stale button{background:none;border:0;text-decoration:underline;cursor:pointer;font-weight:700}
+.mid2{display:grid;grid-template-columns:1.6fr 1fr;gap:14px}.reg2{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr);gap:10px}
+.nomap{border:1.5px dashed var(--out);border-radius:10px;padding:12px;font-size:12.5px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;background:var(--muted);height:100%}
+.tw{overflow-x:auto}.tbl{width:100%;border-collapse:collapse;font-size:13px}.tbl th{text-align:left;font-size:12px;color:var(--tm);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--out)}.tbl td{padding:6px;border-bottom:1px solid var(--bm);vertical-align:middle}
+.tbl .lk{background:none;border:0;cursor:pointer;text-align:left;padding:0;font-weight:600}.tbl .lk:hover{text-decoration:underline}.tbl tr[aria-current=true] td{background:var(--yellow)}.tbl small{display:block;color:var(--tm);font-size:11px}
+.mini{display:flex;align-items:center;gap:6px}.mini .track{flex:1;min-width:30px}.sel-note{font-size:12px;color:var(--tm);margin-top:6px}
+.ins{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;font-size:13px}.ins li{border-left:3px solid var(--yellow);padding-left:10px}
+.chip{background:var(--muted);border:1px solid var(--out);border-radius:20px;font-size:11px;padding:0 7px;margin:4px 4px 0 0;cursor:pointer;font-weight:600}.method{font-size:12px;color:var(--tm);margin-top:8px}
+.lvl{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;margin:0 0 4px;justify-content:flex-end}.lvl i{display:inline-block;width:22px;border-top:3px solid;vertical-align:middle;margin-right:5px}
+.dtog{font-size:12px;text-decoration:underline;background:none;border:0;cursor:pointer;margin-top:6px;font-weight:600}
+@media(max-width:1199px){.filters{grid-template-columns:repeat(3,minmax(0,1fr))}.fbtn{grid-column:1/-1}.mid2{grid-template-columns:1fr}.intro-art{width:26%}}
+@media(max-width:620px){.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.reg2{grid-template-columns:1fr}.intro-art{display:none}.skpi{flex-direction:column;align-items:flex-start;gap:6px}.skpi .val{font-size:26px}}
+`;
+
+/* ============ SUPPLY HOOKS & PARTS ============ */
+function useRes(load, deps) {
+  const [s, set] = useState({ status: 'loading' }); const [n, setN] = useState(0);
+  useEffect(() => {
+    const ac = new AbortController();
+    set((p) => (p.data ? { ...p, status: 'refreshing' } : { status: 'loading' }));
+    load(ac.signal).then((data) => set({ status: 'ready', data }))
+      .catch((e) => { if (e.name !== 'AbortError') set((p) => ({ ...p, status: 'error', error: e.message || 'Request failed' })); });
+    return () => ac.abort();
+  }, [...deps, n]); // eslint-disable-line
+  return [s, () => setN((x) => x + 1)];
+}
+const Body = ({ s, retry, rows = 4, children }) => {
+  if (s.status === 'loading') return <Skeleton n={rows} />;
+  if (!s.data) return <ErrorBox msg={`This panel could not load. ${s.error || ''}`} onRetry={retry} />;
+  return <>{s.status === 'error' && <div className="stale" role="alert">Stale: showing last successful data. <button onClick={retry}>Retry</button></div>}{children(s.data)}</>;
+};
+const Field = ({ label, value, onChange, options, icon }) => {
+  const id = useId();
+  return (<div className="field"><label htmlFor={id}>{label}</label><div className="sel">{icon}
+    <select id={id} value={value} onChange={(e) => onChange(e.target.value)}>{options.map((o) => <option key={o.value || 'all'} value={o.value}>{o.label}</option>)}</select>
+    <ChevronDown size={15} className="chev" aria-hidden="true" /></div></div>);
+};
+const IntroArt = () => (
+  <svg viewBox="0 0 300 130" aria-hidden="true" focusable="false"><circle cx="190" cy="100" r="62" fill="#F2D34F" />
+    <g fill="#292929">{[[20, 70, 18], [44, 50, 22], [72, 62, 16], [96, 36, 24], [128, 56, 20], [158, 44, 22], [196, 64, 18], [226, 46, 24], [256, 60, 20]].map(([x, y, w], i) => <rect key={i} x={x} y={y} width={w} height={130 - y} />)}</g>
+    <path d="M60 130V10M40 10h60M50 10l20-8 20 8" stroke="#171717" strokeWidth="2" fill="none" /></svg>
+);
+
+function SupplyKpi({ k, onOpen }) {
+  const I = KPI_ICON[k.id] || Users; const tint = { supply: '#DCE8F5', capacity: '#FBD9BC', completions: '#CDEDE9', formal: '#F8EBB0' }[k.id];
+  return (
+    <button className="card skpi" onClick={() => onOpen(k.id)} aria-label={`${k.label}: ${k.formatted}. ${k.delta ? k.delta.formatted + ' ' + k.delta.basis : 'Comparison not available'}. Open definition and metadata`}>
+      <span className="badge" style={{ background: tint }}><I size={22} aria-hidden="true" /></span>
+      <span><h3>{k.label}</h3><div className="val">{k.formatted}</div>
+        {k.delta ? <span className="delta"><ArrowUpRight size={14} aria-hidden="true" />{k.delta.formatted} <small style={{ display: 'inline' }}>{k.delta.basis}</small></span> : <small>Comparison not available</small>}
+        <small>{k.unit} · {k.period}</small></span>
+    </button>
+  );
+}
+
+function SupplyTrend({ s, retry, view, onView }) {
+  const [tip, setTip] = useState(null); const [tbl, setTbl] = useState(false);
+  return (
+    <section className="card" aria-labelledby="st-h">
+      <div className="ph"><div><h2 id="st-h">Supply Trend</h2><p>Observed history is solid; forecast is dashed</p></div>
+        {s.data && <SelectControl small label="View by" value={view} onChange={onView} options={s.data.views} />}</div>
+      <Body s={s} retry={retry} rows={6}>{(d) => {
+        const W = 620, H = 270, L = 48, R = 20, T = 14, B = 34;
+        const periods = d.series[0].points.map((p) => p.period);
+        const allv = d.series.flatMap((x) => x.points.flatMap((p) => [p.value, p.upper ?? p.value]));
+        const mx = Math.max(...allv) * 1.12; const step = mx > 60 ? 20 : mx > 25 ? 10 : mx > 10 ? 5 : 2; const top = Math.ceil(mx / step) * step;
+        const ticks = []; for (let t = 0; t <= top; t += step) ticks.push(t);
+        const X = (i) => L + (i / (periods.length - 1 || 1)) * (W - L - R); const Y = (v) => T + (1 - v / top) * (H - T - B);
+        const lastObs = (x) => x.points.filter((p) => p.kind === 'observed').length - 1;
+        const hasF = d.series.some((x) => x.points.some((p) => p.kind === 'forecast'));
+        const unitOf = d.series.map((x) => x.unit).filter((u, i, a) => a.indexOf(u) === i).join(' / ');
+        return (<div className="chart">
+          <div className="lvl">{d.series.map((x) => <span key={x.id}><i style={{ borderColor: x.color }} />{x.label}</span>)}{hasF && <span><i style={{ borderColor: '#62625C', borderTopStyle: 'dashed' }} />Forecast</span>}</div>
+          <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Line chart, ${d.series.map((x) => x.label).join(' and ')}, ${periods[0]} to ${periods[periods.length - 1]}, unit ${unitOf}. A data table alternative is available below. Illustrative data.`}>
+            {ticks.map((t) => <g key={t}><line x1={L} x2={W - R} y1={Y(t)} y2={Y(t)} stroke="var(--bm)" /><text x={L - 8} y={Y(t) + 4} textAnchor="end" fontSize="12">{t}</text></g>)}
+            {periods.map((p, i) => <text key={p} x={X(i)} y={H - 10} textAnchor="middle" fontSize="12">{p}</text>)}
+            <text x="4" y="12" fontSize="11" fill="#62625C">{unitOf}</text>
+            {hasF && (() => { const i = lastObs(d.series[0]); return <g><line x1={X(i)} x2={X(i)} y1={T} y2={H - B} stroke="#62625C" strokeDasharray="3 4" /><text x={X(i) + 6} y={T + 10} fontSize="11" fill="#62625C">Forecast →</text></g>; })()}
+            {d.series.map((x) => { const i0 = lastObs(x); const obs = x.points.slice(0, i0 + 1); const fc = x.points.slice(i0);
+              const band = fc.length > 1 && fc.every((p, j) => j === 0 || p.lower != null);
+              return (<g key={x.id}>
+                {band && <polygon fill={x.color} opacity=".15" points={[...fc.map((p, j) => `${X(i0 + j)},${Y(j === 0 ? p.value : p.upper)}`), ...fc.map((p, j) => `${X(i0 + j)},${Y(j === 0 ? p.value : p.lower)}`).reverse()].join(' ')} />}
+                <path d={obs.map((p, j) => `${j ? 'L' : 'M'}${X(j)},${Y(p.value)}`).join(' ')} fill="none" stroke={x.color} strokeWidth="3" />
+                {fc.length > 1 && <path d={fc.map((p, j) => `${j ? 'L' : 'M'}${X(i0 + j)},${Y(p.value)}`).join(' ')} fill="none" stroke={x.color} strokeWidth="3" strokeDasharray="7 5" />}
+                {x.points.map((p, j) => <circle key={p.period} cx={X(j)} cy={Y(p.value)} r="5" tabIndex={0} fill={p.kind === 'observed' ? x.color : '#fff'} stroke={x.color} strokeWidth="2"
+                  aria-label={`${p.period} ${x.label} ${p.value.toFixed(1)} ${x.unit}, ${p.kind}`}
+                  onMouseEnter={() => setTip({ x: (X(j) / W) * 100, y: (Y(p.value) / H) * 100, p, x })} onFocus={() => setTip({ x: (X(j) / W) * 100, y: (Y(p.value) / H) * 100, p, x })}
+                  onMouseLeave={() => setTip(null)} onBlur={() => setTip(null)} />)}</g>); })}
+          </svg>
+          {tip && <div className="tip" role="status" style={{ left: `${tip.x}%`, top: `${tip.y}%` }}>{tip.p.period} · {tip.x.label}: {tip.p.value.toFixed(1)} {tip.x.unit} · {tip.p.kind}{tip.p.lower != null ? ` (${tip.p.lower.toFixed(1)} to ${tip.p.upper.toFixed(1)})` : ''} · {d.meta.provenance}</div>}
+          <button className="dtog" aria-expanded={tbl} onClick={() => setTbl(!tbl)}>{tbl ? 'Hide data table' : 'Show data table'}</button>
+          {tbl && <div className="tw"><table className="tbl"><caption className="vh">Trend data table</caption><thead><tr><th>Period</th>{d.series.map((x) => <th key={x.id}>{x.label} ({x.unit})</th>)}<th>Status</th></tr></thead>
+            <tbody>{periods.map((p, i) => <tr key={p}><td>{p}</td>{d.series.map((x) => <td key={x.id}>{x.points[i].value.toFixed(1)}</td>)}<td>{d.series[0].points[i].kind}</td></tr>)}</tbody></table></div>}
+          <div className="sel-note">{d.meta.notes}</div></div>);
+      }}</Body>
+    </section>
+  );
+}
+
+function RegionPanel({ s, retry, metric, onMetric, selected, onState, onAll }) {
+  return (
+    <section className="card" aria-labelledby="sr-h">
+      <div className="ph"><div><h2 id="sr-h">Supply by Region</h2><p>{s.data ? `${MET[metric][0]}, ${s.data.period} (${s.data.unit})` : 'Loading…'}</p></div>
+        {s.data && <SelectControl small label="Metric" value={metric} onChange={onMetric} options={s.data.metrics} />}</div>
+      <Body s={s} retry={retry} rows={6}>{(d) => (
+        <div className="reg2">
+          <div className="nomap" role="status"><MapOff size={22} aria-hidden="true" /><b>Map unavailable</b>
+            <span>Map unavailable until verified state geometry is configured. Use the table or the State / UT filter to select a state.</span>
+            <span style={{ color: 'var(--tm)' }}>Missing or suppressed values would appear in a neutral hatch, never the lowest colour.</span></div>
+          <div className="tw"><table className="tbl"><caption className="vh">Ranked states and union territories</caption>
+            <thead><tr><th>#</th><th>State / UT</th><th>{MET[metric][0]}</th><th>Share</th></tr></thead>
+            <tbody>{d.rows.map((r) => (<tr key={r.id} aria-current={r.stateCode && r.stateCode === selected ? true : undefined}>
+              <td>{r.rank}</td>
+              <td>{r.stateCode ? <button className="lk" onClick={() => onState(r.stateCode)} aria-label={`Select ${r.label}`}>{r.label}</button> : r.label}</td>
+              <td><div className="mini"><b>{r.formatted}</b><div className="track" aria-hidden="true"><i style={{ width: `${r.displayScore}%`, background: 'var(--navy)' }} /></div></div></td>
+              <td>{r.share}</td></tr>))}</tbody></table></div>
+        </div>)}</Body>
+      <button className="cta" onClick={onAll}>View detailed regional table <ArrowRight size={16} aria-hidden="true" /></button>
+    </section>
+  );
+}
+
+const Panel = ({ id, title, sub, s, retry, onAll, allLabel, children }) => (
+  <section className="card" aria-labelledby={`${id}-h`}>
+    <div className="ph"><div><h2 id={`${id}-h`}>{title}</h2><p>{sub}</p></div></div>
+    <Body s={s} retry={retry} rows={5}>{children}</Body>
+    {onAll && <button className="va" style={{ marginTop: 10 }} onClick={onAll}>{allLabel} <ArrowRight size={14} aria-hidden="true" /></button>}
+  </section>
+);
+
+/* ============ SUPPLY INSIGHTS PAGE ============ */
+function SupplyInsightsPage({ dataAdapter, onNavigate }) {
+  const A = useRef(mergeAdapter(dataAdapter)).current;
+  const [optS] = useRes((sig) => A.getFilterOptions(sig), []);
+  const options = optS.data?.options || OPTIONS; const defaults = optS.data?.defaults || DEFAULTS;
+  const [draft, setDraft] = useState(DEFAULTS); const [applied, setApplied] = useState(DEFAULTS);
+  const [view, setView] = useState('workforce'); const [metric, setMetric] = useState('workforce-supply');
+  const [profile, setProfile] = useState(null); const [notes, setNotes] = useState([]); const [menu, setMenu] = useState(false); const [drawer, setDrawer] = useState(null);
+  const ak = Object.values(applied).join('|');
+  const [ov, retryOv] = useRes((sig) => A.getOverview({ filters: applied, signal: sig }), [ak]);
+  const [tr, retryTr] = useRes((sig) => A.getTrend({ view, filters: applied, signal: sig }), [ak, view]);
+  const [rg, retryRg] = useRes((sig) => A.getRegions({ metric, filters: applied, signal: sig }), [ak, metric]);
+  const [ins, retryIns] = useRes((sig) => A.getInsights({ filters: applied, signal: sig }), [ak]);
+
+  useEffect(() => { const ac = new AbortController(); A.getProfile(ac.signal).then(setProfile).catch(() => {}); A.getNotifications(ac.signal).then(setNotes).catch(() => {}); return () => ac.abort(); }, [A]);
+  const dirty = Object.keys(draft).some((k) => draft[k] !== applied[k]);
+  const drill = (code) => { const f = { ...applied, state: code === 'IN' ? '' : code }; setDraft(f); setApplied(f); };
+  const openDetail = useCallback((title, loader) => {
+    const run = () => { setDrawer({ title, status: 'loading', retry: run });
+      loader().then((data) => setDrawer({ title: data.title || title, status: 'ready', data })).catch(() => setDrawer({ title, status: 'error', error: 'Details could not be loaded.', retry: run })); };
+    run();
+  }, []);
+  const detail = (id, title) => openDetail(title || id, () => A.getDetail(id, { filters: applied }));
+  const nav = (key, sec, label) => {
+    setMenu(false); onNavigate?.(`/${key}`, label); window.dispatchEvent(new CustomEvent('shramik:navigate', { detail: { key, label } }));
+    if (key !== 'supply') openDetail(label, () => A.getSectionDetail(sec, { regionCode: 'IN' }).then((d) => ({ ...d, title: label })));
+  };
+  const pick = (r) => (r.type === 'region' ? drill(r.id) : detail(r.id, r.label));
+  const read = (id) => A.markNotificationRead(id).then(() => setNotes((n) => n.map((x) => (x.id === id ? { ...x, read: true } : x)))).catch(() => {});
+  const regions = [{ code: 'IN', name: 'India (National)' }, ...STATES.map(([c, n]) => ({ code: c, name: n }))];
+  const set = (k) => (v) => setDraft((d) => ({ ...d, [k]: v }));
+  const ovd = ov.data; const meta = ovd?.meta || ov.data?.meta;
+  const busy = [ov, tr, rg, ins].some((x) => x.status === 'loading' || x.status === 'refreshing');
+  return (
+    <div className="sh">
+      <style>{CSS}{CSS2}</style>
+      <Header adapter={A} regions={regions} regionCode={applied.state || 'IN'} onRegion={drill} profile={profile} notes={notes} onRead={read} onMenu={() => setMenu(true)} onPick={pick} />
+      <div className="shell">
+        <Sidebar active="supply" onNav={nav} open={menu} onClose={() => setMenu(false)} />
+        <main className="main">
+          <section className="intro" aria-labelledby="h1">
+            <div><div className="crumb">Home / Supply Insights</div><h1 id="h1">Supply Insights</h1><div className="under" />
+              <p>Explore workforce availability, training capacity and skilling outcomes across occupations, sectors and regions.</p></div>
+            <div className="intro-art"><IntroArt /></div>
+          </section>
+          <section className="card" aria-label="Filters">
+            <div className="filters">
+              <Field label="Time Period" value={draft.period} onChange={set('period')} options={options.period} icon={<Calendar size={16} aria-hidden="true" />} />
+              <Field label="Geography" value={draft.geography} onChange={set('geography')} options={options.geography} icon={<Globe size={16} aria-hidden="true" />} />
+              <Field label="State / UT" value={draft.state} onChange={set('state')} options={options.state} icon={<MapPin size={16} aria-hidden="true" />} />
+              <Field label="Sector" value={draft.sector} onChange={set('sector')} options={options.sector} icon={<Factory size={16} aria-hidden="true" />} />
+              <Field label="Occupation (NCO)" value={draft.occupation} onChange={set('occupation')} options={options.occupation} icon={<Users size={16} aria-hidden="true" />} />
+              <Field label="Skill" value={draft.skill} onChange={set('skill')} options={options.skill} icon={<Cpu size={16} aria-hidden="true" />} />
+              <div className="fbtn">
+                <button className="apply" onClick={() => setApplied(draft)} disabled={!dirty} style={dirty ? undefined : { opacity: 0.6, cursor: 'default' }}><Filter size={16} aria-hidden="true" />Apply Filters</button>
+                <button className="reset" aria-label="Reset filters" onClick={() => { setDraft(defaults); setApplied(defaults); }}><RotateCcw size={16} aria-hidden="true" /></button>
+              </div>
+              {dirty && <div className="dirty" role="status">Filter changes are not applied yet. Select Apply Filters to update every panel.</div>}
+            </div>
+          </section>
+          <h2 className="vh">Key supply indicators</h2>
+          <div className="kpis">
+            {ov.status === 'loading' ? Array.from({ length: 4 }, (_, i) => <div className="card" key={i}><Skeleton n={3} /></div>)
+              : !ovd ? <div style={{ gridColumn: '1/-1' }}><ErrorBox msg="Key indicators could not load." onRetry={retryOv} /></div>
+              : ovd.kpis.map((k) => <SupplyKpi key={k.id} k={k} onOpen={(id) => detail(id, k.label)} />)}
+          </div>
+          {ov.status === 'error' && ovd && <div className="stale" role="alert">Indicators are stale. <button onClick={retryOv}>Retry</button></div>}
+          <div className="mid2">
+            <SupplyTrend s={tr} retry={retryTr} view={view} onView={setView} />
+            <RegionPanel s={rg} retry={retryRg} metric={metric} onMetric={setMetric} selected={applied.state} onState={drill} onAll={() => detail('all-states')} />
+          </div>
+          <div className="low">
+            <Panel id="to" title="Top Occupations by Supply" sub={`Estimated workforce supply and growth (${applied.period})`} s={ov} retry={retryOv} onAll={() => detail('all-occupations')} allLabel="View All Occupations">
+              {(d) => <div className="tw"><table className="tbl"><thead><tr><th>#</th><th>Occupation</th><th>Supply</th><th>Growth</th><th>Trend</th></tr></thead>
+                <tbody>{d.topOccupations.map((o, i) => <tr key={o.id}><td>{i + 1}</td><td><button className="lk" onClick={() => detail(o.id, o.label)}>{o.label}</button><small>NCO {o.code} (demo)</small></td>
+                  <td>{o.formatted}</td><td className="pos">{o.growth}</td><td><Sparkline data={o.spark} color="var(--navy)" id={o.id} /></td></tr>)}</tbody></table></div>}
+            </Panel>
+            <Panel id="ts" title="Top Training Sectors by Capacity" sub={`Annual training capacity and utilisation (${applied.period})`} s={ov} retry={retryOv} onAll={() => detail('all-sectors')} allLabel="View All Sectors">
+              {(d) => <div className="tw"><table className="tbl"><thead><tr><th>#</th><th>Sector</th><th>Capacity</th><th>Utilisation</th><th>Growth</th></tr></thead>
+                <tbody>{d.topTrainingSectors.map((o, i) => <tr key={o.id}><td>{i + 1}</td><td><button className="lk" onClick={() => detail(o.id, o.label)}>{o.label}</button></td>
+                  <td>{o.capacity}</td><td>{o.utilisation}</td><td className="pos">{o.growth}</td></tr>)}</tbody></table>
+                <div className="sel-note">Utilisation = completions ÷ sanctioned seats (demo definition, backend-owned).</div></div>}
+            </Panel>
+            <Panel id="si" title="Supply Insights" sub="Evidence-linked summary" s={ins} retry={retryIns}>
+              {(d) => d.items.length ? <><ul className="ins">{d.items.map((it) => <li key={it.id}>{it.text}<div>{it.evidence.map((e) => <button key={e} className="chip" onClick={() => detail(e, e)}>Evidence: {e}</button>)}</div></li>)}</ul>
+                <div className="method">Method: {d.method}. Generated {d.generatedAt.slice(0, 10)}.</div></> : <div className="empty">Insights are not configured or evidence is insufficient.</div>}
+            </Panel>
+          </div>
+          <div className="foot" role="contentinfo">
+            {meta && <ProvenanceBadge meta={meta} />}
+            <span>{meta ? `${meta.sourceLabel}. Period ${applied.period}. Coverage: ${meta.coverage}. Updated ${meta.updatedAt}. Snapshot ${ovd?.snapshotId}.` : 'Loading provenance…'} Workforce stock and annual training flows are shown separately.</span>
+            {busy && <span className="spin" role="status">Refreshing…</span>}
+          </div>
+        </main>
+      </div>
+      {drawer && <DetailDrawer d={drawer} onClose={() => setDrawer(null)} />}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<SupplyInsightsPage />);
+
+</script>
+</body>
+</html>

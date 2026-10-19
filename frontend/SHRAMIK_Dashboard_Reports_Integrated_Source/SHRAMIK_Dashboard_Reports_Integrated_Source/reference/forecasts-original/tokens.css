@@ -1,0 +1,68 @@
+:root {
+  --shramik-canvas: #F7F6F0;
+  --shramik-surface: #FFFFFF;
+  --shramik-surface-muted: #F0EFE8;
+  --shramik-ink: #171717;
+  --shramik-ink-muted: #62625C;
+  --shramik-border: #292929;
+  --shramik-border-muted: #D8D6CD;
+  --shramik-yellow: #F2D34F;
+  --shramik-yellow-hover: #E6C33C;
+  --shramik-navy: #203A5B;
+  --shramik-orange: #EB791D;
+  --shramik-teal: #20A89C;
+  --shramik-success: #35745D;
+  --shramik-warning: #B56732;
+  --shramik-danger: #B42318;
+  --shramik-info: #315D8A;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  --radius-control: 6px;
+  --radius-card: 10px;
+  --radius-pill: 999px;
+
+  --border-default: 1px solid var(--shramik-border);
+  --border-emphasis: 1.5px solid var(--shramik-border);
+  --shadow-offset: 3px 3px 0 var(--shramik-border);
+  --shadow-subtle: 0 2px 8px rgba(23, 23, 23, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  background-color: var(--shramik-canvas);
+  color: var(--shramik-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--shramik-ink);
+}
+
+button {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.875rem;
+  cursor: pointer;
+}

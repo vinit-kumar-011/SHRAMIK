@@ -1,0 +1,30 @@
+{
+  "buildMode": "static-production-bundle",
+  "createdAt": "2026-10-18T12:01:12.675Z",
+  "sourceModules": [
+    "main",
+    "SHRAMIKDashboard",
+    "api/adapter",
+    "api/mock-adapter",
+    "api/rest-adapter"
+  ],
+  "compiledAtBuildTime": true,
+  "runtimeBabel": false,
+  "localCss": true,
+  "localAssets": 8,
+  "localIconComponents": 29,
+  "reactRuntime": "React 18.3.1 and ReactDOM 18.3.1 loaded from cdnjs CDN",
+  "apiConfiguration": "config.js -> window.SHRAMIK_CONFIG.apiBaseUrl",
+  "sourceTypeScriptTranspilationDiagnostics": [],
+  "nodeSyntaxCheck": "PASS",
+  "note": "This is a custom static bundle produced with the installed TypeScript compiler. Standard Vite build was not run because npm registry DNS was unreachable and project dependencies were not present.",
+  "validation": {
+    "typescript_jsx_transpile": "PASS",
+    "bundle_syntax": "PASS",
+    "module_loader_smoke": "PASS",
+    "adapter_tests": "PASS (4/4)",
+    "html_css_asset_checks": "PASS",
+    "browser_visual_regression": "NOT RUN",
+    "standard_vite_build": "BLOCKED (npm registry DNS unavailable)"
+  }
+}

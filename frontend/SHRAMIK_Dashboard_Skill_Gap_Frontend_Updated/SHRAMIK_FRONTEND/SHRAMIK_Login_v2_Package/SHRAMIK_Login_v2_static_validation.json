@@ -1,0 +1,15 @@
+{
+  "html_parses": true,
+  "duplicate_ids": [],
+  "missing_aria_references": [],
+  "css_parse_errors": [],
+  "javascript_syntax_pass": true,
+  "canonical_tokens_present": true,
+  "automatic_dark_mode_override_absent": true,
+  "responsive_breakpoints_present": true,
+  "required_fields_present": true,
+  "prototype_auth_explicit": true,
+  "home_links_non_placeholder": true,
+  "forgot_password_feedback_present": true,
+  "all_static_checks_pass": true
+}

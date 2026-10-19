@@ -1,0 +1,25 @@
+{
+  "artifact": "SHRAMIK Demand Insights standalone static bundle",
+  "buildMode": "static-production-bundle",
+  "source": "Derived from uploaded SHRAMIK_Supply_Insights.html shared shell plus Demand Insights handoff implementation requirements",
+  "compiledAtBuildTime": true,
+  "runtimeBabel": false,
+  "runtime": "React 18.3.1, ReactDOM 18.3.1, Lucide 0.263.1 and ECharts 5.6.0 from CDN; Google Fonts from CDN",
+  "defaultMode": "Clearly labelled mock adapter unless window.SHRAMIK_CONFIG.apiBaseUrl is configured",
+  "apiMode": "REST; errors do not silently fall back to mock data",
+  "map": "Interactive ECharts choropleth; 36-feature crosswalk validation; hosted DataMeet-derived boundary fallback (CC BY 2.5 India, publisher-stated 2011 vintage) with local-vendoring helper; not current official geometry",
+  "sourceJsBytes": 148133,
+  "compiledJsBytes": 171298,
+  "compiledJsSha256": "ddafef9ef0974c9340b265c1e696f12e2e5dea9336f241cce33158ac511e9b83",
+  "checks": {
+    "source_combination": "PASS",
+    "JSX_compilation": "PASS",
+    "compiled_JS_node_syntax": "PASS",
+    "map_crosswalk_and_REST_contract_tests": "17/17 PASS",
+    "synthetic_data_provenance": "PASS",
+    "archive_integrity": "PASS (production and source ZIPs tested after packaging)",
+    "browser_smoke": "NOT_RUN_NETWORK_RESTRICTED (external CDN and boundary source not reachable from build environment)",
+    "live_backend": "NOT_CONNECTED (API URL/endpoints/auth still require backend integration)",
+    "map_geometry": "RUNTIME_FETCH_REQUIRED (hosted DataMeet-derived GeoJSON or local vendored file; browser download not verified here)"
+  }
+}

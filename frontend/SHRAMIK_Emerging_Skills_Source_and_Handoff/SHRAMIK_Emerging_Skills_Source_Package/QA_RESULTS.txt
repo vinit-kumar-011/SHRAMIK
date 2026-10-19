@@ -1,0 +1,11 @@
+PASS Reusable adapter contract is exported
+PASS Five required views exist
+PASS Synthetic fixtures are explicitly labelled
+PASS Applied filters reload via adapter
+PASS Reads use AbortController cleanup
+PASS Retry and error surfaces exist
+PASS Watchlist mutations are adapter-backed
+PASS Comparison is capped at four selections
+PASS Evidence panel uses adapter source detail
+PASS Browser bundle is precompiled ES module
+10/10 static smoke checks passed

@@ -1,0 +1,41 @@
+{
+  "integration": "Emerging Skills React + TypeScript page rendered inside the existing SHRAMIK Dashboard shell",
+  "page_module": "src/pages/EmergingSkillsPage.tsx",
+  "host_integration": "src/SHRAMIKDashboard.tsx",
+  "shared_shell_duplicated": false,
+  "internal_views": [
+    "overview",
+    "momentum",
+    "connections",
+    "regional",
+    "profile"
+  ],
+  "default_adapter": "SYNTHETIC_DEMO; visible and explicitly non-production",
+  "live_emerging_skills_rest_adapter": "NOT_INCLUDED; proposed API shapes/endpoints need backend confirmation",
+  "verified_state_ut_geojson": "NOT_INCLUDED; regional map accurately shows unavailable state instead of fabricated map",
+  "watchlist_persistence": "demo adapter is in-memory only; production persistence requires authenticated backend adapter",
+  "automated_tests": {
+    "dashboard_adapter": {
+      "passed": 4,
+      "failed": 0
+    },
+    "emerging_skills_integration": {
+      "passed": 6,
+      "failed": 0
+    },
+    "total_passed": 10
+  },
+  "typescript_transpile_syntax": {
+    "files_checked": 7,
+    "result": "PASS; no parser/transpile diagnostics using available TypeScript 5.8.3"
+  },
+  "strict_typecheck": {
+    "result": "BLOCKED",
+    "reason": "React, react-dom types, lucide-react, recharts and JSX runtime dependencies are not installed in the execution environment; compiler reports unresolved modules and missing JSX intrinsic types."
+  },
+  "vite_production_build": {
+    "result": "NOT_VERIFIED",
+    "reason": "Dependency installation could not be completed in this environment; no claim of a verified production bundle."
+  },
+  "browser_e2e_and_visual_regression": "NOT_RUN"
+}

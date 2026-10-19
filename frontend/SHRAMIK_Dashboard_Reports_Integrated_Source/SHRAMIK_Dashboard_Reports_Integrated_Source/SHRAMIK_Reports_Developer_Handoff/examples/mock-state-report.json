@@ -1,0 +1,236 @@
+{
+  "id": "demo-state-report-karnataka",
+  "version": 1,
+  "title": "Labour Market Insights \u2014 Karnataka",
+  "reportType": "STATE",
+  "geographyLabels": [
+    "Karnataka"
+  ],
+  "period": {
+    "start": "2025-01-01",
+    "end": "2030-12-31",
+    "label": "2025\u20132030"
+  },
+  "referenceYear": 2030,
+  "createdAt": null,
+  "templateVersion": "shramik-report-v1",
+  "provenance": "SYNTHETIC_DEMO",
+  "sections": [
+    {
+      "key": "EXECUTIVE_SUMMARY",
+      "title": "Executive Summary",
+      "status": "PARTIAL",
+      "blocks": [
+        {
+          "kind": "callout",
+          "tone": "warning",
+          "title": "Illustrative demo data",
+          "text": "This fixture is synthetic and does not represent verified labour-market findings."
+        },
+        {
+          "kind": "paragraph",
+          "text": "This sample demonstrates the document layout only. Replace all values with approved SHRAMIK data before publication."
+        },
+        {
+          "kind": "metric_grid",
+          "metrics": [
+            {
+              "key": "demand",
+              "label": "Projected Labour Demand",
+              "value": 1420000,
+              "formattedValue": "1.42M",
+              "unit": "persons (illustrative)",
+              "period": "2030",
+              "provenance": "SYNTHETIC_DEMO",
+              "note": "Synthetic UI fixture."
+            },
+            {
+              "key": "supply",
+              "label": "Projected Supply",
+              "value": 1050000,
+              "formattedValue": "1.05M",
+              "unit": "persons (illustrative)",
+              "period": "2030",
+              "provenance": "SYNTHETIC_DEMO",
+              "note": "Synthetic UI fixture."
+            },
+            {
+              "key": "gap",
+              "label": "Projected Gap",
+              "value": 370000,
+              "formattedValue": "370K",
+              "unit": "persons (illustrative)",
+              "period": "2030",
+              "provenance": "SYNTHETIC_DEMO",
+              "note": "Arithmetic example only; not a validated metric."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "DEMAND",
+      "title": "Demand Analysis",
+      "status": "PARTIAL",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "The chart below is a synthetic example of the report's data-visualisation component."
+        },
+        {
+          "kind": "chart",
+          "chartType": "line",
+          "title": "Illustrative Demand Trend",
+          "xLabel": "Year",
+          "yLabel": "Illustrative index",
+          "unit": "index points",
+          "series": [
+            {
+              "name": "Observed (demo)",
+              "points": [
+                {
+                  "x": "2021",
+                  "y": 42
+                },
+                {
+                  "x": "2022",
+                  "y": 48
+                },
+                {
+                  "x": "2023",
+                  "y": 53
+                },
+                {
+                  "x": "2024",
+                  "y": 59
+                },
+                {
+                  "x": "2025",
+                  "y": 63
+                }
+              ]
+            },
+            {
+              "name": "Projection (demo)",
+              "points": [
+                {
+                  "x": "2025",
+                  "y": 63
+                },
+                {
+                  "x": "2026",
+                  "y": 68
+                },
+                {
+                  "x": "2027",
+                  "y": 73
+                },
+                {
+                  "x": "2028",
+                  "y": 77
+                },
+                {
+                  "x": "2029",
+                  "y": 82
+                },
+                {
+                  "x": "2030",
+                  "y": 87
+                }
+              ]
+            }
+          ],
+          "caption": "Synthetic illustration only. The index and values are not actual SHRAMIK data."
+        },
+        {
+          "kind": "table",
+          "title": "Illustrative occupation summary",
+          "columns": [
+            {
+              "key": "occupation",
+              "label": "Occupation"
+            },
+            {
+              "key": "demand",
+              "label": "Demand (demo index)",
+              "unit": "index"
+            },
+            {
+              "key": "note",
+              "label": "Evidence note"
+            }
+          ],
+          "rows": [
+            {
+              "id": "row1",
+              "cells": {
+                "occupation": "Data Analyst",
+                "demand": 78,
+                "note": "Synthetic fixture"
+              }
+            },
+            {
+              "id": "row2",
+              "cells": {
+                "occupation": "Electrical Technician",
+                "demand": 69,
+                "note": "Synthetic fixture"
+              }
+            },
+            {
+              "id": "row3",
+              "cells": {
+                "occupation": "Machine Operator",
+                "demand": 61,
+                "note": "Synthetic fixture"
+              }
+            }
+          ],
+          "caption": "Fictional sample rows for layout testing."
+        }
+      ]
+    },
+    {
+      "key": "SOURCES_METHOD",
+      "title": "Data Sources & Methodology",
+      "status": "PARTIAL",
+      "blocks": [
+        {
+          "kind": "methodology",
+          "title": "Methodology status",
+          "text": "No statistical method has been applied to this fixture. This section demonstrates where approved definitions and model methods will appear.",
+          "version": "DEMO_ONLY"
+        },
+        {
+          "kind": "source_list",
+          "sources": [
+            {
+              "name": "Synthetic UI fixture",
+              "datasetVersion": "fixture-v1",
+              "observationPeriod": "Illustrative only",
+              "notes": "Not a public source and not evidence about Karnataka or India's labour market."
+            }
+          ]
+        },
+        {
+          "kind": "callout",
+          "tone": "limitation",
+          "title": "Publication restriction",
+          "text": "Do not publish the fixture as a real report. Replace it with validated source-backed or explicitly derived results first."
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "sourceSnapshotIds": [],
+    "methodologyVersion": "DEMO_ONLY",
+    "sourceLabels": [
+      "Synthetic UI fixture"
+    ],
+    "limitations": [
+      "All figures, occupations, chart series and dates are illustrative UI data.",
+      "This fixture is not a verified finding and must not be published as a real SHRAMIK report."
+    ],
+    "generatedByLabel": "DEMO PREVIEW \u2014 NOT FOR PUBLICATION"
+  }
+}

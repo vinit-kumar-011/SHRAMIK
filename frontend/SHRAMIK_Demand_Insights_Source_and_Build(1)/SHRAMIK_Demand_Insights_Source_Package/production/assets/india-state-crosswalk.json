@@ -1,0 +1,307 @@
+{
+  "schemaVersion": "SHRAMIK-GEO-V1-2026-10-18",
+  "geographyCount": 36,
+  "items": [
+    {
+      "id": "IN-AN",
+      "name": "Andaman and Nicobar Islands",
+      "apiCodes": [
+        "AN",
+        "IN-AN"
+      ]
+    },
+    {
+      "id": "IN-AP",
+      "name": "Andhra Pradesh",
+      "apiCodes": [
+        "AP",
+        "IN-AP"
+      ]
+    },
+    {
+      "id": "IN-AR",
+      "name": "Arunachal Pradesh",
+      "apiCodes": [
+        "AR",
+        "IN-AR"
+      ]
+    },
+    {
+      "id": "IN-AS",
+      "name": "Assam",
+      "apiCodes": [
+        "AS",
+        "IN-AS"
+      ]
+    },
+    {
+      "id": "IN-BR",
+      "name": "Bihar",
+      "apiCodes": [
+        "BR",
+        "IN-BR"
+      ]
+    },
+    {
+      "id": "IN-CH",
+      "name": "Chandigarh",
+      "apiCodes": [
+        "CH",
+        "IN-CH"
+      ]
+    },
+    {
+      "id": "IN-CG",
+      "name": "Chhattisgarh",
+      "apiCodes": [
+        "CG",
+        "CT",
+        "IN-CG",
+        "IN-CT"
+      ]
+    },
+    {
+      "id": "IN-DH",
+      "name": "Dadra and Nagar Haveli and Daman and Diu",
+      "apiCodes": [
+        "DH",
+        "DD",
+        "DN",
+        "IN-DH",
+        "IN-DD",
+        "IN-DN"
+      ]
+    },
+    {
+      "id": "IN-DL",
+      "name": "Delhi",
+      "apiCodes": [
+        "DL",
+        "IN-DL",
+        "NCT"
+      ]
+    },
+    {
+      "id": "IN-GA",
+      "name": "Goa",
+      "apiCodes": [
+        "GA",
+        "IN-GA"
+      ]
+    },
+    {
+      "id": "IN-GJ",
+      "name": "Gujarat",
+      "apiCodes": [
+        "GJ",
+        "IN-GJ"
+      ]
+    },
+    {
+      "id": "IN-HR",
+      "name": "Haryana",
+      "apiCodes": [
+        "HR",
+        "IN-HR"
+      ]
+    },
+    {
+      "id": "IN-HP",
+      "name": "Himachal Pradesh",
+      "apiCodes": [
+        "HP",
+        "IN-HP"
+      ]
+    },
+    {
+      "id": "IN-JK",
+      "name": "Jammu and Kashmir",
+      "apiCodes": [
+        "JK",
+        "IN-JK"
+      ]
+    },
+    {
+      "id": "IN-JH",
+      "name": "Jharkhand",
+      "apiCodes": [
+        "JH",
+        "IN-JH"
+      ]
+    },
+    {
+      "id": "IN-KA",
+      "name": "Karnataka",
+      "apiCodes": [
+        "KA",
+        "IN-KA"
+      ]
+    },
+    {
+      "id": "IN-KL",
+      "name": "Kerala",
+      "apiCodes": [
+        "KL",
+        "IN-KL"
+      ]
+    },
+    {
+      "id": "IN-LA",
+      "name": "Ladakh",
+      "apiCodes": [
+        "LA",
+        "IN-LA"
+      ]
+    },
+    {
+      "id": "IN-LD",
+      "name": "Lakshadweep",
+      "apiCodes": [
+        "LD",
+        "IN-LD"
+      ]
+    },
+    {
+      "id": "IN-MP",
+      "name": "Madhya Pradesh",
+      "apiCodes": [
+        "MP",
+        "IN-MP"
+      ]
+    },
+    {
+      "id": "IN-MH",
+      "name": "Maharashtra",
+      "apiCodes": [
+        "MH",
+        "IN-MH"
+      ]
+    },
+    {
+      "id": "IN-MN",
+      "name": "Manipur",
+      "apiCodes": [
+        "MN",
+        "IN-MN"
+      ]
+    },
+    {
+      "id": "IN-ML",
+      "name": "Meghalaya",
+      "apiCodes": [
+        "ML",
+        "IN-ML"
+      ]
+    },
+    {
+      "id": "IN-MZ",
+      "name": "Mizoram",
+      "apiCodes": [
+        "MZ",
+        "IN-MZ"
+      ]
+    },
+    {
+      "id": "IN-NL",
+      "name": "Nagaland",
+      "apiCodes": [
+        "NL",
+        "IN-NL"
+      ]
+    },
+    {
+      "id": "IN-OD",
+      "name": "Odisha",
+      "apiCodes": [
+        "OD",
+        "OR",
+        "IN-OD",
+        "IN-OR"
+      ]
+    },
+    {
+      "id": "IN-PB",
+      "name": "Punjab",
+      "apiCodes": [
+        "PB",
+        "IN-PB"
+      ]
+    },
+    {
+      "id": "IN-PY",
+      "name": "Puducherry",
+      "apiCodes": [
+        "PY",
+        "IN-PY"
+      ]
+    },
+    {
+      "id": "IN-RJ",
+      "name": "Rajasthan",
+      "apiCodes": [
+        "RJ",
+        "IN-RJ"
+      ]
+    },
+    {
+      "id": "IN-SK",
+      "name": "Sikkim",
+      "apiCodes": [
+        "SK",
+        "IN-SK"
+      ]
+    },
+    {
+      "id": "IN-TN",
+      "name": "Tamil Nadu",
+      "apiCodes": [
+        "TN",
+        "IN-TN"
+      ]
+    },
+    {
+      "id": "IN-TS",
+      "name": "Telangana",
+      "apiCodes": [
+        "TS",
+        "TG",
+        "IN-TS",
+        "IN-TG"
+      ]
+    },
+    {
+      "id": "IN-TR",
+      "name": "Tripura",
+      "apiCodes": [
+        "TR",
+        "IN-TR"
+      ]
+    },
+    {
+      "id": "IN-UP",
+      "name": "Uttar Pradesh",
+      "apiCodes": [
+        "UP",
+        "IN-UP"
+      ]
+    },
+    {
+      "id": "IN-UK",
+      "name": "Uttarakhand",
+      "apiCodes": [
+        "UK",
+        "UT",
+        "IN-UK",
+        "IN-UT"
+      ]
+    },
+    {
+      "id": "IN-WB",
+      "name": "West Bengal",
+      "apiCodes": [
+        "WB",
+        "IN-WB"
+      ]
+    }
+  ]
+}

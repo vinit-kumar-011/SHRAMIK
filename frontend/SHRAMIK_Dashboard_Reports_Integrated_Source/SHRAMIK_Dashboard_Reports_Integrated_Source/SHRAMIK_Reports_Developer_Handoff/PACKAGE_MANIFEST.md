@@ -1,0 +1,21 @@
+# Package Manifest
+
+- `README.md` — package guide and recommended Claude Free flow.
+- `CLAUDE_PROMPT_SHRAMIK_REPORTS.md` — complete prompt.
+- `PROMPTS_FOR_CLAUDE_FREE/01_BUILD_REPORTS_PAGE.md` — page/UI phase.
+- `PROMPTS_FOR_CLAUDE_FREE/02_REPORT_TEMPLATE_AND_PRINT_PDF.md` — document/print phase.
+- `PROMPTS_FOR_CLAUDE_FREE/03_REVIEW_TEST_AND_FIX.md` — QA phase.
+- `SHRAMIK_REPORTS_IMPLEMENTATION_SPEC.md` — page contract.
+- `SHRAMIK_REPORTS_COMPONENT_INVENTORY.md` — component responsibilities.
+- `SHRAMIK_REPORTS_API_CONTRACT.md` — proposed endpoints and payload shapes.
+- `SHRAMIK_REPORT_TEMPLATE_DESIGN_SPEC.md` — reusable document design.
+- `SHRAMIK_REPORT_RENDERING_ENGINE_DESIGN.md` — frontend fallback and production PDF architecture.
+- `SHRAMIK_REPORTS_INTEGRATION_CONTRACT.md` — page module and shell integration rules.
+- `SHRAMIK_REPORTS_DATA_SEMANTICS.md` — provenance and reporting truth rules.
+- `SHRAMIK_REPORTS_SIDEBAR_CONSISTENCY_LOCK.md` — canonical navigation/shell lock.
+- `SHRAMIK_REPORTS_QA_CHECKLIST.md` — tests/acceptance checklist.
+- `BACKEND_ARCHITECTURE_ALIGNMENT.md` — proposed additive backend changes.
+- `SHRAMIK_GLOBAL_DESIGN_SYSTEM.md` — canonical shared style contract copy.
+- `contracts/` — TypeScript models and adapter interface.
+- `examples/mock-state-report.json` — clearly synthetic demo fixture.
+- `reference/` — design board, Dashboard reference and view crops.
