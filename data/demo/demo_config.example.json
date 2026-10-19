@@ -12,9 +12,9 @@
   "supply_signal_type": "DEMO_SKILL_COMPLETIONS",
   "supply_measure": "completions",
   "demand_quantity_unit": "persons",
-  "demand_quantity_semantics": "annual_flow",
+  "demand_quantity_semantics": "FLOW",
   "supply_quantity_unit": "persons",
-  "supply_quantity_semantics": "annual_flow",
+  "supply_quantity_semantics": "FLOW",
   "source_context": "DEMO series for the SIH demo where source-backed district x skill history is shorter than 3 years. Ranges chosen for illustration only.",
   "cells": [
     {

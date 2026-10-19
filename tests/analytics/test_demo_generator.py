@@ -14,9 +14,9 @@ CFG = {
     "supply_signal_type": "TEST_SUPPLY",
     "supply_measure": "completions",
     "demand_quantity_unit": "persons",
-    "demand_quantity_semantics": "annual_flow",
+    "demand_quantity_semantics": "FLOW",
     "supply_quantity_unit": "persons",
-    "supply_quantity_semantics": "annual_flow",
+    "supply_quantity_semantics": "FLOW",
     "source_context": "unit test",
     "cells": [
         {"state_id": "st", "district_id": "d1", "skill_id": "k1",
@@ -45,7 +45,7 @@ def test_rows_are_labelled_synthetic_with_no_fake_source():
         assert row["source_id"] is None and row["generation_run_id"] == run["id"]
         assert row["period_type"] == "YEAR" and row["observation_grain"] == "DISTRICT_SKILL"
         assert "SYNTHETIC" in row["transformation_note"]
-        assert row["quantity_unit"] == "persons" and row["quantity_semantics"] == "annual_flow"
+        assert row["quantity_unit"] == "persons" and row["quantity_semantics"] == "FLOW"
     assert all(r["completions"] is not None and r["supply_quantity"] is None for r in supply)
     assert all(r["demand_quantity"] >= 0 for r in demand)
 
@@ -62,6 +62,12 @@ def test_refuses_placeholders_missing_ids_and_bad_values():
     raises(ConfigError, validate_config, bad)
     bad = copy.deepcopy(CFG); del bad["supply_quantity_unit"]
     raises(ConfigError, validate_config, bad)
+    bad = copy.deepcopy(CFG); bad["demand_quantity_semantics"] = "annual_flow"
+    raises(ConfigError, validate_config, bad)
+    bad = copy.deepcopy(CFG); bad["supply_measure"] = "training_capacity"  # needs CAPACITY, not FLOW
+    raises(ConfigError, validate_config, bad)
+    ok = copy.deepcopy(CFG); ok["supply_measure"] = "training_capacity"; ok["supply_quantity_semantics"] = "CAPACITY"
+    validate_config(ok)
     bad = copy.deepcopy(CFG); bad["supply_measure"] = "jobs"
     raises(ConfigError, validate_config, bad)
     bad = copy.deepcopy(CFG); bad["cells"][1]["district_id"] = "d1"

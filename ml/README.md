@@ -49,7 +49,7 @@ Expected: `40 passed`.
    The generator refuses to run while a placeholder remains. The config must also state
    `demand_/supply_quantity_unit` and `demand_/supply_quantity_semantics`: both columns are NOT NULL in the
    live `demand_observations` / `supply_observations` tables. Proposed names (`DEMO_SKILL_DEMAND`,
-   `DEMO_SKILL_COMPLETIONS`, unit `persons`, semantics `annual_flow`) follow the style already used in
+   `DEMO_SKILL_COMPLETIONS`, unit `persons`, semantics `FLOW` (the live tables only accept FLOW / STOCK / CAPACITY)) follow the style already used in
    `source_capabilities`; confirm with the database owner before loading.
 3. Run:
    ```

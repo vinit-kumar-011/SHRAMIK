@@ -14,6 +14,8 @@ Rules it enforces (schema sections 6.3, 7, 14; dataset plan section 10):
 - Same generator version + seed + parameters ⇒ identical rows and identical ids.
 - quantity_unit and quantity_semantics are NOT NULL in the live tables
   (checked 2026-10-20), so the config must state them for demand and supply.
+  quantity_semantics only accepts FLOW / STOCK (and CAPACITY for training_capacity),
+  matching the live CHECK constraints; the generator checks this before writing.
 - Signal types must be given explicitly (their vocabulary is owned by
   Issues #13/#17); there is no default to hide behind.
 
@@ -39,6 +41,15 @@ GENERATOR_NAME = "shramik_demo_generator"
 GENERATOR_VERSION = "1.0.0"
 NAMESPACE = uuid.UUID("6f1c2a52-3b7e-4f0a-9a0e-5348524d494b")  # fixed, for deterministic ids
 SUPPLY_MEASURES = ("supply_quantity", "training_capacity", "enrollment", "completions")
+# Live CHECK constraints (read 2026-10-20): demand semantics FLOW/STOCK; supply semantics must
+# match the populated measure (ck_supply_measure_semantics).
+DEMAND_SEMANTICS = ("FLOW", "STOCK")
+SUPPLY_SEMANTICS_BY_MEASURE = {
+    "supply_quantity": ("FLOW", "STOCK"),
+    "training_capacity": ("CAPACITY",),
+    "enrollment": ("FLOW",),
+    "completions": ("FLOW",),
+}
 
 DEMAND_COLUMNS = (
     "id", "state_id", "district_id", "sector_id", "skill_id", "observation_grain", "period_type",
@@ -83,6 +94,12 @@ def validate_config(cfg: dict) -> dict:
         raise ConfigError("years must not repeat")
     if cfg["supply_measure"] not in SUPPLY_MEASURES:
         raise ConfigError(f"supply_measure must be one of {SUPPLY_MEASURES}")
+    if cfg["demand_quantity_semantics"] not in DEMAND_SEMANTICS:
+        raise ConfigError(f"demand_quantity_semantics must be one of {DEMAND_SEMANTICS}")
+    allowed = SUPPLY_SEMANTICS_BY_MEASURE[cfg["supply_measure"]]
+    if cfg["supply_quantity_semantics"] not in allowed:
+        raise ConfigError(
+            f"supply_quantity_semantics for {cfg['supply_measure']} must be one of {allowed}")
     seen = set()
     for i, cell in enumerate(cfg["cells"]):
         for key in ("state_id", "district_id", "skill_id"):
