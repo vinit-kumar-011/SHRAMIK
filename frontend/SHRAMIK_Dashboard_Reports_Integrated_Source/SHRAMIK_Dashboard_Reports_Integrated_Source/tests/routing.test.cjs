@@ -35,6 +35,8 @@ test('direct paths and trailing slashes resolve to canonical routes', () => {
   assert.equal(getRouteFromLocation(loc('/skill-gaps/')), 'skill-gaps');
   assert.equal(getRouteFromLocation(loc('/scenario-simulator')), 'scenario-simulator');
   assert.equal(getRouteFromLocation(loc('/administration')), 'administration');
+  assert.equal(getRouteFromLocation(loc('/demand/occupations')), 'demand');
+  assert.equal(getRouteFromLocation(loc('/data-sources/source-123')), 'data-sources');
 });
 
 test('legacy multi-entry links remain compatible', () => {
