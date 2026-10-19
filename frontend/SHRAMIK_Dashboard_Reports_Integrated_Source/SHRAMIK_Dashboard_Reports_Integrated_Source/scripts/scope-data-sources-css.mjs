@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import postcss from 'postcss';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const sourcePath = path.resolve(scriptDir, '../../../SHRAMIK_Data_Sources_Source_and_Build/src/styles.css');
+const sourcePath = path.resolve(scriptDir, '../src/data-sources/source-styles.css');
 const outputPath = path.resolve(scriptDir, '../src/data-sources-scoped.css');
 const prefix = '.data-sources-page';
 
