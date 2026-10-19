@@ -49,14 +49,19 @@ function normalizePath(pathname: string): string {
 }
 
 /** Resolve a direct URL, refresh, back/forward navigation, and legacy demo links. */
-export function getRouteFromLocation(location: LocationSnapshot): ShramikRouteId {
+export function getRouteFromLocation(location: LocationSnapshot, basePath = '/'): ShramikRouteId {
   const queryPage = new URLSearchParams(location.search || '').get('page');
   if (queryPage && routeById.has(queryPage)) return routeById.get(queryPage)!;
 
   const hash = (location.hash || '').replace(/^#/, '').toLowerCase();
   if (hash && routeById.has(hash)) return routeById.get(hash)!;
 
-  const path = normalizePath(location.pathname);
+  let path = normalizePath(location.pathname);
+  const normalizedBase = normalizePath(basePath);
+  if (normalizedBase !== '/') {
+    if (path === normalizedBase) path = '/';
+    else if (path.startsWith(`${normalizedBase}/`)) path = path.slice(normalizedBase.length) || '/';
+  }
   if (path === '/') return 'dashboard';
 
   const direct = SHRAMIK_ROUTES.find((route) => route.path === path);
