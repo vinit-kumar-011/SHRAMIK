@@ -16,7 +16,6 @@ from sqlalchemy import (
     Table,
     Uuid,
     create_engine,
-    event,
     select,
 )
 from sqlalchemy.orm import Session
@@ -151,19 +150,12 @@ def make_batch(row: CanonicalObservation) -> ParsedBatch:
 
 @pytest.fixture
 def session():
-    engine = create_engine("sqlite+pysqlite:///:memory:")
-
-    # sqlite3's legacy transaction mode does not begin a database transaction
-    # for SAVEPOINT alone. Emit BEGIN explicitly so rollback-to-savepoint tests
-    # exercise the repository's transaction boundary correctly.
-    @event.listens_for(engine, "connect")
-    def _disable_legacy_transaction_mode(dbapi_connection, _connection_record):
-        dbapi_connection.isolation_level = None
-
-    @event.listens_for(engine, "begin")
-    def _begin_transaction(connection):
-        connection.exec_driver_sql("BEGIN")
-
+    # Python 3.12's sqlite3 driver supports modern transaction control.
+    # This keeps SAVEPOINT rollback behaviour representative of PostgreSQL.
+    engine = create_engine(
+        "sqlite+pysqlite:///:memory:",
+        connect_args={"autocommit": False},
+    )
     metadata.create_all(engine)
     with Session(engine) as db:
         db.execute(metadata.tables["states"].insert().values(id="state-1"))
