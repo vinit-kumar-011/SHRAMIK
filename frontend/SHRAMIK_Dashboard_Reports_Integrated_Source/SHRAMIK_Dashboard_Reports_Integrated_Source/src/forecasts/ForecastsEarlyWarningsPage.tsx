@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import {
-  AlertCircle, ArrowRight, BarChart3, Bell, CalendarDays, Check, ChevronDown, ChevronLeft,
-  ChevronRight, CircleHelp, Database, FileText, Info, MapPin, RefreshCw, Search, SlidersHorizontal,
+  AlertCircle, ArrowRight, BarChart3, Bell, CalendarDays, Check, ChevronLeft,
+  ChevronRight, CircleHelp, Database, Info, MapPin, RefreshCw, Search, SlidersHorizontal,
   Table2, TrendingUp, Users, X,
 } from 'lucide-react';
 import { createForecastsDataAdapter } from './legacyAdapter';
 import type {
   AlertDetailResponse, AlertListResponse, AlertStatus, DataMeta, EarlyWarning, EntityType,
-  ForecastFilterOptions, ForecastFilters, ForecastPoint, ForecastSeriesResponse, MetricValue,
+  ForecastFilterOptions, ForecastFilters, ForecastSeriesResponse, MetricValue,
   ModelPerformanceResponse, RiskCell, RiskClass, RiskDetailsResponse, RiskMatrixResponse,
   ScenarioComparisonResponse, ScenarioOptionsResponse, StateRiskMapResponse,
 } from './types';
@@ -33,7 +33,6 @@ const fmt = (value: number | null | undefined, unit?: string) => value == null |
 const signed = (value: number | null | undefined, unit?: string) => value == null || !Number.isFinite(value)
   ? 'Not available'
   : `${value > 0 ? '+' : value < 0 ? '−' : ''}${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 }).format(Math.abs(value))}${unit ? ` ${unit}` : ''}`;
-const percent = (value: number | null | undefined) => value == null || !Number.isFinite(value) ? 'Not available' : `${value.toFixed(1)}%`;
 const niceDate = (value?: string) => {
   if (!value) return 'Not supplied';
   const date = new Date(value);
@@ -97,7 +96,7 @@ function KpiCards({ kpis, onOpen }: { kpis: MetricValue[]; onOpen: (metric: Metr
       <span className="fw-kpi-mark">{index === 0 ? <TrendingUp size={20}/> : index === 1 ? <Users size={20}/> : index === 2 ? <BarChart3 size={20}/> : <Bell size={20}/>}</span>
       <span className="fw-kpi-label">{metric.label}</span><strong>{metric.formattedValue ?? fmt(metric.value)}</strong>
       <span className="fw-kpi-sub">{gap ? metric.value! > 0 ? 'Potential shortage' : metric.value! < 0 ? 'Potential surplus' : 'Approx. balance' : `${metric.unit}${metric.period ? ` · ${metric.period}` : ''}`}</span>
-      {metric.notes?.length ? <span className="fw-kpi-meta">{metric.notes[0]}</span> : null}
+      {metric.note ? <span className="fw-kpi-meta">{metric.note}</span> : null}
     </button>;
   })}</div>;
 }
