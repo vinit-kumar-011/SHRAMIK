@@ -15,6 +15,11 @@ import SkillGapAnalysisPage from './skill-gaps/SkillGapAnalysisPage';
 import ForecastsPage from './forecasts/ForecastsPage';
 import ReportsPage from './reports/ReportsPage';
 import type { GapDetailPayload } from './skill-gaps/types';
+import { getPathForRoute, getRouteFromLocation, getRouteLabel, type ShramikRouteId } from './routing';
+import EmergingSkillsPage from '../../../SHRAMIK_Emerging_Skills_React_Integrated/SHRAMIK_Emerging_Skills_React_Integrated/src/pages/EmergingSkillsPage';
+import { ScenarioSimulatorPage } from '../../../SHRAMIK_Scenario_Simulator_Deliverable/SHRAMIK_Scenario_Simulator_Deliverable/source/src/ScenarioSimulatorPage';
+import { MockScenarioSimulatorAdapter } from '../../../SHRAMIK_Scenario_Simulator_Deliverable/SHRAMIK_Scenario_Simulator_Deliverable/source/src/adapters/MockScenarioSimulatorAdapter';
+import DemandInsightsPage from './demand/DemandInsightsPage.jsx';
 
 type Tone = 'navy' | 'teal' | 'orange';
 
@@ -39,6 +44,7 @@ const NAV_ITEMS = [
   { label: 'Reports', section: 'reports', icon: FileText, group: 'primary' },
   { label: 'Data Sources', section: 'data-sources', icon: Database, group: 'secondary' },
   { label: 'Data Quality', section: 'data-quality', icon: HeartPulse, group: 'secondary' },
+  { label: 'Administration', section: 'administration', icon: Settings, group: 'secondary' },
 ] as const;
 
 function toneForKpi(item: MetricCardData, index: number): Tone {
@@ -52,18 +58,9 @@ function formatUpdated(value: string | null | undefined): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
 }
-function getInitialPage(): 'dashboard' | 'skill-gaps' | 'forecasts' | 'reports' {
+function getInitialPage(): ShramikRouteId {
   if (typeof window === 'undefined') return 'dashboard';
-  if (window.location.hash === '#skill-gaps') return 'skill-gaps';
-  if (window.location.hash === '#forecasts') return 'forecasts';
-  if (window.location.hash === '#reports') return 'reports';
-  if (window.location.hash === '#dashboard') return 'dashboard';
-  const path = decodeURIComponent(window.location.pathname).toLowerCase();
-  const requestedPage = new URLSearchParams(window.location.search).get('page');
-  if (requestedPage === 'skill-gaps' || path.endsWith('skill-gap-analysis.html') || path.endsWith('/skill-gaps')) return 'skill-gaps';
-  if (requestedPage === 'forecasts' || path.endsWith('forecasts.html') || path.endsWith('/forecasts')) return 'forecasts';
-  if (requestedPage === 'reports' || path.endsWith('reports.html') || path.endsWith('/reports')) return 'reports';
-  return 'dashboard';
+  return getRouteFromLocation(window.location);
 }
 
 function sectionForTarget(target: string): string {
@@ -262,11 +259,55 @@ function DetailDrawer({ detail, loading, error, onClose }: { detail: DetailPaylo
   </div>;
 }
 
+
+function ModuleRouteFallback({ route }: { route: ShramikRouteId }) {
+  const labels: Partial<Record<ShramikRouteId, { description: string; next: string }>> = {
+    supply: {
+      description: 'The standalone Supply Insights deliverable still needs to be migrated into this shared React shell. This route is real, but the old standalone page is not embedded here yet.',
+      next: 'Next: migrate the Supply Insights page and its typed data adapter.',
+    },
+    'data-sources': {
+      description: 'The React Data Sources module exists separately, but its styling, adapter and page state still need to be integrated into this shared shell without duplicating navigation.',
+      next: 'Next: integrate the Data Sources component and scope its styles to this route.',
+    },
+    'data-quality': {
+      description: 'The Data Quality module components exist in the reference package but still need their shared-shell integration and adapter contract verified.',
+      next: 'Next: migrate the Data Quality page, adapter and page-scoped styles.',
+    },
+    administration: {
+      description: 'The Administration deliverable is currently a standalone HTML page. It must be ported to a React page component before it can use the shared navigation.',
+      next: 'Next: convert user access, roles, audit and review interactions into a typed React module.',
+    },
+    'not-found': {
+      description: 'This URL does not match a registered SHRAMIK application route.',
+      next: 'Use the shared sidebar to open a known application module.',
+    },
+    supply: {
+      description: 'The standalone Supply Insights deliverable still needs to be migrated into this shared React shell.',
+      next: 'Next: migrate the Supply Insights page and its typed data adapter.',
+    },
+  };
+  const content = labels[route] ?? {
+    description: 'This module is registered in the central route table, but it is not yet integrated into the production React shell.',
+    next: 'No source-backed or demo metrics are displayed in this integration placeholder.',
+  };
+  return <section className="module-route-placeholder" aria-labelledby="module-route-title">
+    <div className="module-route-eyebrow">SHRAMIK / MODULE INTEGRATION</div>
+    <h1 id="module-route-title">{getRouteLabel(route)}</h1>
+    <p>{content.description}</p>
+    <div className="module-route-status"><span className="module-route-dot"/> Integration in progress</div>
+    <p className="module-route-next">{content.next}</p>
+  </section>;
+}
+
 export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNavigate?: (path: string, label: string) => void; dataAdapter?: LabourMarketDataAdapter } = {}) {
   const [defaultAdapter] = useState<LabourMarketDataAdapter>(() => createLabourMarketDataAdapter());
   const adapter = dataAdapter ?? defaultAdapter;
-  const [activePage, setActivePage] = useState<'dashboard' | 'skill-gaps' | 'forecasts' | 'reports'>(getInitialPage);
-  const [active, setActive] = useState(() => ({ 'skill-gaps': 'Skill Gaps', forecasts: 'Forecasts', reports: 'Reports', dashboard: 'Dashboard' } as const)[getInitialPage()]);
+  const [activePage, setActivePage] = useState<ShramikRouteId>(getInitialPage);
+  const [active, setActive] = useState(() => getRouteLabel(getInitialPage()));
+  const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
+  const scenarioApiConfigured = Boolean((import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL?.trim());
+  const scenarioDataAdapter = scenarioApiConfigured ? undefined : scenarioMockAdapter;
   const [regions, setRegions] = useState<RegionOption[]>([]);
   const [region, setRegion] = useState('IN');
   const [periodYears, setPeriodYears] = useState<DashboardPeriod>(5);
@@ -302,7 +343,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
     const syncRoute = () => {
       const page = getInitialPage();
       setActivePage(page);
-      setActive(({ 'skill-gaps': 'Skill Gaps', forecasts: 'Forecasts', reports: 'Reports', dashboard: 'Dashboard' } as const)[page]);
+      setActive(getRouteLabel(page));
     };
     window.addEventListener('hashchange', syncRoute);
     window.addEventListener('popstate', syncRoute);
@@ -421,46 +462,20 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
   }, [adapter, region]);
 
   const handleNavigate = useCallback((item: typeof NAV_ITEMS[number] | { label: string; section: string }) => {
-    setActive(item.label);
+    const route = item.section as Exclude<ShramikRouteId, 'not-found'>;
+    const label = getRouteLabel(route);
+    const path = getPathForRoute(route);
+    setActive(label);
+    setActivePage(route);
     setMobileOpen(false);
-    if (item.section === 'dashboard') {
-      setActivePage('dashboard'); closeDetail(); setSearchOpen(false);
-      if (!onNavigate) window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#dashboard`);
-      return;
-    }
-    if (item.section === 'skill-gaps') {
-      if (onNavigate) onNavigate('/skill-gaps', item.label);
-      else {
-        setActivePage('skill-gaps'); closeDetail(); setSearchOpen(false);
-        window.history.pushState(null, '', `${window.location.pathname}${window.location.search}#skill-gaps`);
-        window.dispatchEvent(new CustomEvent('shramik:navigate', { detail: { path: '/skill-gaps', label: item.label } }));
-      }
-      return;
-    }
-    if (item.section === 'forecasts') {
-      if (onNavigate) onNavigate('/forecasts', item.label);
-      else {
-        setActivePage('forecasts'); closeDetail(); setSearchOpen(false);
-        window.history.pushState(null, '', `${window.location.pathname}${window.location.search}#forecasts`);
-        window.dispatchEvent(new CustomEvent('shramik:navigate', { detail: { path: '/forecasts', label: item.label } }));
-      }
-      return;
-    }
-    if (item.section === 'reports') {
-      if (onNavigate) onNavigate('/reports', item.label);
-      else {
-        setActivePage('reports'); closeDetail(); setSearchOpen(false);
-        window.history.pushState(null, '', `${window.location.pathname}${window.location.search}#reports`);
-        window.dispatchEvent(new CustomEvent('shramik:navigate', { detail: { path: '/reports', label: item.label } }));
-      }
-      return;
-    }
-    if (onNavigate) onNavigate(`/${item.section}`, item.label);
-    else {
-      window.dispatchEvent(new CustomEvent('shramik:navigate', { detail: { path: `/${item.section}`, label: item.label } }));
-      void openSection(item.section);
-    }
-  }, [closeDetail, onNavigate, openSection]);
+    closeDetail();
+    setSearchOpen(false);
+    setNotificationsOpen(false);
+    setProfileOpen(false);
+    if (onNavigate) onNavigate(path, label);
+    else window.history.pushState(null, '', path);
+    window.dispatchEvent(new CustomEvent('shramik:navigate', { detail: { path, label } }));
+  }, [closeDetail, onNavigate]);
 
   const handleSearchSelect = useCallback(async (result: SearchResult) => {
     setQuery(result.label);
@@ -506,7 +521,22 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
     <div className="app-layout">
       <Sidebar active={active} onNavigate={handleNavigate} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)}/>
       <main className="dashboard-main" aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
-        {activePage === 'skill-gaps' ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/> : activePage === 'forecasts' ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/> : activePage === 'reports' ? <ReportsPage /> : <>
+        {activePage === 'skill-gaps' ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>
+          : activePage === 'forecasts' ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/>
+          : activePage === 'reports' ? <ReportsPage />
+          : activePage === 'demand' ? <DemandInsightsPage embedded onNavigate={(path, label) => {
+              const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
+              if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
+            }}/>
+          : activePage === 'emerging-skills' ? <EmergingSkillsPage onNavigate={(path, label) => {
+              const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
+              if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
+            }}/>
+          : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} onNavigate={(path) => {
+              const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
+              if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
+            }}/>
+          : activePage === 'dashboard' ? <>
         <section className="hero-band" aria-labelledby="page-title">
           <div className="hero-copy"><div className="breadcrumb">DASHBOARD <span>/</span> {regionLabel.toUpperCase()}</div><h1 id="page-title">India’s Labour Market<br className="desktop-break"/> at a Glance</h1><div className="title-underline"/><p>Key insights on demand, supply, skill gaps and emerging opportunities across sectors and regions.</p></div>
           <div className="hero-art-wrap" style={{ transform: `translate3d(0, ${parallax}px, 0)` }} aria-hidden="true"><img className="hero-art" src="./assets/hero-worker-industrial.png" alt=""/><img className="sticky-note-art" src="./assets/sticky-note-decorative.png" alt=""/><span className="hero-accent-dot"/></div>
@@ -528,7 +558,7 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
           <SummaryPanel title="Occupation Forecasts" subtitle="Projected demand change (2024–2029)" kind="forecasts" rows={dashboard?.occupationForecasts ?? []} onOpenSection={(section) => void openSection(section)} onOpenRow={(row, section) => void openRow(row, section)}/>
         </section>
         <footer className="method-note"><span className="note-marker">i</span><p><strong>{dashboard?.meta.provenance === 'source-backed' ? 'Data notes:' : 'Prototype preview:'}</strong> {dashboard?.meta.provenance === 'source-backed' ? `${dashboard.meta.sourceLabel}. Check the detail panels for source notes, units and coverage.` : 'All numbers currently visible come from an illustrative adapter unless a source-backed API is configured; do not treat them as verified labour-market statistics.'}</p><span className={`data-status-footer ${dashboard?.meta.provenance ?? 'mock'}`}><span className="status-dot"/>{dashboard?.meta.provenance === 'source-backed' ? 'Source-backed' : dashboard?.meta.provenance === 'mixed' ? 'Mixed provenance' : dashboard?.meta.provenance === 'derived' ? 'Derived values' : 'Illustrative data'}</span><span className="updated"><CalendarDays size={14}/>{dashboard?.meta.updatedAt ? formatUpdated(dashboard.meta.updatedAt) : 'Update unavailable'}</span><span className="updated"><Database size={14}/>{adapter.mode === 'rest' ? 'REST API' : 'Mock adapter'}</span><button className="refresh-button" type="button" onClick={refresh} disabled={loading || refreshing} aria-label="Refresh dashboard data"><RefreshCw size={13} className={refreshing ? 'spin-icon' : ''}/> Refresh</button></footer>
-        </>}
+        </> : <ModuleRouteFallback route={activePage} />}
       </main>
     </div>
     {toast && <div role="status" className="toast-message"><span>{toast}</span><button type="button" aria-label="Dismiss notification" onClick={() => setToast('')}><X size={15}/></button></div>}
