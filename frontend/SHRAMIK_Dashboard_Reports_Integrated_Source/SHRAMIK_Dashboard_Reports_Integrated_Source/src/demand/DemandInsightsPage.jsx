@@ -4,6 +4,7 @@ import {
   FileText, Database, ShieldCheck, Search, MapPin, Bell, ChevronDown, ArrowUpRight,
   ArrowRight, Lightbulb, Menu, X, Cpu, Leaf, Factory, HardHat, Building2,
   ShoppingCart, HeartPulse, Wheat, Truck, Wrench, Stethoscope, Zap, LineChart, Check, UserRound,
+  Calendar, Globe, Filter, RotateCcw,
 } from 'lucide-react';
 
 const { useState, useEffect, useRef, useCallback, useId, useMemo } = React;
@@ -378,8 +379,6 @@ function DetailDrawer({ d, onClose }) {
   );
 }
 
-/* Shared icon aliases used by the Demand filter bar. */
-const Calendar = mkIcon('Calendar'), Globe = mkIcon('Globe'), Filter = mkIcon('Filter'), RotateCcw = mkIcon('RotateCcw');
 
 
 /* ============ DEMAND INSIGHTS DATA ADAPTERS ============ */
