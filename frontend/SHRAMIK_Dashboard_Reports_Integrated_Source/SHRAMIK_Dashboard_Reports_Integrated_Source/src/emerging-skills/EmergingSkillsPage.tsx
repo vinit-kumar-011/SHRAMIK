@@ -1126,7 +1126,7 @@ export const EmergingSkillsPage = ({ dataAdapter: suppliedAdapter, initialFilter
   ], []);
 
   return (
-    <div className="min-h-screen bg-[#F7F6F0] text-[#171717] font-sans">
+    <div className="min-h-0 w-full bg-[#F7F6F0] text-[#171717] font-sans">
       {/* Provenance banner: the label follows the adapter actually in use. */}
       <div className={`border-b px-6 py-2.5 flex items-center justify-center gap-2 text-xs font-semibold ${adapter === demoEmergingSkillsDataAdapter ? 'bg-[#F2D34F]/20 border-[#F2D34F]/30 text-[#8A6D1F]' : 'bg-[#20A89C]/10 border-[#20A89C]/25 text-[#185F59]'}`} role="status">
         {adapter === demoEmergingSkillsDataAdapter ? <ShieldAlert className="w-3.5 h-3.5" /> : <Info className="w-3.5 h-3.5" />}

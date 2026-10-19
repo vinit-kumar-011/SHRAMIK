@@ -133,6 +133,12 @@ test('Demand Insights reads the same Vite API base as the other live-mode module
   assert.doesNotMatch(demand, /const base = window\.SHRAMIK_API_BASE_URL \|\| window\.SHRAMIK_CONFIG/);
 });
 
+test('Emerging Skills keeps its content inside the shared shell instead of claiming a second viewport', () => {
+  const emerging = read('src/emerging-skills/EmergingSkillsPage.tsx');
+  assert.match(emerging, /className="min-h-0 w-full bg/);
+  assert.doesNotMatch(emerging, /className="min-h-screen bg/);
+});
+
 test('Demand Insights bundles its icons and does not rely on an undeclared browser global', () => {
   const demand = read('src/demand/DemandInsightsPage.jsx');
   assert.match(demand, /from ['"]lucide-react['"]/);
