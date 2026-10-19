@@ -73,7 +73,7 @@ try {
   const attribution = await attributionResponse.text();
   const attributionChecks = {
     openStreetMapCredit: attribution.includes('OpenStreetMap contributors'),
-    odblLicense: attribution.includes('ODbL 1.0'),
+    odblLicense: attribution.includes('Open Database License (ODbL) 1.0'),
     nonOfficialDisclaimer: attribution.toLowerCase().includes('not a survey of india product'),
   };
   if (Object.values(attributionChecks).some(passed => !passed)) {
