@@ -1,5 +1,6 @@
 export const SHRAMIK_ROUTES = [
-  { id: 'dashboard', path: '/', label: 'Dashboard' },
+  { id: 'landing', path: '/', label: 'Home' },
+  { id: 'dashboard', path: '/dashboard', label: 'Dashboard' },
   { id: 'demand', path: '/demand', label: 'Demand' },
   { id: 'supply', path: '/supply', label: 'Supply' },
   { id: 'skill-gaps', path: '/skill-gaps', label: 'Skill Gaps' },
@@ -22,8 +23,7 @@ const routeById = new Map<string, ShramikRouteId>(
 );
 
 const legacyAliases: Record<string, ShramikRouteId> = {
-  '/index.html': 'dashboard',
-  '/dashboard': 'dashboard',
+  '/index.html': 'landing',
   '/skill-gap-analysis.html': 'skill-gaps',
   '/skill-gaps.html': 'skill-gaps',
   '/forecasts.html': 'forecasts',
@@ -66,7 +66,7 @@ export function getRouteFromLocation(location: LocationSnapshot, basePath = '/')
     if (path === normalizedBase) path = '/';
     else if (path.startsWith(`${normalizedBase}/`)) path = path.slice(normalizedBase.length) || '/';
   }
-  if (path === '/') return 'dashboard';
+  if (path === '/') return 'landing';
 
   const direct = SHRAMIK_ROUTES.find((route) => route.path === path);
   if (direct) return direct.id;
