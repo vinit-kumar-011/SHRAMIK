@@ -38,5 +38,5 @@ test('sign-out clears the shared session and replaces the URL with public sign-i
   assert.match(workspace, /getPathForRoute\('login', import\.meta\.env\.BASE_URL\)/);
   assert.match(workspace, /window\.history\.replaceState\(null, '', path\)/);
   assert.match(workspace, /label: getRouteLabel\('login'\)/);
-  assert.match(workspace, /onAuthSessionChange\(session\)/);
+  assert.match(app, /setAuthSession\(session\)/);
 });
