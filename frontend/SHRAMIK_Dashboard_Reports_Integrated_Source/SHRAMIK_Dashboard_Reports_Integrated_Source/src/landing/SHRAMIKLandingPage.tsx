@@ -212,14 +212,6 @@ export default function SHRAMIKLandingPage() {
           </div>
         </section>
 
-        <section className={c('sl-section')} id="sl-overview" aria-label="Core platform principles">
-          <div className={c('sl-wrap') + ' ' + c('sl-value-grid')}>
-            <article className={[c('sl-value'), c('sl-reveal')].join(' ')} data-reveal><span className={c('sl-icon')} aria-hidden="true">01</span><h3>Evidence-based insights</h3><p>Explore workforce-related information through a structured, evidence-led interface.</p></article>
-            <article className={[c('sl-value'), c('sl-reveal')].join(' ')} data-reveal><span className={c('sl-icon')} aria-hidden="true">02</span><h3>Inclusive growth opportunities</h3><p>Build a broader understanding of workforce and skill-development opportunities.</p></article>
-            <article className={[c('sl-value'), c('sl-reveal')].join(' ')} data-reveal><span className={c('sl-icon')} aria-hidden="true">03</span><h3>Stronger workforce planning</h3><p>Examine workforce requirements and support more informed planning decisions.</p></article>
-          </div>
-        </section>
-
         <section className={c('sl-section')} id="sl-live-indicators" aria-labelledby="sl-live-indicators-title">
           <div className={c('sl-wrap')}>
             <p className={c('sl-eyebrow')}>Published source data</p>
@@ -239,6 +231,14 @@ export default function SHRAMIKLandingPage() {
               </article>)}
             </div>}
             <p className={c('sl-method-note')}>Coverage and definitions vary by source. Cumulative registrations and training capacity are not counts of active workers. Forecasts, demand, supply and skill-gap outputs remain unavailable until validated results are published.</p>
+          </div>
+        </section>
+
+        <section className={c('sl-section')} id="sl-overview" aria-label="Core platform principles">
+          <div className={c('sl-wrap') + ' ' + c('sl-value-grid')}>
+            <article className={[c('sl-value'), c('sl-reveal')].join(' ')} data-reveal><span className={c('sl-icon')} aria-hidden="true">01</span><h3>Evidence-based insights</h3><p>Explore workforce-related information through a structured, evidence-led interface.</p></article>
+            <article className={[c('sl-value'), c('sl-reveal')].join(' ')} data-reveal><span className={c('sl-icon')} aria-hidden="true">02</span><h3>Inclusive growth opportunities</h3><p>Build a broader understanding of workforce and skill-development opportunities.</p></article>
+            <article className={[c('sl-value'), c('sl-reveal')].join(' ')} data-reveal><span className={c('sl-icon')} aria-hidden="true">03</span><h3>Stronger workforce planning</h3><p>Examine workforce requirements and support more informed planning decisions.</p></article>
           </div>
         </section>
 
