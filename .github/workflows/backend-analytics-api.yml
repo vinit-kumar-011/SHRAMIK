@@ -44,3 +44,53 @@ jobs:
       - name: Run backend tests
         working-directory: backend
         run: python -m pytest -q
+      - name: Smoke-test deployed API health, CORS and auth guard
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/backend-analytics-read-api'
+        env:
+          SHRAMIK_BACKEND_URL: https://shramik-backend-api.vercel.app
+          SHRAMIK_FRONTEND_ORIGIN: https://shramik-unified-app.vercel.app
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from urllib.error import HTTPError
+          from urllib.request import Request, urlopen
+
+          base = os.environ["SHRAMIK_BACKEND_URL"].rstrip("/")
+          frontend_origin = os.environ["SHRAMIK_FRONTEND_ORIGIN"]
+
+          with urlopen(base + "/api/health", timeout=20) as response:
+              assert response.status == 200, f"health returned {response.status}"
+              health = json.load(response)
+          assert health.get("data", {}).get("status") == "ok", health
+          print("PASS: deployed /api/health returns 200 and status=ok")
+
+          preflight = Request(
+              base + "/api/health",
+              method="OPTIONS",
+              headers={
+                  "Origin": frontend_origin,
+                  "Access-Control-Request-Method": "GET",
+              },
+          )
+          with urlopen(preflight, timeout=20) as response:
+              assert response.status == 200, f"CORS preflight returned {response.status}"
+              assert response.headers.get("Access-Control-Allow-Origin") == frontend_origin, (
+                  response.headers
+              )
+          print("PASS: deployed CORS preflight allows the production React origin")
+
+          anonymous = Request(base + "/api/v1/analytics/forecasts")
+          try:
+              with urlopen(anonymous, timeout=20) as response:
+                  status_code = response.status
+                  payload = json.load(response)
+          except HTTPError as error:
+              status_code = error.code
+              payload = json.loads(error.read().decode("utf-8"))
+
+          assert status_code == 401, (
+              f"anonymous analytics request returned {status_code}, expected 401: {payload}"
+          )
+          print("PASS: analytics endpoint rejects anonymous requests with HTTP 401")
+          PY
