@@ -312,6 +312,21 @@ function metricCountByCode(snapshot: Snapshot): Array<{ code: string; count: num
     sources: new Set(rows.map(row => row.source_id).filter(Boolean)).size,
   })).sort((a, b) => b.count - a.count);
 }
+function preferRowsForScope(rows: MetricRow[], regionCode: string): MetricRow[] {
+  if (regionCode !== 'IN') return rows;
+  const national = rows.filter(row => !row.state_id || row.observation_grain === 'NATIONAL');
+  return national.length ? national : rows;
+}
+
+function metricCoverageLabel(snapshot: Snapshot, rows: MetricRow[], regionCode: string): string {
+  if (!rows.length) return regionCode === 'IN' ? 'No published rows' : 'No published value for selected region';
+  if (regionCode === 'IN') return rows.some(row => !row.state_id || row.observation_grain === 'NATIONAL') ? 'India (national snapshot)' : 'Published state / UT rows';
+  const stateId = selectedStateId(snapshot, regionCode);
+  if (rows.some(row => row.state_id === stateId)) return snapshot.states.find(state => state.id === stateId)?.name || regionCode;
+  if (rows.some(row => !row.state_id || row.observation_grain === 'NATIONAL')) return 'India (national fallback)';
+  return 'No published value for selected region';
+}
+
 function statusCount(snapshot: Snapshot, table: string): string {
   const entry = snapshot.outputs[table];
   if (!entry) return 'Checking';
@@ -388,21 +403,25 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     || registrationRows.find(row => !row.state_id)
     || registrationRows[0];
   const seatTotal = selectedTotals(snapshot, stateSeats, regionCode);
-  const itiRows = mostRecentRows(snapshot, 'CTS_ITI_COUNT', regionCode);
-  const itiTotal = regionCode === 'IN'
-    ? snapshot.metrics.filter(row => row.metric_code === 'CTS_ITI_COUNT' && row.reference_period === 'AS_OF_2024-10-31').reduce((sum, row) => sum + numeric(row.value_numeric), 0)
-    : itiRows.reduce((sum, row) => sum + numeric(row.value_numeric), 0);
+  const itiRows = preferRowsForScope(mostRecentRows(snapshot, 'CTS_ITI_COUNT', regionCode), regionCode);
+  const itiTotal = itiRows.reduce((sum, row) => sum + numeric(row.value_numeric), 0);
+  const itiCoverage = metricCoverageLabel(snapshot, itiRows, regionCode);
   const centreMetrics = ['PMKVY_TRAINING_CENTRE_COUNT', 'JSS_TRAINING_CENTRE_COUNT', 'NAPS_ESTABLISHMENT_COUNT'];
   const centreValues = centreMetrics.map(code => {
-    const rows = mostRecentRows(snapshot, code, regionCode);
-    const national = snapshot.metrics.filter(row => row.metric_code === code && row.reference_period === rows[0]?.reference_period);
-    const selected = regionCode === 'IN' ? national : rows;
-    return { code, rows: selected, total: selected.reduce((sum, row) => sum + numeric(row.value_numeric), 0), period: selected[0]?.reference_period || '—' };
+    const selected = preferRowsForScope(mostRecentRows(snapshot, code, regionCode), regionCode);
+    return {
+      code, rows: selected,
+      total: selected.reduce((sum, row) => sum + numeric(row.value_numeric), 0),
+      period: selected[0]?.reference_period || '—',
+      coverage: metricCoverageLabel(snapshot, selected, regionCode),
+    };
   });
-  const apprenticeRows = mostRecentRows(snapshot, 'SPACE_GEOSPATIAL_NAPS_APPRENTICES_ENGAGED', regionCode);
-  const apprenticeTotal = regionCode === 'IN'
-    ? snapshot.metrics.filter(row => row.metric_code === 'SPACE_GEOSPATIAL_NAPS_APPRENTICES_ENGAGED' && row.reference_period === apprenticeRows[0]?.reference_period).reduce((sum, row) => sum + numeric(row.value_numeric), 0)
-    : apprenticeRows.reduce((sum, row) => sum + numeric(row.value_numeric), 0);
+  const apprenticeRows = preferRowsForScope(mostRecentRows(snapshot, 'SPACE_GEOSPATIAL_NAPS_APPRENTICES_ENGAGED', regionCode), regionCode);
+  const apprenticeTotal = apprenticeRows.reduce((sum, row) => sum + numeric(row.value_numeric), 0);
+  const apprenticeCoverage = metricCoverageLabel(snapshot, apprenticeRows, regionCode);
+  const pmkvyTrainedRows = preferRowsForScope(mostRecentRows(snapshot, 'SPACE_GEOSPATIAL_PMKVY_TRAINED_ORIENTED', regionCode), regionCode);
+  const pmkvyTrainedTotal = pmkvyTrainedRows.reduce((sum, row) => sum + numeric(row.value_numeric), 0);
+  const pmkvyTrainedCoverage = metricCoverageLabel(snapshot, pmkvyTrainedRows, regionCode);
   const canonicalSkillCount = snapshot.skills.length;
   const sectorCount = snapshot.sectors.length;
   const sourceCount = snapshot.sources.length;
@@ -450,9 +469,9 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
         <KpiCard label="e-Shram registrations" value={registration ? numberFormat(numeric(registration.value_numeric), true) : '—'} note={registration ? periodLabel(registration.reference_period) + ' · registrations, not job demand' : 'No published registration snapshot'} icon="people"/>
       </> : null}
       {module === 'supply' ? <>
-        <KpiCard label="Provisional CTS seat capacity" value={numberFormat(seatTotal, true)} note={regionCode === 'IN' ? 'Academic session 2026 · seats, not completions' : 'Selected region · academic session 2026'} icon="training"/>
-        <KpiCard label="CTS ITIs" value={numberFormat(itiTotal, true)} note="Published reference snapshot · 31 Oct 2024" icon="database"/>
-        <KpiCard label="Apprentices engaged" value={numberFormat(apprenticeTotal, true)} note={apprenticeRows[0] ? periodLabel(apprenticeRows[0].reference_period) : 'Latest published reporting period'} icon="people"/>
+        <KpiCard label="Provisional CTS seat capacity" value={visibleStateSeats.length ? numberFormat(seatTotal, true) : '—'} note={visibleStateSeats.length ? (regionCode === 'IN' ? 'Academic session 2026 · seats, not completions' : 'Selected region · academic session 2026') : 'No published seat-capacity value for this region'} icon="training"/>
+        <KpiCard label="CTS ITIs" value={itiRows.length ? numberFormat(itiTotal, true) : '—'} note={itiRows.length ? periodLabel(itiRows[0].reference_period) + ' · ' + itiCoverage : 'No published institute count for this region'} icon="database"/>
+        <KpiCard label="Apprentices engaged" value={apprenticeRows.length ? numberFormat(apprenticeTotal, true) : '—'} note={apprenticeRows[0] ? periodLabel(apprenticeRows[0].reference_period) + ' · ' + apprenticeCoverage : 'No published apprenticeship value for this region'} icon="people"/>
         <KpiCard label="Training / apprenticeship metrics" value={numberFormat(centreValues.reduce((sum, row) => sum + (row.rows.length ? 1 : 0), 0))} note="PMKVY centres, JSS centres and NAPS establishments" icon="activity"/>
       </> : null}
       {module === 'skill-gaps' ? <>
@@ -511,7 +530,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     </> : null}
 
     {module === 'supply' ? <>
-      <section className="dbi-panel"><SectionHead title="Provisional training capacity by state" note="Sum of source-backed CTS trade-level seat-capacity records for academic session 2026. It measures planned training capacity—not enrolment, completion or employed workers."/>
+      <section className="dbi-panel"><SectionHead title={regionCode === 'IN' ? 'Provisional training capacity by state' : 'Provisional training capacity · selected region'} note="Sum of source-backed CTS trade-level seat-capacity records for academic session 2026. It measures planned training capacity—not enrolment, completion or employed workers."/>
         <div className="dbi-ranking-list">
           {visibleStateSeats.slice(0, 12).map((row, index) => <div className="dbi-ranking-row" key={row.id}>
             <span className="dbi-rank">{String(index + 1).padStart(2, '0')}</span><span className="dbi-ranking-name">{row.label}</span>
@@ -523,10 +542,10 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       </section>
       <div className="dbi-two-col">
         <section className="dbi-panel"><SectionHead title="Training & apprenticeship indicators" note="Metrics remain separated by programme and reference period."/>
-          <DataTable columns={['Indicator', 'Value', 'Reference period', 'Source']}>
-            {centreValues.map(item => item.rows.length ? <tr key={item.code}><td><strong>{metricLabel(item.code)}</strong></td><td className="dbi-number">{numberFormat(item.total)}</td><td>{periodLabel(item.period)}</td><td><SourceLink source={sourceFor(snapshot, item.rows[0]?.source_id)}/></td></tr> : null)}
-            {apprenticeRows.length ? <tr><td><strong>Apprentices engaged (NAPS)</strong></td><td className="dbi-number">{numberFormat(apprenticeTotal)}</td><td>{periodLabel(apprenticeRows[0].reference_period)}</td><td><SourceLink source={sourceFor(snapshot, apprenticeRows[0].source_id)}/></td></tr> : null}
-            <tr><td><strong>PMKVY trained / oriented</strong></td><td className="dbi-number">{numberFormat(mostRecentRows(snapshot, 'SPACE_GEOSPATIAL_PMKVY_TRAINED_ORIENTED', regionCode).reduce((sum, row) => sum + numeric(row.value_numeric), 0))}</td><td>{periodLabel(mostRecentRows(snapshot, 'SPACE_GEOSPATIAL_PMKVY_TRAINED_ORIENTED', regionCode)[0]?.reference_period || '—')}</td><td><SourceLink source={sourceFor(snapshot, mostRecentRows(snapshot, 'SPACE_GEOSPATIAL_PMKVY_TRAINED_ORIENTED', regionCode)[0]?.source_id || null)}/></td></tr>
+          <DataTable columns={['Indicator', 'Value', 'Reference period', 'Coverage', 'Source']} empty="No published training or apprenticeship indicators are available for this region and period.">
+            {centreValues.map(item => item.rows.length ? <tr key={item.code}><td><strong>{metricLabel(item.code)}</strong></td><td className="dbi-number">{numberFormat(item.total)}</td><td>{periodLabel(item.period)}</td><td>{item.coverage}</td><td><SourceLink source={sourceFor(snapshot, item.rows[0]?.source_id)}/></td></tr> : null)}
+            {apprenticeRows.length ? <tr><td><strong>Apprentices engaged (NAPS)</strong></td><td className="dbi-number">{numberFormat(apprenticeTotal)}</td><td>{periodLabel(apprenticeRows[0].reference_period)}</td><td>{apprenticeCoverage}</td><td><SourceLink source={sourceFor(snapshot, apprenticeRows[0].source_id)}/></td></tr> : null}
+            {pmkvyTrainedRows.length ? <tr><td><strong>PMKVY trained / oriented</strong></td><td className="dbi-number">{numberFormat(pmkvyTrainedTotal)}</td><td>{periodLabel(pmkvyTrainedRows[0].reference_period)}</td><td>{pmkvyTrainedCoverage}</td><td><SourceLink source={sourceFor(snapshot, pmkvyTrainedRows[0].source_id)}/></td></tr> : null}
           </DataTable>
         </section>
         <section className="dbi-panel"><SectionHead title="Training capacity is not workforce supply" note="Signals that should be kept distinct in the analytics pipeline."/>
