@@ -150,16 +150,16 @@ function trainingProgrammeTrend(rows: SourceMetricRow[]): DashboardSummary['tren
     periods.set(row.reference_period, byMetric);
   });
   const candidates = [...periods.entries()]
-    .filter(([period, byMetric]) => /^FY\\d{4}-\\d{2}$/.test(period) && byMetric.has(NAPS_METRIC) && byMetric.has(PMKVY_METRIC))
+    .filter(([period, byMetric]) => /^FY\d{4}-\d{2}$/.test(period) && byMetric.has(NAPS_METRIC) && byMetric.has(PMKVY_METRIC))
     .sort(([a], [b]) => a.localeCompare(b));
   // Do not draw a trend from one shared period; require at least two comparable periods.
   if (candidates.length < 2) return [];
   return candidates.map(([period, byMetric]) => {
-    const [, start, end] = period.match(/^FY(\\d{4})-(\\d{2})$/) || [];
+    const startYear = Number(period.slice(2, 6));
     const naps = byMetric.get(NAPS_METRIC)!;
     const pmkvy = byMetric.get(PMKVY_METRIC)!;
     return {
-      year: Number(start) + 1,
+      year: startYear + 1,
       label: period.replace('-', '–'),
       demand: naps.total,
       supply: pmkvy.total,
