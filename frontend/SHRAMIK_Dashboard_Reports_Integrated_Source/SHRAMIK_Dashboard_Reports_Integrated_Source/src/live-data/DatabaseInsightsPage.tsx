@@ -131,6 +131,9 @@ function textValue(v: unknown): string {
 }
 function isCanonicalPersonRate(row: MetricRow): boolean {
   const d = row.dimension_values || {};
+  // This detail page uses the published PLFS 15+ age-domain benchmark. The
+  // public landing/dashboard cards separately show all-ages context, so keep
+  // the age universe explicit wherever these values are displayed.
   return d.sex === 'person' && d.area === 'combined' && d.age_domain === '15_plus';
 }
 function sourceFor(snapshot: Snapshot, sourceId: string | null): SourceRow | undefined {
@@ -443,7 +446,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
 
     <div className="dbi-kpi-grid">
       {module === 'demand' ? <>
-        {rates.map(({ code, label, row }) => <KpiCard key={code} label={label} value={row ? numberFormat(numeric(row.value_numeric), false) : '—'} unit={row?.unit === 'percent' ? '%' : row?.unit} note={row ? periodLabel(row.reference_period) + ' · ' + (row.state_id ? stateLabel(snapshot, row) : 'India') : 'No published value for this slice'} icon="activity"/>)}
+        {rates.map(({ code, label, row }) => <KpiCard key={code} label={label} value={row ? numberFormat(numeric(row.value_numeric), false) : '—'} unit={row?.unit === 'percent' ? '%' : row?.unit} note={row ? 'Persons aged 15+ · ' + periodLabel(row.reference_period) + ' · ' + (row.state_id ? stateLabel(snapshot, row) : 'India (national)') : 'No published value for this slice'} icon="activity"/>)}
         <KpiCard label="e-Shram registrations" value={registration ? numberFormat(numeric(registration.value_numeric), true) : '—'} note={registration ? periodLabel(registration.reference_period) + ' · registrations, not job demand' : 'No published registration snapshot'} icon="people"/>
       </> : null}
       {module === 'supply' ? <>
@@ -492,7 +495,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
 
     {module === 'demand' ? <>
       <div className="dbi-two-col">
-        <section className="dbi-panel"><SectionHead title="PLFS 2025 published benchmarks" note="Official annual indicator values. Selected-region values are used where published; otherwise India values remain explicitly labelled."/>
+        <section className="dbi-panel"><SectionHead title="PLFS 2025 benchmarks · age 15+" note="Published annual rates for persons aged 15+, combined rural/urban. A selected-region value is shown only when published for this exact age/sex/area slice; otherwise the row is explicitly labelled India (national). The landing page may show a separate all-ages benchmark."/>
           <DataTable columns={['Indicator', 'Published value', 'Period', 'Geography', 'Source']}>
             {rates.map(({ code, label, row }) => row ? <tr key={code}><td><strong>{label}</strong><small>{code}</small></td><td className="dbi-number">{numberFormat(numeric(row.value_numeric))}{row.unit === 'percent' ? '%' : ' ' + row.unit}</td><td>{periodLabel(row.reference_period)}</td><td>{row.state_id ? stateLabel(snapshot, row) : 'India (national)'}</td><td><SourceLink source={sourceFor(snapshot, row.source_id) || employmentSource}/></td></tr> : null)}
             {rates.every(item => !item.row) ? <tr><td colSpan={5} className="dbi-empty-cell">No canonical person-level PLFS slice is published for this region.</td></tr> : null}
