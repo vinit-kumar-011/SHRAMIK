@@ -251,7 +251,8 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
   }
 
   async getRegionRankings(query: RankingsQuery): Promise<RankedRegionsResponse> {
-    await this.getRegions(query.signal);
+    // Rankings include state_id and state_name in the public view, so they must
+    // not depend on the separate state-selector request succeeding first.
     const metricMap: Record<RegionMetric, { key: string; unit: string; label: string }> = {
       demand: { key: 'REGISTRATIONS', unit: 'registrations', label: 'e-Shram registrations' },
       supply: { key: 'TRAINING_SEATS', unit: 'seats', label: 'Provisional CTS seat capacity' },
