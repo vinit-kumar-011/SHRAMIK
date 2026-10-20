@@ -104,9 +104,11 @@ export function createPublicSupabaseDataHandler(
     return;
   }
 
-  const requestedColumns = (first(req.query.select) || '*').split(',').map(c => c.trim());
-  if (requestedColumns.some(c => c !== '*' && (!/^[a-z_][a-z0-9_]*$/i.test(c) || !rule.columns.has(c)))) {
-    res.status(400).json({ error: 'The requested column set is not allowed for this resource.' });
+  const requestedColumnText = first(req.query.select);
+  const requestedColumns = (requestedColumnText || '').split(',').map(c => c.trim());
+  if (!requestedColumnText || requestedColumns.length === 0
+    || requestedColumns.some(c => !/^[a-z_][a-z0-9_]*$/i.test(c) || !rule.columns.has(c))) {
+    res.status(400).json({ error: 'An explicit allow-listed column set is required for this resource.' });
     return;
   }
 
@@ -129,7 +131,16 @@ export function createPublicSupabaseDataHandler(
   }
 
   const order = first(req.query.order);
-  if (order && /^[a-z_][a-z0-9_]*(\.(asc|desc))?(,[a-z_][a-z0-9_]*(\.(asc|desc))?)*$/i.test(order)) {
+  if (order) {
+    if (!/^[a-z_][a-z0-9_]*(\.(asc|desc))?(,[a-z_][a-z0-9_]*(\.(asc|desc))?)*$/i.test(order)) {
+      res.status(400).json({ error: 'The requested ordering is invalid.' });
+      return;
+    }
+    const orderColumns = order.split(',').map(item => item.split('.')[0]);
+    if (orderColumns.some(column => !rule.columns.has(column))) {
+      res.status(400).json({ error: 'The requested ordering uses a non-allow-listed column.' });
+      return;
+    }
     params.set('order', order);
   }
 
