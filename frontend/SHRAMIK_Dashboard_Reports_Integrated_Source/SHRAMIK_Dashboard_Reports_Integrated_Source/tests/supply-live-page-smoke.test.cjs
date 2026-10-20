@@ -20,7 +20,7 @@ test('Supply table omits PMKVY when no source-backed observation exists', () => 
 test('Supply table identifies geography and avoids adding a national aggregate to regional totals', () => {
   assert.match(source, /columns=\{\['Indicator', 'Value', 'Reference period', 'Coverage', 'Source'\]\}/);
   assert.match(source, /India \(national fallback\)/);
-  assert.match(source, /No published regional value/);
+  assert.match(source, /No published value for selected region/);
   assert.match(source, /<td>\{item\.coverage\}<\/td>/);
   assert.match(source, /function preferRowsForScope\(rows: MetricRow\[\], regionCode: string\)/);
   assert.match(source, /const national = rows\.filter\(row => !row\.state_id \|\| row\.observation_grain === 'NATIONAL'\)/);
