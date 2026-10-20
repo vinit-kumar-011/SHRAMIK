@@ -5,7 +5,7 @@ import { signInWithPassword } from './session';
 
 export default function LoginPage({ onAuthenticated, onNavigate }: {
   onAuthenticated: (session: AuthSession) => void;
-  onNavigate: (route: 'dashboard' | 'request-access') => void;
+  onNavigate: (route: 'landing' | 'request-access') => void;
 }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,7 +46,7 @@ export default function LoginPage({ onAuthenticated, onNavigate }: {
         <button className="sh-auth-primary" type="submit" disabled={pending}>{pending ? 'Signing in…' : 'Sign in'} <ArrowRight size={17}/></button>
       </form>
       <p className="sh-auth-footer">Need workspace access? <button type="button" onClick={() => onNavigate('request-access')}>Request access</button></p>
-      <button className="sh-auth-text-link" type="button" onClick={() => onNavigate('dashboard')}>Return to public dashboard</button>
+      <button className="sh-auth-text-link" type="button" onClick={() => onNavigate('landing')}>Return to public dashboard</button>
       <p className="sh-auth-disclaimer">Only accounts already provisioned in Supabase Auth can sign in. An access request does not automatically create an account or assign a role.</p>
     </div>
   </section>;
