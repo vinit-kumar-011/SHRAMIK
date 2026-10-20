@@ -1,0 +1,44 @@
+name: SHRAMIK analytics unit tests
+
+on:
+  push:
+    branches:
+      - develop
+      - feature/ml-series-and-baseline
+    paths:
+      - "ml/**"
+      - "tests/analytics/**"
+      - ".github/workflows/ml-analytics.yml"
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - "ml/**"
+      - "tests/analytics/**"
+      - ".github/workflows/ml-analytics.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shramik-ml-analytics-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analytics-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install test runner
+        run: python -m pip install --upgrade pip pytest
+      - name: Compile analytics modules
+        run: python -m compileall -q ml
+      - name: Run ML contract and series tests
+        run: python -m pytest tests/analytics -q
