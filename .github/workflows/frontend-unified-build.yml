@@ -36,6 +36,8 @@ jobs:
         run: npm run typecheck
       - name: Test adapters, routes, and module integration
         run: npm test
+      - name: Verify live Supabase published KPI reads
+        run: npm run test:live-data
       - name: Build production application
         run: npm run build
       - name: Verify generated static entry points
