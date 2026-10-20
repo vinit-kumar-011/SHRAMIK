@@ -63,7 +63,7 @@
 .nav-divider{height:1px;background:#929086;margin:14px 8px 10px}
 .sidebar-art{position:relative;display:flex;flex-direction:column;gap:10px;overflow:visible;min-height:0;margin:auto 0 0;padding:25px 0 8px;border:0;background:transparent}
 .sidebar-art:before,.sidebar-art:after{display:none;content:none}
-.sidebar-worker-photo{width:100%;height:245px;flex:0 0 245px;background-image:url('/images/shramik-sidebar-workers.jpg');background-position:center;background-size:cover;background-repeat:no-repeat;filter:grayscale(1);border:1px solid #D8D6CD;border-radius:2px}
+.sidebar-worker-photo{width:100%;height:245px;flex:0 0 245px;background-image:url('/assets/sidebar-workers.png');background-position:center;background-size:cover;background-repeat:no-repeat;filter:grayscale(1);border:1px solid #D8D6CD;border-radius:2px}
 .sidebar-message{display:flex;align-items:center;gap:10px;min-height:82px;padding:11px 10px;background:#FBF7E9;border:1.2px solid #292929;border-radius:8px;color:#171717}
 .sidebar-message>span{display:grid;place-items:center;flex:0 0 28px;font-size:24px;line-height:1}
 .sidebar-message p{font:600 14px/1.13 'Barlow Condensed','PT Sans Narrow','Arial Narrow',sans-serif;flex:1;min-width:0;margin:0;color:#171717}
