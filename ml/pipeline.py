@@ -18,7 +18,8 @@ from ml.confidence import (
     freshness_days,
     provisional_base_level,
 )
-from ml.forecast import NAIVE_MODEL, naive_backtest_error, naive_last_value
+from ml.forecast import naive_backtest_error
+from ml.models import MODELS, ModelNotApplicable, forecast, points_of, select_model
 from ml.gap import SignalProfile, check_gap_eligibility, classify_status, q2
 from ml.series import Observation, build_series, provenance_of
 from ml.vocab import ANALYSIS_MODES
@@ -130,15 +131,37 @@ def build_forecast_record(
             record[key] = None
         return record
 
-    # ---- forecast
+    # ---- forecast: naive baseline unless a candidate clearly wins the back-test
     try:
-        forecast_demand = naive_last_value(demand)
-        forecast_supply = naive_last_value(supply)
+        selection = select_model([demand, supply])
+        model_name = selection["selected"]
+        try:
+            (forecast_demand, floor_d) = forecast(model_name, points_of(demand), target_year)
+            (forecast_supply, floor_s) = forecast(model_name, points_of(supply), target_year)
+        except ModelNotApplicable:
+            # e.g. a missing year right before the cutoff breaks smoothing's spacing rule
+            model_name = "naive_last_value"
+            selection.update(selected=model_name, reason="BASELINE_FALLBACK_NOT_APPLICABLE")
+            (forecast_demand, floor_d) = forecast(model_name, points_of(demand), target_year)
+            (forecast_supply, floor_s) = forecast(model_name, points_of(supply), target_year)
     except Exception:  # model failure is a data_status, not a crash
         record["data_status"], record["reason_code"] = "UNAVAILABLE", "MODEL_FAILURE"
         for key in NULL_WHEN_NOT_SUFFICIENT:
             record[key] = None
         return record
+
+    if model_name != "naive_last_value":
+        # forecast_error describes the model actually used
+        sel_errors = [e for e in selection["relative_errors"] if e is not None]
+        confidence_inputs["forecast_error"] = max(sel_errors) if sel_errors else None
+    confidence_inputs["model_selection"] = {
+        "selected": model_name,
+        "reason": selection["reason"],
+        "eval_origins": selection["origins"],
+        "scaled_mae": selection["scores"],
+        "win_share_vs_baseline": selection["wins"],
+        "floored_at_zero": bool(floor_d or floor_s),
+    }
 
     eligible, eligibility_reason = check_gap_eligibility(demand_profile, supply_profile)
     gap, status = classify_status(forecast_demand, forecast_supply, eligible, min_forecast_demand)
@@ -151,10 +174,10 @@ def build_forecast_record(
         "gap_eligibility_reason": eligibility_reason,
         "gap": _num(gap) if eligible else None,
         "status": status,
-        "forecast_uncertainty": None,  # naive baseline: no validated interval (section 11)
+        "forecast_uncertainty": None,  # no model here has a validated interval (section 11)
         "confidence_level": apply_caps(base, history, provenance),
         "evidence_coverage": evidence_coverage(used),
-        "model": dict(NAIVE_MODEL, trained_through_period=f"{cutoff_year:04d}"),
+        "model": dict(MODELS[model_name], trained_through_period=f"{cutoff_year:04d}"),
     })
     return record
 
