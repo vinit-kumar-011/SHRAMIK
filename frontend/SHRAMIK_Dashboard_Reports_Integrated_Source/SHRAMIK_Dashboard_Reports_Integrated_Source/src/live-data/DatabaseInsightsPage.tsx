@@ -1,7 +1,8 @@
 import { Activity, ArrowUpRight, Database, FileCheck2, GraduationCap, Info, RefreshCw, ShieldCheck, Users } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Children, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { SUPABASE_URL, supabaseHeaders } from '../supabase/config';
+import type { ReactNode } from 'react';
 
 export type DatabaseModule = 'demand' | 'supply' | 'skill-gaps' | 'forecasts' | 'emerging-skills' | 'scenario-simulator' | 'reports' | 'data-quality';
 
@@ -188,10 +189,10 @@ function stateTotals(snapshot: Snapshot, rows: MetricRow[]): Array<{ id: string;
   })).sort((a, b) => b.value - a.value);
 }
 async function getRows<T>(table: string, query: Record<string, string>): Promise<T[]> {
-  const params = new URLSearchParams(query);
-  const response = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?' + params.toString(), {
+  const params = new URLSearchParams({ table, ...query });
+  const response = await fetch('/api/shramik-data?' + params.toString(), {
     method: 'GET',
-    headers: supabaseHeaders(null),
+    headers: { Accept: 'application/json' },
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { message?: string; details?: string } | null;
