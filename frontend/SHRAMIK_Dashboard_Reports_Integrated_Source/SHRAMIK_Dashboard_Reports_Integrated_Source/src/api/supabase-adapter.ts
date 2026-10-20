@@ -120,7 +120,10 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
     publishableKeyHeaders: typeof supabaseHeaders = supabaseHeaders,
   ) {
     this.baseUrl = baseUrl ?? SUPABASE_URL;
-    this.fetcher = fetcher;
+    // Native browser fetch must be called with its global receiver in Firefox.
+    // This adapter invokes the stored function as a property, which otherwise binds
+    // `this` to the adapter instance and can reject every request with Illegal invocation.
+    this.fetcher = fetcher.bind(globalThis);
     this.publishableKeyHeaders = publishableKeyHeaders;
     // The default production adapter uses the first-party proxy; injected test/local URLs remain direct.
     this.useSameOriginProxy = baseUrl === undefined;
