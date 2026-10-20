@@ -66,6 +66,7 @@ def client() -> Generator[TestClient, None, None]:
         finally:
             db.close()
 
+    app.state.test_session_factory = TestSession
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides.pop(require_supabase_user, None)
     test_client = TestClient(app)
@@ -73,6 +74,8 @@ def client() -> Generator[TestClient, None, None]:
         yield test_client
     finally:
         app.dependency_overrides.clear()
+        if hasattr(app.state, 'test_session_factory'):
+            del app.state.test_session_factory
         engine.dispose()
 
 
@@ -86,8 +89,7 @@ def authenticate() -> None:
 
 def insert_forecast(client: TestClient, *, mode: str, provenance: str, forecast_id: str, year: int = 2025) -> None:
     # Use the same in-memory engine backing the TestClient dependency.
-    db_factory = app.dependency_overrides[get_db]
-    db = next(db_factory())
+    db = app.state.test_session_factory()
     try:
         db.execute(
             text("""
@@ -166,8 +168,7 @@ def test_status_reports_empty_pipeline_outputs(client: TestClient) -> None:
 def test_official_early_warnings_require_an_active_official_forecast(client: TestClient) -> None:
     authenticate()
     insert_forecast(client, mode="OFFICIAL", provenance="SOURCE_BACKED", forecast_id="official")
-    db_factory = app.dependency_overrides[get_db]
-    db = next(db_factory())
+    db = app.state.test_session_factory()
     try:
         db.execute(
             text("""
