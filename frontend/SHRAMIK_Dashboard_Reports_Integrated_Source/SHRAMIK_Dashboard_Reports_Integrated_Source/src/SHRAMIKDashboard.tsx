@@ -653,7 +653,7 @@ function PublicAuthRoute({ route, onAuthenticated }: {
   route: 'login' | 'request-access';
   onAuthenticated: (session: AuthSession) => void;
 }) {
-  const navigate = useCallback((target: 'dashboard' | 'login' | 'request-access') => {
+  const navigate = useCallback((target: 'landing' | 'dashboard' | 'login' | 'request-access') => {
     const path = getPathForRoute(target, import.meta.env.BASE_URL);
     window.history.pushState(null, '', path);
     window.dispatchEvent(new CustomEvent('shramik:navigate', { detail: { path, label: getRouteLabel(target) } }));
