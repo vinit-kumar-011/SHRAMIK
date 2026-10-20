@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Activity, ArrowUpRight, Database, FileCheck2, GraduationCap, Info, RefreshCw, ShieldCheck, TrendingUp, Users } from 'lucide-react';
+import { Activity, ArrowUpRight, Database, FileCheck2, GraduationCap, Info, RefreshCw, ShieldCheck, Users } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { SUPABASE_URL, supabaseHeaders } from '../supabase/config';
 
 export type DatabaseModule = 'demand' | 'supply' | 'skill-gaps' | 'forecasts' | 'emerging-skills' | 'scenario-simulator' | 'reports' | 'data-quality';
@@ -38,7 +39,6 @@ type Snapshot = {
 };
 
 const LIMIT = 1000;
-let snapshotPromise: Promise<Snapshot> | null = null;
 const TITLES: Record<DatabaseModule, { title: string; subtitle: string; eyebrow: string }> = {
   demand: {
     title: 'Demand & labour-market context',
@@ -183,7 +183,7 @@ function stateTotals(snapshot: Snapshot, rows: MetricRow[]): Array<{ id: string;
   });
   return [...grouped.entries()].map(([id, v]) => ({
     id,
-    label: id === 'NATIONAL' ? 'India (national)' : snapshot.states.find(s => s.id === id)?.name || rows.find(r => r.state_id === id) ? stateLabel(snapshot, rows.find(r => r.state_id === id) as MetricRow) : id,
+    label: id === 'NATIONAL' ? 'India (national)' : (snapshot.states.find(s => s.id === id)?.name || (rows.find(r => r.state_id === id) ? stateLabel(snapshot, rows.find(r => r.state_id === id) as MetricRow) : id)),
     value: v.value,
     unit: v.unit,
     period: v.period,
@@ -285,7 +285,7 @@ function SourceLink({ source }: { source?: SourceRow }) {
 function EmptyState({ title, body }: { title: string; body: string }) {
   return <div className="dbi-empty"><div className="dbi-empty-icon"><Info size={19}/></div><div><strong>{title}</strong><p>{body}</p></div></div>;
 }
-function DataTable({ columns, children, empty = 'No matching source-backed rows are available.' }: { columns: string[]; children: React.ReactNode; empty?: string }) {
+function DataTable({ columns, children, empty = 'No matching source-backed rows are available.' }: { columns: string[]; children: ReactNode; empty?: string }) {
   return <div className="dbi-table-wrap"><table className="dbi-table"><thead><tr>{columns.map(column => <th key={column}>{column}</th>)}</tr></thead><tbody>{children || <tr><td colSpan={columns.length} className="dbi-empty-cell">{empty}</td></tr>}</tbody></table></div>;
 }
 function contextRates(snapshot: Snapshot, regionCode: string): MetricRow[] {
@@ -382,7 +382,6 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   async function refresh() {
     setRefreshing(true);
     setError('');
-    snapshotPromise = null;
     try {
       const result = await loadSnapshot();
       setSnapshot(result);
@@ -448,7 +447,6 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   const employmentSource = sourceFor(snapshot, rates.find(value => value.row)?.row?.source_id || null);
   const registrationSource = sourceFor(snapshot, registration?.source_id || null);
   const inventory = metricInventory.filter(row => !query || metricLabel(row.code).toLocaleLowerCase().includes(query.toLocaleLowerCase()) || row.code.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
-  const sourceContextRows = snapshot.metrics.filter(row => ['UR', 'LFPR', 'WPR'].includes(row.metric_code) && row.reference_period === 'CY2025' && (!row.state_id || row.observation_grain === 'NATIONAL'));
   const gapReason = demandStatus === '0 visible' && supplyStatus === '0 visible'
     ? 'The public database currently exposes no demand-observation or supply-observation rows for this view. The system therefore does not calculate or display a numerical skill gap.'
     : 'A skill gap is shown only when compatible demand and supply observations are available through the validated analytical contract.';
@@ -529,10 +527,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
         </section>
         <section className="dbi-panel"><SectionHead title="Worker-registration distribution" note="State-level e-Shram registrations are cumulative registration counts, not employment, vacancy volume or available labour supply."/>
           <DataTable columns={['State / UT', 'Registrations', 'Reference', 'Source']}>
-            {stateRegTotals.slice(0, 10).map(row => {
-              const item = stateRegistrations.find(m => m.state_id === row.id);
-              return <tr key={row.id}><td><strong>{row.label}</strong></td><td className="dbi-number">{numberFormat(row.value, true)}</td><td>{periodLabel(row.period)}</td><td><SourceLink source={sourceFor(snapshot, row.sourceId) || registrationSource}/></td></tr>;
-            })}
+            {stateRegTotals.slice(0, 10).map(row => <tr key={row.id}><td><strong>{row.label}</strong></td><td className="dbi-number">{numberFormat(row.value, true)}</td><td>{periodLabel(row.period)}</td><td><SourceLink source={sourceFor(snapshot, row.sourceId) || registrationSource}/></td></tr>)}
           </DataTable>
         </section>
       </div>
