@@ -223,7 +223,7 @@ test('public root mounts the React landing page and exposes live published indic
   assert.match(shell, /if \(route === 'landing'\) return <SHRAMIKLandingPage \/>/);
   assert.match(landing, /\/rest\/v1\/sh_public_dashboard_kpis/);
   assert.match(landing, /PublishedIndicator/);
-  assert.match(landing, /No demand\/supply estimates or model forecasts/);
+  assert.match(landing, /not demand\/supply estimates or model forecasts/);
   assert.match(landing, /Retry/);
   assert.match(landingCss, /@media \(max-width: 900px\)/);
   assert.match(landingCss, /@media \(max-width: 480px\)/);
