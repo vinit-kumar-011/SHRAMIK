@@ -437,6 +437,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   const emergingStatus = statusCount(snapshot, 'emerging_skill_signals');
   const warningStatus = statusCount(snapshot, 'early_warnings');
   const modelStatus = statusCount(snapshot, 'model_versions');
+  const forecastInputsRestricted = [forecastStatus, demandStatus, supplyStatus, warningStatus, modelStatus].includes('Restricted');
   const lowConfidenceSkillCount = snapshot.skills.filter(skill =>
     (skill.sector_mapping_confidence || '').toUpperCase() === 'LOW').length;
   const lowConfidenceManualMappingCount = snapshot.skills.filter(skill =>
@@ -582,7 +583,9 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     </> : null}
 
     {module === 'forecasts' ? <>
-      <div className="dbi-note dbi-note-warn"><Info size={17}/><div><strong>No published forecast result is available to this app</strong><p>We will not manufacture projections from dashboard indicators. The live database needs validated forecast_results, model-version metadata and an auditable calculation run before a forecast line or early-warning count can appear here.</p></div></div>
+      <div className="dbi-note dbi-note-warn" role="status"><Info size={17}/><div><strong>No validated forecast result is available in this view</strong><p>{forecastInputsRestricted
+        ? 'One or more forecast input/output tables are restricted by the public read policy. “Restricted” means this application cannot inspect that table; it does not prove the underlying table is empty. A server-authorized read of validated outputs is required before a forecast line or early-warning result can be shown.'
+        : 'We will not manufacture projections from dashboard indicators. Validated forecast results, model-version metadata and an auditable calculation run are required before a forecast line or early-warning result can appear here.'}</p></div></div>
       <div className="dbi-two-col">
         <section className="dbi-panel"><SectionHead title="Output readiness" note="These checks reflect what the public data reader can currently see."/>
           <div className="dbi-readiness-list">{[['Demand observations', demandStatus], ['Supply observations', supplyStatus], ['Forecast results', forecastStatus], ['Model versions', modelStatus], ['Early warnings', warningStatus]].map(([label, status]) => <div className="dbi-readiness-item" key={label}><span className="dbi-status-dot" data-status={status === 'Available' ? 'ready' : status === 'Restricted' ? 'restricted' : 'pending'}/><span>{label}</span><strong>{status}</strong></div>)}</div>
