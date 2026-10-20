@@ -214,3 +214,100 @@
       .root.sl-has-reveal .sl-reveal { opacity:1; transform:none; }
     }
   
+
+/* Live, source-backed indicator strip on the public landing page. */
+.sl-live-indicators-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+.sl-live-indicator {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.6rem;
+  border: 1px solid var(--sl-ink, #292929);
+  border-radius: var(--sl-radius, 0.6rem);
+  background: var(--sl-paper, #fff);
+  padding: 1.15rem;
+  box-shadow: 4px 4px 0 var(--sl-ink, #292929);
+}
+.sl-live-indicator-label {
+  min-height: 2.6em;
+  color: var(--sl-muted, #5a5a55);
+  font-size: 0.86rem;
+  line-height: 1.35;
+  font-weight: 650;
+}
+.sl-live-indicator-value {
+  color: var(--sl-ink, #292929);
+  font-size: clamp(1.6rem, 2.8vw, 2.35rem);
+  line-height: 1.05;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.sl-live-indicator-unit {
+  color: var(--sl-muted, #5a5a55);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+.sl-live-indicator-period {
+  border-top: 1px solid var(--sl-line, #d4d2c9);
+  padding-top: 0.65rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.sl-live-indicator-note {
+  color: var(--sl-muted, #5a5a55);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0;
+}
+.sl-live-indicator-source {
+  margin-top: auto;
+  padding-top: 0.35rem;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.sl-live-indicator-source a {
+  color: var(--sl-ink, #292929);
+  font-weight: 750;
+  text-underline-offset: 0.15em;
+}
+.sl-live-status {
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid var(--sl-line, #d4d2c9);
+  border-radius: var(--sl-radius, 0.6rem);
+}
+.sl-live-error {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.25rem 0;
+  padding: 1rem;
+  border: 1px solid var(--sl-ink, #292929);
+  border-radius: var(--sl-radius, 0.6rem);
+  background: var(--sl-muted-bg, #f2f0e8);
+}
+.sl-live-retry {
+  border: 1px solid var(--sl-ink, #292929);
+  border-radius: 0.35rem;
+  background: var(--sl-accent, #f2d34f);
+  padding: 0.55rem 0.8rem;
+  color: var(--sl-ink, #292929);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+@media (max-width: 900px) {
+  .sl-live-indicators-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .sl-live-indicators-grid { grid-template-columns: minmax(0, 1fr); }
+  .sl-live-indicator { padding: 1rem; }
+}
