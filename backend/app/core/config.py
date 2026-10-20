@@ -1,8 +1,18 @@
 from functools import lru_cache
-from os import getenv
+from typing import Annotated, Any
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BeforeValidator, Field
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+
+def _split_comma_separated(value: Any) -> Any:
+    """Accept a comma-separated environment value or an already-parsed list."""
+    if isinstance(value, str):
+        return [item.strip() for item in value.split(",") if item.strip()]
+    return value
+
+
+CorsOrigins = Annotated[list[str], NoDecode, BeforeValidator(_split_comma_separated)]
 
 
 class Settings(BaseSettings):
@@ -10,7 +20,10 @@ class Settings(BaseSettings):
     environment: str = "development"
     api_prefix: str = "/api"
     database_url: str | None = None
-    cors_allowed_origins: list[str] = Field(
+    supabase_url: str | None = None
+    supabase_anon_key: str | None = None
+    supabase_publishable_key: str | None = None
+    cors_allowed_origins: CorsOrigins = Field(
         default_factory=lambda: [
             "http://localhost:3000",
             "http://127.0.0.1:3000",
@@ -24,15 +37,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    @staticmethod
-    def parse_cors_origins(value: str) -> list[str]:
-        return [origin.strip() for origin in value.split(",") if origin.strip()]
-
 
 @lru_cache
 def get_settings() -> Settings:
-    settings = Settings()
-    raw_origins = getenv("CORS_ALLOWED_ORIGINS")
-    if raw_origins:
-        settings.cors_allowed_origins = settings.parse_cors_origins(raw_origins)
-    return settings
+    return Settings()

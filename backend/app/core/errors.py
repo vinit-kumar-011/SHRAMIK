@@ -1,4 +1,5 @@
-from fastapi import HTTPException, Request
+from fastapi import Request
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -16,9 +17,9 @@ def error_payload(code: str, message: str, details: object, request_id: str) -> 
     }
 
 
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     request_id = get_or_create_request_id(request)
-    status_map = {400: "INVALID_REQUEST", 404: "RESOURCE_NOT_FOUND", 503: "SERVICE_UNAVAILABLE", 504: "AI_TIMEOUT"}
+    status_map = {400: "INVALID_REQUEST", 401: "UNAUTHORIZED", 403: "FORBIDDEN", 404: "RESOURCE_NOT_FOUND", 503: "SERVICE_UNAVAILABLE", 504: "AI_TIMEOUT"}
     code = status_map.get(exc.status_code, "INTERNAL_ERROR")
     return JSONResponse(
         status_code=exc.status_code,
@@ -43,6 +44,6 @@ async def internal_exception_handler(request: Request, exc: Exception) -> JSONRe
 
 
 def register_exception_handlers(app: object) -> None:
-    app.add_exception_handler(HTTPException, http_exception_handler)
+    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(Exception, internal_exception_handler)
