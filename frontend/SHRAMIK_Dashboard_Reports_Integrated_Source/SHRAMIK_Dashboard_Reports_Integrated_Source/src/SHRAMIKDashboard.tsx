@@ -272,7 +272,7 @@ function Header({
   query: string; onQueryChange: (v: string) => void; searchResults: SearchResult[]; searchBusy: boolean; searchOpen: boolean;
   onSearchOpenChange: (v: boolean) => void; onSearchSelect: (result: SearchResult) => void;
   notifications: NotificationItem[]; notificationsOpen: boolean; onNotificationsToggle: () => void; onNotificationRead: (id: string) => void;
-  profileOpen: boolean; onProfileToggle: () => void; onOpenSection: (section: string) => void; adapterMode: 'mock' | 'rest';
+  profileOpen: boolean; onProfileToggle: () => void; onOpenSection: (section: string) => void; adapterMode: 'mock' | 'rest' | 'supabase';
   authSession: AuthSession | null; onNavigateRoute: (route: 'dashboard' | 'login' | 'request-access') => void; onSignOut: () => void;
 }) {
   const unreadCount = notifications.filter((item) => !item.read).length;
