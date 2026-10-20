@@ -29,3 +29,12 @@ test('empty time-series messaging does not incorrectly claim every source-backed
   assert.match(dashboard, /No comparable time-series is available for this geography yet/);
   assert.doesNotMatch(dashboard, /No overlapping source-backed training-programme history is available for this geography/);
 });
+
+
+test('dashboard shows an actionable empty state instead of four blank KPI slots', () => {
+  assert.match(dashboard, /dashboard && dashboard\.kpis\.length === 0/);
+  assert.match(dashboard, /No source-backed KPI cards are available for this selection yet/);
+  assert.match(dashboard, /Retry/);
+  assert.match(styles, /\.kpi-empty-state\{/);
+});
+

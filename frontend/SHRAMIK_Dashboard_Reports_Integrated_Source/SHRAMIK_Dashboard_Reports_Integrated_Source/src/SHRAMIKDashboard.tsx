@@ -665,6 +665,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
         <section className="kpi-grid" aria-label="Key labour market indicators">
           {(dashboard?.kpis ?? []).map((item, index) => <KpiCard key={item.id} item={item} index={index} onOpen={(selected) => void openIndicator(selected)}/>)}
           {loading && !dashboard && Array.from({ length: 4 }, (_, index) => <div className="kpi-skeleton" key={index} aria-hidden="true"/>)}
+          {dashboard && dashboard.kpis.length === 0 ? <div className="kpi-empty-state" role="status"><span>No source-backed KPI cards are available for this selection yet. The published view and source-backed observations returned no displayable indicators.</span><button type="button" onClick={refresh} disabled={loading || refreshing}>Retry</button></div> : null}
         </section>
         <section className="middle-grid" aria-label="Market trends and regional intelligence">
           <ChartPanel data={dashboard} periodYears={periodYears} onPeriodChange={setPeriodYears} onOpenDetail={(section) => void openSection(section)}/>

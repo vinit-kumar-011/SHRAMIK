@@ -444,6 +444,7 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
     }
     const regionName = regions.find(item => item.code === query.regionCode)?.label || query.regionCode;
     let cards: MetricCardData[] = [];
+    let sourceFallbackAttempted = false;
     try {
       if (query.regionCode === 'IN') {
         const rows = await this.rows<KpiRow>('sh_public_dashboard_kpis', {
@@ -471,7 +472,13 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
       }
     } catch {
       if (query.signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      sourceFallbackAttempted = true;
       diagnostics.push('The published dashboard view was unavailable; indicators were recovered directly from source-backed database observations.');
+      cards = this.sourceBackedDashboardCards(query.regionCode, await this.getDashboardMetricRows(query.signal));
+    }
+    if (cards.length === 0 && !sourceFallbackAttempted) {
+      if (query.signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      diagnostics.push('The published dashboard view returned no rows; source-backed observations were checked for available indicators.');
       cards = this.sourceBackedDashboardCards(query.regionCode, await this.getDashboardMetricRows(query.signal));
     }
 
