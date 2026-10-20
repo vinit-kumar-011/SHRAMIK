@@ -12,48 +12,36 @@ This package is the canonical Vite/React single-page application for SHRAMIK. Th
 
 ## Develop and build (preferred)
 
-Node.js 20+ is recommended. Install dependencies where the npm registry is reachable:
+Node.js 20+ is recommended (Node 22 LTS is a good local choice). Use the lockfile for reproducible installs:
 
 ```bash
-npm install
+npm ci
 npm run dev
 npm run typecheck
 npm test
+npm run test:live-data
 npm run build
 npm run test:preview
 npm run preview
 ```
 
+The Vite dev and preview servers expose the same read-only `/api/shramik-data` proxy used in production, backed by `api/shramik-data.ts`. This lets local pages use the approved Supabase reads without relying on browser-to-Supabase CORS behavior. The proxy only exposes an allow-list of reference/source tables and public dashboard views; it forces `SOURCE_BACKED` provenance and `is_synthetic=false` for source-metric reads. It never uses a service-role key.
+
 `npm run build` runs `tsc -b`, Vite production bundling, and then creates `dist/skill-gap-analysis.html`, `dist/forecasts.html`, and `dist/reports.html` as legacy entry points to the same app. The default deployment base is `/` so deep links and trailing-slash routes resolve the bundled assets correctly. For a project-subpath deployment, set `VITE_BASE_PATH=/shramik/` before running the build; route resolution uses the matching Vite base.
 
 ## Environment configuration
 
-Copy `.env.example` to `.env.local` in this package before local development. Leave the API host values blank to use clearly labelled demo/mock data.
+Copy `.env.example` to `.env.local` before local development. The public Supabase project URL and publishable key have configured safe defaults in the adapter, so those entries can remain blank for the current SHRAMIK project. The publishable key is public by design and is constrained by SQL grants and RLS; **never add a Supabase `service_role` or secret key to a `VITE_` variable or commit it to Git**.
 
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` optionally override the configured public Supabase project.
+- `VITE_SHRAMIK_USE_DEMO_DATA=true` selects clearly labelled illustrative/mock dashboard data for design demos. Keep it `false` for database-backed reads.
+- The dashboard uses the Supabase data adapter by default and calls `/api/shramik-data` for approved public reads. A configured backend URL must not silently switch it away from Supabase.
+- `VITE_SHRAMIK_API_BASE_URL` only selects the separate REST adapter when `VITE_SHRAMIK_DATA_MODE=rest` is explicitly set. Do not enable that mode until the target FastAPI service implements and contract-tests `/api/v1/dashboard/summary`, `/regions`, `/dashboard/regions/rankings`, and the related dashboard contracts. The currently deployed FastAPI scaffold does not implement the full dashboard contract.
 - `VITE_BASE_PATH` defaults to root hosting. Use `/shramik/` only if the production host serves the app from that subpath; build and preview with the same value.
-- `VITE_SHRAMIK_API_BASE_URL` activates the dashboard, Skill Gaps, Forecasts and Reports adapters.
-- `VITE_DEMAND_API_BASE_URL`, `VITE_SUPPLY_API_BASE_URL`, `VITE_EMERGING_SKILLS_API_BASE_URL`, `VITE_SCENARIO_SIMULATOR_API_BASE_URL`, `VITE_DATA_QUALITY_API_BASE_URL`, and `VITE_ADMINISTRATION_API_BASE_URL` opt each additional module into its own REST adapter. Values may point to the same API origin, but modules are enabled separately because the current FastAPI scaffold does not yet implement all proposed contracts. Blank values keep that module on its labelled demo adapter; a configured REST failure is surfaced rather than silently returning fixtures.
-- Supply uses the proposed read-only endpoint in `docs/api/SUPPLY_API_CONTRACT.md`; Data Quality and Administration proposals are in `docs/api/DATA_QUALITY_API_CONTRACT.md` and `docs/api/ADMINISTRATION_API_CONTRACT.md`; Emerging Skills is described in `docs/api/EMERGING_SKILLS_API_CONTRACT.md`; and Scenario Simulator routes and payloads are documented in `docs/api/SCENARIO_SIMULATOR_API_CONTRACT.md`. Keep each module in demo mode until its endpoint contract is implemented and verified. Data Quality and Administration REST views remain read-only until write contracts, authentication and authorization are approved.
-- `VITE_DATA_SOURCES_API_BASE_URL` selects the separate Data Sources REST adapter. Create-source and ingestion controls remain disabled unless the corresponding feature flags are explicitly enabled; do not enable them until the endpoints, auth, and server-side authorization have been implemented and tested.
 
-Supply, Data Quality and Administration use labelled synthetic fixtures when their module API variable is blank. Supply has a read-only REST adapter; Data Quality and Administration are read-only in REST mode and do not send issue-status, access-request, role or account writes. These screens are integrated, but server-side production readiness still depends on implementing and contract-testing the proposed endpoints.
+The demand, supply, skill-gap, forecasts, emerging-skills, scenario, reports and data-quality pages use database-backed read views/reference tables where available, with explicit unavailable states when required analytical outputs have not been produced. They must not fabricate shortages, forecasts, trend lines or skill momentum to fill a chart.
 
-## Data modes
-
-The dashboard and gap page use typed adapter interfaces. By default, the app uses visibly labelled illustrative mock data; mock values must never be described as source-backed labour-market findings. To activate the dashboard, Skill Gaps, Forecasts and Reports REST adapters, set `VITE_SHRAMIK_API_BASE_URL` in `.env.local` (the adapters add their documented `/api/v1` namespaces). Each additional module has its own optional variable, documented above, to avoid accidentally switching modules to an API that does not implement its endpoints. Authentication remains the host application's responsibility; no access token is hard-coded or stored in local storage.
-
-Skill Gap Analysis routes used by the adapter are:
-
-- `GET /api/v1/skill-gaps/filters`
-- `GET /api/v1/skill-gaps/overview`
-- `GET /api/v1/skill-gaps/landscape`
-- `GET /api/v1/skill-gaps/regions`
-- `GET /api/v1/skill-gaps/skills`
-- `GET /api/v1/skill-gaps/insights`
-- `GET /api/v1/skill-gaps/sector-flow`
-- `GET /api/v1/skill-gaps/details/{type}/{id}`
-
-The API handoff in `docs/skill-gap-analysis/SHRAMIK_SKILL_GAP_ANALYSIS_API_CONTRACT.md` is a contract proposal. Align route names and payload envelopes with backend contracts before enabling REST mode. REST failures do not switch silently to mock data.
+The `VITE_DEMAND_API_BASE_URL`, `VITE_SUPPLY_API_BASE_URL`, `VITE_EMERGING_SKILLS_API_BASE_URL`, `VITE_SCENARIO_SIMULATOR_API_BASE_URL`, `VITE_DATA_QUALITY_API_BASE_URL`, `VITE_ADMINISTRATION_API_BASE_URL`, and `VITE_DATA_SOURCES_API_BASE_URL` variables are reserved for their respective validated REST contracts and should remain unset until those endpoints and server-side authorization are implemented and verified. Keep Data Sources create/ingestion feature flags disabled unless the associated write endpoints, authentication and authorization have been reviewed.
 
 ## Analytical truth and known service blockers
 
