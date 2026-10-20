@@ -223,6 +223,12 @@ test('public root mounts the React landing page and exposes live published indic
   assert.match(shell, /if \(route === 'landing'\) return <SHRAMIKLandingPage \/>/);
   assert.match(landing, /\/rest\/v1\/sh_public_dashboard_kpis/);
   assert.match(landing, /PublishedIndicator/);
+  const heroIndex = landing.indexOf('id="sl-top"');
+  const liveDataIndex = landing.indexOf('id="sl-live-indicators"');
+  const overviewIndex = landing.indexOf('id="sl-overview"');
+  assert.ok(heroIndex >= 0 && liveDataIndex >= 0 && overviewIndex >= 0);
+  assert.ok(heroIndex < liveDataIndex && liveDataIndex < overviewIndex,
+    'published source-backed indicators must appear immediately after the landing hero and before overview content');
   assert.match(landing, /not demand\/supply estimates or model forecasts/);
   assert.match(landing, /Retry/);
   assert.match(landingCss, /@media \(max-width: 900px\)/);
