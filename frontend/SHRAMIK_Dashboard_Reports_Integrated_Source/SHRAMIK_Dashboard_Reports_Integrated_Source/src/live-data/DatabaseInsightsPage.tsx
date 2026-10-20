@@ -38,6 +38,9 @@ type Snapshot = {
 };
 
 const LIMIT = 1000;
+const scenarioApiConfigured = Boolean(
+  (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SCENARIO_SIMULATOR_API_BASE_URL?.trim(),
+);
 const TITLES: Record<DatabaseModule, { title: string; subtitle: string; eyebrow: string }> = {
   demand: {
     title: 'Demand & labour-market context',
@@ -603,6 +606,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     </> : null}
 
     {module === 'scenario-simulator' ? <>
+      {!scenarioApiConfigured ? <div className="dbi-note dbi-note-warn" role="status"><Info size={17}/><div><strong>Scenario execution API is not configured</strong><p>This deployment does not define VITE_SCENARIO_SIMULATOR_API_BASE_URL. No intervention run will be submitted until a server-side simulation endpoint is configured and a compatible validated baseline is available.</p></div></div> : null}
       <div className="dbi-note dbi-note-warn"><Info size={17}/><div><strong>Simulation is waiting for a validated baseline</strong><p>The intervention can be modelled only after a published forecast baseline, capacity assumptions and time lag are available. This page intentionally does not run on illustrative values.</p></div></div>
       <div className="dbi-two-col">
         <section className="dbi-panel"><SectionHead title="Inputs currently available" note="Source-backed context that can support future scenario construction."/>
