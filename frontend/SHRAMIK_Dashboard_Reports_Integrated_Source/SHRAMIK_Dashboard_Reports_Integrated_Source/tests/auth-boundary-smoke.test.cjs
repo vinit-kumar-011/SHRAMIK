@@ -14,6 +14,8 @@ assert.ok(workspaceStart > 0 && publicWrapperStart > workspaceStart && appStart 
 
 const workspace = source.slice(workspaceStart, publicWrapperStart);
 const app = source.slice(appStart);
+const loginPage = fs.readFileSync(path.resolve(__dirname, '../src/auth/LoginPage.tsx'), 'utf8');
+const accessPage = fs.readFileSync(path.resolve(__dirname, '../src/auth/RequestAccessPage.tsx'), 'utf8');
 
 test('public login and access request routes render outside the workspace shell', () => {
   assert.match(source, /if \(route === 'login' \|\| route === 'request-access'\)\s*\{\s*return <PublicAuthRoute/s);
@@ -39,4 +41,12 @@ test('sign-out clears the shared session and replaces the URL with public sign-i
   assert.match(workspace, /window\.history\.replaceState\(null, '', path\)/);
   assert.match(workspace, /label: getRouteLabel\('login'\)/);
   assert.match(app, /setAuthSession\(session\)/);
+});
+
+test('public auth back links return to the public landing page, not the protected dashboard', () => {
+  assert.match(loginPage, /onNavigate\('landing'\)/);
+  assert.doesNotMatch(loginPage, /onNavigate\('dashboard'\)/);
+  assert.match(accessPage, /onNavigate\('landing'\)/);
+  assert.doesNotMatch(accessPage, /onNavigate\('dashboard'\)/);
+  assert.match(source, /const navigate = useCallback\(\(target: 'landing' \| 'dashboard' \| 'login' \| 'request-access'\)/);
 });
