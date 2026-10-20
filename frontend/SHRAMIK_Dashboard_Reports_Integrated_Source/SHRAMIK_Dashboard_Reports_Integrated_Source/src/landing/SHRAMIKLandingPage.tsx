@@ -1,5 +1,26 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import styles from './SHRAMIKLandingPage.module.css';
+import { SUPABASE_URL, supabaseHeaders } from '../supabase/config';
+
+type PublishedIndicator = {
+  metric_code: string;
+  title: string;
+  value_numeric: number | string;
+  unit: string;
+  reference_period: string;
+  source_label: string | null;
+  source_url: string | null;
+  as_of_date: string | null;
+  interpretation_note: string | null;
+  sort_order: number;
+};
+
+function formatPublishedValue(indicator: PublishedIndicator): string {
+  const value = Number(indicator.value_numeric);
+  if (!Number.isFinite(value)) return 'Unavailable';
+  if (indicator.unit === '%' || indicator.unit.toLowerCase() === 'percent') return value.toFixed(1) + '%';
+  return new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
 
 type PreviewKey = 'overview' | 'gaps' | 'forecasts';
 
@@ -39,7 +60,7 @@ const previews: Record<PreviewKey, { title: string; period: string; labels: [str
 };
 
 const navLinks = [
-  ['Overview', '#sl-overview'], ['Capabilities', '#sl-capabilities'], ['How it works', '#sl-workflow'], ['Methodology', '#sl-transparency'], ['Workspace', '/dashboard'],
+  ['Overview', '#sl-overview'], ['Published data', '#sl-live-indicators'], ['Capabilities', '#sl-capabilities'], ['How it works', '#sl-workflow'], ['Methodology', '#sl-transparency'], ['Workspace', '/dashboard'],
 ] as const;
 
 export default function SHRAMIKLandingPage() {
@@ -48,6 +69,9 @@ export default function SHRAMIKLandingPage() {
   const [activeStage, setActiveStage] = useState(0);
   const [previewKey, setPreviewKey] = useState<PreviewKey>('overview');
   const [revealsReady, setRevealsReady] = useState(false);
+  const [publishedIndicators, setPublishedIndicators] = useState<PublishedIndicator[]>([]);
+  const [publishedState, setPublishedState] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [publishedRetry, setPublishedRetry] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const preview = previews[previewKey];
@@ -77,6 +101,31 @@ export default function SHRAMIKLandingPage() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setPublishedState('loading');
+    const params = new URLSearchParams({
+      select: 'metric_code,title,value_numeric,unit,reference_period,source_label,source_url,as_of_date,interpretation_note,sort_order',
+      order: 'sort_order.asc',
+    });
+    void fetch(SUPABASE_URL + '/rest/v1/sh_public_dashboard_kpis?' + params.toString(), {
+      method: 'GET',
+      headers: supabaseHeaders(null),
+      signal: controller.signal,
+    }).then(async (response) => {
+      const payload: unknown = await response.json().catch(() => null);
+      if (!response.ok) throw new Error('Published indicators are unavailable (HTTP ' + response.status + ').');
+      if (!Array.isArray(payload)) throw new Error('The published indicator response was not a list.');
+      if (!controller.signal.aborted) {
+        setPublishedIndicators(payload as PublishedIndicator[]);
+        setPublishedState('loaded');
+      }
+    }).catch(() => {
+      if (!controller.signal.aborted) setPublishedState('error');
+    });
+    return () => controller.abort();
+  }, [publishedRetry]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -168,6 +217,28 @@ export default function SHRAMIKLandingPage() {
             <article className={[c('sl-value'), c('sl-reveal')].join(' ')} data-reveal><span className={c('sl-icon')} aria-hidden="true">01</span><h3>Evidence-based insights</h3><p>Explore workforce-related information through a structured, evidence-led interface.</p></article>
             <article className={[c('sl-value'), c('sl-reveal')].join(' ')} data-reveal><span className={c('sl-icon')} aria-hidden="true">02</span><h3>Inclusive growth opportunities</h3><p>Build a broader understanding of workforce and skill-development opportunities.</p></article>
             <article className={[c('sl-value'), c('sl-reveal')].join(' ')} data-reveal><span className={c('sl-icon')} aria-hidden="true">03</span><h3>Stronger workforce planning</h3><p>Examine workforce requirements and support more informed planning decisions.</p></article>
+          </div>
+        </section>
+
+        <section className={c('sl-section')} id="sl-live-indicators" aria-labelledby="sl-live-indicators-title">
+          <div className={c('sl-wrap')}>
+            <p className={c('sl-eyebrow')}>Published source data</p>
+            <h2 className={c('sl-section-title')} id="sl-live-indicators-title">Start with the evidence.</h2>
+            <p className={c('sl-section-intro')}>These indicators are fetched from SHRAMIK's read-only published data view. They are real source-backed context indicators, not demand/supply estimates or model forecasts.</p>
+            {publishedState === 'loading' && <p className={c('sl-live-status')} role="status">Loading published indicators…</p>}
+            {publishedState === 'error' && <div className={c('sl-live-error')} role="alert"><span>Published indicators could not be loaded just now.</span><button type="button" className={c('sl-live-retry')} onClick={() => setPublishedRetry(value => value + 1)}>Retry</button></div>}
+            {publishedState === 'loaded' && publishedIndicators.length === 0 && <p className={c('sl-live-status')} role="status">No published indicators are available in the public view right now.</p>}
+            {publishedState === 'loaded' && publishedIndicators.length > 0 && <div className={c('sl-live-indicators-grid')}>
+              {publishedIndicators.map((indicator) => <article key={indicator.metric_code} className={c('sl-live-indicator')}>
+                <span className={c('sl-live-indicator-label')}>{indicator.title}</span>
+                <strong className={c('sl-live-indicator-value')}>{formatPublishedValue(indicator)}</strong>
+                <span className={c('sl-live-indicator-unit')}>{indicator.unit === '%' ? 'Published rate' : indicator.unit}</span>
+                <span className={c('sl-live-indicator-period')}>{indicator.reference_period}{indicator.as_of_date ? ' · as of ' + indicator.as_of_date : ''}</span>
+                {indicator.interpretation_note && <p className={c('sl-live-indicator-note')}>{indicator.interpretation_note}</p>}
+                <div className={c('sl-live-indicator-source')}>{indicator.source_label || 'Source label unavailable'}{indicator.source_url ? <> · <a href={indicator.source_url} target="_blank" rel="noreferrer">Source ↗</a></> : ''}</div>
+              </article>)}
+            </div>}
+            <p className={c('sl-method-note')}>Coverage and definitions vary by source. Cumulative registrations and training capacity are not counts of active workers. Forecasts, demand, supply and skill-gap outputs remain unavailable until validated results are published.</p>
           </div>
         </section>
 
