@@ -162,27 +162,43 @@ function ChartPanel({ data, periodYears, onPeriodChange, onOpenDetail }: {
   data: DashboardSummary | null; periodYears: DashboardPeriod; onPeriodChange: (period: DashboardPeriod) => void; onOpenDetail: (section: string) => void;
 }) {
   const points = data?.trend ?? [];
-  const maxValue = Math.max(300, ...points.map((point) => Math.max(point.demand, point.supply)));
-  const step = Math.ceil(maxValue / 6 / 10) * 10;
+  const programmeMode = data?.trendKind === 'training-programmes';
+  const maxValue = Math.max(programmeMode ? 1 : 300, ...points.map((point) => Math.max(point.demand, point.supply)));
+  const interval = programmeMode ? (maxValue >= 100000 ? 10000 : maxValue >= 10000 ? 1000 : maxValue >= 1000 ? 100 : 10) : 10;
+  const step = Math.ceil(maxValue / 6 / interval) * interval;
   const yMax = step * 6;
   const xFor = (i: number, count: number) => 42 + i * (560 / Math.max(1, count - 1));
   const yFor = (value: number) => 163 - (value / yMax) * 158;
   const demandPts = points.map((point, i) => `${xFor(i, points.length)},${yFor(point.demand)}`).join(' ');
   const supplyPts = points.map((point, i) => `${xFor(i, points.length)},${yFor(point.supply)}`).join(' ');
+  const axisLabel = (value: number) => programmeMode
+    ? new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
+    : String(value);
+  const firstTitle = programmeMode ? 'NAPS apprentices engaged' : 'Demand';
+  const secondTitle = programmeMode ? 'PMKVY trained / oriented' : 'Supply';
   return <section className="panel trend-panel" aria-labelledby="trend-title" aria-busy={!data}>
-    <div className="panel-header"><div><h2 id="trend-title">Demand vs Supply Trends</h2><p>Estimated labour demand and supply (in millions)</p></div>
-      <SelectControl label="Trend period" value={periodYears} onChange={onPeriodChange} options={[{ value: 5, label: 'Last 5 years' }, { value: 3, label: 'Last 3 years' }]} />
+    <div className="panel-header"><div>
+      <h2 id="trend-title">{programmeMode ? 'Training Programme Trends' : 'Demand vs Supply Trends'}</h2>
+      <p>{programmeMode
+        ? 'Reported programme counts by fiscal year, not total labour demand or available worker supply. PMKVY reporting coverage varies by year.'
+        : 'Estimated labour demand and supply (in millions)'}</p>
     </div>
-    <div className="chart-legend"><span><i className="legend-line demand"/>Demand</span><span><i className="legend-line supply"/>Supply</span></div>
+      <SelectControl label="Trend period" value={periodYears} onChange={onPeriodChange} options={[{ value: 5, label: programmeMode ? 'Available history' : 'Last 5 years' }, { value: 3, label: 'Last 3 years' }]} />
+    </div>
+    <div className="chart-legend"><span><i className="legend-line demand"/>{firstTitle}</span><span><i className="legend-line supply"/>{secondTitle}</span></div>
     <div className="trend-chart">
-      {points.length ? <svg viewBox="0 0 650 210" preserveAspectRatio="none" role="img" aria-label="Demand and supply trend chart. Values are from the selected data adapter.">
-        {Array.from({ length: 7 }, (_, i) => i * step).map((value) => <g key={value}><line x1="42" x2="605" y1={yFor(value)} y2={yFor(value)} className="chart-grid"/><text x="30" y={yFor(value) + 4} className="chart-axis" textAnchor="end">{value}</text></g>)}
-        {points.map((point, i) => <g key={point.year}><line x1={xFor(i, points.length)} x2={xFor(i, points.length)} y1="5" y2="163" className="chart-vgrid"/><text x={xFor(i, points.length)} y="190" className="chart-axis" textAnchor="middle">{point.year}</text></g>)}
+      {points.length ? <svg viewBox="0 0 650 210" preserveAspectRatio="none" role="img" aria-label={programmeMode
+        ? 'Source-backed NAPS apprentice engagement and PMKVY training counts by fiscal year.'
+        : 'Demand and supply trend chart. Values are from the selected data adapter.'}>
+        {Array.from({ length: 7 }, (_, i) => i * step).map((value) => <g key={value}><line x1="42" x2="605" y1={yFor(value)} y2={yFor(value)} className="chart-grid"/><text x="30" y={yFor(value) + 4} className="chart-axis" textAnchor="end">{axisLabel(value)}</text></g>)}
+        {points.map((point, i) => <g key={point.label ?? point.year}><line x1={xFor(i, points.length)} x2={xFor(i, points.length)} y1="5" y2="163" className="chart-vgrid"/><text x={xFor(i, points.length)} y="190" className="chart-axis" textAnchor="middle">{point.label ?? point.year}</text></g>)}
         <polyline points={demandPts} className="chart-demand"/><polyline points={supplyPts} className="chart-supply"/>
-        {points.map((point, i) => <circle key={`d-${point.year}`} cx={xFor(i, points.length)} cy={yFor(point.demand)} r="4.2" className="point-demand"/>)}
-        {points.map((point, i) => <circle key={`s-${point.year}`} cx={xFor(i, points.length)} cy={yFor(point.supply)} r="4.2" className="point-supply"/>)}
-      </svg> : <div className="panel-empty">No validated demand/supply time-series is published yet. The dashboard shows source-backed indicators instead of estimating missing values.</div>}
-      <button className="chart-next" type="button" aria-label="Open detailed demand and supply trends" onClick={() => onOpenDetail('demand')}><ChevronRight size={18}/></button>
+        {points.map((point, i) => <circle key={`d-${point.label ?? point.year}`} cx={xFor(i, points.length)} cy={yFor(point.demand)} r="4.2" className="point-demand"/>)}
+        {points.map((point, i) => <circle key={`s-${point.label ?? point.year}`} cx={xFor(i, points.length)} cy={yFor(point.supply)} r="4.2" className="point-supply"/>)}
+      </svg> : <div className="panel-empty">{data?.meta.provenance === 'source-backed'
+        ? 'No overlapping source-backed training-programme history is available for this geography. Demand/supply estimates remain unavailable until comparable validated observations are published.'
+        : 'No validated demand/supply time-series is published yet. The dashboard shows source-backed indicators instead of estimating missing values.'}</div>}
+      <button className="chart-next" type="button" aria-label={programmeMode ? 'Open training programme context' : 'Open detailed demand and supply trends'} onClick={() => onOpenDetail('demand')}><ChevronRight size={18}/></button>
     </div>
   </section>;
 }
@@ -220,7 +236,7 @@ function DataRows({ rows, kind, onOpenRow }: { rows: DashboardRow[]; kind: 'skil
       return <button className="data-row" key={row.id} type="button" onClick={() => onOpenRow(row, section)} aria-label={`Open details for ${row.name}`}>
         <span className={`row-icon tone-${row.tone}`}><Icon size={18}/></span><span className="row-name">{row.name}</span>
         {hasValue ? <strong className={row.formattedDelta ? 'row-delta' : 'row-value'}>{trailing}</strong> : null}
-        <span className="bar-track" aria-hidden="true"><span className={`bar-fill tone-${row.tone}`} style={{ width: `${Math.max(0, Math.min(100, row.displayScore ?? 0))}%` }}/></span>
+        {row.displayScore !== undefined ? <span className="bar-track" aria-hidden="true"><span className={`bar-fill tone-${row.tone}`} style={{ width: `${Math.max(0, Math.min(100, row.displayScore))}%` }}/></span> : null}
       </button>;
     })}
     {!rows.length && <div className="panel-empty">No rows returned for this section.</div>}
@@ -636,9 +652,24 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
           <RegionalPanel rankings={rankings} metric={rankingMetric} onMetricChange={handleRankingMetricChange} onOpenDetail={(section) => void openSection(section)} busy={!rankings && !rankingsError}/>
         </section>
         <section className="summary-grid" aria-label="Skills, sectors and occupation summaries">
-          <SummaryPanel title="Emerging Skills" subtitle="Skills with rising demand signals" kind="skills" rows={dashboard?.emergingSkills ?? []} onOpenSection={(section) => void openSection(section)} onOpenRow={(row, section) => void openRow(row, section)}/>
-          <SummaryPanel title="Skill Gaps by Sector" subtitle="Estimated gap (in millions)" kind="gaps" rows={dashboard?.sectorGaps ?? []} onOpenSection={(section) => void openSection(section)} onOpenRow={(row, section) => void openRow(row, section)}/>
-          <SummaryPanel title="Occupation Forecasts" subtitle="Projected demand change (2024–2029)" kind="forecasts" rows={dashboard?.occupationForecasts ?? []} onOpenSection={(section) => void openSection(section)} onOpenRow={(row, section) => void openRow(row, section)}/>
+          <SummaryPanel
+            title={isLiveSupabase ? 'Skill catalogue' : 'Emerging Skills'}
+            subtitle={isLiveSupabase ? 'Canonical skill references from Supabase. No validated emerging-skill signals are published yet.' : 'Skills with rising demand signals'}
+            kind="skills" rows={dashboard?.emergingSkills ?? []}
+            onOpenSection={(section) => void openSection(section)}
+            onOpenRow={(row, section) => void openRow(row, section)}/>
+          <SummaryPanel
+            title={isLiveSupabase ? 'Sector coverage' : 'Skill Gaps by Sector'}
+            subtitle={isLiveSupabase ? 'Mapped sector references from Supabase. Comparable demand/supply observations are needed to calculate a gap.' : 'Estimated gap (in millions)'}
+            kind="gaps" rows={dashboard?.sectorGaps ?? []}
+            onOpenSection={(section) => void openSection(section)}
+            onOpenRow={(row, section) => void openRow(row, section)}/>
+          <SummaryPanel
+            title={isLiveSupabase ? 'Training programme context' : 'Occupation Forecasts'}
+            subtitle={isLiveSupabase ? 'Source-backed NAPS and PMKVY counts; these are contextual inputs, not occupation forecasts.' : 'Projected demand change (2024–2029)'}
+            kind="forecasts" rows={dashboard?.occupationForecasts ?? []}
+            onOpenSection={(section) => void openSection(section)}
+            onOpenRow={(row, section) => void openRow(row, section)}/>
         </section>
         <footer className="method-note"><span className="note-marker">i</span><p><strong>{dashboard?.meta.provenance === 'source-backed' ? 'Data notes:' : 'Prototype preview:'}</strong> {dashboard?.meta.provenance === 'source-backed' ? `${dashboard.meta.sourceLabel}. Check the detail panels for source notes, units and coverage.` : 'All numbers currently visible come from an illustrative adapter unless a source-backed API is configured; do not treat them as verified labour-market statistics.'}</p><span className={`data-status-footer ${dashboard?.meta.provenance ?? 'mock'}`}><span className="status-dot"/>{dashboard?.meta.provenance === 'source-backed' ? 'Source-backed' : dashboard?.meta.provenance === 'mixed' ? 'Mixed provenance' : dashboard?.meta.provenance === 'derived' ? 'Derived values' : 'Illustrative data'}</span><span className="updated"><CalendarDays size={14}/>{dashboard?.meta.updatedAt ? formatUpdated(dashboard.meta.updatedAt) : 'Update unavailable'}</span><span className="updated"><Database size={14}/>{adapter.mode === 'rest' ? 'REST API' : adapter.mode === 'supabase' ? 'Supabase live data' : 'Mock adapter'}</span><button className="refresh-button" type="button" onClick={refresh} disabled={loading || refreshing} aria-label="Refresh dashboard data"><RefreshCw size={13} className={refreshing ? 'spin-icon' : ''}/> Refresh</button></footer>
         </> : <ModuleRouteFallback route={activePage} />}
