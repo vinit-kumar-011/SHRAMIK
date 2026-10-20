@@ -211,3 +211,20 @@ test('demo-only modules prominently disclose synthetic data and local-only actio
   assert.match(shell, /createAdministrationDataAdapter/);
   assert.match(shell, /<AdministrationPage adapter=\{administrationAdapter\}/);
 });
+
+test('public root mounts the React landing page and exposes live published indicator data', () => {
+  const landing = read('src/landing/SHRAMIKLandingPage.tsx');
+  const landingCss = read('src/landing/SHRAMIKLandingPage.module.css');
+
+  assert.match(routes, /id: ['"]landing['"], path: ['"]\/['"]/);
+  assert.match(routes, /id: ['"]dashboard['"], path: ['"]\/dashboard['"]/);
+  assert.match(routes, /if \(path === '\/'\) return 'landing'/);
+  assert.match(shell, /import SHRAMIKLandingPage from '\.\/landing\/SHRAMIKLandingPage'/);
+  assert.match(shell, /if \(route === 'landing'\) return <SHRAMIKLandingPage \/>/);
+  assert.match(landing, /\/rest\/v1\/sh_public_dashboard_kpis/);
+  assert.match(landing, /PublishedIndicator/);
+  assert.match(landing, /No demand\/supply estimates or model forecasts/);
+  assert.match(landing, /Retry/);
+  assert.match(landingCss, /@media \(max-width: 900px\)/);
+  assert.match(landingCss, /@media \(max-width: 480px\)/);
+});
