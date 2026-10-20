@@ -84,4 +84,21 @@ test('REST adapter surfaces HTTP errors rather than silently falling back to moc
   await assert.rejects(adapter.getRegions(), (error) => error instanceof ApiRequestError && error.status === 403);
 });
 
+
+test('production defaults to the Supabase adapter unless REST mode is explicitly selected', () => {
+  const root = path.resolve(__dirname, '../src');
+  const factory = fs.readFileSync(path.join(root, 'api/adapter.ts'), 'utf8');
+  const contracts = fs.readFileSync(path.join(root, 'api/contracts.ts'), 'utf8');
+  const supabase = fs.readFileSync(path.join(root, 'api/supabase-adapter.ts'), 'utf8');
+  const dashboard = fs.readFileSync(path.join(root, 'SHRAMIKDashboard.tsx'), 'utf8');
+
+  assert.match(factory, /const dataMode = env\?\.VITE_SHRAMIK_DATA_MODE\?\.trim\(\)\.toLowerCase\(\)/);
+  assert.match(factory, /if \(dataMode === 'rest' && baseUrl\)/);
+  assert.doesNotMatch(factory, /if \(baseUrl\) \{/);
+  assert.match(factory, /return new SupabaseLabourMarketDataAdapter\(\)/);
+  assert.match(contracts, /readonly mode: 'mock' \| 'rest' \| 'supabase'/);
+  assert.match(supabase, /readonly mode = 'supabase' as const/);
+  assert.match(dashboard, /adapter\.mode === 'supabase' \? 'Supabase live data'/);
+});
+
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
