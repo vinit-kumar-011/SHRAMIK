@@ -3,7 +3,6 @@ import type {
   LabourMarketDataAdapter, MetricCardData, NotificationItem, RankedRegion, RankedRegionsResponse,
   RankingsQuery, RegionMetric, RegionOption, SearchQuery, SearchResult, UserProfile,
 } from './contracts';
-import { getStoredAuthSession } from '../auth/session';
 import { SUPABASE_URL, supabaseHeaders } from '../supabase/config';
 
 type KpiRow = {
@@ -110,7 +109,10 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
     try {
       response = await this.fetcher(url, {
         method: 'GET',
-        headers: this.publishableKeyHeaders(getStoredAuthSession()?.access_token),
+        // Labour-market reads exposed by this adapter are deliberately public, read-only
+        // surfaces guarded by Supabase RLS. Do not couple them to the sign-in session:
+        // expired user tokens must not make the dashboard's public data unavailable.
+        headers: this.publishableKeyHeaders(null),
         signal,
       });
     } catch (error) {
