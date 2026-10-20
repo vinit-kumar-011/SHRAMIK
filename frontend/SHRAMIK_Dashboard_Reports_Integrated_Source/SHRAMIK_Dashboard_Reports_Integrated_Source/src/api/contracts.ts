@@ -33,6 +33,8 @@ export interface MetricCardData {
 
 export interface TrendPoint {
   year: number;
+  /** Human-readable fiscal/calendar period label for the x-axis. */
+  label?: string;
   demand: number;
   supply: number;
 }
@@ -73,6 +75,8 @@ export interface DashboardSummary {
   periodYears: DashboardPeriod;
   kpis: MetricCardData[];
   trend: TrendPoint[];
+  /** Identifies what the two live series actually measure; never relabel programme counts as labour demand/supply. */
+  trendKind?: 'demand-supply' | 'training-programmes';
   emergingSkills: DashboardRow[];
   sectorGaps: DashboardRow[];
   occupationForecasts: DashboardRow[];
