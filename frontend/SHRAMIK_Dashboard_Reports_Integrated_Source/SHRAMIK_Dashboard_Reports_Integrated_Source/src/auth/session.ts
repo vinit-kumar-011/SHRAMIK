@@ -74,11 +74,16 @@ function normalizeSession(response: AuthResponse): AuthSession {
   };
 }
 export async function signInWithPassword(email: string, password: string): Promise<AuthSession> {
-  const response = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
-    method: 'POST',
-    headers: supabaseHeaders(null, { 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ email: email.trim(), password }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: supabaseHeaders(null, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ email: email.trim(), password }),
+    });
+  } catch {
+    throw new Error('Could not reach SHRAMIK authentication. Check your internet connection and try again.');
+  }
   const payload = await readPayload(response);
   if (!response.ok) throw new Error(messageFrom(payload, 'Sign-in failed. Check the email/password and try again.'));
   const session = normalizeSession(payload);

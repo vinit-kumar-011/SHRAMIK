@@ -119,4 +119,16 @@ test('auth and request errors are surfaced instead of showing fake success', asy
   }
 });
 
+
+test('password sign-in reports network failures in clear user-facing language', async () => {
+  const oldFetch = global.fetch;
+  global.fetch = async () => { throw new TypeError('Failed to fetch'); };
+  try {
+    await assert.rejects(
+      sessionApi.signInWithPassword('analyst@example.org', 'test-password'),
+      /Could not reach SHRAMIK authentication/,
+    );
+  } finally { global.fetch = oldFetch; }
+});
+
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
