@@ -82,8 +82,8 @@ def list_forecasts(
     year_to: int | None = Query(default=None, ge=1900, le=2200),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
     _user: dict = Depends(require_supabase_user),
+    db: Session = Depends(get_db),
 ) -> dict:
     """List active persisted forecast records. Does not run the model or infer missing results."""
     clauses, params = _filters(
@@ -129,8 +129,8 @@ def list_early_warnings(
     year_to: int | None = Query(default=None, ge=1900, le=2200),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
     _user: dict = Depends(require_supabase_user),
+    db: Session = Depends(get_db),
 ) -> dict:
     """List active warnings attached to active forecast results only."""
     clauses, params = _filters(
@@ -175,8 +175,8 @@ def list_emerging_skills(
     year_to: int | None = Query(default=None, ge=1900, le=2200),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
     _user: dict = Depends(require_supabase_user),
+    db: Session = Depends(get_db),
 ) -> dict:
     """List active, persisted emerging-skill signals without manufacturing rankings."""
     clauses, params = _filters(
@@ -213,8 +213,8 @@ def list_emerging_skills(
 @router.get("/status", tags=["analytics"])
 def analytics_status(
     request: Request,
-    db: Session = Depends(get_db),
     _user: dict = Depends(require_supabase_user),
+    db: Session = Depends(get_db),
 ) -> dict:
     """Report source-input and output counts for operational diagnostics."""
     counts = {
