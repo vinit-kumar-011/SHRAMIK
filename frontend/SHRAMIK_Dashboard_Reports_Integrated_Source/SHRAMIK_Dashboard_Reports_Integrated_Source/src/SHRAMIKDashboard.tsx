@@ -648,9 +648,39 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter }: SHRAMIKDashboardProps = {
   </div>;
 }
 
-/** The public root is the product landing page. The authenticated/data workspace is mounted only on its own route. */
+function PublicAuthRoute({ route, onAuthenticated }: {
+  route: 'login' | 'request-access';
+  onAuthenticated: (session: AuthSession) => void;
+}) {
+  const navigate = useCallback((target: 'dashboard' | 'login' | 'request-access') => {
+    const path = getPathForRoute(target, import.meta.env.BASE_URL);
+    window.history.pushState(null, '', path);
+    window.dispatchEvent(new CustomEvent('shramik:navigate', { detail: { path, label: getRouteLabel(target) } }));
+  }, []);
+
+  if (route === 'login') {
+    return <LoginPage onAuthenticated={onAuthenticated} onNavigate={(target) => navigate(target)} />;
+  }
+  return <RequestAccessPage onNavigate={(target) => navigate(target)} />;
+}
+
+/** Public entry routes stay outside the workspace shell; every analytical module requires a valid session. */
 export default function SHRAMIKDashboard(props: SHRAMIKDashboardProps = {}) {
   const [route, setRoute] = useState<ShramikRouteId>(getInitialPage);
+  const [authSession, setAuthSession] = useState<AuthSession | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void restoreAuthSession().then((session) => {
+      if (!active) return;
+      setAuthSession(session);
+      setSessionChecked(true);
+    }).catch(() => {
+      if (active) setSessionChecked(true);
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const syncRoute = () => setRoute(getInitialPage());
@@ -664,6 +694,24 @@ export default function SHRAMIKDashboard(props: SHRAMIKDashboardProps = {}) {
     };
   }, []);
 
+  useEffect(() => {
+    const isPublicRoute = route === 'landing' || route === 'login' || route === 'request-access';
+    if (!sessionChecked || isPublicRoute || authSession) return;
+    const path = getPathForRoute('login', import.meta.env.BASE_URL);
+    window.history.replaceState(null, '', path);
+    setRoute('login');
+  }, [route, authSession, sessionChecked]);
+
   if (route === 'landing') return <SHRAMIKLandingPage />;
+  if (route === 'login' || route === 'request-access') {
+    return <PublicAuthRoute route={route} onAuthenticated={(session) => {
+      setAuthSession(session);
+      const path = getPathForRoute('dashboard', import.meta.env.BASE_URL);
+      window.history.pushState(null, '', path);
+      window.dispatchEvent(new CustomEvent('shramik:navigate', { detail: { path, label: getRouteLabel('dashboard') } }));
+    }} />;
+  }
+  if (!sessionChecked) return <div className="sh-auth-loading" role="status">Checking your SHRAMIK session…</div>;
+  if (!authSession) return <div className="sh-auth-loading" role="status">Redirecting to sign in…</div>;
   return <SHRAMIKWorkspace {...props} />;
 }
