@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
 import { Activity, ArrowUpRight, Database, FileCheck2, GraduationCap, Info, RefreshCw, ShieldCheck, Users } from 'lucide-react';
+import { Children, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { SUPABASE_URL, supabaseHeaders } from '../supabase/config';
 
@@ -132,7 +132,7 @@ function textValue(v: unknown): string {
 }
 function isCanonicalPersonRate(row: MetricRow): boolean {
   const d = row.dimension_values || {};
-  return d.sex === 'person' && d.area === 'combined' && d.age_domain === 'all_ages';
+  return d.sex === 'person' && d.area === 'combined' && d.age_domain === '15_plus';
 }
 function sourceFor(snapshot: Snapshot, sourceId: string | null): SourceRow | undefined {
   return sourceId ? snapshot.sources.find(source => source.id === sourceId) : undefined;
@@ -164,6 +164,7 @@ function mostRecentRows(snapshot: Snapshot, code: string, regionCode = 'IN'): Me
     const id = selectedStateId(snapshot, regionCode);
     const regional = rows.filter(row => row.state_id === id);
     if (regional.length) return regional;
+    return rows.filter(row => !row.state_id || row.observation_grain === 'NATIONAL');
   }
   return rows;
 }
@@ -279,20 +280,11 @@ function SourceLink({ source }: { source?: SourceRow }) {
   return <a className="dbi-source-link" href={source.url} target="_blank" rel="noreferrer">{source.name}<ArrowUpRight size={13}/></a>;
 }
 function DataTable({ columns, children, empty = 'No matching source-backed rows are available.' }: { columns: string[]; children: ReactNode; empty?: string }) {
-  return <div className="dbi-table-wrap"><table className="dbi-table"><thead><tr>{columns.map(column => <th key={column}>{column}</th>)}</tr></thead><tbody>{children || <tr><td colSpan={columns.length} className="dbi-empty-cell">{empty}</td></tr>}</tbody></table></div>;
+  const rows = Children.toArray(children);
+  return <div className="dbi-table-wrap"><table className="dbi-table"><thead><tr>{columns.map(column => <th key={column}>{column}</th>)}</tr></thead><tbody>{rows.length ? rows : <tr><td colSpan={columns.length} className="dbi-empty-cell">{empty}</td></tr>}</tbody></table></div>;
 }
 function contextRates(snapshot: Snapshot, regionCode: string): MetricRow[] {
-  const wanted = ['UR', 'LFPR', 'WPR'];
-  let rows = snapshot.metrics.filter(row => wanted.includes(row.metric_code) && row.reference_period === 'CY2025');
-  if (regionCode !== 'IN') {
-    const id = selectedStateId(snapshot, regionCode);
-    const regional = rows.filter(row => row.state_id === id);
-    if (regional.length) rows = regional;
-    else rows = rows.filter(row => !row.state_id || row.observation_grain === 'NATIONAL');
-  } else {
-    rows = rows.filter(row => !row.state_id || row.observation_grain === 'NATIONAL');
-  }
-  return rows;
+  return ['UR', 'LFPR', 'WPR'].map(code => canonicalRate(snapshot, code, regionCode)).filter((row): row is MetricRow => Boolean(row));
 }
 function seatsByState(snapshot: Snapshot): ReturnType<typeof stateTotals> {
   return stateTotals(snapshot, snapshot.metrics.filter(row =>
@@ -335,7 +327,6 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState('');
-  const [refreshVersion, setRefreshVersion] = useState(0);
   const page = TITLES[module];
 
   useEffect(() => {
@@ -347,7 +338,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       if (active) setError(reason instanceof Error ? reason.message : 'Could not read the SHRAMIK database.');
     });
     return () => { active = false; };
-  }, [refreshVersion]);
+  }, []);
 
   const stateSeats = useMemo(() => snapshot ? seatsByState(snapshot) : [], [snapshot]);
   const visibleStateSeats = useMemo(() => {
@@ -369,7 +360,6 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     try {
       const result = await loadSnapshot();
       setSnapshot(result);
-      setRefreshVersion(v => v + 1);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not refresh the SHRAMIK database snapshot.');
     } finally {
@@ -404,7 +394,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   const centreValues = centreMetrics.map(code => {
     const rows = mostRecentRows(snapshot, code, regionCode);
     const national = snapshot.metrics.filter(row => row.metric_code === code && row.reference_period === rows[0]?.reference_period);
-    const selected = regionCode === 'IN' ? national : (rows.length ? rows : national);
+    const selected = regionCode === 'IN' ? national : rows;
     return { code, rows: selected, total: selected.reduce((sum, row) => sum + numeric(row.value_numeric), 0), period: selected[0]?.reference_period || '—' };
   });
   const apprenticeRows = mostRecentRows(snapshot, 'SPACE_GEOSPATIAL_NAPS_APPRENTICES_ENGAGED', regionCode);
@@ -548,7 +538,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       <div className="dbi-two-col">
         <section className="dbi-panel"><SectionHead title="Canonical skill catalogue" note="Reference skills from Supabase, including existing sector-mapping confidence."/>
           <DataTable columns={['Skill / role', 'Code', 'Sector mapping', 'Mapping method', 'Confidence']}>
-            {snapshot.skills.map(skill => <tr key={skill.id}><td><strong>{skill.name}</strong><small>{skill.description || 'Canonical reference skill'}</small></td><td>{skill.code}</td><td>{sectorsForSkill(skill)}</td><td>{skill.sector_mapping_method.replace(/_/g, ' ')}</td><td><span className={'dbi-confidence dbi-confidence-' + skill.sector_mapping_confidence.toLowerCase()}>{skill.sector_mapping_confidence}</span></td></tr>)}
+            {snapshot.skills.map(skill => <tr key={skill.id}><td><strong>{skill.name}</strong><small>{skill.description || 'Canonical reference skill'}</small></td><td>{skill.code}</td><td>{sectorsForSkill(skill)}</td><td>{(skill.sector_mapping_method || 'unmapped').replace(/_/g, ' ')}</td><td><span className={'dbi-confidence dbi-confidence-' + (skill.sector_mapping_confidence || 'unmapped').toLowerCase()}>{skill.sector_mapping_confidence}</span></td></tr>)}
           </DataTable>
         </section>
         <section className="dbi-panel"><SectionHead title="Sector catalogue" note="Canonical sectors currently registered in the live database."/>
