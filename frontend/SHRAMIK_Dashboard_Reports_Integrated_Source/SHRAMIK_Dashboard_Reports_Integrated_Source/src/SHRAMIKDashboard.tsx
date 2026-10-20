@@ -590,32 +590,32 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
               : <DatabaseInsightsPage module="skill-gaps" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
           : activePage === 'forecasts' ? (demoMode
               ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/>
-              : <DatabaseInsightsPage module="forecasts" regionCode={region} onNavigate={handleNavigateToPage}/>)
+              : <DatabaseInsightsPage module="forecasts" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
           : activePage === 'reports' ? (demoMode
               ? <ReportsPage />
-              : <DatabaseInsightsPage module="reports" regionCode={region} onNavigate={handleNavigateToPage}/>)
+              : <DatabaseInsightsPage module="reports" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
           : activePage === 'demand' ? (demoMode
               ? <DemandInsightsPage dataAdapter={undefined} embedded onNavigate={(path: string, label?: string) => {
                   const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
                   if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
                 }}/>
-              : <DatabaseInsightsPage module="demand" regionCode={region} onNavigate={handleNavigateToPage}/>)
+              : <DatabaseInsightsPage module="demand" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
           : activePage === 'emerging-skills' ? (demoMode
               ? <EmergingSkillsPage dataAdapter={emergingSkillsAdapter} />
-              : <DatabaseInsightsPage module="emerging-skills" regionCode={region} onNavigate={handleNavigateToPage}/>)
+              : <DatabaseInsightsPage module="emerging-skills" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
           : activePage === 'scenario-simulator' ? (demoMode
               ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} initialScope={undefined} onNavigate={(path: string) => {
                   const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
                   if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
                 }}/>
-              : <DatabaseInsightsPage module="scenario-simulator" regionCode={region} onNavigate={handleNavigateToPage}/>)
+              : <DatabaseInsightsPage module="scenario-simulator" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
           : activePage === 'data-sources' ? <DataSourcesPage adapter={dataSourcesAdapter}/>
           : activePage === 'supply' ? (demoMode
               ? <SupplyInsightsPage adapter={supplyAdapter} />
-              : <DatabaseInsightsPage module="supply" regionCode={region} onNavigate={handleNavigateToPage}/>)
+              : <DatabaseInsightsPage module="supply" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
           : activePage === 'data-quality' ? (demoMode
               ? <DataQualityPage adapter={dataQualityAdapter} />
-              : <DatabaseInsightsPage module="data-quality" regionCode={region} onNavigate={handleNavigateToPage}/>)
+              : <DatabaseInsightsPage module="data-quality" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
           : activePage === 'administration' ? (!demoMode && !runtimeEnv?.VITE_ADMINISTRATION_API_BASE_URL?.trim()
               ? <LiveModuleNotice title="Administration" eyebrow="SHRAMIK / GOVERNANCE & ACCESS" explanation="Access-request submissions are stored as pending, but this public client cannot read the queue, approve requests or grant roles. A server-authorized review/provisioning API is not configured." requiredSetting="VITE_ADMINISTRATION_API_BASE_URL" neededOutput="Deploy an authenticated admin API that checks server-side administrator authorization, records review decisions, provisions accounts through Supabase Auth and writes audit events."/>
               : <AdministrationPage adapter={administrationAdapter} />)
