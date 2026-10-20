@@ -1,5 +1,5 @@
 import type {
-  DashboardPeriod, DashboardSummary, DataMeta, DetailPayload, DetailQuery,
+  DashboardPeriod, DashboardRow, DashboardSummary, DataMeta, DetailPayload, DetailQuery,
   LabourMarketDataAdapter, MetricCardData, NotificationItem, RankedRegion, RankedRegionsResponse,
   RankingsQuery, RegionMetric, RegionOption, SearchQuery, SearchResult, UserProfile,
 } from './contracts';
@@ -104,6 +104,100 @@ function sourceForKpi(row: KpiRow): SourceMeta {
 }
 function sourceForRegional(row: RegionalRow): SourceMeta {
   return { sourceLabel: row.source_label || SUPABASE_SOURCE_LABEL, sourceUrl: row.source_url, updatedAt: row.as_of_date, note: row.interpretation_note };
+}
+
+type CatalogueRow = { id: string; code: string; name: string; description: string | null };
+const NAPS_METRIC = 'SPACE_GEOSPATIAL_NAPS_APPRENTICES_ENGAGED';
+const PMKVY_METRIC = 'SPACE_GEOSPATIAL_PMKVY_TRAINED_ORIENTED';
+
+function catalogueDashboardRows(rows: CatalogueRow[], kind: 'skill' | 'sector'): DashboardRow[] {
+  const notes = kind === 'skill'
+    ? 'Canonical skill reference only. No validated emerging-skill signal is published for this item.'
+    : 'Canonical sector reference only. No comparable demand/supply pair is available to calculate a sector gap.';
+  const tones: DashboardRow['tone'][] = ['navy', 'teal', 'orange'];
+  return rows.slice(0, 5).map((row, index) => ({
+    id: `catalogue-${kind}-${row.id}`,
+    name: row.name,
+    formattedValue: kind === 'skill' ? 'Catalogue' : 'Mapped',
+    tone: tones[index % tones.length],
+    iconKey: kind === 'skill' ? 'brain-circuit' : 'building-2',
+    meta: {
+      provenance: 'source-backed',
+      sourceLabel: 'SHRAMIK canonical reference catalogue',
+      updatedAt: null,
+      coverage: rows.length + (kind === 'skill' ? ' active skills' : ' active sectors'),
+      notes: [notes, row.code],
+    },
+  }));
+}
+
+function programmeRowsForRegion(rows: SourceMetricRow[], regionCode: string, stateId: string): SourceMetricRow[] {
+  return rows.filter(row => row.state_id !== null
+    && (regionCode === 'IN' || row.state_id === stateId)
+    && row.provenance_state === 'SOURCE_BACKED'
+    && row.is_synthetic === false);
+}
+
+function trainingProgrammeTrend(rows: SourceMetricRow[]): DashboardSummary['trend'] {
+  const periods = new Map<string, Map<string, { total: number; stateIds: Set<string> }>>();
+  rows.forEach(row => {
+    if (row.state_id === null || (row.metric_code !== NAPS_METRIC && row.metric_code !== PMKVY_METRIC)) return;
+    const byMetric = periods.get(row.reference_period) || new Map<string, { total: number; stateIds: Set<string> }>();
+    const aggregate = byMetric.get(row.metric_code) || { total: 0, stateIds: new Set<string>() };
+    aggregate.total += numberValue(row.value_numeric);
+    aggregate.stateIds.add(row.state_id);
+    byMetric.set(row.metric_code, aggregate);
+    periods.set(row.reference_period, byMetric);
+  });
+  const candidates = [...periods.entries()]
+    .filter(([period, byMetric]) => /^FY\\d{4}-\\d{2}$/.test(period) && byMetric.has(NAPS_METRIC) && byMetric.has(PMKVY_METRIC))
+    .sort(([a], [b]) => a.localeCompare(b));
+  // Do not draw a trend from one shared period; require at least two comparable periods.
+  if (candidates.length < 2) return [];
+  return candidates.map(([period, byMetric]) => {
+    const [, start, end] = period.match(/^FY(\\d{4})-(\\d{2})$/) || [];
+    const naps = byMetric.get(NAPS_METRIC)!;
+    const pmkvy = byMetric.get(PMKVY_METRIC)!;
+    return {
+      year: Number(start) + 1,
+      label: period.replace('-', '–'),
+      demand: naps.total,
+      supply: pmkvy.total,
+    };
+  });
+}
+
+function trainingProgrammeContextRows(rows: SourceMetricRow[], regionCode: string, totalStates: number): DashboardRow[] {
+  const labels: Record<string, { title: string; unit: string; tone: DashboardRow['tone'] }> = {
+    [NAPS_METRIC]: { title: 'NAPS apprentices engaged', unit: 'apprentices', tone: 'navy' },
+    [PMKVY_METRIC]: { title: 'PMKVY trained / oriented', unit: 'persons', tone: 'teal' },
+  };
+  const visible = rows.filter(row => row.state_id !== null
+    && row.provenance_state === 'SOURCE_BACKED' && row.is_synthetic === false);
+  return Object.entries(labels).flatMap(([code, info]) => {
+    const metricRows = visible.filter(row => row.metric_code === code);
+    const latestPeriod = metricRows.map(row => row.reference_period).sort().at(-1);
+    if (!latestPeriod) return [];
+    const current = metricRows.filter(row => row.reference_period === latestPeriod);
+    const total = current.reduce((sum, row) => sum + numberValue(row.value_numeric), 0);
+    const reportedStates = new Set(current.map(row => row.state_id).filter((id): id is string => Boolean(id))).size;
+    const coverage = regionCode === 'IN' ? ` · ${reportedStates}/${totalStates || reportedStates} state/UTs` : '';
+    const asOf = current.map(row => row.as_of_date).filter((value): value is string => Boolean(value)).sort().at(-1) || null;
+    return [{
+      id: `programme-${code.toLowerCase()}-${latestPeriod.toLowerCase()}`,
+      name: `${info.title} · ${latestPeriod}${coverage}`,
+      formattedValue: `${compact(total)} ${info.unit}`,
+      tone: info.tone,
+      iconKey: 'users',
+      meta: {
+        provenance: 'source-backed',
+        sourceLabel: SUPABASE_SOURCE_LABEL,
+        updatedAt: asOf,
+        coverage: regionCode === 'IN' ? `${reportedStates}/${totalStates || reportedStates} state/UT records` : 'Selected state/UT source record',
+        notes: ['Published training-programme context, not an occupation forecast or count of available workers.'],
+      },
+    }];
+  });
 }
 
 export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter {
@@ -398,6 +492,50 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
         note: typeof row.dimension_values.validation_caveat === 'string' ? row.dimension_values.validation_caveat : 'Published benchmark, not an estimator output.',
       }));
     }
+
+    // These supporting reads populate the dashboard with real reference catalogues and
+    // published training context while keeping analytical outputs strictly evidence-gated.
+    let skillCatalogue: CatalogueRow[] = [];
+    let sectorCatalogue: CatalogueRow[] = [];
+    let programmeMetrics: SourceMetricRow[] = [];
+    const supportingReads = await Promise.allSettled([
+      this.rows<CatalogueRow>('skills', {
+        select: 'id,code,name,description',
+        is_active: 'eq.true',
+        order: 'name.asc',
+        limit: '100',
+      }, query.signal),
+      this.rows<CatalogueRow>('sectors', {
+        select: 'id,code,name,description',
+        is_active: 'eq.true',
+        order: 'name.asc',
+        limit: '100',
+      }, query.signal),
+      this.rows<SourceMetricRow>('source_metric_observations', {
+        select: 'id,metric_code,value_numeric,unit,state_id,reference_period,as_of_date,dimension_values,provenance_state,is_synthetic',
+        metric_code: `in.(${NAPS_METRIC},${PMKVY_METRIC})`,
+        provenance_state: 'eq.SOURCE_BACKED',
+        is_synthetic: 'eq.false',
+        order: 'metric_code.asc,reference_period.asc,state_id.asc,id.asc',
+        limit: '1000',
+      }, query.signal),
+    ]);
+    if (supportingReads[0].status === 'fulfilled') skillCatalogue = supportingReads[0].value;
+    else diagnostics.push('The canonical skill catalogue could not be loaded for dashboard context.');
+    if (supportingReads[1].status === 'fulfilled') sectorCatalogue = supportingReads[1].value;
+    else diagnostics.push('The canonical sector catalogue could not be loaded for dashboard context.');
+    if (supportingReads[2].status === 'fulfilled') programmeMetrics = supportingReads[2].value;
+    else {
+      if (query.signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      diagnostics.push('Published training-programme context could not be loaded for the selected dashboard.');
+    }
+    const selectedStateId = this.stateIdByCode.get(query.regionCode) || 'IN-' + query.regionCode;
+    const selectedProgrammeRows = programmeRowsForRegion(programmeMetrics, query.regionCode, selectedStateId);
+    const programmeTrend = trainingProgrammeTrend(selectedProgrammeRows).slice(-query.periodYears);
+    const skillCatalogueRows = catalogueDashboardRows(skillCatalogue, 'skill');
+    const sectorCatalogueRows = catalogueDashboardRows(sectorCatalogue, 'sector');
+    const trainingContextRows = trainingProgrammeContextRows(selectedProgrammeRows, query.regionCode,
+      regions.filter(item => item.level === 'state').length);
     cards.sort((a, b) => {
       const order: Record<string, number> = {
         'eshram-registration-count': 1,
@@ -424,7 +562,12 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
     };
     return {
       regionCode: query.regionCode, regionName, periodYears: query.periodYears, kpis: cards,
-      trend: [], emergingSkills: [], sectorGaps: [], occupationForecasts: [], meta,
+      trend: programmeTrend,
+      trendKind: programmeTrend.length >= 2 ? 'training-programmes' : undefined,
+      emergingSkills: skillCatalogueRows,
+      sectorGaps: sectorCatalogueRows,
+      occupationForecasts: trainingContextRows,
+      meta,
     };
   }
 
