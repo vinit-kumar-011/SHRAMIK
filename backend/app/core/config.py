@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     api_prefix: str = "/api"
     database_url: str | None = None
+    supabase_url: str | None = None
+    supabase_anon_key: str | None = None
+    supabase_publishable_key: str | None = None
     cors_allowed_origins: list[str] = Field(
         default_factory=lambda: [
             "http://localhost:3000",
