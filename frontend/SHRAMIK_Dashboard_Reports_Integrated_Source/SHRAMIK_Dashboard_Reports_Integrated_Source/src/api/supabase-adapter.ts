@@ -117,15 +117,18 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
   ) {}
 
   private async rows<T>(table: string, values: Record<string, string>, signal?: AbortSignal): Promise<T[]> {
-    const url = this.baseUrl.replace(/\/+$/, '') + '/rest/v1/' + table + '?' + queryString(values);
+    const sameOriginProxy = this.baseUrl.replace(/\/+$/, '') === SUPABASE_URL.replace(/\/+$/, '');
+    const query = sameOriginProxy ? { table, ...values } : values;
+    const url = sameOriginProxy
+      ? '/api/shramik-data?' + queryString(query)
+      : this.baseUrl.replace(/\/+$/, '') + '/rest/v1/' + table + '?' + queryString(values);
     let response: Response;
     try {
       response = await this.fetcher(url, {
         method: 'GET',
-        // Labour-market reads exposed by this adapter are deliberately public, read-only
-        // surfaces guarded by Supabase RLS. Do not couple them to the sign-in session:
-        // expired user tokens must not make the dashboard's public data unavailable.
-        headers: this.publishableKeyHeaders(null),
+        // The public dashboard uses the same-origin proxy in production. Custom URLs
+        // remain available to tests and local adapters. Neither path sends user tokens.
+        headers: sameOriginProxy ? new Headers({ Accept: 'application/json' }) : this.publishableKeyHeaders(null),
         signal,
       });
     } catch (error) {
