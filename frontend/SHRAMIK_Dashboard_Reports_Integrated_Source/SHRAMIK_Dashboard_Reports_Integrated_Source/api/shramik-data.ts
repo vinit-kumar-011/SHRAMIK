@@ -72,7 +72,7 @@ const TABLES: Record<string, TableRule> = {
 
 const DEFAULT_URL = 'https://vnmvejubmypbpiaxtrgc.supabase.co';
 const DEFAULT_KEY = 'sb_publishable_bhVdjEavYKf91v2w1M2BTg_luThC1-d';
-const env = (globalThis as typeof globalThis & {
+const processEnv = (globalThis as typeof globalThis & {
   process?: { env?: Record<string, string | undefined> };
 }).process?.env || {};
 
@@ -84,7 +84,10 @@ function errorMessage(value: unknown): string {
   return 'The SHRAMIK data service could not complete the request.';
 }
 
-export default async function handler(req: Request, res: Response): Promise<void> {
+export function createPublicSupabaseDataHandler(
+  runtimeEnv: Record<string, string | undefined> = processEnv,
+) {
+  return async function handler(req: Request, res: Response): Promise<void> {
   res.setHeader('Cache-Control', 'public, max-age=20, stale-while-revalidate=60')
     .setHeader('X-Content-Type-Options', 'nosniff')
     .setHeader('Vary', 'Accept');
@@ -137,8 +140,8 @@ export default async function handler(req: Request, res: Response): Promise<void
   params.set('limit', String(limit));
   if (offset > 0) params.set('offset', String(offset));
 
-  const baseUrl = (env.VITE_SUPABASE_URL || DEFAULT_URL).replace(/\/+$/, '');
-  const publishableKey = env.VITE_SUPABASE_PUBLISHABLE_KEY || DEFAULT_KEY;
+  const baseUrl = (runtimeEnv.VITE_SUPABASE_URL || DEFAULT_URL).replace(/\/+$/, '');
+  const publishableKey = runtimeEnv.VITE_SUPABASE_PUBLISHABLE_KEY || DEFAULT_KEY;
 
   try {
     const upstream = await fetch(baseUrl + '/rest/v1/' + encodeURIComponent(table) + '?' + params.toString(), {
@@ -174,4 +177,7 @@ export default async function handler(req: Request, res: Response): Promise<void
   } catch (error) {
     res.status(502).json({ error: errorMessage(error), table, source: 'supabase-upstream' });
   }
+  };
 }
+
+export default createPublicSupabaseDataHandler();
