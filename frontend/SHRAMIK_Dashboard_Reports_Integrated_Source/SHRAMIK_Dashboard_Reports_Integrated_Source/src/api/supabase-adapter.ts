@@ -110,14 +110,24 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
   readonly mode = 'rest' as const;
   private regionCache: RegionOption[] | null = null;
   private readonly stateIdByCode = new Map<string, string>();
+  private readonly baseUrl: string;
+  private readonly fetcher: typeof fetch;
+  private readonly publishableKeyHeaders: typeof supabaseHeaders;
+  private readonly useSameOriginProxy: boolean;
   constructor(
-    private readonly baseUrl = SUPABASE_URL,
-    private readonly fetcher: typeof fetch = fetch,
-    private readonly publishableKeyHeaders = supabaseHeaders,
-  ) {}
+    baseUrl?: string,
+    fetcher: typeof fetch = fetch,
+    publishableKeyHeaders: typeof supabaseHeaders = supabaseHeaders,
+  ) {
+    this.baseUrl = baseUrl ?? SUPABASE_URL;
+    this.fetcher = fetcher;
+    this.publishableKeyHeaders = publishableKeyHeaders;
+    // The default production adapter uses the first-party proxy; injected test/local URLs remain direct.
+    this.useSameOriginProxy = baseUrl === undefined;
+  }
 
   private async rows<T>(table: string, values: Record<string, string>, signal?: AbortSignal): Promise<T[]> {
-    const sameOriginProxy = this.baseUrl.replace(/\/+$/, '') === SUPABASE_URL.replace(/\/+$/, '');
+    const sameOriginProxy = this.useSameOriginProxy;
     const query = sameOriginProxy ? { table, ...values } : values;
     const url = sameOriginProxy
       ? '/api/shramik-data?' + queryString(query)
