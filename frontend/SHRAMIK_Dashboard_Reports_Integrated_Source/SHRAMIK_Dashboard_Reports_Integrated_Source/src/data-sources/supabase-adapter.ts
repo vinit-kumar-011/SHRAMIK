@@ -72,11 +72,21 @@ function hasText(value: string | null | undefined, needle: string): boolean {
 
 export class SupabaseDataSourcesAdapter implements DataSourcesDataAdapter {
   readonly capabilities = { createSource: false };
+  private readonly baseUrl: string;
+  private readonly fetcher: typeof fetch;
+  private readonly headers: typeof supabaseHeaders;
+  private readonly useSameOriginProxy: boolean;
   constructor(
-    private readonly baseUrl = SUPABASE_URL,
-    private readonly fetcher: typeof fetch = fetch,
-    private readonly headers = supabaseHeaders,
-  ) {}
+    baseUrl?: string,
+    fetcher: typeof fetch = fetch,
+    headers: typeof supabaseHeaders = supabaseHeaders,
+  ) {
+    this.baseUrl = baseUrl ?? SUPABASE_URL;
+    this.fetcher = fetcher;
+    this.headers = headers;
+    // The default production adapter uses the same-origin proxy; injected local/test URLs remain direct.
+    this.useSameOriginProxy = baseUrl === undefined;
+  }
 
   private async listRegistryRows(): Promise<RegistryRow[]> {
     const values = {
@@ -84,7 +94,7 @@ export class SupabaseDataSourcesAdapter implements DataSourcesDataAdapter {
       order: 'name.asc',
       limit: String(PAGE_LIMIT),
     };
-    const sameOriginProxy = this.baseUrl.replace(/\/+$/, '') === SUPABASE_URL.replace(/\/+$/, '');
+    const sameOriginProxy = this.useSameOriginProxy;
     const url = sameOriginProxy
       ? '/api/shramik-data?' + new URLSearchParams({ table: 'data_sources', ...values })
       : this.baseUrl.replace(/\/+$/, '') + '/rest/v1/data_sources?' + new URLSearchParams(values);
