@@ -82,4 +82,37 @@ test('Supabase dashboard adapter uses live published views and does not synthesi
   assert.equal(ranking.meta.provenance, 'source-backed');
 });
 
+
+test('published dashboard KPIs survive optional region-list and PLFS-enrichment failures', async () => {
+  const calls = [];
+  const publishedKpis = [
+    ['ESHRAM_REGISTRATION_COUNT', 'e-Shram registrations', 123456, 'registrations'],
+    ['CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE', 'Provisional CTS seat capacity', 3210, 'seats'],
+    ['CTS_ITI_COUNT', 'Industrial Training Institutes', 45, 'ITIs'],
+    ['UR', 'Unemployment rate (PLFS 2025)', 3.2, '%'],
+  ].map(([metric_code, title, value_numeric, unit], sortIndex) => ({
+    metric_code, title, value_numeric, unit, reference_period: 'Published snapshot',
+    source_label: 'Official publisher', source_url: null, as_of_date: '2026-10-14',
+    interpretation_note: 'Published context indicator.', sort_order: sortIndex + 1,
+  }));
+
+  const fetcher = async (input) => {
+    const url = String(input);
+    calls.push(url);
+    if (url.includes('/states?')) return response({ message: 'temporarily unavailable' }, 503);
+    if (url.includes('/sh_public_dashboard_kpis?')) return response(publishedKpis);
+    if (url.includes('/source_metric_observations?')) return response({ message: 'optional benchmark query unavailable' }, 503);
+    return response([]);
+  };
+  const adapter = new SupabaseLabourMarketDataAdapter('https://test.supabase.co', fetcher, headerBuilder);
+  const data = await adapter.getDashboard({ regionCode: 'IN', periodYears: 5 });
+
+  assert.equal(data.kpis.length, 4, 'core source-backed KPIs should not disappear');
+  assert.ok(data.kpis.some(item => item.id === 'eshram-registration-count'));
+  assert.ok(data.kpis.some(item => item.id === 'ur'));
+  assert.ok(data.meta.notes.some(note => note.includes('region selector could not be refreshed')));
+  assert.ok(data.meta.notes.some(note => note.includes('optional PLFS published benchmarks')));
+  assert.ok(calls.some(url => url.includes('/sh_public_dashboard_kpis?')));
+});
+
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
