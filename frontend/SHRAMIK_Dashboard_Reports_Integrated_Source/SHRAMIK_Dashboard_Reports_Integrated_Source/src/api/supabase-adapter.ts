@@ -163,7 +163,17 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
   }
 
   async getDashboard(query: { regionCode: string; periodYears: DashboardPeriod; signal?: AbortSignal }): Promise<DashboardSummary> {
-    const regions = await this.getRegions(query.signal);
+    // Region options and PLFS enrichments are helpful, but neither may block
+    // the core published KPI view. In particular, an expired browser session
+    // or a temporarily unavailable optional source must not blank all cards.
+    const diagnostics: string[] = [];
+    let regions: RegionOption[] = [];
+    try {
+      regions = await this.getRegions(query.signal);
+    } catch (error) {
+      if (query.signal?.aborted) throw error;
+      diagnostics.push('The region selector could not be refreshed; published dashboard indicators were loaded independently.');
+    }
     const regionName = regions.find(item => item.code === query.regionCode)?.label || query.regionCode;
     let cards: MetricCardData[] = [];
     if (query.regionCode === 'IN') {
@@ -191,7 +201,13 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
       });
     }
 
-    const rateRows = await this.getPublishedRates(query.regionCode, query.signal);
+    let rateRows: PublishedRateRow[] = [];
+    try {
+      rateRows = await this.getPublishedRates(query.regionCode, query.signal);
+    } catch (error) {
+      if (query.signal?.aborted) throw error;
+      diagnostics.push('Some optional PLFS published benchmarks could not be loaded. The published dashboard indicators remain available; benchmark enrichment can be retried.');
+    }
     for (const row of rateRows) {
       if (cards.some(card => card.id === metricId(row.metric_code))) continue;
       const sourceUrl = typeof row.dimension_values.source_url === 'string' ? row.dimension_values.source_url : undefined;
@@ -223,6 +239,7 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
       notes: [
         'Demand observation, supply observation and forecast result tables do not yet have validated rows. No demand/supply time-series or forecast values are fabricated.',
         'Published benchmarks and source snapshots retain their own units, dates, and interpretation limits.',
+        ...diagnostics,
       ],
     };
     return {
