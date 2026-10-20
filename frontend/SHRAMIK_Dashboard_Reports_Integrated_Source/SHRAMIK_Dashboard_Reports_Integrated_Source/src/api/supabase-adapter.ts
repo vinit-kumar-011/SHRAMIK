@@ -23,6 +23,19 @@ type PublishedRateRow = {
 type SourceMeta = {
   sourceLabel: string; sourceUrl?: string | null; updatedAt?: string | null; note?: string | null;
 };
+type SourceMetricRow = {
+  id: string;
+  metric_code: string;
+  value_numeric: string | number;
+  unit: string;
+  state_id: string | null;
+  reference_period: string;
+  as_of_date: string | null;
+  dimension_values: Record<string, unknown> | null;
+  provenance_state: string;
+  is_synthetic: boolean;
+};
+
 const SUPABASE_SOURCE_LABEL = 'SHRAMIK Supabase source observations';
 
 function queryString(values: Record<string, string>): string {
@@ -141,6 +154,149 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
     return this.regionCache;
   }
 
+  /**
+   * Minimal source-backed rows used as a resilient fallback when a convenience
+   * dashboard view is unavailable. Pagination is required because seat-capacity
+   * data has more rows than the REST API's usual 1,000-row page.
+   */
+  private async getDashboardMetricRows(signal?: AbortSignal): Promise<SourceMetricRow[]> {
+    const all: SourceMetricRow[] = [];
+    const metricCodes = 'in.(ESHRAM_REGISTRATION_COUNT,CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE,CTS_ITI_COUNT,UR,LFPR,WPR)';
+    for (let offset = 0; offset < 10000; offset += 1000) {
+      const page = await this.rows<SourceMetricRow>('source_metric_observations', {
+        select: 'id,metric_code,value_numeric,unit,state_id,reference_period,as_of_date,dimension_values,provenance_state,is_synthetic',
+        metric_code: metricCodes,
+        provenance_state: 'eq.SOURCE_BACKED',
+        is_synthetic: 'eq.false',
+        order: 'metric_code.asc,reference_period.asc,state_id.asc,id.asc',
+        limit: '1000',
+        offset: String(offset),
+      }, signal);
+      all.push(...page);
+      if (page.length < 1000) break;
+    }
+    return all;
+  }
+
+  private sourceBackedDashboardCards(regionCode: string, rows: SourceMetricRow[]): MetricCardData[] {
+    const stateId = regionCode === 'IN' ? null : (this.stateIdByCode.get(regionCode) || 'IN-' + regionCode);
+    const latestPeriod = <T extends { reference_period: string }>(items: T[]): T[] => {
+      if (!items.length) return [];
+      const period = items.map(item => item.reference_period).sort().at(-1);
+      return items.filter(item => item.reference_period === period);
+    };
+    const directCard = (code: string, value: number, unit: string, sampleRows: SourceMetricRow[], note: string): MetricCardData | null => {
+      const sample = sampleRows[0];
+      if (!sample || !Number.isFinite(value)) return null;
+      const dimensions = sample.dimension_values || {};
+      const row: PublishedRateRow = {
+        metric_code: code,
+        value_numeric: value,
+        unit,
+        reference_period: sample.reference_period,
+        dimension_values: dimensions,
+        provenance_state: 'SOURCE_BACKED',
+        is_synthetic: false,
+      };
+      return kpiFrom(row, {
+        sourceLabel: SUPABASE_SOURCE_LABEL,
+        sourceUrl: typeof dimensions.source_url === 'string' ? dimensions.source_url : undefined,
+        updatedAt: sample.as_of_date || (typeof dimensions.source_value_review_date === 'string' ? dimensions.source_value_review_date : null),
+        note,
+      });
+    };
+    const cards: MetricCardData[] = [];
+    const registrations = rows.filter(row => row.metric_code === 'ESHRAM_REGISTRATION_COUNT');
+    let registrationRows = regionCode === 'IN'
+      ? latestPeriod(registrations.filter(row => !row.state_id))
+      : latestPeriod(registrations.filter(row => row.state_id === stateId));
+    if (regionCode === 'IN' && !registrationRows.length) {
+      // Older source snapshots may have only state-wise counts; only use them
+      // when no explicit national total is available.
+      registrationRows = latestPeriod(registrations.filter(row => row.state_id !== null));
+    }
+    if (registrationRows.length) {
+      const value = registrationRows.reduce((sum, row) => sum + numberValue(row.value_numeric), 0);
+      const card = directCard('ESHRAM_REGISTRATION_COUNT', value, registrationRows[0].unit, registrationRows,
+        'Cumulative portal registrations; not active jobseekers or available labour supply.');
+      if (card) cards.push(card);
+    }
+
+    for (const [code, note] of [
+      ['CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE', 'Provisional training capacity; not trained or employed workers.'],
+      ['CTS_ITI_COUNT', 'Source-backed institute counts; source coverage applies.'],
+    ] as const) {
+      const sourceRows = rows.filter(row => row.metric_code === code && row.state_id !== null
+        && (regionCode === 'IN' || row.state_id === stateId));
+      const selectedRows = latestPeriod(sourceRows);
+      if (!selectedRows.length) continue;
+      const value = selectedRows.reduce((sum, row) => sum + numberValue(row.value_numeric), 0);
+      const card = directCard(code, value, selectedRows[0].unit, selectedRows, note);
+      if (card) cards.push(card);
+    }
+
+    for (const code of ['UR', 'LFPR', 'WPR']) {
+      const candidates = rows.filter(row => row.metric_code === code && row.reference_period === 'CY2025'
+        && row.dimension_values?.sex === 'person'
+        && row.dimension_values?.area === 'combined'
+        && row.dimension_values?.age_domain === 'all_ages');
+      const regional = regionCode === 'IN' ? candidates.filter(row => !row.state_id) : candidates.filter(row => row.state_id === stateId);
+      const chosen = regional[0] ? [regional[0]] : [];
+      if (!chosen.length) continue;
+      const value = numberValue(chosen[0].value_numeric);
+      const card = directCard(code, value, chosen[0].unit, chosen,
+        'Published PLFS annual benchmark for persons, all ages, combined rural/urban; not a model forecast.');
+      if (card) cards.push(card);
+    }
+    return cards;
+  }
+
+  private sourceBackedRanking(query: RankingsQuery, selected: { key: string; unit: string; label: string }, rows: SourceMetricRow[]): RankedRegionsResponse {
+    const metricCode = selected.key === 'REGISTRATIONS' ? 'ESHRAM_REGISTRATION_COUNT'
+      : selected.key === 'TRAINING_SEATS' ? 'CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE' : 'CTS_ITI_COUNT';
+    const groups = new Map<string, SourceMetricRow[]>();
+    rows.filter(row => row.metric_code === metricCode && row.state_id !== null).forEach(row => {
+      const values = groups.get(row.state_id as string) || [];
+      values.push(row);
+      groups.set(row.state_id as string, values);
+    });
+    const items = [...groups.entries()].map(([stateId, stateRows]) => {
+      const newestPeriod = stateRows.map(row => row.reference_period).sort().at(-1);
+      const current = stateRows.filter(row => row.reference_period === newestPeriod);
+      const value = current.reduce((sum, row) => sum + numberValue(row.value_numeric), 0);
+      const dimensions = current[0]?.dimension_values || {};
+      const nameFromSource = typeof dimensions.state_ut_source_label === 'string' ? dimensions.state_ut_source_label : '';
+      const region = this.regionCache?.find(item => item.code === stateId.replace(/^IN-/, ''));
+      const name = nameFromSource || region?.label || stateId;
+      return {
+        code: region?.code || stateId.replace(/^IN-/, ''),
+        name,
+        value,
+        formattedValue: compact(value),
+        rank: 0,
+        _period: newestPeriod || '',
+        _asOfDate: current[0]?.as_of_date || null,
+        _note: typeof dimensions.interpretation_note === 'string' ? dimensions.interpretation_note : null,
+      };
+    }).sort((a, b) => b.value - a.value).slice(0, 36)
+      .map((row, index) => ({ code: row.code, name: row.name, value: row.value, formattedValue: row.formattedValue, rank: index + 1 }));
+    const first = [...groups.values()].flat().sort((a, b) => b.reference_period.localeCompare(a.reference_period))[0];
+    const firstDimensions = first?.dimension_values || {};
+    return {
+      metric: query.metric,
+      unit: selected.unit,
+      items,
+      meta: {
+        provenance: 'source-backed',
+        sourceLabel: SUPABASE_SOURCE_LABEL + ' · ' + selected.label,
+        updatedAt: first?.as_of_date || null,
+        coverage: items.length + ' state/UT records',
+        notes: [typeof firstDimensions.interpretation_note === 'string' ? firstDimensions.interpretation_note : 'Aggregated from source-backed, non-synthetic observations.'],
+      },
+    };
+  }
+
+
   private async getPublishedRates(regionCode: string, signal?: AbortSignal): Promise<PublishedRateRow[]> {
     const filters: Record<string, string> = {
       select: 'metric_code,value_numeric,unit,reference_period,dimension_values,provenance_state,is_synthetic',
@@ -178,29 +334,35 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
     }
     const regionName = regions.find(item => item.code === query.regionCode)?.label || query.regionCode;
     let cards: MetricCardData[] = [];
-    if (query.regionCode === 'IN') {
-      const rows = await this.rows<KpiRow>('sh_public_dashboard_kpis', {
-        select: 'metric_code,title,value_numeric,unit,reference_period,source_label,source_url,as_of_date,interpretation_note,sort_order',
-        order: 'sort_order.asc',
-      }, query.signal);
-      cards = rows.map(row => kpiFrom(row, sourceForKpi(row)));
-    } else {
-      const stateId = this.stateIdByCode.get(query.regionCode) || 'IN-' + query.regionCode;
-      const rows = await this.rows<RegionalRow>('sh_public_dashboard_regions', {
-        select: 'metric_key,metric_label,state_id,state_name,value_numeric,unit,reference_period,source_label,source_url,as_of_date,interpretation_note',
-        state_id: 'eq.' + stateId,
-        order: 'metric_key.asc',
-      }, query.signal);
-      cards = rows.map(row => {
-        const code = row.metric_key === 'REGISTRATIONS' ? 'ESHRAM_REGISTRATION_COUNT'
-          : row.metric_key === 'TRAINING_SEATS' ? 'CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE' : 'CTS_ITI_COUNT';
-        const kpiRow: KpiRow = {
-          metric_code: code, title: row.metric_label, value_numeric: row.value_numeric, unit: row.unit,
-          reference_period: row.reference_period, source_label: row.source_label, source_url: row.source_url,
-          as_of_date: row.as_of_date, interpretation_note: row.interpretation_note,
-        };
-        return kpiFrom(kpiRow, sourceForRegional(row), code);
-      });
+    try {
+      if (query.regionCode === 'IN') {
+        const rows = await this.rows<KpiRow>('sh_public_dashboard_kpis', {
+          select: 'metric_code,title,value_numeric,unit,reference_period,source_label,source_url,as_of_date,interpretation_note,sort_order',
+          order: 'sort_order.asc',
+        }, query.signal);
+        cards = rows.map(row => kpiFrom(row, sourceForKpi(row)));
+      } else {
+        const stateId = this.stateIdByCode.get(query.regionCode) || 'IN-' + query.regionCode;
+        const rows = await this.rows<RegionalRow>('sh_public_dashboard_regions', {
+          select: 'metric_key,metric_label,state_id,state_name,value_numeric,unit,reference_period,source_label,source_url,as_of_date,interpretation_note',
+          state_id: 'eq.' + stateId,
+          order: 'metric_key.asc',
+        }, query.signal);
+        cards = rows.map(row => {
+          const code = row.metric_key === 'REGISTRATIONS' ? 'ESHRAM_REGISTRATION_COUNT'
+            : row.metric_key === 'TRAINING_SEATS' ? 'CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE' : 'CTS_ITI_COUNT';
+          const kpiRow: KpiRow = {
+            metric_code: code, title: row.metric_label, value_numeric: row.value_numeric, unit: row.unit,
+            reference_period: row.reference_period, source_label: row.source_label, source_url: row.source_url,
+            as_of_date: row.as_of_date, interpretation_note: row.interpretation_note,
+          };
+          return kpiFrom(kpiRow, sourceForRegional(row), code);
+        });
+      }
+    } catch {
+      if (query.signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      diagnostics.push('The published dashboard view was unavailable; indicators were recovered directly from source-backed database observations.');
+      cards = this.sourceBackedDashboardCards(query.regionCode, await this.getDashboardMetricRows(query.signal));
     }
 
     let rateRows: PublishedRateRow[] = [];
@@ -251,43 +413,48 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
   }
 
   async getRegionRankings(query: RankingsQuery): Promise<RankedRegionsResponse> {
-    // Rankings include state_id and state_name in the public view, so they must
-    // not depend on the separate state-selector request succeeding first.
+    // The view is the preferred path; source-backed observations are the fallback.
     const metricMap: Record<RegionMetric, { key: string; unit: string; label: string }> = {
       demand: { key: 'REGISTRATIONS', unit: 'registrations', label: 'e-Shram registrations' },
       supply: { key: 'TRAINING_SEATS', unit: 'seats', label: 'Provisional CTS seat capacity' },
       'skill-gap': { key: 'ITI_COUNT', unit: 'ITIs', label: 'Industrial Training Institutes' },
     };
     const selected = metricMap[query.metric];
-    const rows = await this.rows<RegionalRow>('sh_public_dashboard_regions', {
-      select: 'metric_key,metric_label,state_id,state_name,value_numeric,unit,reference_period,source_label,source_url,as_of_date,interpretation_note',
-      metric_key: 'eq.' + selected.key,
-      order: 'value_numeric.desc',
-      limit: '36',
-    }, query.signal);
-    const items: RankedRegion[] = rows.map((row, index) => {
-      const value = numberValue(row.value_numeric);
+    try {
+      const rows = await this.rows<RegionalRow>('sh_public_dashboard_regions', {
+        select: 'metric_key,metric_label,state_id,state_name,value_numeric,unit,reference_period,source_label,source_url,as_of_date,interpretation_note',
+        metric_key: 'eq.' + selected.key,
+        order: 'value_numeric.desc',
+        limit: '36',
+      }, query.signal);
+      const items: RankedRegion[] = rows.map((row, index) => {
+        const value = numberValue(row.value_numeric);
+        return {
+          code: this.regionCache?.find(region => region.label === row.state_name)?.code || row.state_id.replace(/^IN-/, ''),
+          name: row.state_name,
+          value,
+          formattedValue: compact(value),
+          rank: index + 1,
+        };
+      });
+      const first = rows[0];
       return {
-        code: this.regionCache?.find(region => region.label === row.state_name)?.code || row.state_id.replace(/^IN-/, ''),
-        name: row.state_name,
-        value,
-        formattedValue: compact(value),
-        rank: index + 1,
+        metric: query.metric,
+        unit: selected.unit,
+        items,
+        meta: {
+          provenance: 'source-backed',
+          sourceLabel: SUPABASE_SOURCE_LABEL + ' · ' + selected.label,
+          updatedAt: first?.as_of_date || null,
+          coverage: rows.length + ' state/UT records',
+          notes: first?.interpretation_note ? [first.interpretation_note] : [],
+        },
       };
-    });
-    const first = rows[0];
-    return {
-      metric: query.metric,
-      unit: selected.unit,
-      items,
-      meta: {
-        provenance: 'source-backed',
-        sourceLabel: SUPABASE_SOURCE_LABEL + ' · ' + selected.label,
-        updatedAt: first?.as_of_date || null,
-        coverage: rows.length + ' state/UT records',
-        notes: first?.interpretation_note ? [first.interpretation_note] : [],
-      },
-    };
+    } catch {
+      if (query.signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      const metrics = await this.getDashboardMetricRows(query.signal);
+      return this.sourceBackedRanking(query, selected, metrics);
+    }
   }
 
   async search(query: SearchQuery): Promise<SearchResult[]> {
