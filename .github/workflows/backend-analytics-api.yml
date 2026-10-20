@@ -45,7 +45,6 @@ jobs:
         working-directory: backend
         run: python -m pytest -q
       - name: Smoke-test deployed API health, CORS and auth guard
-        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/backend-analytics-read-api'
         env:
           SHRAMIK_BACKEND_URL: https://shramik-backend-api.vercel.app
           SHRAMIK_FRONTEND_ORIGIN: https://shramik-unified-app.vercel.app
