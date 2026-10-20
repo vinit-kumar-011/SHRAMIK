@@ -136,11 +136,59 @@ test('public proxy rejects ungranted columns and returns useful upstream errors'
   }
 });
 
-test('the repository-root Vercel API entrypoint re-exports the tested public reader', () => {
-  assert.equal(fs.existsSync(rootDeployHandlerPath), true, 'root deploy entrypoint must exist when Vercel Root Directory is the repository');
+test('repository-root Vercel API handler boots standalone and serves an allow-listed request', async () => {
+  assert.equal(fs.existsSync(rootDeployHandlerPath), true, 'root handler must exist when the Vercel project root is the repository');
   const entry = fs.readFileSync(rootDeployHandlerPath, 'utf8');
-  assert.match(entry, /export \{\s*default\s*\} from/);
-  assert.match(entry, /frontend\/SHRAMIK_Dashboard_Reports_Integrated_Source\/SHRAMIK_Dashboard_Reports_Integrated_Source\/api\/shramik-data/);
+  assert.match(entry, /const TABLES: Record<string, TableRule>/);
+  assert.match(entry, /export default createPublicSupabaseDataHandler\(\);/);
+  assert.doesNotMatch(entry, /export\s+\{\s*default\s*\}\s+from/, 'the root runtime must not load a nested package across the ESM boundary');
+
+  const rootCompiled = ts.transpileModule(entry, {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.CommonJS,
+      strict: true,
+    },
+    fileName: rootDeployHandlerPath,
+  });
+  const rootOutputPath = path.join(tempDir, 'root-shramik-data.cjs');
+  fs.writeFileSync(rootOutputPath, rootCompiled.outputText);
+  const rootModule = new Module(rootOutputPath, module);
+  rootModule.filename = rootOutputPath;
+  rootModule.paths = Module._nodeModulePaths(tempDir);
+  rootModule._compile(rootCompiled.outputText, rootOutputPath);
+  const rootHandler = rootModule.exports.default;
+
+  const originalFetch = global.fetch;
+  const originalUrl = process.env.VITE_SUPABASE_URL;
+  const originalKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  let request;
+  global.fetch = async (input, init) => {
+    request = { url: String(input), init };
+    return new Response(JSON.stringify([{ id: 'IN-OD', name: 'Odisha', code: 'OD' }]), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+  process.env.VITE_SUPABASE_URL = 'https://unit-test.supabase.co';
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_unit_test';
+  try {
+    const missingTable = responseCapture();
+    await rootHandler({ method: 'GET', query: {} }, missingTable);
+    assert.equal(missingTable.code, 400, 'a cold function invocation should execute the handler, not fail at module load');
+
+    const res = responseCapture();
+    await rootHandler({ method: 'GET', query: { table: 'states', select: 'id,name,code', limit: '3' } }, res);
+    assert.equal(res.code, 200);
+    assert.deepEqual(res.body, [{ id: 'IN-OD', name: 'Odisha', code: 'OD' }]);
+    assert.equal(new URL(request.url).pathname, '/rest/v1/states');
+  } finally {
+    global.fetch = originalFetch;
+    if (originalUrl === undefined) delete process.env.VITE_SUPABASE_URL;
+    else process.env.VITE_SUPABASE_URL = originalUrl;
+    if (originalKey === undefined) delete process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    else process.env.VITE_SUPABASE_PUBLISHABLE_KEY = originalKey;
+  }
 });
 
 test.after(() => fs.rmSync(tempDir, { recursive: true, force: true }));
