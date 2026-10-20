@@ -38,8 +38,10 @@ import { createDataQualityDataAdapter } from './data-quality/adapter';
 import AdministrationPage from './administration/AdministrationPage';
 import { createAdministrationDataAdapter } from './administration/adapter';
 import ModuleErrorBoundary from './ModuleErrorBoundary';
+import SHRAMIKLandingPage from './landing/SHRAMIKLandingPage';
 
 type Tone = 'navy' | 'teal' | 'orange';
+type SHRAMIKDashboardProps = { onNavigate?: (path: string, label: string) => void; dataAdapter?: LabourMarketDataAdapter };
 
 const ICONS: Record<string, LucideIcon> = {
   activity: Activity, alert: AlertCircle, brain: BrainCircuit, 'brain-circuit': BrainCircuit,
@@ -315,7 +317,7 @@ function ModuleRouteFallback({ route }: { route: ShramikRouteId }) {
   </section>;
 }
 
-export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNavigate?: (path: string, label: string) => void; dataAdapter?: LabourMarketDataAdapter } = {}) {
+function SHRAMIKWorkspace({ onNavigate, dataAdapter }: SHRAMIKDashboardProps = {}) {
   const runtimeEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
   const demoMode = runtimeEnv?.VITE_SHRAMIK_USE_DEMO_DATA === 'true';
   const [defaultAdapter] = useState<LabourMarketDataAdapter>(() => createLabourMarketDataAdapter());
@@ -644,4 +646,24 @@ export default function SHRAMIKDashboard({ onNavigate, dataAdapter }: { onNaviga
     {toast && <div role="status" className="toast-message"><span>{toast}</span><button type="button" aria-label="Dismiss notification" onClick={() => setToast('')}><X size={15}/></button></div>}
     <DetailDrawer detail={detail} loading={detailLoading} error={detailError} onClose={closeDetail}/>
   </div>;
+}
+
+/** The public root is the product landing page. The authenticated/data workspace is mounted only on its own route. */
+export default function SHRAMIKDashboard(props: SHRAMIKDashboardProps = {}) {
+  const [route, setRoute] = useState<ShramikRouteId>(getInitialPage);
+
+  useEffect(() => {
+    const syncRoute = () => setRoute(getInitialPage());
+    window.addEventListener('popstate', syncRoute);
+    window.addEventListener('hashchange', syncRoute);
+    window.addEventListener('shramik:navigate', syncRoute);
+    return () => {
+      window.removeEventListener('popstate', syncRoute);
+      window.removeEventListener('hashchange', syncRoute);
+      window.removeEventListener('shramik:navigate', syncRoute);
+    };
+  }, []);
+
+  if (route === 'landing') return <SHRAMIKLandingPage />;
+  return <SHRAMIKWorkspace {...props} />;
 }
