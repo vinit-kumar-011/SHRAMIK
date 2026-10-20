@@ -59,7 +59,7 @@ export default function RequestAccessPage({ onNavigate }: { onNavigate: (route: 
           <button className="sh-auth-primary" type="submit" disabled={pending}>{pending ? 'Submitting request…' : 'Submit access request'} <ArrowRight size={17}/></button>
         </form>
         <p className="sh-auth-footer">Already have an account? <button type="button" onClick={() => onNavigate('login')}>Sign in</button></p>
-        <button className="sh-auth-text-link" type="button" onClick={() => onNavigate('landing')}><ArrowLeft size={14}/> Return to public dashboard</button>
+        <button className="sh-auth-text-link" type="button" onClick={() => onNavigate('landing')}><ArrowLeft size={14}/> Return to public home</button>
         <p className="sh-auth-disclaimer">Your request is visible only to authorized server-side reviewers. This page cannot read the queue, approve itself, or grant a role.</p>
       </>}
     </div>
