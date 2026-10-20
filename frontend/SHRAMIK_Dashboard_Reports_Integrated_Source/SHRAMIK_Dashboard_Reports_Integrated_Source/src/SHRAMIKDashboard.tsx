@@ -42,6 +42,10 @@ import SHRAMIKLandingPage from './landing/SHRAMIKLandingPage';
 
 type Tone = 'navy' | 'teal' | 'orange';
 type SHRAMIKDashboardProps = { onNavigate?: (path: string, label: string) => void; dataAdapter?: LabourMarketDataAdapter };
+type SHRAMIKWorkspaceProps = SHRAMIKDashboardProps & {
+  authSession: AuthSession | null;
+  onAuthSessionChange: (session: AuthSession | null) => void;
+};
 
 const ICONS: Record<string, LucideIcon> = {
   activity: Activity, alert: AlertCircle, brain: BrainCircuit, 'brain-circuit': BrainCircuit,
@@ -317,12 +321,11 @@ function ModuleRouteFallback({ route }: { route: ShramikRouteId }) {
   </section>;
 }
 
-function SHRAMIKWorkspace({ onNavigate, dataAdapter }: SHRAMIKDashboardProps = {}) {
+function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionChange }: SHRAMIKWorkspaceProps) {
   const runtimeEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
   const demoMode = runtimeEnv?.VITE_SHRAMIK_USE_DEMO_DATA === 'true';
   const [defaultAdapter] = useState<LabourMarketDataAdapter>(() => createLabourMarketDataAdapter());
   const adapter = dataAdapter ?? defaultAdapter;
-  const [authSession, setAuthSession] = useState<AuthSession | null>(null);
   const [activePage, setActivePage] = useState<ShramikRouteId>(getInitialPage);
   const [active, setActive] = useState(() => getRouteLabel(getInitialPage()));
   const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
@@ -377,12 +380,6 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter }: SHRAMIKDashboardProps = {
   const isLiveSupabase = adapter instanceof SupabaseLabourMarketDataAdapter;
   const headerProfile = useMemo(() => profileForSession(authSession, profile), [authSession, profile]);
   const regionLabel = useMemo(() => regions.find((item) => item.code === region)?.label ?? dashboard?.regionName ?? region, [regions, region, dashboard?.regionName]);
-
-  useEffect(() => {
-    let active = true;
-    void restoreAuthSession().then(session => { if (active) setAuthSession(session); }).catch(() => { if (active) setAuthSession(null); });
-    return () => { active = false; };
-  }, []);
 
   useEffect(() => {
     const syncRoute = () => {
@@ -526,15 +523,18 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter }: SHRAMIKDashboardProps = {
     handleNavigate({ section: route, label: getRouteLabel(route) });
   }, [handleNavigate]);
   const handleSignOut = useCallback(() => {
-    void signOutAuth(authSession).then(() => {
-      setAuthSession(null);
+    const finishSignOut = (message: string) => {
+      onAuthSessionChange(null);
       setProfile(null);
-      notify('Signed out of SHRAMIK.');
-    }).catch(() => {
-      setAuthSession(null);
-      notify('Local sign-in session cleared. The authentication service could not be reached to close the remote session.');
-    });
-  }, [authSession, notify]);
+      notify(message);
+      const path = getPathForRoute('login', import.meta.env.BASE_URL);
+      window.history.replaceState(null, '', path);
+      window.dispatchEvent(new CustomEvent('shramik:navigate', { detail: { path, label: getRouteLabel('login') } }));
+    };
+    void signOutAuth(authSession)
+      .then(() => finishSignOut('Signed out of SHRAMIK.'))
+      .catch(() => finishSignOut('Local sign-in session cleared. The authentication service could not be reached to close the remote session.'));
+  }, [authSession, onAuthSessionChange, notify]);
 
   const handleSearchSelect = useCallback(async (result: SearchResult) => {
     setQuery(result.label);
@@ -575,15 +575,16 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter }: SHRAMIKDashboardProps = {
   const handleGapDetailError = useCallback((message: string) => { setDetail(null); setDetailLoading(false); setDetailError(message); }, []);
   const handleRankingMetricChange = (value: RegionMetric) => setRankingMetric(value);
 
+  // Public routes are rendered by the parent. Never mount auth pages inside the workspace shell.
+  if (activePage === 'login' || activePage === 'request-access') return null;
+
   return <div className={`app-root data-mode-${adapter.mode}`}>
     <Header regions={regions} region={region} onRegionChange={handleRegionChange} onMenu={() => setMobileOpen(true)} profile={headerProfile} query={query} onQueryChange={setQuery} searchResults={searchResults} searchBusy={searchBusy} searchOpen={searchOpen} onSearchOpenChange={setSearchOpen} onSearchSelect={handleSearchSelect} notifications={notifications} notificationsOpen={notificationsOpen} onNotificationsToggle={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} onNotificationRead={(id) => void markRead(id)} profileOpen={profileOpen} onProfileToggle={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} onOpenSection={(section) => void openSection(section)} adapterMode={adapter.mode} authSession={authSession} onNavigateRoute={navigateAuthRoute} onSignOut={handleSignOut}/>
     <div className="app-layout">
       <Sidebar active={active} onNavigate={handleNavigate} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)}/>
       <main className={activePage === 'dashboard' ? 'dashboard-main' : 'dashboard-main module-main'} aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
         <ModuleErrorBoundary key={activePage} moduleName={getRouteLabel(activePage)} onReturnDashboard={() => handleNavigate({ label: 'Dashboard', section: 'dashboard' })}>
-        {activePage === 'login' ? <LoginPage onAuthenticated={(session) => { setAuthSession(session); setProfile(null); notify('Authenticated with Supabase Auth.'); navigateAuthRoute('dashboard'); }} onNavigate={navigateAuthRoute}/>
-          : activePage === 'request-access' ? <RequestAccessPage onNavigate={navigateAuthRoute}/>
-          : activePage === 'skill-gaps' ? (!demoMode && !runtimeEnv?.VITE_SHRAMIK_API_BASE_URL?.trim()
+        {activePage === 'skill-gaps' ? (!demoMode && !runtimeEnv?.VITE_SHRAMIK_API_BASE_URL?.trim()
               ? <LiveModuleNotice title="Skill Gaps" explanation="The live workspace does not have a validated skill-gap computation endpoint configured. Skill-gap outputs require compatible demand and supply observations with comparable units and periods." requiredSetting="VITE_SHRAMIK_API_BASE_URL" neededOutput="Expose the documented dashboard/skill-gap contract from a deployed service, backed by validated inputs and an auditable calculation run."/>
               : <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>)
           : activePage === 'forecasts' ? (!demoMode && !runtimeEnv?.VITE_SHRAMIK_API_BASE_URL?.trim()
@@ -713,5 +714,5 @@ export default function SHRAMIKDashboard(props: SHRAMIKDashboardProps = {}) {
   }
   if (!sessionChecked) return <div className="sh-auth-loading" role="status">Checking your SHRAMIK session…</div>;
   if (!authSession) return <div className="sh-auth-loading" role="status">Redirecting to sign in…</div>;
-  return <SHRAMIKWorkspace {...props} />;
+  return <SHRAMIKWorkspace {...props} authSession={authSession} onAuthSessionChange={setAuthSession} />;
 }
