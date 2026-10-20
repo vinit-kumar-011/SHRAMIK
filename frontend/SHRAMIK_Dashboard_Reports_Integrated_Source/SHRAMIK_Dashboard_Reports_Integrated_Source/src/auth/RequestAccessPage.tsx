@@ -4,7 +4,7 @@ import { submitAccessRequest } from './session';
 
 type Role = 'Read-only Viewer' | 'Research Analyst' | 'Data Steward';
 
-export default function RequestAccessPage({ onNavigate }: { onNavigate: (route: 'dashboard' | 'login') => void }) {
+export default function RequestAccessPage({ onNavigate }: { onNavigate: (route: 'landing' | 'login') => void }) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [organization, setOrganization] = useState('');
@@ -44,7 +44,7 @@ export default function RequestAccessPage({ onNavigate }: { onNavigate: (route: 
         <p className="sh-auth-intro">Your access request was saved successfully with a pending status. A reviewer must approve it before an account or permissions are provisioned.</p>
         <div className="sh-auth-success" role="status"><CheckCircle2 size={18}/><span>Request submitted to SHRAMIK access review.</span></div>
         <button className="sh-auth-primary" type="button" onClick={() => onNavigate('login')}>Go to sign in <ArrowRight size={17}/></button>
-        <button className="sh-auth-text-link" type="button" onClick={() => onNavigate('dashboard')}>Return to public dashboard</button>
+        <button className="sh-auth-text-link" type="button" onClick={() => onNavigate('landing')}>Return to public dashboard</button>
       </> : <>
         <p className="sh-auth-kicker">REQUEST WORKSPACE ACCESS</p>
         <h2 id="access-heading">Tell us about your work</h2>
@@ -59,7 +59,7 @@ export default function RequestAccessPage({ onNavigate }: { onNavigate: (route: 
           <button className="sh-auth-primary" type="submit" disabled={pending}>{pending ? 'Submitting request…' : 'Submit access request'} <ArrowRight size={17}/></button>
         </form>
         <p className="sh-auth-footer">Already have an account? <button type="button" onClick={() => onNavigate('login')}>Sign in</button></p>
-        <button className="sh-auth-text-link" type="button" onClick={() => onNavigate('dashboard')}><ArrowLeft size={14}/> Return to public dashboard</button>
+        <button className="sh-auth-text-link" type="button" onClick={() => onNavigate('landing')}><ArrowLeft size={14}/> Return to public dashboard</button>
         <p className="sh-auth-disclaimer">Your request is visible only to authorized server-side reviewers. This page cannot read the queue, approve itself, or grant a role.</p>
       </>}
     </div>
