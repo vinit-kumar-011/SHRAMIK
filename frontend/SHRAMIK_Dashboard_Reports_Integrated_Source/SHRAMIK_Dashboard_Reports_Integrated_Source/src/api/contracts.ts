@@ -146,7 +146,7 @@ export interface DetailQuery {
  * Components must never embed fetch URLs or hard-coded server payloads themselves.
  */
 export interface LabourMarketDataAdapter {
-  readonly mode: 'mock' | 'rest';
+  readonly mode: 'mock' | 'rest' | 'supabase';
   getRegions(signal?: AbortSignal): Promise<RegionOption[]>;
   getProfile(signal?: AbortSignal): Promise<UserProfile>;
   getDashboard(query: DashboardQuery): Promise<DashboardSummary>;
