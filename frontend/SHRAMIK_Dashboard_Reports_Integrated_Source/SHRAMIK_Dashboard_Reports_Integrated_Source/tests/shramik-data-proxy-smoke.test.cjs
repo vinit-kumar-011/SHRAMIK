@@ -113,6 +113,18 @@ test('public proxy rejects ungranted columns and returns useful upstream errors'
     assert.equal(invalidColumn.code, 400);
     assert.equal(fetchCount, 0);
 
+    const wildcard = responseCapture();
+    await handler({ method: 'GET', query: { table: 'states', select: '*' } }, wildcard);
+    assert.equal(wildcard.code, 400);
+    assert.match(wildcard.body.error, /explicit allow-listed column set/);
+    assert.equal(fetchCount, 0);
+
+    const invalidOrder = responseCapture();
+    await handler({ method: 'GET', query: { table: 'states', select: 'id,name', order: 'id.desc,secret.asc' } }, invalidOrder);
+    assert.equal(invalidOrder.code, 400);
+    assert.match(invalidOrder.body.error, /non-allow-listed column/);
+    assert.equal(fetchCount, 0);
+
     const upstream = responseCapture();
     await handler({ method: 'GET', query: { table: 'states', select: 'id,name,code' } }, upstream);
     assert.equal(upstream.code, 403);
