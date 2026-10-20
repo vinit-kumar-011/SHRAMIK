@@ -198,7 +198,7 @@ function ChartPanel({ data, periodYears, onPeriodChange, onOpenDetail }: {
       </svg> : <div className="panel-empty">{data?.meta.provenance === 'source-backed'
         ? 'No overlapping source-backed training-programme history is available for this geography. Demand/supply estimates remain unavailable until comparable validated observations are published.'
         : 'No validated demand/supply time-series is published yet. The dashboard shows source-backed indicators instead of estimating missing values.'}</div>}
-      <button className="chart-next" type="button" aria-label={programmeMode ? 'Open training programme context' : 'Open detailed demand and supply trends'} onClick={() => onOpenDetail('demand')}><ChevronRight size={18}/></button>
+      <button className="chart-next" type="button" aria-label={programmeMode ? 'Open training programme context' : 'Open detailed demand and supply trends'} onClick={() => onOpenDetail(programmeMode ? 'supply' : 'demand')}><ChevronRight size={18}/></button>
     </div>
   </section>;
 }
