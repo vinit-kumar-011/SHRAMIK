@@ -434,6 +434,11 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   const emergingStatus = statusCount(snapshot, 'emerging_skill_signals');
   const warningStatus = statusCount(snapshot, 'early_warnings');
   const modelStatus = statusCount(snapshot, 'model_versions');
+  const lowConfidenceSkillCount = snapshot.skills.filter(skill =>
+    (skill.sector_mapping_confidence || '').toUpperCase() === 'LOW').length;
+  const lowConfidenceManualMappingCount = snapshot.skills.filter(skill =>
+    (skill.sector_mapping_confidence || '').toUpperCase() === 'LOW'
+    && (skill.sector_mapping_method || '').toUpperCase() === 'MANUAL').length;
   const recentRates = rateRows.filter(row => row.metric_code === 'UR' || row.metric_code === 'LFPR' || row.metric_code === 'WPR');
   const stateRegistrations = snapshot.metrics.filter(row => row.metric_code === 'ESHRAM_REGISTRATION_COUNT' && row.observation_grain === 'STATE');
   const stateRegTotals = stateTotals(snapshot, stateRegistrations);
@@ -555,6 +560,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     </> : null}
 
     {module === 'skill-gaps' ? <>
+      {lowConfidenceSkillCount > 0 ? <div className="dbi-note dbi-note-warn" role="status"><Info size={17}/><div><strong>Review sector mappings before decisions</strong><p>{lowConfidenceSkillCount} of {canonicalSkillCount} canonical skills have LOW-confidence sector mappings{lowConfidenceManualMappingCount > 0 ? ', including ' + lowConfidenceManualMappingCount + ' manually mapped entries' : ''}. Treat these mappings as provisional reference metadata—not validated evidence of a labour-market shortage.</p></div></div> : null}
       <div className="dbi-note dbi-note-warn"><Info size={17}/><div><strong>Gap output is not yet publishable</strong><p>{gapReason} A numerically populated chart here would overstate what the data supports.</p></div></div>
       <div className="dbi-two-col">
         <section className="dbi-panel"><SectionHead title="Canonical skill catalogue" note="Reference skills from Supabase, including existing sector-mapping confidence."/>
