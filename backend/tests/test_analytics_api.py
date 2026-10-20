@@ -116,7 +116,7 @@ def insert_forecast(client: TestClient, *, mode: str, provenance: str, forecast_
 def test_analytics_endpoints_require_a_supabase_bearer_session(client: TestClient) -> None:
     response = client.get("/api/v1/analytics/forecasts")
     assert response.status_code == 401
-    assert response.json()["error"]["code"] == "INTERNAL_ERROR" or response.json()["error"]["message"]
+    assert response.json()["error"]["code"] == "UNAUTHORIZED"
 
 
 def test_empty_forecast_store_is_explicit_not_fabricated(client: TestClient) -> None:
