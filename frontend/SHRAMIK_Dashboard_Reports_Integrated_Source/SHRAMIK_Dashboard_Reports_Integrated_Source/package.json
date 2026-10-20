@@ -19,6 +19,7 @@
     "prebuild": "npm run prepare:modules && npm run scope:styles && npm run scope:demand-css",
     "prepare:modules": "node scripts/prepare-react-modules.mjs",
     "test:preview": "node scripts/smoke-preview.mjs",
+    "test:live-data": "node scripts/smoke-live-supabase.mjs",
     "scope:demand-css": "node scripts/scope-demand-css.mjs",
     "pretest": "npm run prepare:modules && npm run scope:styles && npm run scope:demand-css"
   },
