@@ -41,6 +41,9 @@ const LIMIT = 1000;
 const scenarioApiConfigured = Boolean(
   (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SCENARIO_SIMULATOR_API_BASE_URL?.trim(),
 );
+const reportsApiConfigured = Boolean(
+  (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL?.trim(),
+);
 const TITLES: Record<DatabaseModule, { title: string; subtitle: string; eyebrow: string }> = {
   demand: {
     title: 'Demand & labour-market context',
@@ -623,6 +626,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     </> : null}
 
     {module === 'reports' ? <>
+      {!reportsApiConfigured ? <div className="dbi-note dbi-note-warn" role="status"><Info size={17}/><div><strong>Report generation is not connected in this deployment</strong><p>This page currently provides a read-only evidence catalogue. Report creation, saved-report library actions and server-side exports require a configured SHRAMIK reports API. No report is generated from the catalogue alone.</p></div></div> : null}
       <section className="dbi-panel"><SectionHead title="Registered source catalogue" note="Reports can cite these source records. A registered source is not, by itself, proof of an up-to-date retrieval or successful validation."/>
         <div className="dbi-table-tools"><label htmlFor="dbi-source-search">Filter sources</label><input id="dbi-source-search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search publisher or dataset"/></div>
         <DataTable columns={['Source', 'Publisher', 'Type', 'Coverage', 'Publication / access', 'Reference']}>
