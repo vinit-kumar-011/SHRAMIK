@@ -591,10 +591,11 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     </> : null}
 
     {module === 'emerging-skills' ? <>
+      {lowConfidenceSkillCount > 0 ? <div className="dbi-note dbi-note-warn" role="status"><Info size={17}/><div><strong>Signal candidates need mapping review</strong><p>{lowConfidenceSkillCount} of {canonicalSkillCount} canonical skills have LOW-confidence sector mappings{lowConfidenceManualMappingCount > 0 ? ', including ' + lowConfidenceManualMappingCount + ' manually mapped entries' : ''}. Review occupation/sector mappings before interpreting future growth or momentum signals.</p></div></div> : null}
       <div className="dbi-note dbi-note-warn"><Info size={17}/><div><strong>Signal history is not yet available</strong><p>The skill reference catalogue is live, but this application cannot see published emerging_skill_signals. Growth rates, momentum ranks and confidence scores will appear only when backed by validated historical observations and an approved calculation.</p></div></div>
       <section className="dbi-panel"><SectionHead title="Skills ready for signal tracking" note="Live canonical skills with their mapped sector and mapping confidence."/>
         <DataTable columns={['Skill / role', 'Sector', 'Mapping confidence', 'Published signal']}>
-          {snapshot.skills.map(skill => <tr key={skill.id}><td><strong>{skill.name}</strong><small>{skill.code}</small></td><td>{sectorsForSkill(skill)}</td><td><span className={'dbi-confidence dbi-confidence-' + skill.sector_mapping_confidence.toLowerCase()}>{skill.sector_mapping_confidence}</span></td><td><span className="dbi-status-pill">Awaiting historical series</span></td></tr>)}
+          {snapshot.skills.map(skill => <tr key={skill.id}><td><strong>{skill.name}</strong><small>{skill.code}</small></td><td>{sectorsForSkill(skill)}</td><td><span className={'dbi-confidence dbi-confidence-' + (skill.sector_mapping_confidence || 'unmapped').toLowerCase()}>{skill.sector_mapping_confidence || 'Unmapped'}</span></td><td><span className="dbi-status-pill">Awaiting historical series</span></td></tr>)}
         </DataTable>
       </section>
     </> : null}
