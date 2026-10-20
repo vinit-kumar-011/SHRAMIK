@@ -447,9 +447,11 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   const employmentSource = sourceFor(snapshot, rates.find(value => value.row)?.row?.source_id || null);
   const registrationSource = sourceFor(snapshot, registration?.source_id || null);
   const inventory = metricInventory.filter(row => !query || metricLabel(row.code).toLocaleLowerCase().includes(query.toLocaleLowerCase()) || row.code.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
-  const gapReason = demandStatus === '0 visible' && supplyStatus === '0 visible'
-    ? 'The public database currently exposes no demand-observation or supply-observation rows for this view. The system therefore does not calculate or display a numerical skill gap.'
-    : 'A skill gap is shown only when compatible demand and supply observations are available through the validated analytical contract.';
+  const gapReason = demandStatus === 'Restricted' || supplyStatus === 'Restricted'
+    ? 'The public data reader cannot inspect one or both of the demand/supply observation tables. A comparable demand/supply pair cannot be validated here, so the app does not calculate or display a numerical skill gap.'
+    : demandStatus === '0 visible' && supplyStatus === '0 visible'
+      ? 'The public database currently exposes no demand-observation or supply-observation rows for this view. The system therefore does not calculate or display a numerical skill gap.'
+      : 'A skill gap is shown only when compatible demand and supply observations are available through the validated analytical contract.';
 
   return <section className="dbi-shell">
     <header className="dbi-hero">

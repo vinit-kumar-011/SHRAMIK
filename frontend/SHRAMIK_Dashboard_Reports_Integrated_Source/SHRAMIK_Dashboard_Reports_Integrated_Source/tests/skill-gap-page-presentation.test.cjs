@@ -14,6 +14,13 @@ test('Skill Gaps prominently surfaces LOW-confidence skill-to-sector mappings', 
   assert.match(source, /{lowConfidenceSkillCount} of {canonicalSkillCount} canonical skills have LOW-confidence sector mappings/);
 });
 
+
+test('Skill Gaps explicitly explains when demand or supply tables are restricted from the public reader', () => {
+  assert.match(source, /demandStatus === 'Restricted' \|\| supplyStatus === 'Restricted'/);
+  assert.match(source, /public data reader cannot inspect one or both of the demand\/supply observation tables/);
+  assert.match(source, /A comparable demand\/supply pair cannot be validated here/);
+});
+
 test('Skill Gaps keeps numeric output unavailable until demand and supply observations support a validated comparison', () => {
   assert.match(source, /Gap output is not yet publishable/);
   assert.match(source, /does not calculate or display a numerical skill gap/);
