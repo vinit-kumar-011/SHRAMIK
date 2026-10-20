@@ -99,6 +99,13 @@ test('production defaults to the Supabase adapter unless REST mode is explicitly
   assert.match(contracts, /readonly mode: 'mock' \| 'rest' \| 'supabase'/);
   assert.match(supabase, /readonly mode = 'supabase' as const/);
   assert.match(supabase, /this\.fetcher = fetcher\.bind\(globalThis\)/, 'native fetch must retain the browser global receiver');
+  assert.match(supabase, /function trainingProgrammeTrend/, 'live dashboard trend must come from source-backed programme observations');
+  assert.match(supabase, /emergingSkills: skillCatalogueRows/);
+  assert.match(supabase, /sectorGaps: sectorCatalogueRows/);
+  assert.match(supabase, /occupationForecasts: trainingContextRows/);
+  assert.match(dashboard, /trendKind === 'training-programmes'/);
+  assert.match(dashboard, /row\.displayScore !== undefined/, 'catalogue/context rows should not render misleading zero-length score bars');
+  assert.match(dashboard, /Canonical skill references from Supabase/);
   assert.match(dashboard, /adapter\.mode === 'supabase' \? 'Supabase live data'/);
 });
 
