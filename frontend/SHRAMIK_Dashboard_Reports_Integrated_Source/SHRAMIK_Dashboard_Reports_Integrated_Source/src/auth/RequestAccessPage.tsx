@@ -44,18 +44,18 @@ export default function RequestAccessPage({ onNavigate }: { onNavigate: (route: 
         <p className="sh-auth-intro">Your access request was saved successfully with a pending status. A reviewer must approve it before an account or permissions are provisioned.</p>
         <div className="sh-auth-success" role="status"><CheckCircle2 size={18}/><span>Request submitted to SHRAMIK access review.</span></div>
         <button className="sh-auth-primary" type="button" onClick={() => onNavigate('login')}>Go to sign in <ArrowRight size={17}/></button>
-        <button className="sh-auth-text-link" type="button" onClick={() => onNavigate('landing')}>Return to public dashboard</button>
+        <button className="sh-auth-text-link" type="button" onClick={() => onNavigate('landing')}>Return to public home</button>
       </> : <>
         <p className="sh-auth-kicker">REQUEST WORKSPACE ACCESS</p>
         <h2 id="access-heading">Tell us about your work</h2>
         <p className="sh-auth-intro">Fields marked required are needed for review.</p>
         {error && <div className="sh-auth-error" role="alert">{error}</div>}
-        <form onSubmit={submit}>
-          <label>Full name<input autoComplete="name" value={fullName} onChange={event => setFullName(event.target.value)} required minLength={2} maxLength={100} placeholder="Your full name"/></label>
-          <label>Work email<input autoComplete="email" type="email" value={email} onChange={event => setEmail(event.target.value)} required maxLength={254} placeholder="you@organisation.gov.in"/></label>
-          <label>Organisation<input autoComplete="organization" value={organization} onChange={event => setOrganization(event.target.value)} required minLength={2} maxLength={160} placeholder="Department, institution or organisation"/></label>
-          <label>Requested role<select value={requestedRole} onChange={event => setRequestedRole(event.target.value as Role)}><option>Read-only Viewer</option><option>Research Analyst</option><option>Data Steward</option></select></label>
-          <label>Purpose of access<textarea value={purpose} onChange={event => setPurpose(event.target.value)} required minLength={20} maxLength={1200} rows={4} placeholder="Describe your work and how you expect to use SHRAMIK data."/></label>
+        <form onSubmit={submit} aria-busy={pending}>
+          <label>Full name<input autoComplete="name" value={fullName} disabled={pending} onChange={event => setFullName(event.target.value)} required minLength={2} maxLength={100} placeholder="Your full name"/></label>
+          <label>Work email<input autoComplete="email" type="email" value={email} disabled={pending} onChange={event => setEmail(event.target.value)} required maxLength={254} placeholder="you@organisation.gov.in"/></label>
+          <label>Organisation<input autoComplete="organization" value={organization} disabled={pending} onChange={event => setOrganization(event.target.value)} required minLength={2} maxLength={160} placeholder="Department, institution or organisation"/></label>
+          <label>Requested role<select value={requestedRole} disabled={pending} onChange={event => setRequestedRole(event.target.value as Role)}><option>Read-only Viewer</option><option>Research Analyst</option><option>Data Steward</option></select></label>
+          <label>Purpose of access<textarea value={purpose} disabled={pending} onChange={event => setPurpose(event.target.value)} required minLength={20} maxLength={1200} rows={4} placeholder="Describe your work and how you expect to use SHRAMIK data."/></label>
           <button className="sh-auth-primary" type="submit" disabled={pending}>{pending ? 'Submitting request…' : 'Submit access request'} <ArrowRight size={17}/></button>
         </form>
         <p className="sh-auth-footer">Already have an account? <button type="button" onClick={() => onNavigate('login')}>Sign in</button></p>

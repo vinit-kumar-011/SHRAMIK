@@ -40,9 +40,9 @@ export default function LoginPage({ onAuthenticated, onNavigate }: {
       <h2>Sign in to SHRAMIK</h2>
       <p className="sh-auth-intro">Use an existing SHRAMIK account.</p>
       {error && <div className="sh-auth-error" role="alert">{error}</div>}
-      <form onSubmit={submit}>
-        <label>Email address<input autoComplete="username" type="email" value={email} onChange={event => setEmail(event.target.value)} required maxLength={254} placeholder="you@organisation.gov.in"/></label>
-        <label>Password<input autoComplete="current-password" type="password" value={password} onChange={event => setPassword(event.target.value)} required minLength={1} maxLength={256} placeholder="Enter your password"/></label>
+      <form onSubmit={submit} aria-busy={pending}>
+        <label>Email address<input autoComplete="username" type="email" value={email} disabled={pending} onChange={event => setEmail(event.target.value)} required maxLength={254} placeholder="you@organisation.gov.in"/></label>
+        <label>Password<input autoComplete="current-password" type="password" value={password} disabled={pending} onChange={event => setPassword(event.target.value)} required minLength={1} maxLength={256} placeholder="Enter your password"/></label>
         <button className="sh-auth-primary" type="submit" disabled={pending}>{pending ? 'Signing in…' : 'Sign in'} <ArrowRight size={17}/></button>
       </form>
       <p className="sh-auth-footer">Need workspace access? <button type="button" onClick={() => onNavigate('request-access')}>Request access</button></p>

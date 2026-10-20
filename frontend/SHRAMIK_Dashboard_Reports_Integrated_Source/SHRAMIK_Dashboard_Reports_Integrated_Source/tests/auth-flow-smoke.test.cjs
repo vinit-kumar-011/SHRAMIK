@@ -131,4 +131,22 @@ test('password sign-in reports network failures in clear user-facing language', 
   } finally { global.fetch = oldFetch; }
 });
 
+
+test('access-request submission reports network failures in clear user-facing language', async () => {
+  const oldFetch = global.fetch;
+  global.fetch = async () => { throw new TypeError('Failed to fetch'); };
+  try {
+    await assert.rejects(
+      sessionApi.submitAccessRequest({
+        fullName: 'A Person',
+        email: 'a@example.org',
+        organization: 'Example Org',
+        requestedRole: 'Read-only Viewer',
+        purpose: 'This test request is long enough to satisfy client-side validation.',
+      }),
+      /Could not reach the SHRAMIK access-request service/,
+    );
+  } finally { global.fetch = oldFetch; }
+});
+
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));

@@ -15,6 +15,9 @@ test('login page keeps the public-home link and access request path clear', () =
 
 test('login page prevents repeat submissions and reports actual failures', () => {
   assert.match(login, /disabled=\{pending\}/);
+  assert.match(login, /aria-busy=\{pending\}/);
+  assert.match(login, /type="email" value=\{email\} disabled=\{pending\}/);
+  assert.match(login, /type="password" value=\{password\} disabled=\{pending\}/);
   assert.match(login, /setError\(reason instanceof Error \? reason\.message/);
   assert.match(login, /role="alert"/);
 });

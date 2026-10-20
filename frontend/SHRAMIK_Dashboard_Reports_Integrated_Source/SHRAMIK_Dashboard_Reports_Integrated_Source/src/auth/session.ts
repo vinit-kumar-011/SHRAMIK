@@ -130,20 +130,25 @@ export async function signOut(session: AuthSession | null): Promise<void> {
   }
 }
 export async function submitAccessRequest(input: AccessRequestInput): Promise<void> {
-  const response = await fetch(SUPABASE_URL + '/rest/v1/access_requests', {
-    method: 'POST',
-    headers: supabaseHeaders(null, {
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    }),
-    body: JSON.stringify({
-      full_name: input.fullName.trim(),
-      email: input.email.trim().toLowerCase(),
-      organization: input.organization.trim(),
-      requested_role: input.requestedRole,
-      purpose: input.purpose.trim(),
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(SUPABASE_URL + '/rest/v1/access_requests', {
+      method: 'POST',
+      headers: supabaseHeaders(null, {
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      }),
+      body: JSON.stringify({
+        full_name: input.fullName.trim(),
+        email: input.email.trim().toLowerCase(),
+        organization: input.organization.trim(),
+        requested_role: input.requestedRole,
+        purpose: input.purpose.trim(),
+      }),
+    });
+  } catch {
+    throw new Error('Could not reach the SHRAMIK access-request service. Check your internet connection and try again.');
+  }
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
     throw new Error(messageFrom(payload, 'Your access request could not be saved. Please try again.'));
