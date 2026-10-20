@@ -7,6 +7,7 @@ const ts = require('typescript');
 const Module = require('node:module');
 
 const sourcePath = path.resolve(__dirname, '../api/shramik-data.ts');
+const rootDeployHandlerPath = path.resolve(__dirname, '../../../../api/shramik-data.ts');
 const source = fs.readFileSync(sourcePath, 'utf8');
 const compiled = ts.transpileModule(source, {
   compilerOptions: {
@@ -133,6 +134,13 @@ test('public proxy rejects ungranted columns and returns useful upstream errors'
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test('the repository-root Vercel API entrypoint re-exports the tested public reader', () => {
+  assert.equal(fs.existsSync(rootDeployHandlerPath), true, 'root deploy entrypoint must exist when Vercel Root Directory is the repository');
+  const entry = fs.readFileSync(rootDeployHandlerPath, 'utf8');
+  assert.match(entry, /export \{\s*default\s*\} from/);
+  assert.match(entry, /frontend\/SHRAMIK_Dashboard_Reports_Integrated_Source\/SHRAMIK_Dashboard_Reports_Integrated_Source\/api\/shramik-data/);
 });
 
 test.after(() => fs.rmSync(tempDir, { recursive: true, force: true }));

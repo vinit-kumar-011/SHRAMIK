@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/**'
+      - 'api/**'
+      - 'vercel.json'
       - '.github/workflows/frontend-unified-build.yml'
   workflow_dispatch:
 

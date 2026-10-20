@@ -6,7 +6,6 @@ import {
   Settings, Star, TrendingUp, Truck, Users, Wrench, X, type LucideIcon,
 } from 'lucide-react';
 import { createLabourMarketDataAdapter } from './api/adapter';
-import { SupabaseLabourMarketDataAdapter } from './api/supabase-adapter';
 import LoginPage from './auth/LoginPage';
 import RequestAccessPage from './auth/RequestAccessPage';
 import { restoreAuthSession, signOut as signOutAuth, type AuthSession } from './auth/session';
@@ -56,7 +55,16 @@ const ICONS: Record<string, LucideIcon> = {
   settings: Settings, star: Star, truck: Truck, users: Users, wrench: Wrench,
 };
 const KPI_ICONS: Record<string, LucideIcon> = {
-  demand: Users, supply: Users, 'skill-gap': ChartColumn, 'emerging-skills': BrainCircuit,
+  demand: Users,
+  supply: Users,
+  'skill-gap': ChartColumn,
+  'emerging-skills': BrainCircuit,
+  ESHRAM_REGISTRATION_COUNT: Users,
+  CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE: Factory,
+  CTS_ITI_COUNT: Building2,
+  'unemployment-rate': Activity,
+  'labour-force-participation': Users,
+  'worker-population-ratio': ChartColumn,
 };
 const NAV_ITEMS = [
   { label: 'Dashboard', section: 'dashboard', icon: ChartColumn, group: 'primary' },
@@ -89,11 +97,20 @@ function profileForSession(session: AuthSession | null, fallback: UserProfile | 
   };
 }
 
-function toneForKpi(item: MetricCardData, index: number): Tone {
-  if (item.key === 'supply') return 'teal';
-  if (item.key === 'skill-gap') return 'orange';
-  if (item.key === 'emerging-skills') return 'teal';
-  return index === 1 ? 'teal' : 'navy';
+function toneForKpi(item: MetricCardData, _index: number): Tone {
+  const tones: Record<string, Tone> = {
+    demand: 'navy',
+    supply: 'teal',
+    'skill-gap': 'orange',
+    'emerging-skills': 'teal',
+    ESHRAM_REGISTRATION_COUNT: 'navy',
+    CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE: 'teal',
+    CTS_ITI_COUNT: 'orange',
+    'unemployment-rate': 'navy',
+    'labour-force-participation': 'teal',
+    'worker-population-ratio': 'orange',
+  };
+  return tones[item.key] ?? 'navy';
 }
 function formatUpdated(value: string | null | undefined): string {
   if (!value) return 'Update time not supplied';
@@ -145,7 +162,9 @@ function KpiCard({ item, index, onOpen }: { item: MetricCardData; index: number;
       <div className="kpi-value">{item.formattedValue}</div>
       {item.deltaPct === null ? <div className="kpi-change source-context"><span>{item.context}</span></div> : <div className={`kpi-change ${item.deltaPct < 0 ? 'change-negative' : ''}`}><TrendingUp size={18} strokeWidth={2.8}/><strong>{item.deltaPct > 0 ? '+' : ''}{item.deltaPct}%</strong><span>{item.context}</span></div>}
     </div>
-    <div className="kpi-spark"><Sparkline values={item.trend} tone={tone} id={item.id} /></div>
+    <div className="kpi-spark">{item.trend.length >= 2
+      ? <Sparkline values={item.trend} tone={tone} id={item.id} />
+      : <span className="kpi-spark-empty" aria-label="Historical trend unavailable">History unavailable</span>}</div>
     <span className="card-open"><ChevronRight size={15}/></span>
   </button>;
 }
@@ -195,9 +214,9 @@ function ChartPanel({ data, periodYears, onPeriodChange, onOpenDetail }: {
         <polyline points={demandPts} className="chart-demand"/><polyline points={supplyPts} className="chart-supply"/>
         {points.map((point, i) => <circle key={`d-${point.label ?? point.year}`} cx={xFor(i, points.length)} cy={yFor(point.demand)} r="4.2" className="point-demand"/>)}
         {points.map((point, i) => <circle key={`s-${point.label ?? point.year}`} cx={xFor(i, points.length)} cy={yFor(point.supply)} r="4.2" className="point-supply"/>)}
-      </svg> : <div className="panel-empty">{data?.meta.provenance === 'source-backed'
-        ? 'No overlapping source-backed training-programme history is available for this geography. Demand/supply estimates remain unavailable until comparable validated observations are published.'
-        : 'No validated demand/supply time-series is published yet. The dashboard shows source-backed indicators instead of estimating missing values.'}</div>}
+      </svg> : <div className="panel-empty" role="status">{data?.meta.provenance === 'source-backed'
+        ? 'No comparable time-series is available for this geography yet. The source-backed indicator cards above remain available; demand/supply charts appear only after compatible observations have been validated.'
+        : 'No historical trend is available for this selection yet. A chart will appear once the active data source provides enough comparable observations.'}</div>}
       <button className="chart-next" type="button" aria-label={programmeMode ? 'Open training programme context' : 'Open detailed demand and supply trends'} onClick={() => onOpenDetail(programmeMode ? 'supply' : 'demand')}><ChevronRight size={18}/></button>
     </div>
   </section>;
@@ -219,7 +238,7 @@ function RegionalPanel({ rankings, metric, onMetricChange, onOpenDetail, busy }:
         <div className="map-legend map-legend-note"><span><i className="map-dot high"/>Regional</span><span><i className="map-dot medium"/>ranking</span><span><i className="map-dot low"/>data below</span></div>
       </div>
       <div className="state-list"><h3>Top States by {metricLabels[metric]}</h3>
-        {rankings?.items?.length ? rankings.items.slice(0, 5).map((state, index) => <div className="state-row" key={state.code || state.name}><span className="rank">{state.rank ?? index + 1}</span><span>{state.name}</span><strong>{state.formattedValue}</strong></div>) : <div className="panel-empty">No regional ranking is available.</div>}
+        {busy && !rankings ? <div className="panel-empty" role="status">Loading regional ranking…</div> : rankings?.items?.length ? rankings.items.slice(0, 5).map((state, index) => <div className="state-row" key={state.code || state.name}><span className="rank">{state.rank ?? index + 1}</span><span>{state.name}</span><strong>{state.formattedValue}</strong></div>) : <div className="panel-empty">No regional ranking is available for this metric and geography.</div>}
         <button className="button-primary state-cta" onClick={() => onOpenDetail('regional-intelligence')} type="button">View all states <ArrowRight size={15}/></button>
       </div>
     </div>
@@ -394,7 +413,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   const searchQueryController = useRef<AbortController | null>(null);
 
   const notify = useCallback((message: string) => setToast(message), []);
-  const isLiveSupabase = adapter instanceof SupabaseLabourMarketDataAdapter;
+  const isLiveSupabase = adapter.mode === 'supabase';
   const headerProfile = useMemo(() => profileForSession(authSession, profile), [authSession, profile]);
   const regionLabel = useMemo(() => regions.find((item) => item.code === region)?.label ?? dashboard?.regionName ?? region, [regions, region, dashboard?.regionName]);
 

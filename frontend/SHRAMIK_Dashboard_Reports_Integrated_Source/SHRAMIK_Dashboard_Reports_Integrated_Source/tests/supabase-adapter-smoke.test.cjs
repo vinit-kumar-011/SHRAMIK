@@ -115,4 +115,22 @@ test('published dashboard KPIs survive optional region-list and PLFS-enrichment 
   assert.ok(calls.some(url => url.includes('/sh_public_dashboard_kpis?')));
 });
 
+
+test('default production adapter calls the same-origin Vercel data proxy instead of an unimplemented path', async () => {
+  let call;
+  const fetcher = async (input, init) => {
+    call = { url: String(input), init };
+    return response([{ id: 'IN-OD', name: 'Odisha', code: 'OD' }]);
+  };
+  const adapter = new SupabaseLabourMarketDataAdapter(undefined, fetcher);
+  const regions = await adapter.getRegions();
+  assert.deepEqual(regions.map(region => region.code), ['IN', 'OD']);
+  const url = new URL(call.url, 'https://shramik.example');
+  assert.equal(url.pathname, '/api/shramik-data');
+  assert.equal(url.searchParams.get('table'), 'states');
+  assert.equal(url.searchParams.get('select'), 'id,name,code');
+  assert.equal(call.init.headers.get('Accept'), 'application/json');
+  assert.equal(call.init.headers.get('apikey'), null, 'browser does not need to send a database key to the same-origin function');
+});
+
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
