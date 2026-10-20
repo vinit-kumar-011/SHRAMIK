@@ -107,7 +107,7 @@ function sourceForRegional(row: RegionalRow): SourceMeta {
 }
 
 export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter {
-  readonly mode = 'rest' as const;
+  readonly mode = 'supabase' as const;
   private regionCache: RegionOption[] | null = null;
   private readonly stateIdByCode = new Map<string, string>();
   private readonly baseUrl: string;
