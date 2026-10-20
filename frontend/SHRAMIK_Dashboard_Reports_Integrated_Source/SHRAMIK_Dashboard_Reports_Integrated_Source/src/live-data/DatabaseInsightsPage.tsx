@@ -1,7 +1,5 @@
 import { Activity, ArrowUpRight, Database, FileCheck2, GraduationCap, Info, RefreshCw, ShieldCheck, Users } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { Children, useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
 import type { ReactNode } from 'react';
 
 export type DatabaseModule = 'demand' | 'supply' | 'skill-gaps' | 'forecasts' | 'emerging-skills' | 'scenario-simulator' | 'reports' | 'data-quality';
