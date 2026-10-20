@@ -278,9 +278,6 @@ function SourceLink({ source }: { source?: SourceRow }) {
   if (!source?.url) return <span className="dbi-source-plain">{source?.name || 'Source registered; URL not available'}</span>;
   return <a className="dbi-source-link" href={source.url} target="_blank" rel="noreferrer">{source.name}<ArrowUpRight size={13}/></a>;
 }
-function EmptyState({ title, body }: { title: string; body: string }) {
-  return <div className="dbi-empty"><div className="dbi-empty-icon"><Info size={19}/></div><div><strong>{title}</strong><p>{body}</p></div></div>;
-}
 function DataTable({ columns, children, empty = 'No matching source-backed rows are available.' }: { columns: string[]; children: ReactNode; empty?: string }) {
   return <div className="dbi-table-wrap"><table className="dbi-table"><thead><tr>{columns.map(column => <th key={column}>{column}</th>)}</tr></thead><tbody>{children || <tr><td colSpan={columns.length} className="dbi-empty-cell">{empty}</td></tr>}</tbody></table></div>;
 }
@@ -305,15 +302,6 @@ function selectedTotals(snapshot: Snapshot, rows: ReturnType<typeof stateTotals>
   if (regionCode === 'IN') return rows.reduce((sum, row) => sum + row.value, 0);
   const stateId = selectedStateId(snapshot, regionCode);
   return rows.find(row => row.id === stateId)?.value || 0;
-}
-function tableStateLabel(status: TableVisibility | undefined): string {
-  if (!status) return 'Checking';
-  if (status.state === 'HAS_ROWS') return 'Published rows visible';
-  if (status.state === 'NO_PUBLIC_ROWS') return 'No public result rows';
-  return 'Not exposed to the public reader';
-}
-function stateRefLabel(snapshot: Snapshot, stateId: string | null): string {
-  return snapshot.states.find(row => row.id === stateId)?.name || stateId || 'India (national)';
 }
 function metricCountByCode(snapshot: Snapshot): Array<{ code: string; count: number; unit: string; period: string; states: number; sources: number }> {
   const groups = new Map<string, MetricRow[]>();
@@ -533,9 +521,9 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     {module === 'supply' ? <>
       <section className="dbi-panel"><SectionHead title="Provisional training capacity by state" note="Sum of source-backed CTS trade-level seat-capacity records for academic session 2026. It measures planned training capacity—not enrolment, completion or employed workers."/>
         <div className="dbi-ranking-list">
-          {stateSeats.slice(0, 12).map((row, index) => <div className="dbi-ranking-row" key={row.id}>
+          {visibleStateSeats.slice(0, 12).map((row, index) => <div className="dbi-ranking-row" key={row.id}>
             <span className="dbi-rank">{String(index + 1).padStart(2, '0')}</span><span className="dbi-ranking-name">{row.label}</span>
-            <div className="dbi-bar-track"><span style={{ width: Math.max(2, (row.value / (stateSeats[0]?.value || 1)) * 100) + '%' }}/></div>
+            <div className="dbi-bar-track"><span style={{ width: Math.max(2, (row.value / (visibleStateSeats[0]?.value || 1)) * 100) + '%' }}/></div>
             <strong className="dbi-ranking-value">{numberFormat(row.value)}</strong>
           </div>)}
         </div>
