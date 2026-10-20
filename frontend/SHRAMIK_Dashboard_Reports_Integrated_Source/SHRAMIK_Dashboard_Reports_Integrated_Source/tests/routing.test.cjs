@@ -24,13 +24,14 @@ const loc = (pathname, search = '', hash = '') => ({ pathname, search, hash });
 test('canonical route table covers every required application module', () => {
   const ids = SHRAMIK_ROUTES.map((route) => route.id);
   for (const id of [
-    'dashboard', 'demand', 'supply', 'skill-gaps', 'forecasts', 'emerging-skills',
+    'landing', 'dashboard', 'demand', 'supply', 'skill-gaps', 'forecasts', 'emerging-skills',
     'scenario-simulator', 'reports', 'data-sources', 'data-quality', 'administration', 'login', 'request-access',
   ]) assert.ok(ids.includes(id), `missing route: ${id}`);
 });
 
 test('direct paths and trailing slashes resolve to canonical routes', () => {
-  assert.equal(getRouteFromLocation(loc('/')), 'dashboard');
+  assert.equal(getRouteFromLocation(loc('/')), 'landing');
+  assert.equal(getRouteFromLocation(loc('/index.html')), 'landing');
   assert.equal(getRouteFromLocation(loc('/dashboard')), 'dashboard');
   assert.equal(getRouteFromLocation(loc('/skill-gaps/')), 'skill-gaps');
   assert.equal(getRouteFromLocation(loc('/scenario-simulator')), 'scenario-simulator');
@@ -43,14 +44,16 @@ test('direct paths and trailing slashes resolve to canonical routes', () => {
 });
 
 test('route links preserve a configured deployment base', () => {
-  assert.equal(getPathForRoute('dashboard', '/shramik/'), '/shramik/');
+  assert.equal(getPathForRoute('landing', '/shramik/'), '/shramik/');
+  assert.equal(getPathForRoute('dashboard', '/shramik/'), '/shramik/dashboard');
   assert.equal(getPathForRoute('supply', '/shramik/'), '/shramik/supply');
   assert.equal(getPathForRoute('administration', '/shramik/'), '/shramik/administration');
 });
 
 test('direct links also resolve when deployed under a configured subpath', () => {
   const base = '/shramik/';
-  assert.equal(getRouteFromLocation(loc('/shramik/'), base), 'dashboard');
+  assert.equal(getRouteFromLocation(loc('/shramik/'), base), 'landing');
+  assert.equal(getRouteFromLocation(loc('/shramik/dashboard'), base), 'dashboard');
   assert.equal(getRouteFromLocation(loc('/shramik/supply'), base), 'supply');
   assert.equal(getRouteFromLocation(loc('/shramik/administration/'), base), 'administration');
   assert.equal(getRouteFromLocation(loc('/shramik/reports.html'), base), 'reports');
@@ -61,7 +64,7 @@ test('legacy multi-entry links remain compatible', () => {
   assert.equal(getRouteFromLocation(loc('/skill-gap-analysis.html')), 'skill-gaps');
   assert.equal(getRouteFromLocation(loc('/forecasts.html')), 'forecasts');
   assert.equal(getRouteFromLocation(loc('/reports.html')), 'reports');
-  assert.equal(getRouteFromLocation(loc('/index.html')), 'dashboard');
+  assert.equal(getRouteFromLocation(loc('/index.html')), 'landing');
 });
 
 test('query and hash navigation can deep-link module pages', () => {
@@ -73,7 +76,8 @@ test('query and hash navigation can deep-link module pages', () => {
 test('unknown paths are explicit and route links use canonical paths', () => {
   assert.equal(getRouteFromLocation(loc('/made-up-module')), 'not-found');
   assert.equal(getPathForRoute('scenario-simulator'), '/scenario-simulator');
-  assert.equal(getPathForRoute('dashboard'), '/');
+  assert.equal(getPathForRoute('landing'), '/');
+  assert.equal(getPathForRoute('dashboard'), '/dashboard');
   assert.equal(getPathForRoute('login'), '/login');
   assert.equal(getPathForRoute('request-access'), '/request-access');
   assert.equal(getRouteLabel('administration'), 'Administration');
