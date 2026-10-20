@@ -79,14 +79,21 @@ export class SupabaseDataSourcesAdapter implements DataSourcesDataAdapter {
   ) {}
 
   private async listRegistryRows(): Promise<RegistryRow[]> {
-    const url = this.baseUrl.replace(/\/+$/, '') + '/rest/v1/data_sources?' + new URLSearchParams({
+    const values = {
       select: 'id,name,source_type,publisher,url,publication_date,accessed_at,coverage_start,coverage_end',
       order: 'name.asc',
       limit: String(PAGE_LIMIT),
-    });
+    };
+    const sameOriginProxy = this.baseUrl.replace(/\/+$/, '') === SUPABASE_URL.replace(/\/+$/, '');
+    const url = sameOriginProxy
+      ? '/api/shramik-data?' + new URLSearchParams({ table: 'data_sources', ...values })
+      : this.baseUrl.replace(/\/+$/, '') + '/rest/v1/data_sources?' + new URLSearchParams(values);
     let response: Response;
     try {
-      response = await this.fetcher(url, { method: 'GET', headers: this.headers(null) });
+      response = await this.fetcher(url, {
+        method: 'GET',
+        headers: sameOriginProxy ? new Headers({ Accept: 'application/json' }) : this.headers(null),
+      });
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') throw error;
       return fail('Cannot reach the live SHRAMIK source registry. Check network access and the Supabase project URL.', 'NETWORK_ERROR');
