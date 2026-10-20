@@ -147,10 +147,6 @@ function selectedStateId(snapshot: Snapshot, code: string): string | null {
   if (!code || code === 'IN') return null;
   return snapshot.states.find(state => state.code === code || state.id === code || state.id === 'IN-' + code)?.id || (code.startsWith('IN-') ? code : 'IN-' + code);
 }
-function isInRegion(snapshot: Snapshot, row: MetricRow, regionCode: string): boolean {
-  if (!regionCode || regionCode === 'IN') return !row.state_id || row.observation_grain === 'NATIONAL';
-  return row.state_id === selectedStateId(snapshot, regionCode);
-}
 function canonicalRate(snapshot: Snapshot, code: string, regionCode: string): MetricRow | undefined {
   const rows = snapshot.metrics.filter(row => row.metric_code === code && row.reference_period === 'CY2025' && isCanonicalPersonRate(row));
   if (regionCode !== 'IN') {
@@ -443,7 +439,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   const stateRegistrations = snapshot.metrics.filter(row => row.metric_code === 'ESHRAM_REGISTRATION_COUNT' && row.observation_grain === 'STATE');
   const stateRegTotals = stateTotals(snapshot, stateRegistrations);
   const sectorsForSkill = (skill: SkillRow) => snapshot.sectors.find(sector => sector.id === skill.sector_id)?.name || 'Sector mapping unavailable';
-  const seatSource = sourceFor(snapshot, snapshot.metrics.find(row => row.metric_code === 'CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE')?.source_id);
+  const seatSource = sourceFor(snapshot, snapshot.metrics.find(row => row.metric_code === 'CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE')?.source_id || null);
   const employmentSource = sourceFor(snapshot, rates.find(value => value.row)?.row?.source_id || null);
   const registrationSource = sourceFor(snapshot, registration?.source_id || null);
   const inventory = metricInventory.filter(row => !query || metricLabel(row.code).toLocaleLowerCase().includes(query.toLocaleLowerCase()) || row.code.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
