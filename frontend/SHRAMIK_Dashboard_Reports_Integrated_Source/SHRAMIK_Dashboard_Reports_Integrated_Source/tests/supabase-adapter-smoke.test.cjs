@@ -104,7 +104,7 @@ test('published dashboard KPIs survive optional region-list and PLFS-enrichment 
     if (url.includes('/source_metric_observations?')) return response({ message: 'optional benchmark query unavailable' }, 503);
     return response([]);
   };
-  const adapter = new SupabaseLabourMarketDataAdapter('https://test.supabase.co', fetcher, headerBuilder);
+  const adapter = new SupabaseLabourMarketDataAdapter('https://test.supabase.co', fetcher, () => new Headers({ apikey: 'test-public-key', Authorization: 'Bearer test-public-key', Accept: 'application/json' }));
   const data = await adapter.getDashboard({ regionCode: 'IN', periodYears: 5 });
 
   assert.equal(data.kpis.length, 4, 'core source-backed KPIs should not disappear');
