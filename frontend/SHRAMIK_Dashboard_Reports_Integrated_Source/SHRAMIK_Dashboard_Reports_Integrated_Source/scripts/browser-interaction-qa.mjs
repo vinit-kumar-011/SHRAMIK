@@ -211,7 +211,7 @@ try {
   const loginNav = await clickByText(cdp, 'sign in');
   await waitFor(() => cdp.evaluate(`location.pathname === '/login' && !!document.querySelector('input[type="password"]')`), 'interactive navigation to sign-in');
   pageInfo = await cdp.evaluate(`({path:location.pathname,text:(document.body?.innerText||'').slice(0,350)})`);
-  record('Landing sign-in navigation opens the standalone login page', Boolean(loginNav) && pageInfo.path === '/login' && /Sign in to SHRAMIK/i.test(pageInfo.text), JSON.stringify({clicked:loginNav,page:pageInfo}));
+  record('Landing sign-in navigation opens the standalone login page', Boolean(loginNav) && pageInfo.path === '/login' && /Sign in to continue to SHRAMIK/i.test(pageInfo.text), JSON.stringify({clicked:loginNav,page:pageInfo}));
   record('Login fields enforce required validation and mask passwords', await cdp.evaluate(`(() => { const email=document.querySelector('input[type="email"]'); const password=document.querySelector('input[type="password"]'); const form=document.querySelector('form'); return !!email && !!password && !!form && email.required && password.required && password.type === 'password' && !form.checkValidity(); })()`), 'No sign-in was submitted; this is a local UI validation check.');
   await screenshot(cdp, 'login-desktop.png');
 
@@ -250,8 +250,8 @@ try {
   const reportsNav = await cdp.evaluate(`(() => {const elements=Array.from(document.querySelectorAll('button.nav-item, a.nav-item'));const e=elements.find(x=>(x.innerText||'').trim().toLowerCase().includes('reports'));if(!e)return null;e.click();return (e.innerText||'').trim();})()`);
   await waitFor(() => cdp.evaluate(`location.pathname === '/reports'`), 'Reports navigation');
   await waitFor(() => cdp.evaluate(`/Report Builder/i.test(document.body?.innerText||'')`), 'Reports page content', 10000);
-  pageInfo = await cdp.evaluate(`({path:location.pathname,text:(document.body?.innerText||'').slice(0,500)})`);
-  record('Workspace navigation opens the live-mode Reports builder', Boolean(reportsNav) && pageInfo.path === '/reports' && /Report Builder/i.test(pageInfo.text), JSON.stringify({clicked:reportsNav,page:pageInfo}));
+  pageInfo = await cdp.evaluate(`({path:location.pathname,hasReportBuilder:/Report Builder/i.test(document.body?.innerText||''),text:(document.body?.innerText||'').slice(0,500)})`);
+  record('Workspace navigation opens the live-mode Reports builder', Boolean(reportsNav) && pageInfo.path === '/reports' && pageInfo.hasReportBuilder, JSON.stringify({clicked:reportsNav,page:pageInfo}));
   await screenshot(cdp, 'reports-desktop.png');
 
   await setViewport(cdp, 390, 844);
