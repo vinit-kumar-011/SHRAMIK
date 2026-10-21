@@ -296,9 +296,24 @@ function Sidebar({ active, onNavigate, mobileOpen, onClose }: { active: string; 
     wasMobileOpen.current = mobileOpen;
   }, [mobileLayout, mobileOpen]);
 
+  const handleSidebarKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (!mobileLayout || !mobileOpen || event.key !== 'Tab') return;
+    const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('.nav-item'));
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
   return <>
     {mobileOpen && <button className="mobile-scrim" aria-label="Close navigation" onClick={onClose}/>}
-    <aside id="shramik-sidebar" ref={asideRef} className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`} aria-label="Main navigation">
+    <aside id="shramik-sidebar" ref={asideRef} className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`} aria-label="Main navigation" onKeyDown={handleSidebarKeyDown}>
       <div className="sidebar-brand mobile-brand"><div className="brand-mark">S</div><div className="brand-copy"><strong>SHRAMIK</strong><span>Labour Market Intelligence</span></div></div>
       <nav className="nav-list">
         {NAV_ITEMS.map((item, index) => {
