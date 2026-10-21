@@ -44,3 +44,11 @@ test('mobile navigation traps Tab focus inside the open drawer', () => {
   assert.match(sidebar, /!event\.shiftKey && document\.activeElement === last/);
   assert.match(sidebar, /onKeyDown=\{handleSidebarKeyDown\}/);
 });
+
+test('mobile menu and mobile search close each other instead of stacking overlays', () => {
+  assert.match(source, /const handleMobileSearchToggle = useCallback\(\(\) => \{/);
+  assert.match(source, /if \(next\) setMobileOpen\(false\)/);
+  assert.match(source, /const handleMobileMenuToggle = useCallback\(\(\) => \{/);
+  assert.match(source, /if \(next\) \{\s*setMobileSearchOpen\(false\);\s*setSearchOpen\(false\);/);
+  assert.match(source, /onMenu=\{handleMobileMenuToggle\}/);
+});
