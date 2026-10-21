@@ -72,18 +72,18 @@ test('three module factories require explicit demo opt-in and have unavailable d
 
 test('Data Quality presentation never shows zero findings when there is no data snapshot', () => {
   const source = fs.readFileSync(path.join(root, 'src/data-quality/DataQualityPage.tsx'), 'utf8');
-  assert.match(source, /snapshot \\? openCount : '—'/);
-  assert.match(source, /snapshot \\? criticalCount : '—'/);
-  assert.match(source, /No live issue register is connected/);
-  assert.match(source, /const readOnly = activeAdapter\\.mode !== 'mock'/);
+  assert.ok(source.includes("snapshot ? openCount : '—'"));
+  assert.ok(source.includes("snapshot ? criticalCount : '—'"));
+  assert.ok(source.includes('No live issue register is connected'));
+  assert.ok(source.includes("const readOnly = activeAdapter.mode !== 'mock'"));
 });
 
 test('Emerging Skills does not render the fixed sample findings as if they were live results', () => {
   const source = fs.readFileSync(path.join(root, 'src/emerging-skills/EmergingSkillsPage.tsx'), 'utf8');
-  assert.match(source, /suppliedAdapter \\|\\| new UnavailableEmergingSkillsDataAdapter\\(\\)/);
-  assert.match(source, /summary\\?\\.meta\\.provenance === 'SYNTHETIC_DEMO'/);
-  assert.match(source, /Emerging Skills results unavailable/);
-  assert.match(source, /evidenceData \\? profileEvidence\\.evidenceCount\\.toLocaleString\\(\\) : 'Not supplied'/);
+  assert.ok(source.includes('suppliedAdapter || new UnavailableEmergingSkillsDataAdapter()'));
+  assert.ok(source.includes("summary?.meta.provenance === 'SYNTHETIC_DEMO'"));
+  assert.ok(source.includes('Emerging Skills results unavailable'));
+  assert.ok(source.includes("evidenceData ? profileEvidence.evidenceCount.toLocaleString() : 'Not supplied'"));
 });
 
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
