@@ -26,3 +26,5 @@
 .skip-link{position:fixed;top:10px;left:10px;z-index:120;transform:translateY(-160%);padding:10px 14px;background:var(--yellow);color:var(--ink);border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-weight:850;text-decoration:none;transition:transform .15s ease}
 .skip-link:focus-visible{transform:translateY(0)}
 @media(prefers-reduced-motion:reduce){.skip-link{transition:none}}
+
+.region-select:focus-within{outline:3px solid var(--navy);outline-offset:3px}
