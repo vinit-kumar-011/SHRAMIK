@@ -1,0 +1,3 @@
+/* Utilities required by the independently authored Emerging Skills React module.
+   Preflight is disabled so the shared SHRAMIK shell owns the global reset. */
+@tailwind utilities;

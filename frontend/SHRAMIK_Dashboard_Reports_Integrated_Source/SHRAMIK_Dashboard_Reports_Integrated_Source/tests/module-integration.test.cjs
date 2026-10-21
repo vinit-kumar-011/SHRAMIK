@@ -1,0 +1,249 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
+const shell = read('src/SHRAMIKDashboard.tsx');
+const routes = read('src/routing.ts');
+const postcss = require('postcss');
+
+function splitSelectorList(value) {
+  const result = [];
+  let start = 0, round = 0, square = 0, quote = '', escaped = false;
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+    if (escaped) { escaped = false; continue; }
+    if (char === '\\') { escaped = true; continue; }
+    if (quote) { if (char === quote) quote = ''; continue; }
+    if (char === '"' || char === "'") { quote = char; continue; }
+    if (char === '(') round++;
+    else if (char === ')') round = Math.max(0, round - 1);
+    else if (char === '[') square++;
+    else if (char === ']') square = Math.max(0, square - 1);
+    else if (char === ',' && round === 0 && square === 0) {
+      result.push(value.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  result.push(value.slice(start).trim());
+  return result.filter(Boolean);
+}
+
+function assertCssScoped(css, filename, scope) {
+  const parsed = postcss.parse(css, { from: filename });
+  parsed.walkRules((rule) => {
+    let parent = rule.parent;
+    let keyframes = false;
+    while (parent && parent.type !== 'root') {
+      if (parent.type === 'atrule' && /keyframes$/i.test(parent.name)) keyframes = true;
+      parent = parent.parent;
+    }
+    if (keyframes) return;
+    for (const selector of splitSelectorList(rule.selector)) {
+      assert.ok(
+        selector === scope || selector.startsWith(scope + ' ') || selector.startsWith(scope + ':') || selector.startsWith(scope + '>'),
+        `Unscoped selector "${selector}" found in ${filename}`,
+      );
+    }
+  });
+}
+
+test('canonical shell imports and mounts all eleven navigation modules', () => {
+  const modules = [
+    ['dashboard', 'India’s Labour Market'],
+    ['demand', 'DemandInsightsPage'],
+    ['supply', 'SupplyInsightsPage'],
+    ['skill-gaps', 'SkillGapAnalysisPage'],
+    ['forecasts', 'ForecastsPage'],
+    ['emerging-skills', 'EmergingSkillsPage'],
+    ['scenario-simulator', 'ScenarioSimulatorPage'],
+    ['reports', 'ReportsPage'],
+    ['data-sources', 'DataSourcesPage'],
+    ['data-quality', 'DataQualityPage'],
+    ['administration', 'AdministrationPage'],
+  ];
+  for (const [route, component] of modules) {
+    assert.match(routes, new RegExp(`id: ['"]${route}['"]`), `route registry is missing ${route}`);
+    assert.ok(shell.includes(component), `shared shell does not reference ${component}`);
+    if (route !== 'dashboard') {
+      assert.ok(shell.includes(`activePage === '${route}'`), `shared shell does not mount the ${route} route`);
+    }
+  }
+  assert.match(shell, /<Header /, 'shared topbar/header must be provided by the shell');
+  assert.match(shell, /<Sidebar /, 'shared sidebar must be provided by the shell');
+});
+
+test('production-sensitive API write flags default to disabled', () => {
+  const env = read('.env.example');
+  assert.match(env, /^VITE_BASE_PATH=$/m);
+  assert.match(env, /^VITE_SHRAMIK_API_BASE_URL=$/m);
+  assert.match(env, /^VITE_DEMAND_API_BASE_URL=$/m);
+  assert.match(env, /^VITE_SUPPLY_API_BASE_URL=$/m);
+  assert.match(env, /^VITE_EMERGING_SKILLS_API_BASE_URL=$/m);
+  assert.match(env, /^VITE_SCENARIO_SIMULATOR_API_BASE_URL=$/m);
+  assert.match(env, /^VITE_DATA_QUALITY_API_BASE_URL=$/m);
+  assert.match(env, /^VITE_ADMINISTRATION_API_BASE_URL=$/m);
+  assert.match(env, /^VITE_DATA_SOURCES_API_BASE_URL=$/m);
+  assert.match(env, /^VITE_DATA_SOURCES_ENABLE_CREATE=false$/m);
+  assert.match(env, /^VITE_DATA_SOURCES_ENABLE_INGESTION=false$/m);
+});
+
+test('module preparation safely reuses canonical JSON/CSS files', () => {
+  const prepare = read('scripts/prepare-react-modules.mjs');
+  assert.match(prepare, /if \(sourcePath === targetPath\)/);
+  assert.match(prepare, /kind: 'reuse'/);
+});
+
+test('module preparation uses the canonical React source files in this app package', () => {
+  const prepare = read('scripts/prepare-react-modules.mjs');
+  assert.match(prepare, /src\/emerging-skills\/EmergingSkillsPage\.tsx/);
+  assert.match(prepare, /src\/scenario-simulator\/ScenarioSimulatorPage\.tsx/);
+  assert.match(prepare, /src\/data-sources\/DataSourcesPage\.tsx/);
+  assert.doesNotMatch(prepare, /SHRAMIK_Emerging_Skills_React_Integrated/);
+  assert.doesNotMatch(prepare, /SHRAMIK_Scenario_Simulator_Deliverable/);
+  assert.doesNotMatch(prepare, /SHRAMIK_Data_Sources_Source_and_Build/);
+});
+
+test('Supply adapter has an independent API switch and explicit demo provenance', () => {
+  const factory = read('src/supply/adapter.ts');
+  const mock = read('src/supply/mockAdapter.ts');
+  const rest = read('src/supply/restAdapter.ts');
+  const shellSource = read('src/SHRAMIKDashboard.tsx');
+  assert.match(factory, /VITE_SUPPLY_API_BASE_URL/);
+  assert.match(factory, /RestSupplyInsightsDataAdapter/);
+  assert.match(mock, /SYNTHETIC_DEMO/);
+  assert.match(rest, /\/supply\/overview/);
+  assert.match(rest, /does not match the requested filter/);
+  assert.match(shellSource, /createSupplyInsightsDataAdapter/);
+  assert.match(shellSource, /<SupplyInsightsPage adapter=\{supplyAdapter\}/);
+});
+
+test('Emerging Skills has an independent API switch when configured', () => {
+  const factory = read('src/emerging-skills/adapter.ts');
+  const shellSource = read('src/SHRAMIKDashboard.tsx');
+  assert.match(factory, /VITE_EMERGING_SKILLS_API_BASE_URL/);
+  assert.match(factory, /new RestEmergingSkillsDataAdapter/);
+  assert.match(factory, /demoEmergingSkillsDataAdapter/);
+  assert.match(shellSource, /createEmergingSkillsDataAdapter/);
+  assert.match(shellSource, /<EmergingSkillsPage dataAdapter=\{emergingSkillsAdapter\}/);
+});
+
+test('Demand Insights uses its isolated Vite API host and mode indicator', () => {
+  const demand = read('src/demand/DemandInsightsPage.jsx');
+  assert.match(demand, /const getConfiguredApiBase = \(\) =>/);
+  assert.match(demand, /import\.meta\.env\?\.VITE_DEMAND_API_BASE_URL/);
+  assert.match(demand, /const base = getConfiguredApiBase\(\)/);
+  assert.match(demand, /Boolean\(getConfiguredApiBase\(\)\)/);
+  assert.doesNotMatch(demand, /const base = window\.SHRAMIK_API_BASE_URL \|\| window\.SHRAMIK_CONFIG/);
+});
+
+test('Emerging Skills keeps its content inside the shared shell instead of claiming a second viewport', () => {
+  const emerging = read('src/emerging-skills/EmergingSkillsPage.tsx');
+  assert.match(emerging, /className="min-h-0 w-full bg/);
+  assert.doesNotMatch(emerging, /className="min-h-screen bg/);
+});
+
+test('Scenario Simulator has bundled state/UT map geometry and visible source attribution', () => {
+  const geometry = JSON.parse(fs.readFileSync(path.join(root, 'public/assets/india-states.geojson'), 'utf8'));
+  assert.equal(geometry.type, 'FeatureCollection');
+  assert.equal(geometry.features.length, 36);
+  const codes = new Set(geometry.features.map(feature => feature.properties?.code));
+  assert.ok(codes.has('IN-OD'));
+  assert.ok(codes.has('IN-WB'));
+  for (const feature of geometry.features) {
+    assert.equal(typeof feature.properties?.name, 'string');
+    assert.equal(typeof feature.properties?.code, 'string');
+    assert.ok(feature.geometry && ['Polygon', 'MultiPolygon'].includes(feature.geometry.type));
+  }
+  const scenario = read('src/scenario-simulator/ScenarioSimulatorPage.tsx');
+  const attribution = read('public/assets/INDIA_STATES_ATTRIBUTION.md');
+  assert.match(scenario, /ss-map-attribution/);
+  assert.match(scenario, /OpenStreetMap contributors/);
+  assert.match(scenario, /ODbL 1\.0/);
+  assert.match(attribution, /OpenStreetMap contributors/);
+  assert.match(attribution, /best-effort visualization dataset, not a Survey of India product/i);
+});
+
+test('Demand Insights bundles its icons and does not rely on an undeclared browser global', () => {
+  const demand = read('src/demand/DemandInsightsPage.jsx');
+  assert.match(demand, /from ['"]lucide-react['"]/);
+  assert.doesNotMatch(demand, /window\.lucide/);
+  assert.doesNotMatch(demand, /mkIcon/);
+});
+
+test('Demand Insights inline styles cannot leak into the shared shell', () => {
+  const demand = read('src/demand/DemandInsightsPage.jsx');
+  const styles = [...demand.matchAll(/const CSS2? = `([\s\S]*?)`\s*;/g)];
+  assert.equal(styles.length, 2, 'expected the two canonical Demand style constants');
+  for (let index = 0; index < styles.length; index++) {
+    assertCssScoped(styles[index][1], `Demand CSS ${index + 1}`, '.sh.embedded');
+  }
+});
+
+test('demo-only modules prominently disclose synthetic data and local-only actions', () => {
+  const supply = read('src/supply/SupplyInsightsPage.tsx');
+  const quality = read('src/data-quality/DataQualityPage.tsx');
+  const administration = read('src/administration/AdministrationPage.tsx');
+  assert.match(supply, /SYNTHETIC_DEMO/);
+  assert.match(supply, /Supply data unavailable/i);
+  assert.match(supply, /active adapter/i);
+  assert.match(quality, /SYNTHETIC_DEMO/);
+  assert.match(quality, /SYNTHETIC_DEMO/);
+  assert.match(quality, /read-only until issue-mutation endpoints/i);
+  assert.match(quality, /does not update a backend/i);
+  const qualityMock = read('src/data-quality/mockAdapter.ts');
+  const qualityRest = read('src/data-quality/restAdapter.ts');
+  assert.match(qualityMock, /SYNTHETIC_DEMO/);
+  assert.match(qualityRest, /data-quality\/overview/);
+  assert.match(shell, /createDataQualityDataAdapter/);
+  assert.match(shell, /<DataQualityPage adapter=\{dataQualityAdapter\}/);
+  assert.match(administration, /SYNTHETIC_DEMO/);
+  assert.match(administration, /No account, authentication policy, or permission is changed on a server/i);
+  assert.match(administration, /no authentication account was modified/i);
+  assert.match(administration, /read-only/i);
+  const adminMock = read('src/administration/mockAdapter.ts');
+  const adminRest = read('src/administration/restAdapter.ts');
+  assert.match(adminMock, /SYNTHETIC_DEMO/);
+  assert.match(adminRest, /admin\/overview/);
+  assert.doesNotMatch(adminRest, /method:\\s*['"](?:POST|PUT|PATCH|DELETE)/i);
+  assert.match(shell, /createAdministrationDataAdapter/);
+  assert.match(shell, /<AdministrationPage adapter=\{administrationAdapter\}/);
+});
+
+test('public root mounts the React landing page and exposes live published indicator data', () => {
+  const landing = read('src/landing/SHRAMIKLandingPage.tsx');
+  const landingCss = read('src/landing/SHRAMIKLandingPage.module.css');
+
+  assert.match(routes, /id: ['"]landing['"], path: ['"]\/['"]/);
+  assert.match(routes, /id: ['"]dashboard['"], path: ['"]\/dashboard['"]/);
+  assert.match(routes, /if \(path === '\/'\) return 'landing'/);
+  assert.match(shell, /import SHRAMIKLandingPage from '\.\/landing\/SHRAMIKLandingPage'/);
+  assert.match(shell, /if \(route === 'landing'\) return <SHRAMIKLandingPage \/>/);
+  assert.match(landing, /\/rest\/v1\/sh_public_dashboard_kpis/);
+  assert.match(landing, /PublishedIndicator/);
+  const heroIndex = landing.indexOf('id="sl-top"');
+  const liveDataIndex = landing.indexOf('id="sl-live-indicators"');
+  const overviewIndex = landing.indexOf('id="sl-overview"');
+  assert.ok(heroIndex >= 0 && liveDataIndex >= 0 && overviewIndex >= 0);
+  assert.ok(heroIndex < liveDataIndex && liveDataIndex < overviewIndex,
+    'published source-backed indicators must appear immediately after the landing hero and before overview content');
+  assert.match(landing, /not demand\/supply estimates or model forecasts/);
+  assert.match(landing, /Retry/);
+  assert.match(landingCss, /@media \(max-width: 900px\)/);
+  assert.match(landingCss, /@media \(max-width: 480px\)/);
+});
+
+
+test('published reports and planning-only simulator remain useful when backend analytics endpoints are absent', () => {
+  assert.match(shell, /: activePage === 'reports' \? <ReportsPage \/>/);
+  assert.match(shell, /: activePage === 'scenario-simulator' \? <ScenarioSimulatorPage dataAdapter=\{scenarioDataAdapter\}/);
+  assert.match(shell, /new PlanningScenarioSimulatorAdapter\(\)/);
+  assert.match(shell, /demoEnabled \? scenarioMockAdapter : scenarioPlanningAdapter/);
+  const publishedReports = read('src/reports/adapter.ts');
+  assert.match(publishedReports, /new PublishedReportsAdapter\(createLabourMarketDataAdapter\(\)\)/);
+  const planner = read('src/scenario-simulator/adapters/PlanningScenarioSimulatorAdapter.ts');
+  assert.match(planner, /LOCAL-PLANNING-NO-VALIDATED-BASELINE/);
+  assert.match(planner, /does not estimate labour demand, workforce supply, skill gaps, or employment outcomes/i);
+});

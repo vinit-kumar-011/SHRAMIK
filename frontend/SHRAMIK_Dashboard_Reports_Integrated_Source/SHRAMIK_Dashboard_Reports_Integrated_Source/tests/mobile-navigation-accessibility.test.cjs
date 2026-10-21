@@ -1,0 +1,70 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const source = fs.readFileSync(
+  path.resolve(__dirname, '../src/SHRAMIKDashboard.tsx'),
+  'utf8',
+);
+const styles = fs.readFileSync(
+  path.resolve(__dirname, '../src/shramik-dashboard.css'),
+  'utf8',
+);
+const sidebarStart = source.indexOf('function Sidebar(');
+const headerStart = source.indexOf('function Header(');
+const workspaceStart = source.indexOf('function SHRAMIKWorkspace(');
+assert.ok(sidebarStart > 0 && headerStart > sidebarStart && workspaceStart > headerStart);
+
+const sidebar = source.slice(sidebarStart, headerStart);
+const header = source.slice(headerStart, workspaceStart);
+const workspace = source.slice(workspaceStart);
+
+test('mobile navigation toggle exposes expanded state and its controlled sidebar', () => {
+  assert.match(header, /aria-label=\{mobileOpen \? 'Close navigation' : 'Open navigation'\}/);
+  assert.match(header, /aria-expanded=\{mobileOpen\}/);
+  assert.match(header, /aria-controls="shramik-sidebar"/);
+  assert.match(sidebar, /id="shramik-sidebar"/);
+});
+
+test('closed mobile navigation cannot receive keyboard focus', () => {
+  assert.match(sidebar, /matchMedia\('\(max-width: 980px\)'\)/);
+  assert.match(sidebar, /toggleAttribute\('inert', mobileLayout && !mobileOpen\)/);
+  assert.match(sidebar, /querySelector<HTMLButtonElement>\('\.nav-item'\)\?\.focus\(\)/);
+  assert.match(sidebar, /querySelector<HTMLButtonElement>\('\.mobile-menu'\)\?\.focus\(\)/);
+});
+
+test('Ctrl+K does not focus the global search when it is hidden', () => {
+  assert.match(workspace, /const searchInput = document\.querySelector<HTMLInputElement>\('\.global-search input'\)/);
+  assert.match(workspace, /searchInput && searchInput\.getClientRects\(\)\.length > 0/);
+  assert.match(workspace, /searchInput\.focus\(\)/);
+});
+
+test('mobile navigation traps Tab focus inside the open drawer', () => {
+  assert.match(sidebar, /const handleSidebarKeyDown = \(event: ReactKeyboardEvent<HTMLElement>\)/);
+  assert.match(sidebar, /if \(!mobileLayout \|\| !mobileOpen \|\| event\.key !== 'Tab'\) return/);
+  assert.match(sidebar, /querySelectorAll<HTMLButtonElement>\('\.nav-item'\)/);
+  assert.match(sidebar, /event\.shiftKey && document\.activeElement === first/);
+  assert.match(sidebar, /!event\.shiftKey && document\.activeElement === last/);
+  assert.match(sidebar, /onKeyDown=\{handleSidebarKeyDown\}/);
+});
+
+test('mobile menu and mobile search close each other instead of stacking overlays', () => {
+  assert.match(source, /const handleMobileSearchToggle = useCallback\(\(\) => \{/);
+  assert.match(source, /if \(next\) setMobileOpen\(false\)/);
+  assert.match(source, /const handleMobileMenuToggle = useCallback\(\(\) => \{/);
+  assert.match(source, /if \(next\) \{\s*setMobileSearchOpen\(false\);\s*setSearchOpen\(false\);/);
+  assert.match(source, /onMenu=\{handleMobileMenuToggle\}/);
+});
+
+
+test('mobile region selector stays inside its own hit target and does not cover the menu', () => {
+  const mobileLayoutStart = styles.indexOf('@media(max-width:620px)');
+  const smallLayoutStart = styles.indexOf('@media(max-width:360px)', mobileLayoutStart);
+  assert.ok(mobileLayoutStart >= 0 && smallLayoutStart > mobileLayoutStart, 'mobile header media-query bounds should exist');
+  const mobileLayout = styles.slice(mobileLayoutStart, smallLayoutStart);
+  assert.match(mobileLayout, /\.region-select\{[^}]*position:relative/);
+  assert.match(mobileLayout, /\.region-select\{[^}]*flex:0 0 35px/);
+  assert.match(mobileLayout, /\.region-select select\{position:absolute;width:100%;height:100%;opacity:0;inset:0\}/);
+  assert.match(styles.slice(smallLayoutStart), /\.region-select\{width:28px;flex-basis:28px\}/);
+});

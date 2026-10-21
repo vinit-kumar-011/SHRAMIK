@@ -1,0 +1,1897 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SHRAMIK Administration</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap">
+
+<style>
+/* ============================================================
+   SHRAMIK DESIGN TOKENS
+   Layout: fixed left sidebar + topbar shell, scrollable content
+   ============================================================ */
+:root {
+  --canvas:        #F7F6F0;
+  --surface:       #FFFFFF;
+  --surface-muted: #F0EFE8;
+  --ink:           #171717;
+  --ink-muted:     #62625C;
+  --border:        #292929;
+  --border-muted:  #D8D6CD;
+  --yellow:        #F2D34F;
+  --yellow-hover:  #E6C33C;
+  --navy:          #203A5B;
+  --orange:        #EB791D;
+  --teal:          #20A89C;
+  --success:       #35745D;
+  --warning:       #B56732;
+  --danger:        #B42318;
+  --info:          #315D8A;
+
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-body:    'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+
+  --sidebar-w: 220px;
+  --topbar-h: 56px;
+  --radius: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #1A1917;
+    --surface: #242320;
+    --surface-muted: #2E2C28;
+    --ink: #F0EFE8;
+    --ink-muted: #A09E96;
+    --border: #C8C5BA;
+    --border-muted: #3A3833;
+    --yellow: #F2D34F;
+    --yellow-hover: #E6C33C;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --canvas: #1A1917;
+  --surface: #242320;
+  --surface-muted: #2E2C28;
+  --ink: #F0EFE8;
+  --ink-muted: #A09E96;
+  --border: #C8C5BA;
+  --border-muted: #3A3833;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--canvas);
+  line-height: 1.5;
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+html { height: 100%; }
+
+/* ============================================================ SIDEBAR */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1.5px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1.5px solid var(--border);
+  text-decoration: none;
+  color: var(--ink);
+}
+.sidebar-brand-logo {
+  width: 36px; height: 36px;
+  background: var(--ink);
+  color: var(--yellow);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 18px;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+.sidebar-brand-text { line-height: 1.2; }
+.sidebar-brand-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+.sidebar-brand-sub {
+  font-size: 10px;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+
+.sidebar-nav { flex: 1; padding: 8px 0; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px;
+  color: var(--ink-muted);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  border-left: 3px solid transparent;
+  transition: background 0.12s, color 0.12s;
+}
+.nav-item:hover { background: var(--surface-muted); color: var(--ink); }
+.nav-item.active {
+  background: var(--yellow);
+  color: var(--ink);
+  border-left-color: var(--border);
+  font-weight: 600;
+}
+.nav-icon {
+  width: 18px; height: 18px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.nav-item.active .nav-icon { opacity: 1; }
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1.5px solid var(--border-muted);
+  font-size: 11px;
+  color: var(--ink-muted);
+  line-height: 1.4;
+}
+.sidebar-footer strong { display: block; font-size: 12px; color: var(--ink); }
+
+/* ============================================================ MAIN */
+.main-wrap {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* TOPBAR */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--surface);
+  border-bottom: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.search-bar {
+  flex: 1; max-width: 480px;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface-muted);
+  border: 1.5px solid var(--border-muted);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.search-bar svg { flex-shrink: 0; opacity: 0.5; }
+.search-kbd {
+  margin-left: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-muted);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+.topbar-spacer { flex: 1; }
+.topbar-bell {
+  position: relative;
+  width: 36px; height: 36px;
+  border: 1.5px solid var(--border-muted);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--ink);
+}
+.topbar-bell .badge {
+  position: absolute; top: -3px; right: -3px;
+  width: 16px; height: 16px;
+  background: var(--danger);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.topbar-user {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+}
+.topbar-user:hover { background: var(--surface-muted); }
+.user-avatar {
+  width: 32px; height: 32px;
+  background: var(--ink);
+  color: var(--yellow);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+}
+.user-info { line-height: 1.2; }
+.user-name { font-size: 13px; font-weight: 600; }
+.user-role { font-size: 11px; color: var(--ink-muted); }
+
+/* CONTENT AREA */
+.content-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--canvas);
+}
+
+/* DEMO BANNER */
+.demo-banner {
+  background: var(--navy);
+  color: #fff;
+  text-align: center;
+  padding: 7px 24px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.demo-banner-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--yellow);
+  flex-shrink: 0;
+}
+
+/* PAGE HEADER */
+.page-header {
+  padding: 28px 32px 0;
+  position: relative;
+  overflow: hidden;
+}
+.breadcrumb {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.breadcrumb a { color: var(--ink-muted); text-decoration: none; }
+.breadcrumb a:hover { color: var(--ink); }
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(40px, 5vw, 64px);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin: 0 0 6px;
+  text-wrap: balance;
+}
+.page-subtitle {
+  color: var(--ink-muted);
+  font-size: 14px;
+  margin: 0 0 24px;
+  max-width: 520px;
+}
+
+.header-decoration {
+  position: absolute;
+  right: 32px; top: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  opacity: 0.7;
+}
+.header-stamp {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: right;
+  color: var(--ink-muted);
+  line-height: 1.6;
+}
+
+/* SUMMARY CARDS */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 0 32px 20px;
+}
+.summary-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border-muted);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.card-icon {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.card-icon.pending { background: #FEF3C7; color: var(--warning); }
+.card-icon.active  { background: #D1FAE5; color: var(--success); }
+.card-icon.inactive{ background: #FEE2E2; color: var(--danger); }
+.card-icon.events  { background: #DBEAFE; color: var(--info); }
+.card-num {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.card-label { font-size: 12px; font-weight: 600; color: var(--ink); margin-top: 2px; }
+.card-sub { font-size: 11px; color: var(--ink-muted); }
+
+/* TABS */
+.tabs-bar {
+  padding: 0 32px;
+  border-bottom: 1.5px solid var(--border-muted);
+  display: flex;
+  gap: 0;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 10px 18px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: color 0.12s;
+  margin-bottom: -1.5px;
+}
+.tab-btn:hover { color: var(--ink); }
+.tab-btn.active {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+  font-weight: 600;
+  background: var(--yellow);
+  border-radius: 4px 4px 0 0;
+  border-bottom-color: var(--border);
+}
+.tab-count {
+  background: var(--warning);
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.tab-btn.active .tab-count { background: var(--border); }
+
+/* TAB PANELS */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* TOOLBAR */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px 12px;
+  flex-wrap: wrap;
+}
+.search-input-wrap {
+  display: flex; align-items: center;
+  background: var(--surface);
+  border: 1.5px solid var(--border-muted);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  gap: 7px;
+  flex: 1; min-width: 200px;
+}
+.search-input-wrap svg { color: var(--ink-muted); flex-shrink: 0; }
+.search-input-wrap input {
+  border: none; outline: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+  width: 100%;
+}
+.search-input-wrap input::placeholder { color: var(--ink-muted); }
+select.filter-sel {
+  background: var(--surface);
+  border: 1.5px solid var(--border-muted);
+  border-radius: var(--radius);
+  padding: 6px 28px 6px 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2362625C' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  min-width: 130px;
+}
+
+.btn-clear {
+  background: none; border: none;
+  font-family: var(--font-body); font-size: 13px;
+  color: var(--ink-muted); cursor: pointer; padding: 4px;
+  text-decoration: underline;
+}
+.btn-clear:hover { color: var(--ink); }
+
+/* TABLE */
+.table-wrap {
+  padding: 0 32px;
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+  font-size: 13px;
+}
+thead th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  border-bottom: 1.5px solid var(--border-muted);
+  background: var(--surface-muted);
+  white-space: nowrap;
+}
+thead th:first-child { border-radius: var(--radius) 0 0 0; }
+thead th:last-child { border-radius: 0 var(--radius) 0 0; }
+tbody tr {
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--surface);
+  transition: background 0.1s;
+}
+tbody tr:hover { background: var(--surface-muted); }
+td {
+  padding: 12px 12px;
+  vertical-align: middle;
+  color: var(--ink);
+}
+.requester-name { font-weight: 600; font-size: 13.5px; }
+.requester-email { font-size: 11.5px; color: var(--ink-muted); }
+.avatar-circle {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  border: 1.5px solid var(--border-muted);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 12px;
+  color: var(--ink);
+  flex-shrink: 0;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.name-cell { display: flex; align-items: center; }
+
+/* STATUS BADGES */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-pending  { background: #FEF3C7; color: var(--warning); }
+.badge-approved { background: #D1FAE5; color: var(--success); }
+.badge-rejected { background: #FEE2E2; color: var(--danger); }
+.badge-withdrawn{ background: var(--surface-muted); color: var(--ink-muted); }
+.badge-expired  { background: var(--surface-muted); color: var(--ink-muted); }
+.badge-active   { background: #D1FAE5; color: var(--success); }
+.badge-suspended{ background: #FEE2E2; color: var(--danger); }
+.badge-invited  { background: #DBEAFE; color: var(--info); }
+
+.role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-muted);
+  color: var(--ink);
+}
+.role-badge.analyst { background: #DBEAFE; border-color: #93C5FD; color: #1E3A8A; }
+.role-badge.viewer  { background: #D1FAE5; border-color: #6EE7B7; color: #065F46; }
+.role-badge.admin   { background: #FEF3C7; border-color: #FCD34D; color: #92400E; }
+.role-badge.steward { background: #F3E8FF; border-color: #C4B5FD; color: #4C1D95; }
+
+.btn-review {
+  background: var(--ink);
+  color: var(--yellow);
+  border: none;
+  padding: 5px 12px;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.btn-review:hover { opacity: 0.85; }
+.btn-view {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1.5px solid var(--border-muted);
+  padding: 5px 12px;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-view:hover { background: var(--surface-muted); }
+
+.table-footer {
+  padding: 12px 32px;
+  font-size: 12px;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ============================================================ DRAWER */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.25);
+  z-index: 200;
+  display: none;
+}
+.drawer-overlay.open { display: block; }
+
+.drawer {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: 420px;
+  max-width: calc(100vw - 48px);
+  background: var(--surface);
+  border-left: 1.5px solid var(--border);
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.drawer.open { transform: translateX(0); }
+
+.drawer-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 18px 14px;
+  border-bottom: 1.5px solid var(--border-muted);
+  flex-shrink: 0;
+}
+.drawer-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  border: 1.5px solid var(--border-muted);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 15px;
+  flex-shrink: 0;
+}
+.drawer-name { font-weight: 700; font-size: 15px; }
+.drawer-email { font-size: 12px; color: var(--ink-muted); }
+.drawer-phone { font-size: 12px; color: var(--ink-muted); }
+.drawer-close {
+  margin-left: auto;
+  background: none; border: none;
+  cursor: pointer;
+  color: var(--ink-muted);
+  padding: 4px;
+  border-radius: var(--radius);
+  display: flex; align-items: center;
+}
+.drawer-close:hover { background: var(--surface-muted); color: var(--ink); }
+
+.drawer-tabs {
+  display: flex;
+  border-bottom: 1.5px solid var(--border-muted);
+  padding: 0 18px;
+  flex-shrink: 0;
+}
+.drawer-tab {
+  padding: 9px 12px;
+  background: none; border: none;
+  border-bottom: 2px solid transparent;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  cursor: pointer;
+  margin-bottom: -1.5px;
+  transition: color 0.12s;
+}
+.drawer-tab:hover { color: var(--ink); }
+.drawer-tab.active {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+  font-weight: 600;
+}
+
+.drawer-body { flex: 1; overflow-y: auto; padding: 18px; }
+.drawer-panel { display: none; }
+.drawer-panel.active { display: block; }
+
+.field-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-muted);
+}
+.field-row:last-child { border-bottom: none; }
+.field-label {
+  width: 140px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+.field-value { font-size: 13px; font-weight: 500; color: var(--ink); flex: 1; min-width: 0; }
+
+.role-card {
+  border: 1.5px solid var(--border-muted);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.role-card-icon {
+  width: 32px; height: 32px;
+  background: var(--surface-muted);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.role-card-name { font-weight: 700; font-size: 13.5px; }
+.role-card-desc { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+
+.evidence-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-muted);
+}
+.evidence-item:last-child { border-bottom: none; }
+.doc-icon { font-size: 20px; }
+.evidence-name { font-size: 13px; font-weight: 600; }
+.evidence-filename { font-size: 11px; color: var(--ink-muted); }
+.btn-sm {
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid var(--border-muted);
+  background: var(--surface);
+  color: var(--ink);
+}
+.btn-sm:hover { background: var(--surface-muted); }
+
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--ink-muted);
+}
+.empty-state .icon { font-size: 28px; margin-bottom: 8px; }
+.empty-state p { font-size: 13px; margin: 0; }
+
+.drawer-actions {
+  display: flex; gap: 10px;
+  padding: 14px 18px;
+  border-top: 1.5px solid var(--border-muted);
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.btn-reject {
+  flex: 1;
+  background: none;
+  border: 1.5px solid var(--border);
+  color: var(--danger);
+  padding: 9px 0;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-reject:hover { background: #FEE2E2; }
+.btn-approve {
+  flex: 1;
+  background: var(--yellow);
+  border: 1.5px solid var(--border);
+  color: var(--ink);
+  padding: 9px 0;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-approve:hover { background: var(--yellow-hover); }
+.demo-action-note {
+  padding: 10px 18px;
+  background: #FFF8DC;
+  border-top: 1px solid #FCD34D;
+  font-size: 11px;
+  color: #92400E;
+  text-align: center;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* ============================================================ DIALOG */
+.dialog-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 300;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.dialog-overlay.open { display: flex; }
+.dialog {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  width: 100%; max-width: 400px;
+  padding: 24px;
+}
+.dialog-title {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 800;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+.dialog-body { font-size: 13px; color: var(--ink-muted); margin-bottom: 16px; }
+.dialog-field label {
+  display: block;
+  font-size: 12px; font-weight: 600;
+  margin-bottom: 5px;
+}
+.dialog-field textarea {
+  width: 100%;
+  border: 1.5px solid var(--border-muted);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--surface);
+  resize: vertical;
+  min-height: 72px;
+}
+.dialog-actions {
+  display: flex; gap: 10px; margin-top: 16px;
+}
+.btn-cancel {
+  flex: 1; background: none;
+  border: 1.5px solid var(--border-muted);
+  color: var(--ink);
+  padding: 9px 0;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-cancel:hover { background: var(--surface-muted); }
+.btn-confirm-reject {
+  flex: 1; background: var(--danger);
+  border: none;
+  color: #fff;
+  padding: 9px 0;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-confirm-approve {
+  flex: 1; background: var(--yellow);
+  border: 1.5px solid var(--border);
+  color: var(--ink);
+  padding: 9px 0;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.demo-decision-note {
+  background: var(--surface-muted);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-top: 10px;
+  display: flex; gap: 6px; align-items: flex-start;
+}
+
+/* ============================================================ USERS & ROLES */
+.users-wrap { padding: 0 32px; }
+
+/* ============================================================ ROLES & PERMISSIONS */
+.roles-wrap { padding: 0 32px; }
+.permissions-matrix-wrap { overflow-x: auto; margin-top: 16px; }
+.permissions-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+  font-size: 13px;
+}
+.permissions-matrix th, .permissions-matrix td {
+  padding: 10px 14px;
+  border: 1px solid var(--border-muted);
+  text-align: left;
+}
+.permissions-matrix th {
+  background: var(--surface-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+}
+.perm-check {
+  color: var(--success);
+  font-size: 15px;
+  text-align: center;
+  display: block;
+}
+.perm-dash {
+  color: var(--border-muted);
+  font-size: 15px;
+  text-align: center;
+  display: block;
+}
+
+/* ============================================================ AUDIT LOG */
+.audit-wrap { padding: 0 32px; }
+.audit-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+.audit-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  border-bottom: 1.5px solid var(--border-muted);
+  background: var(--surface-muted);
+}
+.audit-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--surface);
+  vertical-align: top;
+}
+.audit-table tbody tr:hover td { background: var(--surface-muted); }
+.outcome-success { color: var(--success); font-weight: 600; }
+.outcome-failure { color: var(--danger); font-weight: 600; }
+.outcome-denied  { color: var(--warning); font-weight: 600; }
+.audit-not-connected {
+  border: 1.5px dashed var(--border-muted);
+  border-radius: var(--radius);
+  padding: 32px;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+/* SECTION HEADING */
+.section-heading {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+.section-sub {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin: 0 0 14px;
+}
+.illustrative-note {
+  background: #FEFCE8;
+  border: 1px solid #FCD34D;
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #92400E;
+  margin-bottom: 12px;
+  display: flex; gap: 6px; align-items: flex-start;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .sidebar { width: 52px; }
+  .sidebar-brand-text, .nav-label, .sidebar-footer { display: none; }
+  .main-wrap { margin-left: 52px; }
+  .summary-cards { grid-template-columns: repeat(2, 1fr); }
+  .header-decoration { display: none; }
+  .drawer { width: 100%; max-width: 100%; }
+  .page-header, .toolbar, .table-wrap, .users-wrap, .roles-wrap, .audit-wrap { padding-left: 16px; padding-right: 16px; }
+  .tabs-bar { padding: 0 16px; overflow-x: auto; }
+}
+@media (max-width: 600px) {
+  .summary-cards { grid-template-columns: 1fr 1fr; }
+  .topbar { padding: 0 16px; }
+  .search-bar { display: none; }
+  .summary-cards { padding: 0 16px 16px; }
+}
+</style>
+
+<!-- ============================================================ SIDEBAR -->
+<aside class="sidebar" role="navigation" aria-label="Main navigation">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-logo">S</div>
+    <div class="sidebar-brand-text">
+      <div class="sidebar-brand-name">SHRAMIK</div>
+      <div class="sidebar-brand-sub">Labour Market<br>Intelligence System</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#" class="nav-item" aria-label="Dashboard">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="nav-label">Dashboard</span>
+    </a>
+    <a href="#" class="nav-item" aria-label="Demand Insights">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="nav-label">Demand Insights</span>
+    </a>
+    <a href="#" class="nav-item" aria-label="Supply Insights">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="nav-label">Supply Insights</span>
+    </a>
+    <a href="#" class="nav-item" aria-label="Skill Gap Analysis">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span class="nav-label">Skill Gap Analysis</span>
+    </a>
+    <a href="#" class="nav-item" aria-label="Forecasts & Early Warnings">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-label">Forecasts &amp; Early Warnings</span>
+    </a>
+    <a href="#" class="nav-item" aria-label="Emerging Skills">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span class="nav-label">Emerging Skills</span>
+    </a>
+    <a href="#" class="nav-item" aria-label="Scenario Simulator">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <span class="nav-label">Scenario Simulator</span>
+    </a>
+    <a href="#" class="nav-item" aria-label="Data Sources">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      <span class="nav-label">Data Sources</span>
+    </a>
+    <a href="#" class="nav-item" aria-label="Data Quality & Validation">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="nav-label">Data Quality &amp; Validation</span>
+    </a>
+    <button class="nav-item active" id="admin-nav" aria-current="page" aria-label="Administration">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="nav-label">Administration</span>
+    </button>
+    <a href="#" class="nav-item" aria-label="Reports">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span class="nav-label">Reports</span>
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <strong>Data for people.</strong>
+    Opportunities for<br>a stronger India.
+  </div>
+</aside>
+
+<!-- ============================================================ MAIN -->
+<div class="main-wrap">
+  <!-- TOPBAR -->
+  <header class="topbar" role="banner">
+    <div class="search-bar" role="search" aria-label="Global search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search users, requests, departments or roles…</span>
+      <span class="search-kbd">Ctrl K</span>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-bell" aria-label="Notifications, 3 unread">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="badge" aria-hidden="true">3</span>
+    </div>
+    <div class="topbar-user" tabindex="0" role="button" aria-label="User menu, A. Sharma, Administrator">
+      <div class="user-avatar" aria-hidden="true">AS</div>
+      <div class="user-info">
+        <div class="user-name">A. Sharma</div>
+        <div class="user-role">Administrator</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+  </header>
+
+  <!-- CONTENT AREA -->
+  <main class="content-area" id="main-content">
+    <!-- DEMO BANNER -->
+    <div class="demo-banner" role="alert" aria-live="polite">
+      <span class="demo-banner-dot" aria-hidden="true"></span>
+      Prototype preview · Synthetic demo records · Decisions are not saved
+      <span class="demo-banner-dot" aria-hidden="true"></span>
+    </div>
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div class="breadcrumb" aria-label="Breadcrumb">
+        <a href="#">Home</a>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+        <span aria-current="page">Administration</span>
+      </div>
+      <h1 class="page-title">Administration</h1>
+      <p class="page-subtitle">Review access requests, understand role permissions and monitor administrative activity.</p>
+
+      <div class="header-decoration" aria-hidden="true">
+        <div class="header-stamp">
+          Authorised Access<br>Responsible Use<br>Better Outcomes
+        </div>
+      </div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="summary-cards" role="list" aria-label="Administration summary">
+      <div class="summary-card" role="listitem">
+        <div class="card-icon pending" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>
+          <div class="card-num" id="stat-pending">3</div>
+          <div class="card-label">Pending Requests</div>
+          <div class="card-sub">Awaiting approval</div>
+        </div>
+      </div>
+      <div class="summary-card" role="listitem">
+        <div class="card-icon active" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <div>
+          <div class="card-num">4</div>
+          <div class="card-label">Total Users</div>
+          <div class="card-sub">Across all departments</div>
+        </div>
+      </div>
+      <div class="summary-card" role="listitem">
+        <div class="card-icon active" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div>
+          <div class="card-num">3</div>
+          <div class="card-label">Active Users</div>
+          <div class="card-sub">Currently have access</div>
+        </div>
+      </div>
+      <div class="summary-card" role="listitem">
+        <div class="card-icon inactive" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        </div>
+        <div>
+          <div class="card-num">1</div>
+          <div class="card-label">Inactive User</div>
+          <div class="card-sub">Access revoked/suspended</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs-bar" role="tablist" aria-label="Administration views">
+      <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-requests" id="tab-requests" onclick="switchTab('requests')">
+        Access Requests
+        <span class="tab-count" aria-label="3 pending">3</span>
+      </button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-users" id="tab-users" onclick="switchTab('users')">Users &amp; Roles</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-roles" id="tab-roles" onclick="switchTab('roles')">Roles &amp; Permissions</button>
+      <button class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-audit" id="tab-audit" onclick="switchTab('audit')">Audit Log</button>
+    </div>
+
+    <!-- ======================================================== TAB: ACCESS REQUESTS -->
+    <div class="tab-panel active" id="panel-requests" role="tabpanel" aria-labelledby="tab-requests">
+      <div class="toolbar">
+        <div class="search-input-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" placeholder="Search by name, department, designation…" id="req-search" aria-label="Search access requests" oninput="filterRequests()">
+        </div>
+        <select class="filter-sel" id="filter-dept" aria-label="Filter by department" onchange="filterRequests()">
+          <option value="ALL">All Departments</option>
+          <option>Education Planning (Demo)</option>
+          <option>Labour Research (Demo)</option>
+          <option>State Skills Planning (Demo)</option>
+          <option>National Research (Demo)</option>
+          <option>Skill Development (Demo)</option>
+        </select>
+        <select class="filter-sel" id="filter-role" aria-label="Filter by requested role" onchange="filterRequests()">
+          <option value="ALL">All Roles</option>
+          <option value="role-analyst-demo">Analyst (Demo)</option>
+          <option value="role-viewer-demo">Viewer (Demo)</option>
+          <option value="role-admin-demo">Administrator (Demo)</option>
+        </select>
+        <select class="filter-sel" id="filter-status" aria-label="Filter by status" onchange="filterRequests()">
+          <option value="ALL">All Statuses</option>
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+        <select class="filter-sel" id="filter-sort" aria-label="Sort order" onchange="filterRequests()">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+        </select>
+        <button class="btn-clear" onclick="clearFilters()" aria-label="Clear all filters">Clear filters</button>
+      </div>
+
+      <div class="table-wrap">
+        <table aria-label="Access requests">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Department / Organisation</th>
+              <th scope="col">Designation</th>
+              <th scope="col">Requested Role</th>
+              <th scope="col">Request Date</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="requests-tbody"></tbody>
+        </table>
+        <div id="req-empty" class="empty-state" hidden>
+          <div class="icon">🔍</div>
+          <p>No requests match your search or filters.</p>
+        </div>
+      </div>
+      <div class="table-footer">
+        <span id="req-count-label">Showing all requests</span>
+      </div>
+    </div>
+
+    <!-- ======================================================== TAB: USERS & ROLES -->
+    <div class="tab-panel" id="panel-users" role="tabpanel" aria-labelledby="tab-users">
+      <div class="toolbar">
+        <div class="search-input-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" placeholder="Search users by name or email…" id="user-search" aria-label="Search users" oninput="filterUsers()">
+        </div>
+        <select class="filter-sel" id="filter-user-status" aria-label="Filter by account status" onchange="filterUsers()">
+          <option value="ALL">All Statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="SUSPENDED">Suspended</option>
+        </select>
+        <select class="filter-sel" id="filter-user-role" aria-label="Filter by role" onchange="filterUsers()">
+          <option value="ALL">All Roles</option>
+          <option value="role-admin-demo">Administrator (Demo)</option>
+          <option value="role-analyst-demo">Analyst (Demo)</option>
+          <option value="role-viewer-demo">Viewer (Demo)</option>
+          <option value="role-steward-demo">Data Steward (Demo)</option>
+        </select>
+      </div>
+      <div class="users-wrap">
+        <div class="illustrative-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Role assignment, suspension, and invitation are read-only in this milestone. These controls require verified backend support.
+        </div>
+        <div class="table-wrap" style="padding:0">
+          <table aria-label="Users and roles">
+            <thead>
+              <tr>
+                <th scope="col">User</th>
+                <th scope="col">Department</th>
+                <th scope="col">Designation</th>
+                <th scope="col">Role</th>
+                <th scope="col">Status</th>
+                <th scope="col">Last Activity</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== TAB: ROLES & PERMISSIONS -->
+    <div class="tab-panel" id="panel-roles" role="tabpanel" aria-labelledby="tab-roles">
+      <div class="toolbar" style="padding-bottom:0"></div>
+      <div class="roles-wrap">
+        <p class="section-sub" style="margin-bottom:8px">Read-only role and permission matrix. The live backend remains authoritative.</p>
+        <div class="illustrative-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          These are illustrative demo roles only — not production role definitions. Actual permissions come from the backend.
+        </div>
+        <div class="permissions-matrix-wrap">
+          <table class="permissions-matrix" aria-label="Roles and permissions matrix">
+            <thead>
+              <tr>
+                <th scope="col" style="min-width:180px">Permission</th>
+                <th scope="col">Category</th>
+                <th scope="col">Administrator<br><small style="font-weight:400;text-transform:none">(Demo)</small></th>
+                <th scope="col">Analyst<br><small style="font-weight:400;text-transform:none">(Demo)</small></th>
+                <th scope="col">Viewer<br><small style="font-weight:400;text-transform:none">(Demo)</small></th>
+                <th scope="col">Data Steward<br><small style="font-weight:400;text-transform:none">(Demo)</small></th>
+              </tr>
+            </thead>
+            <tbody id="permissions-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:24px">
+          <div class="section-heading" style="font-size:15px;margin-bottom:8px">Role Descriptions</div>
+          <div id="roles-desc-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================== TAB: AUDIT LOG -->
+    <div class="tab-panel" id="panel-audit" role="tabpanel" aria-labelledby="tab-audit">
+      <div class="toolbar">
+        <div class="search-input-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" placeholder="Search audit events…" id="audit-search" aria-label="Search audit events" oninput="filterAudit()">
+        </div>
+        <select class="filter-sel" id="filter-audit-outcome" aria-label="Filter by outcome" onchange="filterAudit()">
+          <option value="ALL">All Outcomes</option>
+          <option value="SUCCESS">Success</option>
+          <option value="FAILURE">Failure</option>
+          <option value="DENIED">Denied</option>
+        </select>
+      </div>
+      <div class="audit-wrap">
+        <div class="audit-not-connected" role="note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="margin-bottom:6px;display:block;margin-left:auto;margin-right:auto"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Audit history shown from synthetic demo fixture only. In production, events are fetched from an append-only audit service. No real administrative events are represented here.
+        </div>
+        <div class="table-wrap" style="padding:0">
+          <table class="audit-table" aria-label="Audit log">
+            <thead>
+              <tr>
+                <th scope="col">Timestamp</th>
+                <th scope="col">Actor</th>
+                <th scope="col">Action</th>
+                <th scope="col">Target</th>
+                <th scope="col">Outcome</th>
+                <th scope="col">Reason</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <span>Read-only · Audit events cannot be edited or deleted</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:40px"></div>
+  </main>
+</div>
+
+<!-- ============================================================ DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()" role="presentation"></div>
+<aside class="drawer" id="request-drawer" role="dialog" aria-modal="true" aria-label="Request review" aria-hidden="true">
+  <div class="drawer-header">
+    <div class="drawer-avatar" id="drawer-avatar" aria-hidden="true">PS</div>
+    <div>
+      <div class="drawer-name" id="drawer-name">Priya Demo</div>
+      <div class="drawer-email" id="drawer-email">priya.demo@example.test</div>
+      <div class="drawer-phone" id="drawer-status-badge"></div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()" aria-label="Close request review">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-tabs" role="tablist" aria-label="Request details tabs">
+    <button class="drawer-tab active" role="tab" aria-selected="true" onclick="switchDrawerTab('details', this)">Details</button>
+    <button class="drawer-tab" role="tab" aria-selected="false" onclick="switchDrawerTab('access', this)">Requested Access</button>
+    <button class="drawer-tab" role="tab" aria-selected="false" onclick="switchDrawerTab('docs', this)">Documents</button>
+    <button class="drawer-tab" role="tab" aria-selected="false" onclick="switchDrawerTab('history', this)">Action History</button>
+  </div>
+  <div class="drawer-body">
+    <!-- Details -->
+    <div class="drawer-panel active" id="dpanel-details">
+      <div id="drawer-details-content"></div>
+    </div>
+    <!-- Requested Access -->
+    <div class="drawer-panel" id="dpanel-access">
+      <div id="drawer-access-content"></div>
+    </div>
+    <!-- Documents -->
+    <div class="drawer-panel" id="dpanel-docs">
+      <div id="drawer-docs-content"></div>
+    </div>
+    <!-- Action History -->
+    <div class="drawer-panel" id="dpanel-history">
+      <div id="drawer-history-content"></div>
+    </div>
+  </div>
+  <div class="demo-action-note" id="drawer-demo-note" aria-live="polite">
+    Demo mode — decision controls are shown for illustration only. No data is saved.
+  </div>
+  <div class="drawer-actions" id="drawer-actions" hidden>
+    <button class="btn-reject" id="btn-reject" onclick="openDialog('REJECT')" aria-label="Reject this request">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Reject Request
+    </button>
+    <button class="btn-approve" id="btn-approve" onclick="openDialog('APPROVE')" aria-label="Approve this request">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Approve Request
+    </button>
+  </div>
+</aside>
+
+<!-- ============================================================ DIALOG -->
+<div class="dialog-overlay" id="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+  <div class="dialog">
+    <h2 class="dialog-title" id="dialog-title">Confirm Decision</h2>
+    <div class="dialog-body" id="dialog-body">You are about to decide on this request.</div>
+    <div class="dialog-field" id="dialog-reason-field" hidden>
+      <label for="dialog-reason">Reason for rejection <span style="color:var(--danger)">*</span></label>
+      <textarea id="dialog-reason" placeholder="Provide a reason for rejection…" rows="3"></textarea>
+    </div>
+    <div class="demo-decision-note">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Demo mode: this interaction is illustrative only. No real decision or approval is recorded. The status will update locally in this session only.
+    </div>
+    <div class="dialog-actions">
+      <button class="btn-cancel" onclick="closeDialog()">Cancel</button>
+      <button class="btn-confirm-reject" id="btn-confirm-reject" hidden onclick="confirmDecision()">Reject</button>
+      <button class="btn-confirm-approve" id="btn-confirm-approve" hidden onclick="confirmDecision()">Approve Request</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA (from fixture)
+const FIXTURE = {
+  provenance: "SYNTHETIC_DEMO",
+  summary: { pendingRequests: 3, activeUsers: 3, inactiveUsers: 1, recentEvents: 3, windowLabel: "Past 7 days" },
+  requests: [
+    { id:"demo-req-001", version:1, requesterName:"Priya Demo", workEmail:"priya.demo@example.test", department:"Education Planning (Demo)", organisation:"Example Department (Demo)", designation:"Policy Analyst (Demo)", requestedRoleId:"role-analyst-demo", requestedRoleName:"Analyst (Demo)", accessScope:"Read analytics and create draft reports", requestedDuration:"12 months (illustrative)", reason:"Illustrative request to analyse skill-demand trends for planning.", submittedAt:"2026-10-09T11:45:00+05:30", status:"PENDING", evidenceState:"UNAVAILABLE", decisionHistoryAvailable:false, provenance:"SYNTHETIC_DEMO" },
+    { id:"demo-req-002", version:1, requesterName:"Rohit Sample", workEmail:"rohit.sample@example.test", department:"Labour Research (Demo)", organisation:"Example Labour Office (Demo)", designation:"Research Officer (Demo)", requestedRoleId:"role-viewer-demo", requestedRoleName:"Viewer (Demo)", accessScope:"Read-only access to published dashboards", requestedDuration:null, reason:"Illustrative request for read-only access to published findings.", submittedAt:"2026-10-11T14:12:00+05:30", status:"PENDING", evidenceState:"NOT_REQUIRED", decisionHistoryAvailable:false, provenance:"SYNTHETIC_DEMO" },
+    { id:"demo-req-003", version:1, requesterName:"Sneha Example", workEmail:"sneha.example@example.test", department:"State Skills Planning (Demo)", organisation:"Example State Mission (Demo)", designation:"Programme Officer (Demo)", requestedRoleId:"role-analyst-demo", requestedRoleName:"Analyst (Demo)", accessScope:"View aggregated supply data and create draft reports", requestedDuration:"6 months (illustrative)", reason:"Illustrative request supporting a training-capacity review.", submittedAt:"2026-10-12T09:22:00+05:30", status:"PENDING", evidenceState:"UNAVAILABLE", decisionHistoryAvailable:false, provenance:"SYNTHETIC_DEMO" },
+    { id:"demo-req-004", version:2, requesterName:"Arjun Example", workEmail:"arjun.example@example.test", department:"National Research (Demo)", organisation:"Example Research Office (Demo)", designation:"Research Associate (Demo)", requestedRoleId:"role-viewer-demo", requestedRoleName:"Viewer (Demo)", accessScope:"Read published dashboards", requestedDuration:null, reason:"Illustrative request used to show prior decisions.", submittedAt:"2026-10-03T13:04:00+05:30", status:"APPROVED", evidenceState:"NOT_REQUIRED", decisionHistoryAvailable:false, provenance:"SYNTHETIC_DEMO" },
+    { id:"demo-req-005", version:2, requesterName:"Deepak Sample", workEmail:"deepak.sample@example.test", department:"Skill Development (Demo)", organisation:"Example Skills Mission (Demo)", designation:"Programme Manager (Demo)", requestedRoleId:"role-analyst-demo", requestedRoleName:"Analyst (Demo)", accessScope:"Access analytics for skill forecasting", requestedDuration:"12 months (illustrative)", reason:"Illustrative request for analytics access.", submittedAt:"2026-10-01T10:30:00+05:30", status:"REJECTED", evidenceState:"NOT_REQUIRED", decisionHistoryAvailable:false, provenance:"SYNTHETIC_DEMO" }
+  ],
+  users: [
+    { id:"demo-user-001", displayName:"Admin Sample", workEmail:"admin.sample@example.test", department:"Administration (Demo)", designation:"Administrator (Demo)", roleIds:["role-admin-demo"], roleNames:["Administrator (Demo)"], status:"ACTIVE", lastActivityAt:"2026-10-14T09:15:00+05:30", provenance:"SYNTHETIC_DEMO" },
+    { id:"demo-user-002", displayName:"Analyst Sample", workEmail:"analyst.sample@example.test", department:"Labour Analysis (Demo)", designation:"Analyst (Demo)", roleIds:["role-analyst-demo"], roleNames:["Analyst (Demo)"], status:"ACTIVE", lastActivityAt:null, provenance:"SYNTHETIC_DEMO" },
+    { id:"demo-user-003", displayName:"Viewer Sample", workEmail:"viewer.sample@example.test", department:"Policy Planning (Demo)", designation:"Viewer (Demo)", roleIds:["role-viewer-demo"], roleNames:["Viewer (Demo)"], status:"ACTIVE", lastActivityAt:null, provenance:"SYNTHETIC_DEMO" },
+    { id:"demo-user-004", displayName:"Steward Sample", workEmail:"steward.sample@example.test", department:"Data Operations (Demo)", designation:"Data Steward (Demo)", roleIds:["role-steward-demo"], roleNames:["Data Steward (Demo)"], status:"SUSPENDED", lastActivityAt:null, provenance:"SYNTHETIC_DEMO" }
+  ],
+  permissions: [
+    { id:"dashboard.read", name:"View dashboards", description:"Read dashboard summaries and approved charts.", category:"Analytics", sensitive:false },
+    { id:"reports.create_draft", name:"Create draft reports", description:"Create non-published report drafts.", category:"Reports", sensitive:false },
+    { id:"data_quality.read", name:"View data quality", description:"Read validation findings and history where access is permitted.", category:"Operations", sensitive:false },
+    { id:"access_requests.review", name:"Review access requests", description:"Review or decide eligible access requests subject to server policy.", category:"Administration", sensitive:true },
+    { id:"users.roles.manage", name:"Manage user roles", description:"Change assigned roles only when explicitly authorized by backend policy.", category:"Administration", sensitive:true },
+    { id:"audit.read", name:"View audit events", description:"Read administrative audit events within the permitted scope.", category:"Administration", sensitive:true }
+  ],
+  roles: [
+    { id:"role-admin-demo", name:"Administrator (Demo)", description:"Illustrative administrative role; not a production role definition.", permissionIds:["dashboard.read","reports.create_draft","data_quality.read","access_requests.review","users.roles.manage","audit.read"], scopeDescription:"All demo records only; actual scope must come from the backend.", isIllustrative:true },
+    { id:"role-analyst-demo", name:"Analyst (Demo)", description:"Illustrative analytics role.", permissionIds:["dashboard.read","reports.create_draft","data_quality.read"], scopeDescription:"Read analytics and create draft reports in this synthetic example.", isIllustrative:true },
+    { id:"role-viewer-demo", name:"Viewer (Demo)", description:"Illustrative read-only role.", permissionIds:["dashboard.read"], scopeDescription:"Read-only dashboard access in this synthetic example.", isIllustrative:true },
+    { id:"role-steward-demo", name:"Data Steward (Demo)", description:"Illustrative data-operations role.", permissionIds:["dashboard.read","data_quality.read"], scopeDescription:"Read data-quality findings in this synthetic example.", isIllustrative:true }
+  ],
+  auditEvents: [
+    { id:"demo-event-001", occurredAt:"2026-10-13T15:10:00+05:30", actorName:"Admin Sample", actorId:"demo-user-001", action:"ACCESS_REQUEST_REVIEWED", targetType:"ACCESS_REQUEST", targetId:"demo-req-004", targetLabel:"Arjun Example request (demo)", outcome:"SUCCESS", reason:"Illustrative demo event; no real approval occurred.", correlationId:"demo-correlation-001" },
+    { id:"demo-event-002", occurredAt:"2026-10-12T11:40:00+05:30", actorName:"Admin Sample", actorId:"demo-user-001", action:"ROLE_CATALOG_VIEWED", targetType:"ROLE_CATALOG", targetId:"demo-role-catalog", targetLabel:"Role catalogue (demo)", outcome:"SUCCESS", reason:"Illustrative read event.", correlationId:"demo-correlation-002" },
+    { id:"demo-event-003", occurredAt:"2026-10-10T16:25:00+05:30", actorName:"Admin Sample", actorId:"demo-user-001", action:"ACCESS_REQUEST_DECISION_ATTEMPT", targetType:"ACCESS_REQUEST", targetId:"demo-req-003", targetLabel:"Sneha Example request (demo)", outcome:"DENIED", reason:"Illustrative policy denial event; not a live authorization decision.", correlationId:"demo-correlation-003" }
+  ]
+};
+
+// Mutable copy of requests for demo state
+let requests = FIXTURE.requests.map(r => ({...r}));
+
+// ============================================================ TAB SWITCHING
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-selected', 'false');
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).setAttribute('aria-selected', 'true');
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+// ============================================================ HELPERS
+function initials(name) {
+  return name.split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase();
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
+    + ' ' + d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', hour12:false });
+}
+
+function statusBadge(status) {
+  const map = {
+    PENDING: ['badge-pending', '⏱ Pending'],
+    APPROVED: ['badge-approved', '✓ Approved'],
+    REJECTED: ['badge-rejected', '✗ Rejected'],
+    WITHDRAWN: ['badge-withdrawn', 'Withdrawn'],
+    EXPIRED: ['badge-expired', 'Expired']
+  };
+  const [cls, label] = map[status] || ['badge-withdrawn', status];
+  return `<span class="badge ${cls}" aria-label="Status: ${label}">${label}</span>`;
+}
+
+function roleBadge(roleName) {
+  let cls = '';
+  if (roleName.toLowerCase().includes('analyst')) cls = 'analyst';
+  else if (roleName.toLowerCase().includes('viewer')) cls = 'viewer';
+  else if (roleName.toLowerCase().includes('admin')) cls = 'admin';
+  else if (roleName.toLowerCase().includes('steward')) cls = 'steward';
+  return `<span class="role-badge ${cls}">${roleName}</span>`;
+}
+
+function accountStatusBadge(status) {
+  const map = {
+    ACTIVE: 'badge-active', SUSPENDED: 'badge-suspended', INVITED: 'badge-invited',
+    DISABLED: 'badge-rejected', PENDING: 'badge-pending'
+  };
+  return `<span class="badge ${map[status]||'badge-withdrawn'}">${status}</span>`;
+}
+
+// ============================================================ REQUESTS TABLE
+function renderRequests() {
+  const q = (document.getElementById('req-search').value || '').toLowerCase();
+  const dept = document.getElementById('filter-dept').value;
+  const role = document.getElementById('filter-role').value;
+  const status = document.getElementById('filter-status').value;
+  const sort = document.getElementById('filter-sort').value;
+
+  let filtered = requests.filter(r => {
+    const matchQ = !q || [r.requesterName, r.workEmail, r.department, r.requestedRoleName, r.id, r.designation||'']
+      .some(v => v.toLowerCase().includes(q));
+    const matchDept = dept === 'ALL' || r.department === dept;
+    const matchRole = role === 'ALL' || r.requestedRoleId === role;
+    const matchStatus = status === 'ALL' || r.status === status;
+    return matchQ && matchDept && matchRole && matchStatus;
+  });
+
+  if (sort === 'oldest') filtered.sort((a,b) => a.submittedAt.localeCompare(b.submittedAt));
+  else filtered.sort((a,b) => b.submittedAt.localeCompare(a.submittedAt));
+
+  const tbody = document.getElementById('requests-tbody');
+  const empty = document.getElementById('req-empty');
+  const label = document.getElementById('req-count-label');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.hidden = false;
+    label.textContent = 'No matching requests';
+    return;
+  }
+  empty.hidden = true;
+  label.textContent = `Showing ${filtered.length} of ${requests.length} request${requests.length !== 1 ? 's' : ''}`;
+
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td>
+        <div class="name-cell">
+          <span class="avatar-circle" aria-hidden="true">${initials(r.requesterName)}</span>
+          <div>
+            <div class="requester-name">${esc(r.requesterName)}</div>
+            <div class="requester-email">${esc(r.workEmail)}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div style="font-weight:500;font-size:13px">${esc(r.department)}</div>
+        ${r.organisation ? `<div style="font-size:11px;color:var(--ink-muted)">${esc(r.organisation)}</div>` : ''}
+      </td>
+      <td>${r.designation ? esc(r.designation) : '<span style="color:var(--ink-muted)">—</span>'}</td>
+      <td>${roleBadge(r.requestedRoleName)}</td>
+      <td style="font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(r.submittedAt)}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td>
+        ${r.status === 'PENDING'
+          ? `<button class="btn-review" onclick="openDrawer('${r.id}')" aria-label="Review request from ${esc(r.requesterName)}">Review</button>`
+          : `<button class="btn-view" onclick="openDrawer('${r.id}')" aria-label="View request from ${esc(r.requesterName)}">View</button>`
+        }
+      </td>
+    </tr>`).join('');
+}
+
+function filterRequests() { renderRequests(); }
+function clearFilters() {
+  document.getElementById('req-search').value = '';
+  document.getElementById('filter-dept').value = 'ALL';
+  document.getElementById('filter-role').value = 'ALL';
+  document.getElementById('filter-status').value = 'ALL';
+  document.getElementById('filter-sort').value = 'newest';
+  renderRequests();
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================ DRAWER
+let currentRequestId = null;
+let pendingDecision = null;
+
+function openDrawer(id) {
+  const req = requests.find(r => r.id === id);
+  if (!req) return;
+  currentRequestId = id;
+
+  // Reset drawer tabs
+  switchDrawerTab('details', document.querySelector('.drawer-tab'));
+
+  // Header
+  document.getElementById('drawer-avatar').textContent = initials(req.requesterName);
+  document.getElementById('drawer-name').textContent = req.requesterName;
+  document.getElementById('drawer-email').textContent = req.workEmail;
+  document.getElementById('drawer-status-badge').innerHTML = statusBadge(req.status);
+
+  // Details panel
+  document.getElementById('drawer-details-content').innerHTML = `
+    <div class="field-row"><span class="field-label">Request ID</span><span class="field-value" style="font-family:var(--font-mono);font-size:12px">${esc(req.id)}</span></div>
+    <div class="field-row"><span class="field-label">Requester</span><span class="field-value">${esc(req.requesterName)}</span></div>
+    <div class="field-row"><span class="field-label">Work Email</span><span class="field-value">${esc(req.workEmail)}</span></div>
+    <div class="field-row"><span class="field-label">Department</span><span class="field-value">${esc(req.department)}</span></div>
+    ${req.organisation ? `<div class="field-row"><span class="field-label">Organisation</span><span class="field-value">${esc(req.organisation)}</span></div>` : ''}
+    ${req.designation ? `<div class="field-row"><span class="field-label">Designation</span><span class="field-value">${esc(req.designation)}</span></div>` : ''}
+    <div class="field-row"><span class="field-label">Request Date</span><span class="field-value" style="font-variant-numeric:tabular-nums">${fmtDate(req.submittedAt)}</span></div>
+    <div class="field-row"><span class="field-label">Current Status</span><span class="field-value">${statusBadge(req.status)}</span></div>
+    <div class="field-row" style="border-bottom:none"><span class="field-label">Reason for Access</span><span class="field-value">${esc(req.reason)}</span></div>
+  `;
+
+  // Requested Access panel
+  const role = FIXTURE.roles.find(r => r.id === req.requestedRoleId);
+  const rolePerms = role ? FIXTURE.permissions.filter(p => role.permissionIds.includes(p.id)) : [];
+  document.getElementById('drawer-access-content').innerHTML = `
+    <div class="section-heading" style="font-size:14px;margin-bottom:4px">Requested Role</div>
+    <div class="role-card">
+      <div class="role-card-icon" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      </div>
+      <div>
+        <div class="role-card-name">${esc(req.requestedRoleName)}</div>
+        <div class="role-card-desc">${role ? esc(role.description) : 'Role details unavailable.'}</div>
+        ${req.accessScope ? `<div style="margin-top:6px;font-size:12px;color:var(--ink-muted)">Scope: ${esc(req.accessScope)}</div>` : ''}
+        ${req.requestedDuration ? `<div style="font-size:12px;color:var(--ink-muted)">Duration: ${esc(req.requestedDuration)}</div>` : ''}
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="section-heading" style="font-size:13px;margin-bottom:6px">Permissions this role includes</div>
+      ${rolePerms.length ? rolePerms.map(p => `
+        <div class="field-row" style="align-items:flex-start">
+          <span class="field-label" style="display:flex;align-items:center;gap:4px">
+            ${p.sensitive ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' : ''}
+            ${esc(p.category)}
+          </span>
+          <span class="field-value">
+            <strong>${esc(p.name)}</strong>
+            <div style="font-size:11.5px;color:var(--ink-muted);margin-top:1px">${esc(p.description)}</div>
+          </span>
+        </div>`).join('') : '<p style="font-size:13px;color:var(--ink-muted)">No permissions listed.</p>'}
+    </div>
+  `;
+
+  // Documents panel
+  if (req.evidenceState === 'UNAVAILABLE') {
+    document.getElementById('drawer-docs-content').innerHTML = `<div class="empty-state"><div class="icon">📄</div><p>Supporting documents are not available or not required for this request.</p></div>`;
+  } else if (req.evidenceState === 'NOT_REQUIRED') {
+    document.getElementById('drawer-docs-content').innerHTML = `<div class="empty-state"><div class="icon">✓</div><p>No supporting documents required for this request type.</p></div>`;
+  } else {
+    document.getElementById('drawer-docs-content').innerHTML = `
+      <div class="illustrative-note" style="margin-bottom:12px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Document contents are not shown in this demo. In production, only authorised metadata is displayed.
+      </div>
+      ${['Official ID Card', 'Authorisation Letter', 'Request Form'].map((name, i) => `
+        <div class="evidence-item">
+          <span class="doc-icon" aria-hidden="true">📄</span>
+          <div style="flex:1">
+            <div class="evidence-name">${name}</div>
+            <div class="evidence-filename">demo_document_${i+1}.pdf</div>
+          </div>
+          <button class="btn-sm" aria-label="View ${name} (demo, no file)">View</button>
+        </div>`).join('')}
+    `;
+  }
+
+  // History panel
+  document.getElementById('drawer-history-content').innerHTML = req.decisionHistoryAvailable
+    ? '<p>History available.</p>'
+    : `<div class="empty-state"><div class="icon">📋</div><p>No prior decision history is recorded for this request in the demo fixture. In production, history is fetched from the audit service.</p></div>`;
+
+  // Actions
+  const actionsEl = document.getElementById('drawer-actions');
+  const demoNote = document.getElementById('drawer-demo-note');
+  if (req.status === 'PENDING') {
+    actionsEl.hidden = false;
+    demoNote.hidden = false;
+  } else {
+    actionsEl.hidden = true;
+    demoNote.hidden = false;
+    demoNote.textContent = 'This request has already been decided. Read-only view.';
+  }
+
+  // Open
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.getElementById('request-drawer').classList.add('open');
+  document.getElementById('request-drawer').setAttribute('aria-hidden', 'false');
+  document.getElementById('drawer-close') && document.getElementById('drawer-close').focus();
+}
+
+function closeDrawer() {
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('request-drawer').classList.remove('open');
+  document.getElementById('request-drawer').setAttribute('aria-hidden', 'true');
+  currentRequestId = null;
+}
+
+function switchDrawerTab(tab, btn) {
+  document.querySelectorAll('.drawer-tab').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+  document.querySelectorAll('.drawer-panel').forEach(p => p.classList.remove('active'));
+  if (btn) { btn.classList.add('active'); btn.setAttribute('aria-selected','true'); }
+  else {
+    const b = document.querySelector('.drawer-tab');
+    if (b) { b.classList.add('active'); b.setAttribute('aria-selected','true'); }
+  }
+  document.getElementById('dpanel-' + tab).classList.add('active');
+}
+
+// ============================================================ DIALOG
+function openDialog(type) {
+  pendingDecision = type;
+  const title = document.getElementById('dialog-title');
+  const body = document.getElementById('dialog-body');
+  const reasonField = document.getElementById('dialog-reason-field');
+  const btnConfirmReject = document.getElementById('btn-confirm-reject');
+  const btnConfirmApprove = document.getElementById('btn-confirm-approve');
+
+  const req = requests.find(r => r.id === currentRequestId);
+  if (!req) return;
+
+  if (type === 'REJECT') {
+    title.textContent = 'Reject Request';
+    body.textContent = `You are about to reject the request from ${req.requesterName} for the ${req.requestedRoleName} role. A reason is required.`;
+    reasonField.hidden = false;
+    btnConfirmReject.hidden = false;
+    btnConfirmApprove.hidden = true;
+  } else {
+    title.textContent = 'Approve Request';
+    body.textContent = `You are about to approve access for ${req.requesterName} with the ${req.requestedRoleName} role. Confirm this decision.`;
+    reasonField.hidden = true;
+    btnConfirmReject.hidden = true;
+    btnConfirmApprove.hidden = false;
+  }
+  document.getElementById('dialog-reason').value = '';
+  document.getElementById('dialog-overlay').classList.add('open');
+}
+
+function closeDialog() {
+  document.getElementById('dialog-overlay').classList.remove('open');
+  pendingDecision = null;
+}
+
+function confirmDecision() {
+  if (!currentRequestId || !pendingDecision) return;
+  if (pendingDecision === 'REJECT') {
+    const reason = document.getElementById('dialog-reason').value.trim();
+    if (!reason) {
+      document.getElementById('dialog-reason').focus();
+      document.getElementById('dialog-reason').style.borderColor = 'var(--danger)';
+      return;
+    }
+  }
+  const req = requests.find(r => r.id === currentRequestId);
+  if (req) {
+    req.status = pendingDecision === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+    req.version++;
+  }
+  closeDialog();
+  closeDrawer();
+  renderRequests();
+  updatePendingCount();
+}
+
+function updatePendingCount() {
+  const pending = requests.filter(r => r.status === 'PENDING').length;
+  document.getElementById('stat-pending').textContent = pending;
+  const cnt = document.querySelector('#tab-requests .tab-count');
+  if (cnt) { cnt.textContent = pending; cnt.setAttribute('aria-label', `${pending} pending`); }
+}
+
+// ============================================================ USERS TABLE
+function renderUsers() {
+  const q = (document.getElementById('user-search').value || '').toLowerCase();
+  const status = document.getElementById('filter-user-status').value;
+  const role = document.getElementById('filter-user-role').value;
+
+  let filtered = FIXTURE.users.filter(u => {
+    const matchQ = !q || [u.displayName, u.workEmail, u.department, ...(u.roleNames||[])].some(v => v.toLowerCase().includes(q));
+    const matchStatus = status === 'ALL' || u.status === status;
+    const matchRole = role === 'ALL' || (u.roleIds||[]).includes(role);
+    return matchQ && matchStatus && matchRole;
+  });
+
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = filtered.map(u => `
+    <tr>
+      <td>
+        <div class="name-cell">
+          <span class="avatar-circle" aria-hidden="true">${initials(u.displayName)}</span>
+          <div>
+            <div class="requester-name">${esc(u.displayName)}</div>
+            <div class="requester-email">${esc(u.workEmail)}</div>
+          </div>
+        </div>
+      </td>
+      <td>${esc(u.department)}</td>
+      <td>${u.designation ? esc(u.designation) : '—'}</td>
+      <td>${(u.roleNames||[]).map(r => roleBadge(r)).join(' ')}</td>
+      <td>${accountStatusBadge(u.status)}</td>
+      <td style="font-size:12px;color:var(--ink-muted);font-variant-numeric:tabular-nums">${u.lastActivityAt ? fmtDate(u.lastActivityAt) : '—'}</td>
+    </tr>`).join('');
+}
+function filterUsers() { renderUsers(); }
+
+// ============================================================ ROLES & PERMISSIONS
+function renderRoles() {
+  const roleOrder = ['role-admin-demo','role-analyst-demo','role-viewer-demo','role-steward-demo'];
+  const roles = roleOrder.map(id => FIXTURE.roles.find(r => r.id === id)).filter(Boolean);
+
+  // Matrix
+  const tbody = document.getElementById('permissions-tbody');
+  tbody.innerHTML = FIXTURE.permissions.map(p => `
+    <tr>
+      <td>
+        <div style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:5px">
+          ${p.sensitive ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2.5" aria-label="Sensitive permission"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' : ''}
+          ${esc(p.name)}
+        </div>
+        <div style="font-size:11px;color:var(--ink-muted);margin-top:2px">${esc(p.description)}</div>
+      </td>
+      <td style="font-size:12px;color:var(--ink-muted)">${esc(p.category)}</td>
+      ${roles.map(r => `<td style="text-align:center">${r.permissionIds.includes(p.id) ? '<span class="perm-check" aria-label="Granted">✓</span>' : '<span class="perm-dash" aria-label="Not granted">–</span>'}</td>`).join('')}
+    </tr>`).join('');
+
+  // Role descriptions
+  const descEl = document.getElementById('roles-desc-list');
+  descEl.innerHTML = roles.map(r => `
+    <div style="border:1.5px solid var(--border-muted);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;background:var(--surface)">
+      <div style="font-weight:700;font-size:14px;margin-bottom:3px">${esc(r.name)}</div>
+      <div style="font-size:12.5px;color:var(--ink-muted);margin-bottom:4px">${esc(r.description)}</div>
+      <div style="font-size:11.5px;color:var(--ink-muted)">Scope: ${esc(r.scopeDescription)}</div>
+    </div>`).join('');
+}
+
+// ============================================================ AUDIT LOG
+function renderAudit() {
+  const q = (document.getElementById('audit-search').value || '').toLowerCase();
+  const outcome = document.getElementById('filter-audit-outcome').value;
+
+  let filtered = FIXTURE.auditEvents.filter(e => {
+    const matchQ = !q || [e.actorName, e.action, e.targetLabel, e.reason||''].some(v => v.toLowerCase().includes(q));
+    const matchOutcome = outcome === 'ALL' || e.outcome === outcome;
+    return matchQ && matchOutcome;
+  });
+
+  const tbody = document.getElementById('audit-tbody');
+  const outcomeClass = { SUCCESS:'outcome-success', FAILURE:'outcome-failure', DENIED:'outcome-denied' };
+  tbody.innerHTML = filtered.map(e => `
+    <tr>
+      <td style="font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums">${fmtDate(e.occurredAt)}</td>
+      <td>
+        <div style="font-weight:600">${esc(e.actorName)}</div>
+        ${e.actorId ? `<div style="font-size:11px;color:var(--ink-muted);font-family:var(--font-mono)">${esc(e.actorId)}</div>` : ''}
+      </td>
+      <td>
+        <div style="font-family:var(--font-mono);font-size:11.5px;background:var(--surface-muted);padding:2px 6px;border-radius:3px;display:inline-block">${esc(e.action)}</div>
+      </td>
+      <td>
+        <div style="font-weight:500">${esc(e.targetLabel)}</div>
+        <div style="font-size:11px;color:var(--ink-muted)">${esc(e.targetType)}</div>
+      </td>
+      <td><span class="${outcomeClass[e.outcome]||''}">${esc(e.outcome)}</span></td>
+      <td style="font-size:12px;color:var(--ink-muted);max-width:180px">${e.reason ? esc(e.reason) : '—'}</td>
+    </tr>`).join('');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--ink-muted)">No matching audit events.</td></tr>`;
+  }
+}
+function filterAudit() { renderAudit(); }
+
+// ============================================================ KEYBOARD
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('dialog-overlay').classList.contains('open')) closeDialog();
+    else if (document.getElementById('request-drawer').classList.contains('open')) closeDrawer();
+  }
+});
+
+// ============================================================ INIT
+renderRequests();
+renderUsers();
+renderRoles();
+renderAudit();
+</script>
+
+</body></html>

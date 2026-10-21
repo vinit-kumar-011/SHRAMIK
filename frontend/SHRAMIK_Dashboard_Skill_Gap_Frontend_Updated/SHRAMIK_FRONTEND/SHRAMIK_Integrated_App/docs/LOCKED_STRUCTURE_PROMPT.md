@@ -1,0 +1,9 @@
+# Locked implementation prompt for the developer / coding agent
+
+Implement the SHRAMIK dashboard using `SHRAMIK_Dashboard_Reference.png`, `SHRAMIK_DASHBOARD_SPEC.md`, `SHRAMIK_GLOBAL_DESIGN_SYSTEM.md`, and `SHRAMIK_COMPONENT_INVENTORY.md` as the source of truth. **Do not redesign the dashboard or change the approved section order, card count, or data density without approval.**
+
+Preserve: fixed warm off-white dotted canvas; compact logo; topbar; left navigation with worker art; hero heading and industrial collage; exactly four KPI cards; middle trend + regional panels; bottom emerging skills + sector gaps + occupation forecasts panels; compact source/methodology note. Use the yellow/navy/orange/teal tokens, thin charcoal outlines and restrained hard shadows. Only decorative hero artwork may have subtle parallax; respect reduced-motion.
+
+All dashboard values and interactions must flow through `LabourMarketDataAdapter`. Do not hard-code numbers in JSX, do not add ad hoc fetches to components, and do not silently replace failed REST calls with mock values. If `VITE_SHRAMIK_API_BASE_URL` is unset, the mock adapter is acceptable for local visual/interaction testing but every response must stay visibly labelled as illustrative. If configured, use the REST adapter and API contract. Each KPI, row, selector, search item, notification, navigation entry and View-all button must initiate a real adapter request/mutation or call the host router; no dead controls whose only behavior is a toast. Preserve loading, empty, error, retry and provenance states.
+
+The India map image is decorative only; do not use its shading as data. All map visualizations require accurate state geometry and joined source-backed records. Run typecheck/build, inspect desktop/tablet/mobile and complete `docs/QA_CHECKLIST.md` before merging.

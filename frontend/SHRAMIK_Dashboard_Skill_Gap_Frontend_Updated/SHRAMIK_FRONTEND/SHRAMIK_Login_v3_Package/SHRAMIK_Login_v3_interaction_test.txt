@@ -1,0 +1,52 @@
+{
+  "emptySubmit": {
+    "emailError": "Enter your email address.",
+    "passwordError": "Enter your password.",
+    "focused": "email",
+    "emailInvalid": "true",
+    "passwordInvalid": "true"
+  },
+  "invalidEmailPersists": {
+    "error": "Enter a valid email address, such as name@organisation.in.",
+    "visible": true
+  },
+  "validEmailClears": {
+    "visible": false,
+    "invalid": "false"
+  },
+  "passwordErrorClears": {
+    "visible": false,
+    "invalid": "false"
+  },
+  "passwordShow": {
+    "type": "text",
+    "label": "Hide password",
+    "pressed": "true",
+    "valuePreserved": true
+  },
+  "passwordHide": {
+    "type": "password",
+    "label": "Show password",
+    "pressed": "false",
+    "valuePreserved": true
+  },
+  "loadingImmediately": {
+    "disabled": true,
+    "label": "Checking availability…",
+    "status": "Checking sign-in availability…"
+  },
+  "duplicateSubmitBlocked": true,
+  "prototypeResult": {
+    "disabled": false,
+    "label": "Sign in",
+    "status": "Sign-in is not connected in this prototype. No credentials were sent to a server or persisted. Contact your administrator for access.",
+    "role": "status",
+    "ariaLive": "polite"
+  },
+  "forgotPassword": {
+    "status": "Password recovery is not connected in this prototype. Contact your administrator for account assistance.",
+    "role": "status",
+    "ariaLive": "polite"
+  }
+}
+All mock-DOM interaction assertions passed.

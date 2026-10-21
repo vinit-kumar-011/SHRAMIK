@@ -1,0 +1,3 @@
+/* Scoped utility layer for the Emerging Skills page. Tailwind preflight is disabled
+   so the established SHRAMIK dashboard shell is not reset. */
+@tailwind utilities;

@@ -1,0 +1,28 @@
+{
+  "artifact": "SHRAMIK Demand Insights standalone static bundle",
+  "buildMode": "static-production-bundle",
+  "source": "Derived from uploaded SHRAMIK_Supply_Insights.html shared shell plus Demand Insights handoff implementation requirements",
+  "compiledAtBuildTime": true,
+  "runtimeBabel": false,
+  "runtime": "React 18.3.1, ReactDOM 18.3.1 and Lucide 0.263.1 from CDN; Google Fonts from CDN",
+  "defaultMode": "Clearly labelled mock adapter unless window.SHRAMIK_CONFIG.apiBaseUrl is configured",
+  "apiMode": "REST; errors do not silently fall back to mock data",
+  "map": "Unavailable by design until versioned licensed GeoJSON and canonical code crosswalk are supplied",
+  "sourceJsBytes": 124343,
+  "compiledJsBytes": 145360,
+  "compiledJsSha256": "34c0ce89a2ac83e254f8f6d4e4c9f26994ef24e4071005473dd4769475377265",
+  "checks": {
+    "source_combination": "PASS",
+    "JSX_compilation": "PASS",
+    "compiled_JS_node_syntax": "PASS",
+    "production_entry_dependencies": "PASS",
+    "no_runtime_Babel": "PASS",
+    "required_demand_modules": "PASS",
+    "key_interactions_and_contract": "PASS",
+    "safe_map_fallback": "PASS",
+    "measure_label_guard": "PASS",
+    "provenance_states": "PASS",
+    "browser_smoke": "NOT VERIFIED: headless Chromium timed out while loading external CDN/browser services in this environment",
+    "archive_integrity": "PASS (both ZIP archives tested after creation)"
+  }
+}

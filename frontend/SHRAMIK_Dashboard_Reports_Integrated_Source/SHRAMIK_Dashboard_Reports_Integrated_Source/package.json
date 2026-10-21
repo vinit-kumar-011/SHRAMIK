@@ -1,0 +1,42 @@
+{
+  "name": "shramik-unified-app",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build && node scripts/create-skill-gap-entry.mjs && node scripts/create-forecasts-entry.mjs && node scripts/create-reports-entry.mjs",
+    "preview": "vite preview --host 0.0.0.0",
+    "typecheck": "tsc -b --pretty",
+    "test:adapter": "node --test tests/adapter-smoke.test.cjs tests/skill-gap-adapter-smoke.test.cjs tests/forecasts-adapter-smoke.test.cjs tests/reports-adapter-smoke.test.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "scope:styles": "node scripts/scope-data-sources-css.mjs",
+    "predev": "npm run prepare:modules && npm run scope:styles && npm run scope:demand-css",
+    "pretypecheck": "npm run prepare:modules && npm run scope:styles && npm run scope:demand-css",
+    "prebuild": "npm run prepare:modules && npm run scope:styles && npm run scope:demand-css",
+    "prepare:modules": "node scripts/prepare-react-modules.mjs",
+    "test:preview": "node scripts/smoke-preview.mjs",
+    "test:live-data": "node scripts/smoke-live-supabase.mjs",
+    "scope:demand-css": "node scripts/scope-demand-css.mjs",
+    "pretest": "npm run prepare:modules && npm run scope:styles && npm run scope:demand-css"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.7"
+  }
+}

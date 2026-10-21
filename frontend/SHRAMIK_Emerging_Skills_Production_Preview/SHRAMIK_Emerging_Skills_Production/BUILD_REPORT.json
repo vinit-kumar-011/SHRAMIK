@@ -1,0 +1,23 @@
+{
+  "project": "SHRAMIK Emerging Skills Intelligence",
+  "build_kind": "CDN-backed browser ESM preview fallback",
+  "source": "/mnt/data/shramik_emerging_skills(1)(1).tsx",
+  "tsx_transpilation": "PASS",
+  "generated_js_syntax": "PASS (EmergingSkillsPage.js and main.js)",
+  "strict_typecheck": "NOT RUN: dependencies and React/Recharts type packages absent after npm ci stalled",
+  "vite_production_build": "NOT COMPLETED: full dependency tree could not be installed in this environment; use npm ci + npm run build in a network-enabled project environment",
+  "runtime_dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "lucide-react": "0.468.0",
+    "recharts": "2.15.0",
+    "tailwind_css": "cdn browser runtime"
+  },
+  "data_adapter": "deterministic SYNTHETIC_DEMO by default; production host must inject an API-backed adapter",
+  "browser_smoke": "NOT VERIFIED: browser tool blocked local page navigation by environment policy",
+  "built_at": "2026-10-19",
+  "static_smoke_tests": "10/10 PASS",
+  "single_file_preview_syntax": "PASS (inline browser module passed node --check)",
+  "html_static_checks": "PASS (root present; CSS embedded; no Babel runtime)",
+  "archive_integrity": "PASS after final repackaging"
+}

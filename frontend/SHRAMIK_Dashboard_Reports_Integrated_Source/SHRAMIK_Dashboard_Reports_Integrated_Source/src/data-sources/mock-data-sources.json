@@ -1,0 +1,415 @@
+{
+  "notice": "SYNTHETIC_DEMO — illustrative fixture only. Names are plausible source categories, but metadata, dates, statuses, coverage and run counts are not verified facts and must not be presented as live integrations.",
+  "provenance": "SYNTHETIC_DEMO",
+  "summary": {
+    "total": 8,
+    "active": 5,
+    "needsAttention": 2,
+    "notConfigured": 1
+  },
+  "items": [
+    {
+      "id": "src_demo_plfs",
+      "name": "PLFS (Periodic Labour Force Survey)",
+      "description": "Illustrative labour-force dataset record",
+      "type": "GOVERNMENT_DATASET",
+      "agencyOwner": "MoSPI (illustrative metadata)",
+      "purpose": "Labour force statistics",
+      "accessMethod": "Official release / download (example only)",
+      "geographicCoverage": [
+        {
+          "level": "COUNTRY",
+          "code": "IN",
+          "label": "India (coverage needs verification)"
+        }
+      ],
+      "reportingPeriods": [
+        {
+          "label": "2017–2023 (illustrative)",
+          "start": "2017",
+          "end": "2023",
+          "grain": "ANNUAL"
+        }
+      ],
+      "sourceReleaseDate": null,
+      "lastSuccessfulRetrievalAt": null,
+      "lastValidatedAt": null,
+      "lifecycleStatus": "PENDING_VALIDATION",
+      "freshnessStatus": "UNKNOWN",
+      "provenance": "SYNTHETIC_DEMO",
+      "tags": [
+        "Employment",
+        "Unemployment",
+        "Labour Force"
+      ],
+      "notes": "Illustrative details. Confirm source URL, licence, supported series and reporting periods during source validation.",
+      "capabilities": {
+        "view": true,
+        "edit": false,
+        "retryIngestion": false,
+        "createIngestionRun": false,
+        "delete": false
+      }
+    },
+    {
+      "id": "src_demo_eshram",
+      "name": "e-Shram Registrations",
+      "description": "Illustrative worker-registration source record",
+      "type": "GOVERNMENT_DATASET",
+      "agencyOwner": "Ministry of Labour (illustrative metadata)",
+      "purpose": "Registered informal workers",
+      "accessMethod": null,
+      "geographicCoverage": [
+        {
+          "level": "COUNTRY",
+          "code": "IN",
+          "label": "India (unverified)"
+        }
+      ],
+      "reportingPeriods": [
+        {
+          "label": "Ongoing / not verified",
+          "grain": "UNKNOWN"
+        }
+      ],
+      "sourceReleaseDate": null,
+      "lastSuccessfulRetrievalAt": null,
+      "lastValidatedAt": null,
+      "lifecycleStatus": "ACTIVE",
+      "freshnessStatus": "UNKNOWN",
+      "provenance": "SYNTHETIC_DEMO",
+      "tags": [
+        "Informal Workers",
+        "Social Security",
+        "Labour Supply"
+      ],
+      "notes": "Status is for UI demonstration only and does not imply connector access.",
+      "capabilities": {
+        "view": true,
+        "edit": false,
+        "retryIngestion": false,
+        "createIngestionRun": false,
+        "delete": false
+      }
+    },
+    {
+      "id": "src_demo_nco",
+      "name": "NCO (National Classification of Occupations)",
+      "description": "Illustrative occupation-reference source",
+      "type": "REFERENCE_DATA",
+      "agencyOwner": "MoLE (illustrative metadata)",
+      "purpose": "Occupation classification",
+      "accessMethod": null,
+      "geographicCoverage": [
+        {
+          "level": "COUNTRY",
+          "code": "IN",
+          "label": "India (reference taxonomy)"
+        }
+      ],
+      "reportingPeriods": [
+        {
+          "label": "NCO version to verify",
+          "grain": "UNKNOWN"
+        }
+      ],
+      "sourceReleaseDate": null,
+      "lastSuccessfulRetrievalAt": null,
+      "lastValidatedAt": null,
+      "lifecycleStatus": "ACTIVE",
+      "freshnessStatus": "UNKNOWN",
+      "provenance": "SYNTHETIC_DEMO",
+      "tags": [
+        "Occupation Codes",
+        "Classification"
+      ],
+      "notes": "Confirm the intended NCO edition and licensing before use.",
+      "capabilities": {
+        "view": true,
+        "edit": false,
+        "retryIngestion": false,
+        "createIngestionRun": false,
+        "delete": false
+      }
+    },
+    {
+      "id": "src_demo_nqr",
+      "name": "NQR / NSQF",
+      "description": "Illustrative qualification/skill-mapping record",
+      "type": "REFERENCE_DATA",
+      "agencyOwner": "MSDE (illustrative metadata)",
+      "purpose": "Qualification and skill mapping",
+      "accessMethod": null,
+      "geographicCoverage": [
+        {
+          "level": "COUNTRY",
+          "code": "IN",
+          "label": "India (unverified)"
+        }
+      ],
+      "reportingPeriods": [
+        {
+          "label": "Version to verify",
+          "grain": "UNKNOWN"
+        }
+      ],
+      "sourceReleaseDate": null,
+      "lastSuccessfulRetrievalAt": null,
+      "lastValidatedAt": null,
+      "lifecycleStatus": "ACTIVE",
+      "freshnessStatus": "UNKNOWN",
+      "provenance": "SYNTHETIC_DEMO",
+      "tags": [
+        "Qualifications",
+        "Skill Levels",
+        "Training Alignment"
+      ],
+      "notes": "Confirm precise system names, versions, source access and permitted reuse.",
+      "capabilities": {
+        "view": true,
+        "edit": false,
+        "retryIngestion": false,
+        "createIngestionRun": false,
+        "delete": false
+      }
+    },
+    {
+      "id": "src_demo_naukri",
+      "name": "Job Postings — Naukri (Demo)",
+      "description": "Synthetic industry-hiring feed example",
+      "type": "INDUSTRY_FEED",
+      "agencyOwner": "Illustrative partner label — not connected",
+      "purpose": "Real-time hiring-demand signals",
+      "accessMethod": "Not configured",
+      "geographicCoverage": [
+        {
+          "level": "MULTI_REGION",
+          "label": "Major cities (illustrative)"
+        }
+      ],
+      "reportingPeriods": [
+        {
+          "label": "Not available",
+          "grain": "UNKNOWN"
+        }
+      ],
+      "sourceReleaseDate": null,
+      "lastSuccessfulRetrievalAt": null,
+      "lastValidatedAt": null,
+      "lifecycleStatus": "NOT_CONFIGURED",
+      "freshnessStatus": "UNKNOWN",
+      "provenance": "SYNTHETIC_DEMO",
+      "tags": [
+        "Job Demand",
+        "Online Postings",
+        "Skills"
+      ],
+      "notes": "No partner agreement or live feed is implied by this demo row.",
+      "capabilities": {
+        "view": true,
+        "edit": false,
+        "retryIngestion": false,
+        "createIngestionRun": false,
+        "delete": false
+      }
+    },
+    {
+      "id": "src_demo_linkedin",
+      "name": "Job Postings — LinkedIn (Demo)",
+      "description": "Synthetic hiring-signal feed example",
+      "type": "INDUSTRY_FEED",
+      "agencyOwner": "Illustrative partner label — not connected",
+      "purpose": "Hiring trends and emerging skills",
+      "accessMethod": "Not configured",
+      "geographicCoverage": [
+        {
+          "level": "UNKNOWN",
+          "label": "Not verified"
+        }
+      ],
+      "reportingPeriods": [
+        {
+          "label": "Not available",
+          "grain": "UNKNOWN"
+        }
+      ],
+      "sourceReleaseDate": null,
+      "lastSuccessfulRetrievalAt": null,
+      "lastValidatedAt": null,
+      "lifecycleStatus": "ACTIVE",
+      "freshnessStatus": "UNKNOWN",
+      "provenance": "SYNTHETIC_DEMO",
+      "tags": [
+        "Job Demand",
+        "Skill Trends",
+        "Industry Signals"
+      ],
+      "notes": "This fixture status is deliberately illustrative; no live access is asserted.",
+      "capabilities": {
+        "view": true,
+        "edit": false,
+        "retryIngestion": false,
+        "createIngestionRun": false,
+        "delete": false
+      }
+    },
+    {
+      "id": "src_demo_iti",
+      "name": "MSDE Training Institutes (ITI)",
+      "description": "Illustrative training capacity data record",
+      "type": "TRAINING_DATASET",
+      "agencyOwner": "MSDE (illustrative metadata)",
+      "purpose": "Training capacity and seat data",
+      "accessMethod": null,
+      "geographicCoverage": [
+        {
+          "level": "STATE_UT",
+          "label": "State/UT (not verified)"
+        }
+      ],
+      "reportingPeriods": [
+        {
+          "label": "2022–2024 (illustrative)",
+          "start": "2022",
+          "end": "2024",
+          "grain": "ANNUAL"
+        }
+      ],
+      "sourceReleaseDate": null,
+      "lastSuccessfulRetrievalAt": null,
+      "lastValidatedAt": null,
+      "lifecycleStatus": "ACTIVE",
+      "freshnessStatus": "UNKNOWN",
+      "provenance": "SYNTHETIC_DEMO",
+      "tags": [
+        "Training Supply",
+        "Institutes",
+        "Seats"
+      ],
+      "notes": "Confirm official dataset, granularity, historical completeness and reuse terms.",
+      "capabilities": {
+        "view": true,
+        "edit": false,
+        "retryIngestion": false,
+        "createIngestionRun": false,
+        "delete": false
+      }
+    },
+    {
+      "id": "src_demo_state_missions",
+      "name": "State Skill Development Missions",
+      "description": "Illustrative state programme source record",
+      "type": "GOVERNMENT_DATASET",
+      "agencyOwner": "State SDMs (generic illustrative label)",
+      "purpose": "State-level training programmes",
+      "accessMethod": "Not configured",
+      "geographicCoverage": [
+        {
+          "level": "STATE_UT",
+          "label": "State-specific; varies by source"
+        }
+      ],
+      "reportingPeriods": [
+        {
+          "label": "Varies / not verified",
+          "grain": "UNKNOWN"
+        }
+      ],
+      "sourceReleaseDate": null,
+      "lastSuccessfulRetrievalAt": null,
+      "lastValidatedAt": null,
+      "lifecycleStatus": "FAILED",
+      "freshnessStatus": "UNKNOWN",
+      "provenance": "SYNTHETIC_DEMO",
+      "tags": [
+        "State Missions",
+        "Training Supply",
+        "Programmes"
+      ],
+      "notes": "Failed is a demo state, not an observed operational failure.",
+      "capabilities": {
+        "view": true,
+        "edit": false,
+        "retryIngestion": false,
+        "createIngestionRun": false,
+        "delete": false
+      }
+    }
+  ],
+  "ingestionRunsBySource": {
+    "src_demo_plfs": [
+      {
+        "runId": "run_demo_001",
+        "sourceId": "src_demo_plfs",
+        "status": "SUCCEEDED",
+        "startedAt": null,
+        "completedAt": null,
+        "durationMs": null,
+        "recordsRetrieved": null,
+        "recordsAccepted": null,
+        "recordsRejected": null,
+        "warningCount": null,
+        "safeMessage": "Demonstration run only; no real retrieval took place.",
+        "provenance": "SYNTHETIC_DEMO"
+      },
+      {
+        "runId": "run_demo_002",
+        "sourceId": "src_demo_plfs",
+        "status": "WARNING",
+        "startedAt": null,
+        "completedAt": null,
+        "durationMs": null,
+        "recordsRetrieved": null,
+        "recordsAccepted": null,
+        "recordsRejected": null,
+        "warningCount": null,
+        "safeMessage": "Demonstration warning state only.",
+        "provenance": "SYNTHETIC_DEMO"
+      }
+    ]
+  },
+  "coverageBySource": {
+    "src_demo_plfs": {
+      "sourceId": "src_demo_plfs",
+      "geography": [
+        {
+          "level": "COUNTRY",
+          "code": "IN",
+          "label": "India (unverified coverage)"
+        }
+      ],
+      "reportingPeriods": [
+        {
+          "label": "2017–2023 (illustrative)",
+          "start": "2017",
+          "end": "2023",
+          "grain": "ANNUAL"
+        }
+      ],
+      "taxonomyVersions": [],
+      "state": "UNKNOWN",
+      "limitations": [
+        "All coverage claims require source-level verification.",
+        "Periods shown are illustrative only."
+      ],
+      "provenance": "SYNTHETIC_DEMO"
+    }
+  },
+  "fieldMappingsBySource": {
+    "src_demo_plfs": [
+      {
+        "id": "map_demo_1",
+        "sourceId": "src_demo_plfs",
+        "sourceField": "example_source_field",
+        "sourceType": "string",
+        "canonicalField": null,
+        "canonicalType": null,
+        "transformation": null,
+        "status": "NOT_CONFIGURED",
+        "schemaVersion": null,
+        "note": "Placeholder: replace only after inspecting an actual source schema.",
+        "provenance": "SYNTHETIC_DEMO"
+      }
+    ]
+  }
+}

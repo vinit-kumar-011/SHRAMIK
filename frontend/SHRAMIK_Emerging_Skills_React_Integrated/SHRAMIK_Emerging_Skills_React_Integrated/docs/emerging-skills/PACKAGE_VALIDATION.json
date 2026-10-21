@@ -1,0 +1,17 @@
+{
+  "source_files_count": 24,
+  "reference_board_px": [
+    1536,
+    1024
+  ],
+  "internal_views": 5,
+  "design_board_crops": [
+    "01-skills-overview.png",
+    "02-skill-momentum.png",
+    "03-occupation-sector-connections.png",
+    "04-regional-signals.png",
+    "05-skill-profiles-evidence.png"
+  ],
+  "zip_integrity_check": "PASS (Python zipfile.testzip)",
+  "build_test_status": "No React application included, so no frontend build/test is claimed."
+}

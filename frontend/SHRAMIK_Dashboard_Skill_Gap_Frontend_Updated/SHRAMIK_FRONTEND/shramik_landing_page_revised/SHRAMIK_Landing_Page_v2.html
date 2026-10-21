@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F7F6F0">
+  <meta name="description" content="SHRAMIK is a labour-market intelligence platform concept for examining workforce demand, supply, skill gaps and emerging requirements.">
+  <title>SHRAMIK — Labour Market Intelligence System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* All styling is scoped to .shramik-landing; safe to place beside other app pages. */
+    /* Standalone-file reset. Omit this body rule when porting to React. */
+    body { margin:0; }
+    .shramik-landing {
+      --sl-canvas:#F7F6F0; --sl-surface:#FFFFFF; --sl-muted:#F0EFE8;
+      --sl-ink:#171717; --sl-ink-muted:#62625C; --sl-border:#292929;
+      --sl-border-muted:#D8D6CD; --sl-yellow:#F2D34F; --sl-yellow-hover:#E6C33C;
+      --sl-navy:#203A5B; --sl-orange:#EB791D; --sl-teal:#20A89C;
+      --sl-success:#35745D; --sl-warning:#B56732; --sl-danger:#B42318;
+      --sl-shadow:3px 3px 0 var(--sl-border); --sl-r-card:12px; --sl-r-control:8px;
+      --sl-display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
+      --sl-body:"IBM Plex Sans",Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+      color:var(--sl-ink); background:var(--sl-canvas); font:400 16px/1.6 var(--sl-body);
+      min-width:0; overflow-wrap:anywhere; isolation:isolate;
+    }
+    .shramik-landing *, .shramik-landing *::before, .shramik-landing *::after { box-sizing:border-box; }
+    .shramik-landing :where(h1,h2,h3,p,figure,ul,ol) { margin:0; }
+    .shramik-landing :where(a) { color:inherit; }
+    .shramik-landing :where(button,input,select) { font:inherit; }
+    .shramik-landing :where(button,a,input,select,[tabindex]):focus-visible { outline:3px solid var(--sl-navy); outline-offset:3px; }
+    .shramik-landing :where(button) { cursor:pointer; }
+    .shramik-landing :where(button:disabled) { cursor:not-allowed; opacity:.6; }
+    .shramik-landing .sl-wrap { max-width:1240px; margin:0 auto; padding-inline:24px; }
+    html { scroll-behavior:smooth; scroll-padding-top:calc(84px + env(safe-area-inset-top,0px)); -webkit-text-size-adjust:100%; }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+    .shramik-landing [id] { scroll-margin-top:90px; }
+    .shramik-landing .sl-skip { position:absolute; top:8px; left:-9999px; z-index:100; padding:9px 14px; background:var(--sl-yellow); color:#171717; border:2px solid var(--sl-border); }
+    .shramik-landing .sl-skip:focus { left:8px; }
+    .shramik-landing .sl-header { position:sticky; top:0; z-index:30; padding-top:env(safe-area-inset-top,0px); background:var(--sl-canvas); border-bottom:1px solid var(--sl-border-muted); transition:box-shadow .18s ease; }
+    .shramik-landing .sl-header.is-scrolled { box-shadow:0 3px 12px rgba(23,23,23,.07); }
+    .shramik-landing .sl-bar { min-height:72px; display:flex; align-items:center; justify-content:space-between; gap:18px; }
+    .shramik-landing .sl-brand { display:inline-flex; align-items:center; gap:11px; text-decoration:none; flex-shrink:0; }
+    .shramik-landing .sl-mark { width:38px; height:38px; display:grid; place-items:center; background:var(--sl-yellow); border:2px solid var(--sl-border); border-radius:8px; color:#171717; font:800 24px/1 var(--sl-display); box-shadow:2px 2px 0 var(--sl-border); }
+    .shramik-landing .sl-brand-name { display:block; font:800 28px/1 var(--sl-display); letter-spacing:.025em; }
+    .shramik-landing .sl-brand-sub { display:block; margin-top:3px; color:var(--sl-ink-muted); font-size:11px; line-height:1.2; }
+    .shramik-landing .sl-nav { display:flex; align-items:center; gap:4px; }
+    .shramik-landing .sl-nav a { display:inline-flex; align-items:center; min-height:42px; padding:9px 11px; border-radius:7px; text-decoration:none; font-size:14px; font-weight:500; }
+    .shramik-landing .sl-nav a:hover { background:var(--sl-muted); }
+    .shramik-landing .sl-btn { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:9px; padding:10px 18px; border:1.5px solid var(--sl-border); border-radius:var(--sl-r-control); color:var(--sl-ink); background:var(--sl-surface); text-decoration:none; font-size:14px; font-weight:600; line-height:1.25; transition:background .18s ease,transform .18s ease,box-shadow .18s ease; }
+    .shramik-landing .sl-btn--primary { background:var(--sl-yellow); box-shadow:var(--sl-shadow); }
+    .shramik-landing .sl-btn--primary:hover { background:var(--sl-yellow-hover); transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--sl-border); }
+    .shramik-landing .sl-btn--primary:active { transform:translate(2px,2px); box-shadow:none; }
+    .shramik-landing .sl-btn--secondary:hover { background:var(--sl-muted); transform:translateY(-1px); }
+    .shramik-landing .sl-menu-btn { display:none; min-width:44px; min-height:44px; border:1.5px solid var(--sl-border); border-radius:var(--sl-r-control); background:var(--sl-surface); color:var(--sl-ink); font-weight:600; }
+    .shramik-landing .sl-section { padding-block:76px; }
+    .shramik-landing .sl-section--muted { background:var(--sl-muted); border-block:1px solid var(--sl-border-muted); }
+    .shramik-landing .sl-eyebrow { margin-bottom:13px; color:var(--sl-ink-muted); font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+    .shramik-landing .sl-hero { border-bottom:1px solid var(--sl-border-muted); background-image:radial-gradient(var(--sl-border-muted) 1.1px,transparent 1.3px); background-size:20px 20px; }
+    .shramik-landing .sl-hero-grid { display:grid; grid-template-columns:minmax(0,1.18fr) minmax(330px,.82fr); gap:36px; align-items:center; padding-block:58px 66px; }
+    .shramik-landing .sl-hero h1 { max-width:760px; font:800 clamp(54px,6.1vw,82px)/.93 var(--sl-display); letter-spacing:-.018em; }
+    .shramik-landing .sl-hero-line { display:block; }
+    .shramik-landing .sl-underline { display:inline; background:linear-gradient(transparent 79%,var(--sl-yellow) 79% 94%,transparent 94%); }
+    .shramik-landing .sl-lede { max-width:48ch; margin-top:22px; color:var(--sl-ink-muted); font-size:18px; line-height:1.65; }
+    .shramik-landing .sl-ctas { display:flex; flex-wrap:wrap; gap:12px; margin-top:27px; }
+    .shramik-landing .sl-promise { display:flex; flex-wrap:wrap; gap:9px 18px; margin-top:22px; color:var(--sl-ink-muted); font-size:12px; }
+    .shramik-landing .sl-promise span { display:inline-flex; align-items:center; gap:7px; }
+    .shramik-landing .sl-promise span::before { content:""; width:7px; height:7px; background:var(--sl-teal); border:1px solid var(--sl-border); border-radius:50%; }
+    .shramik-landing .sl-art { position:relative; width:100%; max-width:490px; aspect-ratio:1/1; margin-inline:auto; }
+    .shramik-landing .sl-art-dots { position:absolute; inset:2%; border-radius:var(--sl-r-card); background-image:radial-gradient(var(--sl-ink) 1.1px,transparent 1.4px); background-size:15px 15px; opacity:.14; }
+    .shramik-landing .sl-art-orb { position:absolute; border:1.5px solid var(--sl-border); border-radius:50%; }
+    .shramik-landing .sl-art-orb--yellow { width:47%; aspect-ratio:1; top:1%; right:3%; background:var(--sl-yellow); }
+    .shramik-landing .sl-art-orb--orange { width:22%; aspect-ratio:1; bottom:9%; left:1%; background:var(--sl-orange); }
+    .shramik-landing .sl-art-orb--navy { width:12%; aspect-ratio:1; top:41%; left:4%; background:var(--sl-navy); }
+    .shramik-landing .sl-art-frame { position:absolute; inset:13% 10% 7% 13%; overflow:hidden; border:2px solid var(--sl-border); border-radius:12px; background:#EAE8E0; box-shadow:var(--sl-shadow); }
+    .shramik-landing .sl-art-frame svg { display:block; width:100%; height:100%; }
+    .shramik-landing .sl-art-caption { position:absolute; bottom:0; left:13%; padding:3px 8px; border:1px solid var(--sl-border-muted); border-radius:5px; background:var(--sl-canvas); color:var(--sl-ink-muted); font-size:11px; }
+    .shramik-landing .sl-section-title { max-width:20ch; margin-bottom:14px; font:700 clamp(36px,4.1vw,54px)/.98 var(--sl-display); letter-spacing:-.01em; }
+    .shramik-landing .sl-section-intro { max-width:68ch; color:var(--sl-ink-muted); font-size:16px; line-height:1.7; }
+    .shramik-landing .sl-value-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; }
+    .shramik-landing .sl-value { padding:4px 22px 4px 0; }
+    .shramik-landing .sl-value + .sl-value { padding-left:24px; border-left:1px solid var(--sl-border-muted); }
+    .shramik-landing .sl-icon { width:43px; height:43px; display:grid; place-items:center; margin-bottom:15px; border:1.5px solid var(--sl-border); border-radius:9px; background:var(--sl-yellow); color:#171717; font:700 20px/1 var(--sl-display); }
+    .shramik-landing .sl-value h3 { margin-bottom:7px; font:700 25px/1.02 var(--sl-display); }
+    .shramik-landing .sl-value p { color:var(--sl-ink-muted); font-size:14px; line-height:1.6; }
+    .shramik-landing .sl-contrast-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:28px; }
+    .shramik-landing .sl-contrast-panel { padding:24px; border:1.5px solid var(--sl-border); border-radius:var(--sl-r-card); background:var(--sl-surface); }
+    .shramik-landing .sl-contrast-panel--connected { background:var(--sl-navy); color:#fff; box-shadow:var(--sl-shadow); }
+    .shramik-landing .sl-contrast-panel h3 { margin-bottom:14px; font:700 28px/1 var(--sl-display); }
+    .shramik-landing .sl-chips { display:flex; flex-wrap:wrap; gap:8px; padding:0; list-style:none; }
+    .shramik-landing .sl-chips li { padding:6px 10px; border:1px dashed var(--sl-border); border-radius:7px; background:var(--sl-canvas); color:var(--sl-ink); font-size:12px; }
+    .shramik-landing .sl-contrast-panel--connected .sl-chips li { border-style:solid; background:var(--sl-yellow); color:#171717; }
+    .shramik-landing .sl-contrast-panel p { margin-top:14px; font-size:14px; line-height:1.65; }
+    .shramik-landing .sl-card-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:30px; }
+    .shramik-landing .sl-cap-card { min-width:0; padding:22px; border:1.5px solid var(--sl-border); border-radius:var(--sl-r-card); background:var(--sl-surface); }
+    .shramik-landing .sl-cap-card h3 { margin-bottom:8px; font:700 25px/1.02 var(--sl-display); }
+    .shramik-landing .sl-cap-card p { color:var(--sl-ink-muted); font-size:14px; line-height:1.65; }
+    .shramik-landing .sl-workflow { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-top:30px; }
+    .shramik-landing .sl-step { width:100%; min-width:0; min-height:180px; padding:18px; text-align:left; border:1.5px solid var(--sl-border); border-radius:var(--sl-r-card); background:var(--sl-surface); color:var(--sl-ink); transition:transform .18s ease,box-shadow .18s ease,background .18s ease; }
+    .shramik-landing .sl-step:hover { transform:translateY(-2px); }
+    .shramik-landing .sl-step[aria-pressed="true"] { background:#FFF5C8; box-shadow:var(--sl-shadow); }
+    .shramik-landing .sl-step-number { display:grid; width:34px; height:34px; place-items:center; margin-bottom:14px; border:1.5px solid var(--sl-border); border-radius:50%; background:var(--sl-yellow); font:800 20px/1 var(--sl-display); }
+    .shramik-landing .sl-step h3 { margin-bottom:7px; font:700 23px/1 var(--sl-display); }
+    .shramik-landing .sl-step p { color:var(--sl-ink-muted); font-size:12px; line-height:1.5; }
+    .shramik-landing .sl-workflow-detail { min-height:86px; margin-top:14px; padding:16px 18px; border-left:4px solid var(--sl-yellow); background:var(--sl-surface); }
+    .shramik-landing .sl-workflow-detail strong { display:block; margin-bottom:5px; font-size:14px; }
+    .shramik-landing .sl-workflow-detail p { color:var(--sl-ink-muted); font-size:14px; line-height:1.6; }
+    .shramik-landing .sl-transparency-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-top:28px; }
+    .shramik-landing .sl-transparency-card { padding:19px; border:1px solid var(--sl-border-muted); border-radius:10px; background:var(--sl-surface); }
+    .shramik-landing .sl-transparency-card h3 { margin:12px 0 7px; font:700 23px/1 var(--sl-display); }
+    .shramik-landing .sl-transparency-card p { color:var(--sl-ink-muted); font-size:13px; line-height:1.6; }
+    .shramik-landing .sl-method-note { margin-top:18px; padding:13px 15px; border:1px solid var(--sl-border-muted); border-radius:8px; color:var(--sl-ink-muted); background:var(--sl-surface); font-size:13px; line-height:1.65; }
+    .shramik-landing .sl-preview { margin-top:28px; overflow:hidden; border:2px solid var(--sl-border); border-radius:var(--sl-r-card); background:var(--sl-surface); box-shadow:var(--sl-shadow); }
+    .shramik-landing .sl-preview-top { display:flex; align-items:center; gap:7px; padding:12px 15px; border-bottom:1.5px solid var(--sl-border); background:var(--sl-muted); color:var(--sl-ink-muted); font-size:12px; }
+    .shramik-landing .sl-window-dot { width:9px; height:9px; border:1px solid var(--sl-border); border-radius:50%; }
+    .shramik-landing .sl-preview-top span { margin-left:6px; }
+    .shramik-landing .sl-preview-body { display:grid; grid-template-columns:minmax(0,1.8fr) minmax(220px,1fr); gap:16px; padding:20px; }
+    .shramik-landing .sl-preview-chart { min-height:230px; padding:16px; border:1px solid var(--sl-border-muted); border-radius:9px; background:#FCFBF7; }
+    .shramik-landing .sl-preview-chart-head { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font-size:13px; font-weight:700; }
+    .shramik-landing .sl-chart-svg { display:block; width:100%; height:170px; margin-top:10px; }
+    .shramik-landing .sl-chart-grid { stroke:#D8D6CD; stroke-width:1; stroke-dasharray:3 4; }
+    .shramik-landing .sl-chart-demand { fill:none; stroke:var(--sl-navy); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+    .shramik-landing .sl-chart-supply { fill:none; stroke:var(--sl-teal); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:6 5; }
+    .shramik-landing .sl-chart-forecast { fill:rgba(242,211,79,.22); stroke:none; }
+    .shramik-landing .sl-preview-metrics { display:grid; gap:10px; align-content:start; }
+    .shramik-landing .sl-preview-metric { padding:14px; border:1px solid var(--sl-border-muted); border-radius:9px; background:var(--sl-surface); }
+    .shramik-landing .sl-preview-metric span { display:block; color:var(--sl-ink-muted); font-size:12px; }
+    .shramik-landing .sl-preview-metric strong { display:block; margin-top:5px; font:700 26px/1 var(--sl-display); }
+    .shramik-landing .sl-preview-caption { margin-top:11px; color:var(--sl-ink-muted); font-size:12px; }
+    .shramik-landing .sl-preview-footer { padding:14px 20px 17px; border-top:1px solid var(--sl-border-muted); background:#FCFBF7; }
+    .shramik-landing .sl-tabs { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+    .shramik-landing .sl-tabs button { min-height:36px; padding:7px 12px; border:1px solid var(--sl-border-muted); border-radius:7px; background:#fff; color:var(--sl-ink); font-size:12px; font-weight:500; }
+    .shramik-landing .sl-tabs button:hover { border-color:var(--sl-border); }
+    .shramik-landing .sl-tabs button[aria-selected="true"] { border-color:var(--sl-border); background:var(--sl-yellow); box-shadow:2px 2px 0 var(--sl-border); font-weight:700; }
+    .shramik-landing .sl-tabs p { color:var(--sl-ink-muted); font-size:12px; line-height:1.55; }
+    .shramik-landing .sl-chart-legend { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:9px; color:var(--sl-ink-muted); font-size:11px; }
+    .shramik-landing .sl-chart-legend span { display:inline-flex; align-items:center; gap:6px; }
+    .shramik-landing .sl-legend-dot { display:inline-block; width:8px; height:8px; border:1px solid var(--sl-border); border-radius:50%; }
+    .shramik-landing .sl-legend-dot--navy { background:var(--sl-navy); }
+    .shramik-landing .sl-legend-dot--teal { background:var(--sl-teal); }
+    .shramik-landing .sl-legend-dash { display:inline-block; width:15px; border-top:2px dashed var(--sl-orange); }
+    .shramik-landing .sl-final { padding-block:62px; border-block:1.5px solid var(--sl-border); background:var(--sl-navy); color:#fff; background-image:radial-gradient(rgba(255,255,255,.14) 1.1px,transparent 1.3px); background-size:20px 20px; }
+    .shramik-landing .sl-final .sl-eyebrow { color:rgba(255,255,255,.82); }
+    .shramik-landing .sl-final-grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(220px,.8fr); align-items:center; gap:28px; }
+    .shramik-landing .sl-final h2 { max-width:17ch; font:700 clamp(40px,5vw,64px)/.98 var(--sl-display); }
+    .shramik-landing .sl-final p { max-width:55ch; margin-top:13px; color:rgba(255,255,255,.88); font-size:16px; }
+    .shramik-landing .sl-final-actions { display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
+    .shramik-landing .sl-footer { padding-block:34px calc(28px + env(safe-area-inset-bottom,0px)); }
+    .shramik-landing .sl-footer-grid { display:grid; grid-template-columns:1.2fr 1fr; gap:24px; align-items:start; }
+    .shramik-landing .sl-footer-description { margin-top:10px; color:var(--sl-ink-muted); font-size:13px; }
+    .shramik-landing .sl-footer nav { display:flex; flex-wrap:wrap; gap:8px 20px; justify-content:flex-end; }
+    .shramik-landing .sl-footer nav a { padding:8px 0; font-size:13px; text-decoration-thickness:1px; text-underline-offset:3px; }
+    .shramik-landing .sl-footer-note { margin-top:18px; padding-top:14px; border-top:1px solid var(--sl-border-muted); color:var(--sl-ink-muted); font-size:11px; }
+    .shramik-landing .sl-reveal { opacity:1; transform:none; }
+    .shramik-landing.sl-has-reveal .sl-reveal { opacity:0; transform:translateY(10px); transition:opacity .34s ease,transform .34s ease; }
+    .shramik-landing.sl-has-reveal .sl-reveal.is-visible { opacity:1; transform:translateY(0); }
+    @media (min-width:1500px) { .shramik-landing .sl-wrap { padding-inline:32px; } }
+    @media (max-width:1100px) {
+      .shramik-landing .sl-hero-grid { grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr); gap:24px; }
+      .shramik-landing .sl-hero h1 { font-size:clamp(48px,6vw,68px); }
+      .shramik-landing .sl-workflow { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .shramik-landing .sl-transparency-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    }
+    @media (max-width:900px) {
+      .shramik-landing .sl-menu-btn { display:inline-flex; align-items:center; justify-content:center; }
+      .shramik-landing .sl-nav { position:absolute; top:100%; left:0; right:0; display:none; flex-direction:column; align-items:stretch; padding:8px 24px 20px; border-bottom:1px solid var(--sl-border-muted); background:var(--sl-canvas); box-shadow:0 4px 10px rgba(23,23,23,.08); }
+      .shramik-landing .sl-nav.is-open { display:flex; }
+      .shramik-landing .sl-nav a { min-height:46px; padding:12px 10px; border-bottom:1px solid var(--sl-border-muted); border-radius:0; }
+      .shramik-landing .sl-nav .sl-btn { width:100%; margin-top:7px; border:1.5px solid var(--sl-border); border-radius:8px; }
+      .shramik-landing .sl-hero-grid { grid-template-columns:minmax(0,1fr); gap:22px; padding-block:42px 48px; }
+      .shramik-landing .sl-hero-copy { max-width:760px; }
+      .shramik-landing .sl-hero h1 { max-width:14ch; font-size:clamp(48px,8vw,72px); }
+      .shramik-landing .sl-art { max-width:420px; }
+      .shramik-landing .sl-section { padding-block:58px; }
+      .shramik-landing .sl-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .shramik-landing .sl-preview-body { grid-template-columns:minmax(0,1fr); }
+      .shramik-landing .sl-preview-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .shramik-landing .sl-final-grid { grid-template-columns:minmax(0,1fr); }
+      .shramik-landing .sl-final-actions { justify-content:flex-start; }
+    }
+    @media (max-width:620px) {
+      .shramik-landing { font-size:15px; }
+      .shramik-landing .sl-wrap { padding-inline:18px; }
+      .shramik-landing .sl-bar { min-height:64px; gap:10px; }
+      .shramik-landing .sl-mark { width:34px; height:34px; font-size:22px; }
+      .shramik-landing .sl-brand-name { font-size:25px; }
+      .shramik-landing .sl-brand-sub { font-size:10px; }
+      .shramik-landing .sl-nav { padding-inline:18px; }
+      .shramik-landing .sl-hero-grid { padding-block:34px 42px; gap:18px; }
+      .shramik-landing .sl-hero h1 { max-width:100%; font-size:clamp(43px,12.3vw,58px); line-height:.96; }
+      .shramik-landing .sl-hero-line { display:block; }
+      .shramik-landing .sl-lede { margin-top:17px; font-size:16px; }
+      .shramik-landing .sl-ctas { display:grid; grid-template-columns:1fr; margin-top:22px; }
+      .shramik-landing .sl-ctas .sl-btn { width:100%; }
+      .shramik-landing .sl-promise { margin-top:16px; gap:8px 13px; font-size:11px; }
+      .shramik-landing .sl-art { max-width:340px; }
+      .shramik-landing .sl-section { padding-block:48px; }
+      .shramik-landing .sl-section-title { font-size:clamp(34px,9.5vw,44px); }
+      .shramik-landing .sl-section-intro { font-size:15px; }
+      .shramik-landing .sl-value-grid,.shramik-landing .sl-contrast-grid,.shramik-landing .sl-card-grid,.shramik-landing .sl-workflow,.shramik-landing .sl-transparency-grid { grid-template-columns:minmax(0,1fr); }
+      .shramik-landing .sl-value { padding:0 0 18px; }
+      .shramik-landing .sl-value + .sl-value { padding:18px 0 0; border-left:0; border-top:1px solid var(--sl-border-muted); }
+      .shramik-landing .sl-contrast-panel,.shramik-landing .sl-cap-card { padding:19px; }
+      .shramik-landing .sl-step { min-height:0; padding:17px; }
+      .shramik-landing .sl-step-number { margin-bottom:10px; }
+      .shramik-landing .sl-preview-body { padding:12px; }
+      .shramik-landing .sl-preview-chart { min-height:210px; padding:12px; }
+      .shramik-landing .sl-chart-svg { height:145px; }
+      .shramik-landing .sl-preview-metrics { grid-template-columns:minmax(0,1fr); }
+      .shramik-landing .sl-preview-metric { padding:12px; }
+      .shramik-landing .sl-final { padding-block:46px; }
+      .shramik-landing .sl-final h2 { font-size:clamp(38px,10vw,48px); }
+      .shramik-landing .sl-final-actions { display:grid; grid-template-columns:1fr; }
+      .shramik-landing .sl-final-actions .sl-btn { width:100%; }
+      .shramik-landing .sl-footer-grid { grid-template-columns:minmax(0,1fr); }
+      .shramik-landing .sl-footer nav { justify-content:flex-start; }
+    }
+    @media (max-width:360px) {
+      .shramik-landing .sl-wrap { padding-inline:15px; }
+      .shramik-landing .sl-hero h1 { font-size:42px; }
+      .shramik-landing .sl-brand-name { font-size:23px; }
+      .shramik-landing .sl-brand { gap:8px; }
+      .shramik-landing .sl-menu-btn { min-width:42px; padding-inline:8px; }
+    }
+    @media (prefers-reduced-motion:reduce) {
+      .shramik-landing *, .shramik-landing *::before, .shramik-landing *::after { scroll-behavior:auto!important; animation:none!important; transition:none!important; }
+      .shramik-landing.sl-has-reveal .sl-reveal { opacity:1; transform:none; }
+    }
+  </style>
+</head>
+<body>
+<div class="shramik-landing" id="shramik-landing">
+  <a class="sl-skip" href="#sl-main">Skip to main content</a>
+  <header class="sl-header" id="sl-header">
+    <div class="sl-wrap sl-bar">
+      <a class="sl-brand" href="#sl-top" aria-label="SHRAMIK home">
+        <span class="sl-mark" aria-hidden="true">S</span>
+        <span><span class="sl-brand-name">SHRAMIK</span><span class="sl-brand-sub">Labour Market Intelligence System</span></span>
+      </a>
+      <button class="sl-menu-btn" id="sl-menu-button" type="button" aria-expanded="false" aria-controls="sl-nav">Menu</button>
+      <nav class="sl-nav" id="sl-nav" aria-label="Primary navigation">
+        <a href="#sl-overview">Overview</a><a href="#sl-capabilities">Capabilities</a><a href="#sl-workflow">How it works</a><a href="#sl-transparency">Methodology</a><a class="sl-btn sl-btn--primary" href="/login">Sign in <span aria-hidden="true">→</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="sl-main">
+    <section class="sl-hero" id="sl-top" aria-labelledby="sl-hero-title">
+      <div class="sl-wrap sl-hero-grid">
+        <div class="sl-hero-copy sl-reveal">
+          <p class="sl-eyebrow">Labour Market Intelligence System</p>
+          <h1 id="sl-hero-title"><span class="sl-hero-line">Data for People.</span><span class="sl-hero-line">Opportunities for</span><span class="sl-hero-line">a Stronger <span class="sl-underline">India.</span></span></h1>
+          <p class="sl-lede">A data-driven platform to understand, plan and strengthen India's workforce.</p>
+          <div class="sl-ctas"><a class="sl-btn sl-btn--primary" href="#sl-capabilities">Explore SHRAMIK <span aria-hidden="true">→</span></a><a class="sl-btn sl-btn--secondary" href="#sl-preview">View platform preview <span aria-hidden="true">↗</span></a></div>
+          <div class="sl-promise" aria-label="Platform principles"><span>Evidence-led insights</span><span>Traceable methods</span><span>Informed planning</span></div>
+        </div>
+        <figure class="sl-art sl-reveal" aria-labelledby="sl-art-caption">
+          <div class="sl-art-dots" aria-hidden="true"></div><span class="sl-art-orb sl-art-orb--yellow" aria-hidden="true"></span><span class="sl-art-orb sl-art-orb--orange" aria-hidden="true"></span><span class="sl-art-orb sl-art-orb--navy" aria-hidden="true"></span>
+          <div class="sl-art-frame">
+            <svg viewBox="0 0 420 420" role="img" aria-label="Original illustrative scene of Indian city buildings and workers; not a data map" xmlns="http://www.w3.org/2000/svg">
+              <rect width="420" height="420" fill="#EAE8E0"/>
+              <g fill="#C6C4BB" stroke="#292929" stroke-width="1.5"><rect x="18" y="168" width="55" height="252"/><rect x="80" y="125" width="58" height="295"/><rect x="286" y="145" width="48" height="275"/><rect x="341" y="188" width="61" height="232"/></g>
+              <g stroke="#8C8A82" stroke-width="2"><path d="M28 194h35M28 220h35M28 246h35M28 272h35M28 298h35M91 151h35M91 179h35M91 207h35M91 235h35M91 263h35M297 173h26M297 201h26M350 216h43M350 244h43M350 272h43"/></g>
+              <path d="M145 420V222h130v198h-24V268a41 41 0 0 0-82 0v152z" fill="#575750" stroke="#292929" stroke-width="2"/><path d="M136 216h148v16H136z" fill="#292929"/>
+              <path d="M0 365Q90 340 160 366T300 365T420 350V420H0z" fill="#B7B5AC"/>
+              <g transform="translate(35 0)"><path d="M8 420c0-52 21-82 58-82s61 30 61 82z" fill="#203A5B" stroke="#292929" stroke-width="2"/><path d="M42 348l24 23 23-24 15 73H29z" fill="#F7F6F0"/><circle cx="66" cy="313" r="26" fill="#C9956D" stroke="#292929" stroke-width="2"/><path d="M39 309a28 24 0 0 1 54 0z" fill="#171717"/><path d="M36 297l30-20 31 20z" fill="#F2D34F" stroke="#292929" stroke-width="2"/><path d="M44 300h44" stroke="#292929" stroke-width="2"/></g>
+              <g transform="translate(260 25)"><path d="M8 395c0-42 18-65 48-65s48 23 48 65z" fill="#575750" stroke="#292929" stroke-width="2"/><circle cx="56" cy="302" r="21" fill="#B9815C" stroke="#292929" stroke-width="2"/><path d="M34 296a23 19 0 0 1 44 0z" fill="#171717"/><path d="M29 290l27-18 28 18z" fill="#F2D34F" stroke="#292929" stroke-width="2"/></g>
+              <path d="M0 402h420" stroke="#292929" stroke-width="3"/><g fill="#F2D34F"><rect x="18" y="381" width="13" height="20"/><rect x="389" y="381" width="13" height="20"/></g>
+            </svg>
+          </div>
+          <figcaption class="sl-art-caption" id="sl-art-caption">Illustrative workforce scene</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="sl-section" id="sl-overview" aria-label="Core platform principles">
+      <div class="sl-wrap sl-value-grid">
+        <article class="sl-value sl-reveal"><span class="sl-icon" aria-hidden="true">01</span><h3>Evidence-based insights</h3><p>Explore workforce-related information through a structured, evidence-led interface.</p></article>
+        <article class="sl-value sl-reveal"><span class="sl-icon" aria-hidden="true">02</span><h3>Inclusive growth opportunities</h3><p>Build a broader understanding of workforce and skill-development opportunities.</p></article>
+        <article class="sl-value sl-reveal"><span class="sl-icon" aria-hidden="true">03</span><h3>Stronger workforce planning</h3><p>Examine workforce requirements and support more informed planning decisions.</p></article>
+      </div>
+    </section>
+
+    <section class="sl-section" aria-labelledby="sl-connected-title">
+      <div class="sl-wrap">
+        <p class="sl-eyebrow">Why a connected view matters</p>
+        <h2 class="sl-section-title" id="sl-connected-title">Better workforce decisions begin with better information.</h2>
+        <p class="sl-section-intro">When information about demand, skills, supply and emerging requirements sits in separate places, it is hard to interpret and harder to act on. SHRAMIK brings these threads into one intelligence workflow.</p>
+        <div class="sl-contrast-grid">
+          <article class="sl-contrast-panel sl-reveal"><h3>Fragmented information</h3><ul class="sl-chips"><li>Demand</li><li>Supply</li><li>Skills</li><li>Emerging needs</li></ul><p>Each question may be answered in isolation, making the wider picture difficult to see.</p></article>
+          <article class="sl-contrast-panel sl-contrast-panel--connected sl-reveal"><h3>One connected view</h3><ul class="sl-chips"><li>Demand</li><li>Supply</li><li>Skills</li><li>Emerging needs</li></ul><p>Related information can be examined together, supporting clearer planning conversations.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="sl-section sl-section--muted" id="sl-capabilities" aria-labelledby="sl-capabilities-title">
+      <div class="sl-wrap">
+        <p class="sl-eyebrow">Areas of workforce analysis</p><h2 class="sl-section-title" id="sl-capabilities-title">From labour-market signals to actionable intelligence.</h2>
+        <p class="sl-section-intro">The capabilities SHRAMIK is designed to support. Actual availability depends on implementation, data coverage and authorized access.</p>
+        <div class="sl-card-grid">
+          <article class="sl-cap-card sl-reveal"><span class="sl-icon" aria-hidden="true">↗</span><h3>Workforce demand</h3><p>Understand demand signals across sectors, occupations, skills and locations.</p></article>
+          <article class="sl-cap-card sl-reveal"><span class="sl-icon" aria-hidden="true">◎</span><h3>Workforce supply</h3><p>Examine workforce and skilling-capacity indicators where reliable data is available.</p></article>
+          <article class="sl-cap-card sl-reveal"><span class="sl-icon" aria-hidden="true">⇄</span><h3>Skill gap analysis</h3><p>Compare demand and supply estimates to identify potential shortages, surpluses and mismatches.</p></article>
+          <article class="sl-cap-card sl-reveal"><span class="sl-icon" aria-hidden="true">✳</span><h3>Emerging skills</h3><p>Explore skills showing increased demand and their relationships to occupations and sectors.</p></article>
+          <article class="sl-cap-card sl-reveal"><span class="sl-icon" aria-hidden="true">⌁</span><h3>Workforce forecasting</h3><p>Explore future trends when enough usable historical data supports a forecast.</p></article>
+          <article class="sl-cap-card sl-reveal"><span class="sl-icon" aria-hidden="true">▤</span><h3>Skilling intervention planning</h3><p>Examine hypothetical skilling interventions and compare scenarios against a baseline.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="sl-section" id="sl-workflow" aria-labelledby="sl-workflow-title">
+      <div class="sl-wrap">
+        <p class="sl-eyebrow">The approach</p><h2 class="sl-section-title" id="sl-workflow-title">One connected workflow. Five stages of intelligence.</h2>
+        <p class="sl-section-intro">Select a stage to learn what happens there. The descriptions explain the intended workflow; they do not imply that every pipeline step is currently operational.</p>
+        <div class="sl-workflow" role="group" aria-label="Select a stage of the SHRAMIK workflow">
+          <button type="button" class="sl-step sl-reveal" data-step="0" aria-pressed="true"><span class="sl-step-number">01</span><h3>Gather signals</h3><p>Bring together relevant workforce and skilling observations.</p></button>
+          <button type="button" class="sl-step sl-reveal" data-step="1" aria-pressed="false"><span class="sl-step-number">02</span><h3>Harmonise data</h3><p>Organise data by geography, sector, occupation, skill and period.</p></button>
+          <button type="button" class="sl-step sl-reveal" data-step="2" aria-pressed="false"><span class="sl-step-number">03</span><h3>Estimate</h3><p>Examine observed demand and supply and forecast where supportable.</p></button>
+          <button type="button" class="sl-step sl-reveal" data-step="3" aria-pressed="false"><span class="sl-step-number">04</span><h3>Identify gaps</h3><p>Compare estimates and inspect potential shortages or emerging needs.</p></button>
+          <button type="button" class="sl-step sl-reveal" data-step="4" aria-pressed="false"><span class="sl-step-number">05</span><h3>Evaluate</h3><p>Compare potential interventions and communicate assumptions.</p></button>
+        </div>
+        <div class="sl-workflow-detail" id="sl-workflow-detail" aria-live="polite"><strong id="sl-workflow-detail-title">01 · Gather signals</strong><p id="sl-workflow-detail-copy">Collect relevant observations with their source references, time periods and coverage details where available.</p></div>
+      </div>
+    </section>
+
+    <section class="sl-section sl-section--muted" id="sl-transparency" aria-labelledby="sl-transparency-title">
+      <div class="sl-wrap">
+        <p class="sl-eyebrow">Trust through transparency</p><h2 class="sl-section-title" id="sl-transparency-title">Understand the evidence behind every insight.</h2>
+        <p class="sl-section-intro">Labour-market intelligence is only as useful as the evidence and assumptions behind it. SHRAMIK's approach should make source coverage, mapping quality and forecast limitations understandable.</p>
+        <div class="sl-transparency-grid">
+          <article class="sl-transparency-card sl-reveal"><span class="sl-icon" aria-hidden="true">↗</span><h3>Traceable sources</h3><p>Expose source references and observation periods where they are available and permitted.</p></article>
+          <article class="sl-transparency-card sl-reveal"><span class="sl-icon" aria-hidden="true">≡</span><h3>Transparent methods</h3><p>Explain how mappings, estimates and skill-gap calculations are produced.</p></article>
+          <article class="sl-transparency-card sl-reveal"><span class="sl-icon" aria-hidden="true">±</span><h3>Visible uncertainty</h3><p>Communicate forecast uncertainty and limitations without overstating precision.</p></article>
+          <article class="sl-transparency-card sl-reveal"><span class="sl-icon" aria-hidden="true">◎</span><h3>Clear provenance</h3><p>Distinguish source-backed observations, derived estimates and synthetic demonstration data.</p></article>
+        </div>
+        <p class="sl-method-note">Results depend on source coverage, data quality, occupation/skill mapping choices and forecasting assumptions. Projections should be interpreted alongside supporting evidence and limitations.</p>
+        <div class="sl-ctas"><a class="sl-btn sl-btn--secondary" href="#sl-preview">See platform preview <span aria-hidden="true">→</span></a></div>
+      </div>
+    </section>
+
+    <section class="sl-section" id="sl-preview" aria-labelledby="sl-preview-title">
+      <div class="sl-wrap">
+        <p class="sl-eyebrow">Inside the workspace</p><h2 class="sl-section-title" id="sl-preview-title">See the labour market from more than one angle.</h2>
+        <p class="sl-section-intro">Explore an illustrative interface showing how demand trends, supply indicators and skill-gap analysis could appear in a connected workspace.</p>
+        <div class="sl-preview sl-reveal">
+          <div class="sl-preview-top"><i class="sl-window-dot" aria-hidden="true"></i><i class="sl-window-dot" aria-hidden="true"></i><i class="sl-window-dot" aria-hidden="true"></i><span>PLATFORM PREVIEW · ILLUSTRATIVE DATA</span></div>
+          <div class="sl-preview-body" id="sl-preview-panel" role="tabpanel" aria-labelledby="sl-tab-overview" tabindex="0">
+            <div class="sl-preview-chart">
+              <div class="sl-preview-chart-head"><span id="sl-preview-chart-title">Workforce overview</span><span id="sl-preview-period">Illustrative period</span></div>
+              <svg class="sl-chart-svg" viewBox="0 0 540 190" role="img" aria-labelledby="sl-chart-title sl-chart-desc" preserveAspectRatio="none">
+                <title id="sl-chart-title">Illustrative demand and supply trend</title><desc id="sl-chart-desc">A sample line chart showing two illustrative series. Values are not official statistics.</desc>
+                <path class="sl-chart-grid" d="M35 30H520M35 70H520M35 110H520M35 150H520"/>
+                <path class="sl-chart-forecast" d="M260 98 L340 72 L420 51 L510 37 L510 150 L260 150Z"/>
+                <path class="sl-chart-demand" id="sl-demand-line" d="M35 135 L110 120 L185 102 L260 88 L340 68 L420 49 L510 35"/>
+                <path class="sl-chart-supply" id="sl-supply-line" d="M35 153 L110 145 L185 132 L260 117 L340 105 L420 87 L510 75"/>
+              </svg>
+              <div class="sl-chart-legend"><span><i class="sl-legend-dot sl-legend-dot--navy"></i>Demand</span><span><i class="sl-legend-dot sl-legend-dot--teal"></i>Supply</span><span><i class="sl-legend-dash"></i>Illustrative projection</span></div>
+            </div>
+            <div class="sl-preview-metrics" aria-live="polite">
+              <article class="sl-preview-metric"><span id="sl-metric-one-label">Demand trend</span><strong id="sl-metric-one-value">Illustrative</strong></article>
+              <article class="sl-preview-metric"><span id="sl-metric-two-label">Supply trend</span><strong id="sl-metric-two-value">Illustrative</strong></article>
+              <article class="sl-preview-metric"><span id="sl-metric-three-label">Skill gap view</span><strong id="sl-metric-three-value">Illustrative</strong></article>
+            </div>
+          </div>
+          <div class="sl-preview-footer"><div class="sl-tabs" role="tablist" aria-label="Platform preview views"><button type="button" role="tab" id="sl-tab-overview" aria-controls="sl-preview-panel" aria-selected="true" tabindex="0" data-view="overview">Overview</button><button type="button" role="tab" id="sl-tab-gaps" aria-controls="sl-preview-panel" aria-selected="false" tabindex="-1" data-view="gaps">Skill gaps</button><button type="button" role="tab" id="sl-tab-forecasts" aria-controls="sl-preview-panel" aria-selected="false" tabindex="-1" data-view="forecasts">Forecasts</button><p id="sl-preview-note" aria-live="polite">Sample interface only. No live service is connected and the values are not real labour-market statistics.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sl-final" aria-labelledby="sl-final-title">
+      <div class="sl-wrap sl-final-grid"><div><p class="sl-eyebrow">SHRAMIK · Labour Market Intelligence System</p><h2 id="sl-final-title">Turn workforce information into informed decisions.</h2><p>Explore a clearer, more connected approach to understanding India's workforce.</p></div><div class="sl-final-actions"><a class="sl-btn sl-btn--primary" href="/login">Sign in to SHRAMIK <span aria-hidden="true">→</span></a><a class="sl-btn sl-btn--secondary" href="#sl-transparency">Read about transparency</a></div></div>
+    </section>
+  </main>
+
+  <footer class="sl-footer">
+    <div class="sl-wrap">
+      <div class="sl-footer-grid"><div><a class="sl-brand" href="#sl-top" aria-label="Back to SHRAMIK home"><span class="sl-mark" aria-hidden="true">S</span><span><span class="sl-brand-name">SHRAMIK</span><span class="sl-brand-sub">Labour Market Intelligence System</span></span></a><p class="sl-footer-description">A decision-support platform concept for examining workforce demand, supply and skill requirements.</p></div><nav aria-label="Footer navigation"><a href="#sl-overview">Overview</a><a href="#sl-capabilities">Capabilities</a><a href="#sl-workflow">How it works</a><a href="#sl-transparency">Methodology</a><a href="/login">Sign in</a></nav></div>
+      <p class="sl-footer-note">SHRAMIK is presented here as a platform concept. This page does not claim official government affiliation or display live labour-market data.</p>
+    </div>
+  </footer>
+</div>
+<script>
+(function(){
+  const root = document.getElementById('shramik-landing');
+  if (!root) return;
+  const header = root.querySelector('#sl-header');
+  const menuButton = root.querySelector('#sl-menu-button');
+  const nav = root.querySelector('#sl-nav');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function setMenu(open){
+    nav.classList.toggle('is-open', open);
+    menuButton.setAttribute('aria-expanded', String(open));
+    menuButton.textContent = open ? 'Close' : 'Menu';
+  }
+  menuButton.addEventListener('click', function(){ setMenu(!nav.classList.contains('is-open')); });
+  nav.addEventListener('click', function(event){ if (event.target.closest('a')) setMenu(false); });
+  document.addEventListener('keydown', function(event){ if (event.key === 'Escape' && nav.classList.contains('is-open')) { setMenu(false); menuButton.focus(); } });
+  function updateHeader(){ header.classList.toggle('is-scrolled', window.scrollY > 8); }
+  updateHeader(); window.addEventListener('scroll', updateHeader, {passive:true});
+
+  const stages = [
+    {title:'01 · Gather signals',copy:'Collect relevant observations with their source references, time periods and coverage details where available.'},
+    {title:'02 · Harmonise data',copy:'Organise records into a consistent framework for geography, sector, occupation, skill and time period. Uncertain mappings should remain reviewable.'},
+    {title:'03 · Estimate demand and supply',copy:'Examine observed conditions and generate forecasts only when sufficient usable historical data and a supported method are available.'},
+    {title:'04 · Identify gaps and emerging needs',copy:'Compare demand and supply estimates, then inspect potential shortages, surpluses and emerging skill signals alongside their evidence.'},
+    {title:'05 · Evaluate possible interventions',copy:'Compare hypothetical scenarios against a defined baseline, while keeping assumptions, uncertainty and limitations visible.'}
+  ];
+  const stepButtons = Array.from(root.querySelectorAll('[data-step]'));
+  const stepTitle = root.querySelector('#sl-workflow-detail-title');
+  const stepCopy = root.querySelector('#sl-workflow-detail-copy');
+  function selectStep(index){
+    stepButtons.forEach((button,i)=>{const selected=i===index;button.setAttribute('aria-pressed',String(selected));});
+    stepTitle.textContent=stages[index].title; stepCopy.textContent=stages[index].copy;
+  }
+  stepButtons.forEach(button=>button.addEventListener('click',()=>selectStep(Number(button.dataset.step))));
+
+  const previewData = {
+    overview:{title:'Workforce overview',period:'Illustrative period',oneLabel:'Demand trend',oneValue:'Illustrative',twoLabel:'Supply trend',twoValue:'Illustrative',threeLabel:'Gap view',threeValue:'Illustrative',note:'Sample interface only. No live service is connected and the values are not real labour-market statistics.',demand:'M35 135 L110 120 L185 102 L260 88 L340 68 L420 49 L510 35',supply:'M35 153 L110 145 L185 132 L260 117 L340 105 L420 87 L510 75'},
+    gaps:{title:'Potential skill gap view',period:'Illustrative comparison',oneLabel:'Demand estimate',oneValue:'Example only',twoLabel:'Supply estimate',twoValue:'Example only',threeLabel:'Gap difference',threeValue:'Not calculated',note:'This is a layout demonstration. No gap is calculated here; actual results require validated demand and supply estimates.',demand:'M35 123 L110 112 L185 86 L260 101 L340 66 L420 58 L510 32',supply:'M35 142 L110 139 L185 119 L260 125 L340 108 L420 95 L510 81'},
+    forecasts:{title:'Forecast trend preview',period:'Illustrative projection',oneLabel:'Historical series',oneValue:'Sample',twoLabel:'Projection series',twoValue:'Sample',threeLabel:'Uncertainty',threeValue:'Not shown',note:'Forecasts and uncertainty intervals are not computed in this mockup. A production view must use model-returned outputs and clearly defined intervals.',demand:'M35 148 L110 125 L185 110 L260 94 L340 68 L420 51 L510 26',supply:'M35 158 L110 148 L185 135 L260 126 L340 108 L420 95 L510 90'}
+  };
+  const tabs=Array.from(root.querySelectorAll('[data-view]'));
+  function choosePreview(name){
+    const item=previewData[name]; if(!item) return;
+    tabs.forEach(tab=>{const active=tab.dataset.view===name;tab.setAttribute('aria-selected',String(active));tab.tabIndex=active?0:-1;});
+    root.querySelector('#sl-preview-chart-title').textContent=item.title;root.querySelector('#sl-preview-period').textContent=item.period;
+    root.querySelector('#sl-metric-one-label').textContent=item.oneLabel;root.querySelector('#sl-metric-one-value').textContent=item.oneValue;
+    root.querySelector('#sl-metric-two-label').textContent=item.twoLabel;root.querySelector('#sl-metric-two-value').textContent=item.twoValue;
+    root.querySelector('#sl-metric-three-label').textContent=item.threeLabel;root.querySelector('#sl-metric-three-value').textContent=item.threeValue;
+    root.querySelector('#sl-preview-note').textContent=item.note;
+    root.querySelector('#sl-demand-line').setAttribute('d',item.demand);root.querySelector('#sl-supply-line').setAttribute('d',item.supply);
+    root.querySelector('#sl-preview-panel').setAttribute('aria-labelledby',tabs.find(t=>t.dataset.view===name).id);
+  }
+  tabs.forEach((tab,index)=>{
+    tab.addEventListener('click',()=>choosePreview(tab.dataset.view));
+    tab.addEventListener('keydown',event=>{let next=index;if(event.key==='ArrowRight')next=(index+1)%tabs.length;else if(event.key==='ArrowLeft')next=(index-1+tabs.length)%tabs.length;else if(event.key==='Home')next=0;else if(event.key==='End')next=tabs.length-1;else return;event.preventDefault();tabs[next].focus();choosePreview(tabs[next].dataset.view);});
+  });
+
+  if (!reducedMotion && 'IntersectionObserver' in window) {
+    root.classList.add('sl-has-reveal');
+    const observer = new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('is-visible');observer.unobserve(entry.target);}}),{threshold:.08});
+    root.querySelectorAll('.sl-reveal').forEach(el=>observer.observe(el));
+  }
+})();
+</script>
+</body>
+</html>

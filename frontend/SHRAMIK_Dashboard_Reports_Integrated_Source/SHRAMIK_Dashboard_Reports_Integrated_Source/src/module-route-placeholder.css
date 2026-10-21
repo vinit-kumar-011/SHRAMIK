@@ -1,0 +1,70 @@
+.dashboard-main.module-main {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  padding: 0;
+}
+.module-route-placeholder {
+  min-height: min(72vh, 760px);
+  padding: clamp(24px, 4vw, 56px);
+  color: #171717;
+  background: #f7f6f0;
+}
+.module-route-eyebrow {
+  margin-bottom: 16px;
+  color: #62625c;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.module-route-placeholder h1 {
+  max-width: 900px;
+  margin: 0 0 18px;
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-size: clamp(38px, 5vw, 64px);
+  font-weight: 800;
+  letter-spacing: -.025em;
+  line-height: .98;
+}
+.module-route-placeholder > p {
+  max-width: 720px;
+  color: #4e4e48;
+  font-size: 16px;
+  line-height: 1.7;
+}
+.module-route-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 22px 0 8px;
+  padding: 8px 12px;
+  border: 1px solid #d8d6cd;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.module-route-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #eb791d;
+}
+.module-route-placeholder .module-route-next {
+  margin-top: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+
+.module-error-boundary .module-error-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+.module-error-boundary .module-error-actions button {
+  min-height: 38px;
+  padding: 8px 13px;
+}

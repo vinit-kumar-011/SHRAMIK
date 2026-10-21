@@ -1,0 +1,905 @@
+# SHRAMIK API Contracts
+
+**Issue:** #4 — Define SHRAMIK API contracts  
+**Status:** Draft v1.1 — review-updated API contract  
+**Owner:** Lead  
+**Branch:** feature/api-contracts  
+**Implementation:** Issue #20 and endpoint-specific implementation issues
+
+---
+
+## 1. Purpose
+
+This document defines the MVP REST API contract between the SHRAMIK FastAPI backend and the Next.js frontend.
+
+It translates the decisions in Issue #1 (architecture), Issue #2 (database schema), Issue #5 (ML output contract v1.1), and Issue #7 (canonical dataset plan) into stable HTTP request/response structures.
+
+This issue is contract design only. Backend implementation follows this contract. Frontend developers must not depend on undocumented fields. Breaking API changes require updating this document before implementation changes are merged.
+
+## 2. API Design Principles
+
+### 2.1 FastAPI is the application boundary
+
+Next.js Frontend → FastAPI REST → PostgreSQL / Supabase
+
+The frontend must not query PostgreSQL/Supabase tables directly.
+
+### 2.2 Numerical analytics are backend-owned
+
+Demand, supply, forecasts, gaps, confidence, evidence coverage, warnings, and simulator calculations come from the approved analytical layers. The LLM does not calculate numerical analytics.
+
+### 2.3 Preserve ML contract semantics
+
+Forecast-level analytical records must preserve Issue #5 v1.1 fields: analysis_mode, provenance_state, data_status, reason_code, gap_eligible, gap_eligibility_reason, gap, status, confidence_level, confidence_inputs, and evidence_coverage.
+
+### 2.4 Provenance is never silently collapsed
+
+Official/source-backed and DEMO/synthetic outputs remain distinguishable whenever provenance affects interpretation.
+
+### 2.5 Null is meaningful
+
+Do not convert missing observations to zero, unavailable forecasts to zero, ineligible gaps to zero, or unavailable uncertainty to fabricated values.
+
+## 3. Versioning
+
+MVP API prefix: /api/v1
+
+Breaking changes require a new API major version. Non-breaking field additions may remain within v1 when existing consumers continue to function.
+
+The ML contract_version is separate from the HTTP API version.
+
+## 4. Representation Conventions
+
+- JSON fields use snake_case.
+- period_type is YEAR for MVP and period is serialized as YYYY.
+- Dates use ISO-8601 YYYY-MM-DD.
+- Timestamps use ISO-8601 UTC.
+- JSON booleans are true/false, not strings.
+- API responses preserve analytical null semantics.
+
+## 5. Standard Response Envelopes
+
+### Single resource
+
+    {
+      "data": {},
+      "meta": {"request_id": "req_123"}
+    }
+
+### Collection
+
+    {
+      "data": [],
+      "meta": {"request_id": "req_123", "page": 1, "page_size": 25, "total": 100}
+    }
+
+Analytical resources may include an API-level identifier such as forecast_id in addition to the Issue #5 fields.
+
+
+## 6. Standard Error Format
+
+    {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Request validation failed.",
+        "details": {"field": "district_id"},
+        "request_id": "req_123"
+      }
+    }
+
+Initial error codes:
+
+| Code | HTTP | Meaning |
+|---|---:|---|
+| INVALID_REQUEST | 400 | Endpoint-level semantic constraint failure after request parsing/validation |
+| RESOURCE_NOT_FOUND | 404 | Requested resource does not exist |
+| VALIDATION_ERROR | 422 | Query, path, header, or request-body validation failed |
+| INTERNAL_ERROR | 500 | Unexpected backend failure |
+| SERVICE_UNAVAILABLE | 503 | Required non-AI dependency is unavailable |
+| AI_UNAVAILABLE | 503 | Configured AI provider is unavailable or provider call fails |
+| AI_TIMEOUT | 504 | AI provider call exceeds the backend timeout |
+
+FastAPI/Pydantic validation failures use 422 / VALIDATION_ERROR, including invalid query parameters, invalid path parameters, malformed UUIDs, and body validation failures. A 400 / INVALID_REQUEST response is reserved for validly typed requests that fail an endpoint-level semantic rule that is not represented as ordinary field validation.
+
+For evidence lookup, an unknown forecast_id returns 404 / RESOURCE_NOT_FOUND. A valid forecast with no evidence returns 200 with an empty evidence array.
+
+Do not expose SQL, stack traces, credentials, or internal exception details.
+
+### Request correlation
+
+The backend accepts an optional X-Request-ID header as the request correlation identifier. The supplied value must be 1–64 characters and match the pattern ^[A-Za-z0-9._:-]+$ with no whitespace or control characters, preventing log/header injection through the correlation field. When it is absent, the backend generates a request ID. Every successful response places the applied request ID in meta.request_id; error responses place it in error.request_id.
+
+
+# 7. Endpoint Contracts
+
+
+## 7.1 GET /api/v1/dashboard
+
+Dashboard overview for the selected analytical scope.
+
+Query parameters: district_id, sector_id, skill_id, period, analysis_mode, page_size.
+
+analysis_mode defaults to OFFICIAL. The applied value is echoed as meta.analysis_mode. When district_id, sector_id, and skill_id are all omitted, this existing endpoint represents the national dashboard scope; no separate state endpoint is part of the MVP contract.
+
+The dashboard summary is calculated over the same active forecast-result population used by detailed forecast endpoints for the selected scope, period, and analysis_mode. When period is omitted, it uses the latest available active forecast period for that requested scope and analysis_mode.
+
+### Summary count semantics
+
+forecast_results equals the total rows in the selected dashboard forecast population.
+
+The following six counts are mutually exclusive and sum to forecast_results:
+
+- shortage_count: data_status=SUFFICIENT, gap_eligible=true, status=SHORTAGE
+- balanced_count: data_status=SUFFICIENT, gap_eligible=true, status=BALANCED
+- oversupply_count: data_status=SUFFICIENT, gap_eligible=true, status=OVERSUPPLY
+- no_demand_count: data_status=SUFFICIENT, gap_eligible=true, status=NO_DEMAND
+- insufficient_data_count: data_status IN (INSUFFICIENT_DATA, UNAVAILABLE)
+- gap_ineligible_count: data_status=SUFFICIENT, gap_eligible=false
+
+A gap-ineligible row is not counted in no_demand_count, even though Issue #5 permits status=NO_DEMAND for an ineligible gap. This keeps the dashboard totals mutually exclusive.
+
+warning_count and emerging_skill_count are independent counts. They are not members of the mutually exclusive forecast-count set and therefore do not need to sum to forecast_results.
+emerging_skill_count counts records with data_status=SUFFICIENT and emerging_skill_status=EMERGING.
+
+### Dashboard list-size semantics
+
+page_size defaults to 25 and is constrained to 1–100. It limits the number of records returned in each dashboard list: top_shortages, top_emerging_skills, and active_warnings. It does not change summary totals. The dashboard response includes per-list totals in meta.list_totals and a global meta.truncated flag that is true when any dashboard list is larger than the returned page_size.
+
+Example response:
+
+    {
+      "data": {
+        "scope": {
+          "district_id": "<DISTRICT_ID>",
+          "sector_id": null,
+          "skill_id": null,
+          "period": "2027",
+          "analysis_mode": "OFFICIAL"
+        },
+        "summary": {
+          "forecast_results": 42,
+          "shortage_count": 12,
+          "balanced_count": 18,
+          "oversupply_count": 7,
+          "no_demand_count": 2,
+          "insufficient_data_count": 2,
+          "gap_ineligible_count": 1,
+          "warning_count": 8,
+          "emerging_skill_count": 6
+        },
+        "top_shortages": [],
+        "top_emerging_skills": [],
+        "active_warnings": []
+      },
+      "meta": {
+        "request_id": "req_123",
+        "analysis_mode": "OFFICIAL",
+        "page_size": 25,
+        "list_totals": {
+          "top_shortages": 12,
+          "top_emerging_skills": 6,
+          "active_warnings": 8
+        },
+        "truncated": true
+      }
+    }
+
+top_shortages is a named DashboardShortageRecord subset defined in Section 8. It includes only sufficient, gap-eligible SHORTAGE forecasts and is ranked by absolute gap descending, then district_id, then skill_id, then period ascending.
+
+top_emerging_skills is a named DashboardEmergingSkillRecord subset based on Issue #18. It is ranked by signal_strength descending, then recent_growth_rate descending, then district_id, then skill_id. The ranking fields and names match the Issue #5/Issue #18 emerging-skill contract.
+
+active_warnings uses the warning records and deterministic prioritization defined by Issue #17. The dashboard must not introduce a second warning-ranking algorithm.
+
+
+## 7.2 GET /api/v1/districts
+
+Returns canonical districts.
+
+Query parameters: state_id, active_only (default true), page (default 1), page_size (default 25, maximum 100).
+
+page_size greater than 100 returns 422 / VALIDATION_ERROR.
+
+Response item:
+
+    {"district_id":"<DISTRICT_ID>","name":"<DISTRICT_NAME>","state_id":"<STATE_ID>","state_code":"<STATE_CODE>","lgd_district_code":"<LGD_DISTRICT_CODE>"}
+
+lgd_district_code is the canonical LGD district code when known and may be null when unavailable.
+
+## 7.3 GET /api/v1/districts/{district_id}
+
+Returns geographic intelligence for one district.
+
+Query parameters: period, analysis_mode, page_size. analysis_mode defaults to OFFICIAL. page_size defaults to 25 and is constrained to 1–100; it applies only to top_shortages, top_emerging_skills, and active_warnings. It does not paginate or truncate sector_summary.
+
+The applied mode is echoed in meta.analysis_mode. This current analytical view uses active results. When period is omitted, it uses the latest available active forecast period for the requested district and analysis_mode.
+
+Response data contains district, summary, sector_summary, top_shortages, top_emerging_skills, and active_warnings.
+
+Schemas are referenced in Section 8:
+- district → DistrictRecord
+- summary → DashboardSummary
+- sector_summary[] → SectorSummary
+- top_shortages[] → DashboardShortageRecord
+- top_emerging_skills[] → DashboardEmergingSkillRecord
+- active_warnings[] → WarningRecord
+
+top_shortages and top_emerging_skills use the same deterministic ranking rules as the dashboard. For district detail, `page_size` applies only to `top_shortages`, `top_emerging_skills`, and `active_warnings`. `sector_summary` is not paginated or truncated by `page_size` and is returned in full for the selected district. Accordingly, `meta.list_totals` and `meta.truncated` cover only those three dashboard-style lists; `sector_summary` is excluded from both.
+
+## 7.4 GET /api/v1/skills
+
+Returns canonical skills/job roles. This endpoint is descriptive and does not require analysis_mode. Taxonomy mappings are provenance-agnostic reference mappings and are not selected or hidden by OFFICIAL/DEMO analytical mode.
+
+Query parameters: sector_id, taxonomy_name, active_only (default true), page, page_size.
+
+page_size defaults to 25 and has a maximum of 100.
+
+Response item includes skill_id, name, sector_id, sector_name, and taxonomy_mappings.
+
+Each taxonomy mapping may expose taxonomy_name, taxonomy_version, taxonomy_code, mapping_method, and mapping_confidence where approved by the database contract.
+
+## 7.5 GET /api/v1/skills/{skill_id}
+
+Returns skill intelligence across the available geographic scope.
+
+Query parameters: district_id, period_start, period_end, analysis_mode.
+
+analysis_mode defaults to OFFICIAL and is echoed in meta.analysis_mode. current_summary uses active results; when neither period_start nor period_end is supplied, it uses the latest available active forecast period for the requested scope and analysis_mode.
+
+When supplied, period_start and period_end are inclusive. A reversed range returns 422 / VALIDATION_ERROR.
+
+Response data contains skill, current_summary, forecasts, emerging_skill_signals, geographic_summary, and warnings.
+
+Schemas are referenced in Section 8:
+- skill → SkillRecord
+- current_summary → DashboardSummary
+- forecasts[] → ForecastRecord
+- emerging_skill_signals[] → EmergingSkillRecord / Issue #18 output
+- geographic_summary → GeographicSkillSummary
+- warnings[] → WarningRecord
+
+## 7.6 GET /api/v1/forecasts/{skill_id}
+
+Returns forecast records for one skill across districts.
+
+Query parameters: district_id, period_start, period_end, analysis_mode (default OFFICIAL), active_only (default true), page, page_size.
+
+period_start and period_end are inclusive when supplied. A reversed range returns 422 / VALIDATION_ERROR.
+
+page is 1-based. page_size defaults to 25 and is constrained to 1–100. Values above 100 return 422 / VALIDATION_ERROR.
+
+The default sort is district_id ascending, then period ascending, with sector_id, skill_id, and forecast_id as deterministic tie-breakers. forecast_id is the final tie-breaker required when active_only=false so pagination remains deterministic when multiple stored model results otherwise share the same sort fields.
+
+active_only=true is evaluated after applying the requested analysis_mode; the endpoint must never silently substitute a forecast from another provenance mode.
+
+Each forecast item contains:
+
+    forecast_id
+    contract_version
+    analysis_mode
+    provenance_state
+    district_id
+    sector_id
+    skill_id
+    period_type
+    period
+    data_status
+    reason_code
+    demand_quantity
+    supply_quantity
+    demand_index
+    supply_index
+    forecast_demand
+    forecast_supply
+    gap_eligible
+    gap_eligibility_reason
+    gap
+    status
+    forecast_uncertainty
+    confidence_level
+    confidence_inputs
+    evidence_coverage
+    model
+
+forecast_id is a UUID string representing the persisted forecast_results record identifier. It is an API identifier extension and does not replace the Issue #5 analytical contract.
+
+Nested forecast objects use Issue #5 v1.1 shapes:
+- model uses the Issue #5 model object and is null whenever data_status is not SUFFICIENT.
+- forecast_uncertainty uses the Issue #5 forecast_uncertainty shape.
+- confidence_inputs uses the Issue #5 v1.1 confidence_inputs shape and its documented history semantics.
+- evidence_coverage uses the Issue #5 v1.1 field semantics.
+
+The backend must not silently mix OFFICIAL and DEMO results.
+
+## 7.7 GET /api/v1/early-warnings
+
+Returns active or historical warnings.
+
+Query parameters: district_id, skill_id, period, warning_type, severity, analysis_mode (default OFFICIAL), active_only (default true), page, page_size.
+
+analysis_mode defaults to OFFICIAL and the applied value is echoed in meta.analysis_mode.
+
+Response item contains warning_id, forecast_id, emerging_skill_signal_id, warning_type, severity, detected_period, explanation_code, provenance_state, and forecast_classification, plus supporting fields defined by Issue #17. forecast_classification is a copy of the Issue #5 analytical classification field status (SHORTAGE, BALANCED, OVERSUPPLY, or NO_DEMAND when applicable); data_status remains a separate forecast field and must not be inferred from forecast_classification.
+
+Warning type/severity vocabulary and ranking remain owned by Issue #17.
+
+## 7.8 GET /api/v1/evidence/{forecast_id}
+
+Returns evidence supporting a forecast result.
+
+forecast_id is a UUID string.
+
+A malformed UUID returns 422 / VALIDATION_ERROR. A well-formed UUID that does not identify an existing forecast returns 404 / RESOURCE_NOT_FOUND. An existing forecast with no linked evidence returns 200 with an empty evidence array.
+
+Response data contains forecast_id and evidence items. Each evidence item may include evidence_item_id, evidence_type, source, retrieval, locator, title, observed_period, and note.
+
+Source and retrieval metadata remain distinct from the observation period. The response preserves the forecast's stored analysis_mode and provenance_state rather than independently selecting a mode.
+
+## 7.9 GET /api/v1/model-evaluation
+
+Returns model evaluation information.
+
+Query parameters: district_id, skill_id, period_start, period_end, model_name, page, page_size.
+
+period_start and period_end are inclusive when supplied. page_size defaults to 25 and has a maximum of 100.
+
+Response uses an extensible metrics object because exact metric names are owned by Issue #22. The endpoint is reserved by this contract but is deferred from the first implementation slice; Issue #22 owns its implementation, metrics, scope, and any evaluation-result storage. This contract does not define or require a metrics table or placeholder metrics.
+
+Example item:
+
+    {
+      "model": {"name":"naive_last_value","version":"v1","is_baseline":true,"trained_through_period":"2026"},
+      "metrics": {},
+      "evaluation_scope": {},
+      "selected_for_mvp": true
+    }
+
+
+## 7.10 POST /api/v1/simulate
+
+Runs the stateless training intervention simulator.
+
+### Request schema
+
+JSON body:
+
+    {
+      "district_id": "<DISTRICT_ID>",
+      "skill_id": "<SKILL_ID>",
+      "start_period": "2027",
+      "training_duration_months": 12,
+      "seats": 1000,
+      "completion_rate": 0.85,
+      "horizon_end": "2031",
+      "analysis_mode": "OFFICIAL"
+    }
+
+| Field | Type | Required | Constraint |
+|---|---|---|---|
+| district_id | string | yes | Non-empty canonical district ID |
+| skill_id | string | yes | Non-empty canonical skill ID |
+| start_period | string | yes | Exactly YYYY |
+| training_duration_months | integer | yes | Greater than or equal to 1 |
+| seats | integer | yes | Greater than or equal to 0 |
+| completion_rate | number | yes | 0.0 to 1.0 inclusive |
+| horizon_end | string | no | YYYY; defaults to the latest existing baseline forecast record for the requested district + skill + analysis_mode, including a stored period with INSUFFICIENT_DATA or UNAVAILABLE; if no baseline forecast period exists at all, see no-baseline behaviour below |
+| analysis_mode | enum | no | OFFICIAL or DEMO; defaults to OFFICIAL |
+
+horizon_end must be greater than or equal to start_period when supplied.
+
+A simulation is stateless and is not persisted as a forecast result.
+
+The calculation follows the architecture rule:
+- lag_years = ceil(training_duration_months / 12)
+- effective_additional_supply = seats × completion_rate
+- added supply becomes available from start_period + lag_years and persists through the scenario horizon.
+
+### Response schema
+
+Every valid simulation request returns HTTP 200, including insufficient baseline data.
+
+Example with a sufficient baseline:
+
+    {
+      "data": {
+        "district_id": "<DISTRICT_ID>",
+        "skill_id": "<SKILL_ID>",
+        "start_period": "2027",
+        "horizon_end": "2031",
+        "analysis_mode": "OFFICIAL",
+        "lag_years": 1,
+        "effective_additional_supply": 850,
+        "baseline_data_status": "SUFFICIENT",
+        "gap_reduction": 1.70,
+        "shortage_closed_fraction": 1.0,
+        "simulation_note_code": null,
+        "periods": [
+          {
+            "period": "2027",
+            "baseline_data_status": "SUFFICIENT",
+            "baseline_reason_code": null,
+            "baseline_status": "SHORTAGE",
+            "baseline_gap_eligible": true,
+            "baseline_forecast_demand": 1250,
+            "baseline_forecast_supply": 900,
+            "baseline_gap": 350,
+            "added_supply": 0,
+            "simulated_supply": 900,
+            "simulated_gap": 350
+          },
+          {
+            "period": "2028",
+            "baseline_data_status": "SUFFICIENT",
+            "baseline_reason_code": null,
+            "baseline_status": "SHORTAGE",
+            "baseline_gap_eligible": true,
+            "baseline_forecast_demand": 1300,
+            "baseline_forecast_supply": 920,
+            "baseline_gap": 380,
+            "added_supply": 850,
+            "simulated_supply": 1770,
+            "simulated_gap": -470
+          },
+          {
+            "period": "2029",
+            "baseline_data_status": "SUFFICIENT",
+            "baseline_reason_code": null,
+            "baseline_status": "SHORTAGE",
+            "baseline_gap_eligible": true,
+            "baseline_forecast_demand": 1350,
+            "baseline_forecast_supply": 940,
+            "baseline_gap": 410,
+            "added_supply": 850,
+            "simulated_supply": 1790,
+            "simulated_gap": -440
+          },
+          {
+            "period": "2030",
+            "baseline_data_status": "SUFFICIENT",
+            "baseline_reason_code": null,
+            "baseline_status": "SHORTAGE",
+            "baseline_gap_eligible": true,
+            "baseline_forecast_demand": 1400,
+            "baseline_forecast_supply": 950,
+            "baseline_gap": 450,
+            "added_supply": 850,
+            "simulated_supply": 1800,
+            "simulated_gap": -400
+          },
+          {
+            "period": "2031",
+            "baseline_data_status": "SUFFICIENT",
+            "baseline_reason_code": null,
+            "baseline_status": "SHORTAGE",
+            "baseline_gap_eligible": true,
+            "baseline_forecast_demand": 1450,
+            "baseline_forecast_supply": 950,
+            "baseline_gap": 500,
+            "added_supply": 850,
+            "simulated_supply": 1800,
+            "simulated_gap": -350
+          }
+        ]
+      },
+      "meta": {
+        "request_id": "req_123",
+        "analysis_mode": "OFFICIAL"
+      }
+    }
+
+The sufficient-baseline example is internally consistent. At horizon_end=2031:
+
+    gap_reduction = (500 - (-350)) / 500 = 1.70
+    shortage_closed_fraction = min(max(1.70, 0), 1) = 1.0
+
+gap_reduction is not capped at 1.0. It may exceed 1.0 when an intervention reduces a positive shortage to a surplus (negative gap). It is a mathematical reduction relative to the baseline shortage. shortage_closed_fraction is the UI-safe, capped measure of the baseline shortage closed, ranging from 0 to 1.
+
+Issue #29 (Implement SHRAMIK what-if simulator interface) should display shortage_closed_fraction as "shortage fully closed" (or equivalent) when gap_reduction exceeds 1.0, rather than using the raw value as the primary dashboard percentage. This is the confirmed simulator frontend owner.
+
+Example with no baseline forecast period available:
+
+    {
+      "data": {
+        "district_id": "<DISTRICT_ID>",
+        "skill_id": "<SKILL_ID>",
+        "start_period": "2027",
+        "horizon_end": null,
+        "analysis_mode": "OFFICIAL",
+        "lag_years": 1,
+        "effective_additional_supply": 850,
+        "baseline_data_status": "INSUFFICIENT_DATA",
+        "gap_reduction": null,
+        "shortage_closed_fraction": null,
+        "simulation_note_code": "BASELINE_INSUFFICIENT_DATA",
+        "periods": []
+      },
+      "meta": {
+        "request_id": "req_124",
+        "analysis_mode": "OFFICIAL"
+      }
+    }
+
+### Response field structure
+
+Top-level simulator response fields include district_id, skill_id, start_period, horizon_end, analysis_mode, lag_years, effective_additional_supply, baseline_data_status, gap_reduction, shortage_closed_fraction, simulation_note_code, and periods[]. In the Pydantic response model, `shortage_closed_fraction` is typed as an optional numeric field (`float | None`) because it is null when the horizon-end baseline does not provide a computable positive eligible shortage.
+
+### Per-period response fields
+
+Each periods[] entry contains:
+
+| Field | Type | Nullability / semantics |
+|---|---|---|
+| period | YYYY string | Required |
+| baseline_data_status | enum | SUFFICIENT, INSUFFICIENT_DATA, or UNAVAILABLE |
+| baseline_reason_code | string or null | Uses Issue #5 insufficient-data reason vocabulary when applicable |
+| baseline_status | enum or null | Issue #5 analytical status field; null when baseline data is not SUFFICIENT |
+| baseline_gap_eligible | boolean or null | Copied from the baseline forecast; null when baseline data is not SUFFICIENT |
+| baseline_forecast_demand | number or null | Null when baseline forecast is unavailable |
+| baseline_forecast_supply | number or null | Null when baseline forecast is unavailable |
+| baseline_gap | number or null | Null when gap is unavailable or gap_eligible=false |
+| added_supply | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
+| simulated_supply | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
+| simulated_gap | number or null | Null when baseline data is not SUFFICIENT or baseline gap is ineligible |
+
+For data_status=SUFFICIENT and gap_eligible=true, baseline gap and simulated gap are calculated in the common headcount unit. This includes baseline_status=NO_DEMAND; when NO_DEMAND is present with an eligible gap, the stored baseline gap may be used by the simulator exactly as Issue #2 permits.
+
+For data_status=SUFFICIENT and gap_eligible=false, baseline_gap is null and the simulator returns added_supply, simulated_supply, and simulated_gap as null for that period. It does not invent a gap from incompatible signals. This is a deliberate API-level exception to the generic simulator dependency wording in Issue #5: although Issue #5 says simulated_gap is still returned for NO_DEMAND, the Issue #2 gap-eligibility rule and this API contract take precedence when gap_eligible=false.
+
+Top-level gap_reduction is determined only from the horizon_end period. Intermediate periods, including null-valued periods caused by INSUFFICIENT_DATA, UNAVAILABLE, or gap-ineligible baselines, do not affect the numerator or denominator.
+
+When the horizon-end baseline is SUFFICIENT, gap_eligible=true, and has a positive baseline gap:
+
+    gap_reduction = (baseline_gap - simulated_gap) / baseline_gap
+    shortage_closed_fraction = min(max(gap_reduction, 0), 1)
+
+Both fields are null when the horizon-end result does not provide a computable positive eligible baseline shortage.
+
+simulation_note_code is intentionally separate from Issue #5 reason_code. It is a simulator-only enum:
+- COHORT_AFTER_HORIZON — cohort becomes available after the final scenario period; scenario values remain equal to baseline within the horizon.
+- NO_POSITIVE_BASELINE_GAP — the relevant eligible baseline gap is zero or negative, so gap reduction is undefined. This may also apply to an eligible NO_DEMAND baseline.
+- BASELINE_GAP_INELIGIBLE — a required baseline period has gap_eligible=false, so no simulated gap can be computed for that period.
+- BASELINE_INSUFFICIENT_DATA — one or more required baseline periods are insufficient for scenario computation.
+- BASELINE_UNAVAILABLE — required baseline forecast data is unavailable.
+
+simulation_note_code is a single-value field. When multiple conditions apply, it returns only the highest-priority applicable code; it is not a complete list of every applicable condition. The priority order is: BASELINE_UNAVAILABLE, BASELINE_INSUFFICIENT_DATA, COHORT_AFTER_HORIZON, BASELINE_GAP_INELIGIBLE, NO_POSITIVE_BASELINE_GAP. Issue #19 and Issue #29 must use this same order when interpreting or displaying simulator notes. This intentionally gives COHORT_AFTER_HORIZON precedence over a simultaneously applicable gap-ineligible condition because cohort timing is independently material to the scenario result. Per-period fields remain authoritative for exactly which periods are affected.
+
+### No-baseline behaviour
+
+When no baseline forecast period exists for the requested district + skill + analysis_mode, the simulator returns HTTP 200 rather than an error.
+
+The response uses:
+- baseline_data_status = INSUFFICIENT_DATA
+- simulation_note_code = BASELINE_INSUFFICIENT_DATA
+- periods = []
+- gap_reduction = null
+- shortage_closed_fraction = null (explicitly null because no positive eligible horizon-end shortage exists)
+- analysis_mode = OFFICIAL or the explicitly requested mode, echoed in both data.analysis_mode and meta.analysis_mode
+
+No forecast or scenario values are fabricated.
+
+When horizon_end is omitted, it is the latest existing baseline forecast record for the requested district + skill + analysis_mode, regardless of that record's data_status. Therefore, an explicitly stored latest period with INSUFFICIENT_DATA or UNAVAILABLE is still the default horizon end; gap_reduction and shortage_closed_fraction are then null because the horizon-end result is not computationally eligible.
+
+The periods array covers every existing baseline forecast period from start_period through horizon_end, inclusive, sorted ascending by period. A period explicitly represented as INSUFFICIENT_DATA or UNAVAILABLE appears as a null-valued analytical/scenario entry using the per-period schema. A calendar year for which no baseline forecast record exists is not fabricated and is omitted. These null entries still belong to the selected horizon and do not change the horizon_end definition; they simply make horizon-end gap reduction non-computable when the final record is not eligible.
+
+For partial baseline availability, the simulator returns available baseline periods plus null-valued period entries for baseline periods that are explicitly present but INSUFFICIENT_DATA or UNAVAILABLE, following the per-period schema above.
+
+### Required simulator test cases
+
+At minimum, Issue #19 must test: (1) a normal sufficient horizon; (2) no baseline forecast period; (3) omitted horizon_end where the latest existing baseline record is INSUFFICIENT_DATA, which must keep both reduction fields null, set `simulation_note_code=BASELINE_INSUFFICIENT_DATA` when no higher-priority condition applies, and assert that the response `horizon_end` equals that latest stored period; (4) an ineligible gap; and (5) cohort-after-horizon.
+
+### Insufficient-data behaviour
+
+When a baseline forecast period is INSUFFICIENT_DATA, the simulator returns HTTP 200. That period preserves baseline_data_status=INSUFFICIENT_DATA and the Issue #5 baseline_reason_code; the baseline forecast/gap fields and all scenario values for that period are null. The simulator must not turn insufficient data into zero or raise a request error.
+
+
+
+## 7.11 POST /api/v1/generate-brief
+
+Generates an optional AI-assisted planning brief from structured SHRAMIK outputs.
+
+### Request
+
+    {
+      "district_id": "<DISTRICT_ID>",
+      "skill_id": "<SKILL_ID>",
+      "forecast_ids": [
+        "550e8400-e29b-41d4-a716-446655440000"
+      ],
+      "warning_ids": [],
+      "include_evidence": true
+    }
+
+Request rules:
+- district_id and skill_id are required non-empty strings.
+- forecast_ids must contain existing forecast UUIDs.
+- warning_ids must identify existing warning records when supplied.
+- A malformed forecast UUID returns 422 / VALIDATION_ERROR.
+- A well-formed but unknown forecast ID or warning ID returns 404 / RESOURCE_NOT_FOUND.
+- The backend validates that supplied forecast records belong to the requested district and skill; incompatible references return 400 / INVALID_REQUEST because this is an endpoint-level semantic constraint.
+- The backend validates that supplied warning records belong to the requested district and skill; incompatible warning references return 400 / INVALID_REQUEST for the same endpoint-level semantic reason.
+- include_evidence defaults to true.
+
+### Response
+
+    {
+      "data": {
+        "brief": "…",
+        "generated_at": "2026-10-05T04:30:00Z",
+        "cached": false,
+        "input_hash": "sha256:…",
+        "llm_model": "configured-llm-model",
+        "forecast_ids": [
+          "550e8400-e29b-41d4-a716-446655440000"
+        ]
+      },
+      "meta": {
+        "request_id": "req_123"
+      }
+    }
+
+The response forecast_ids are the IDs actually used to generate the returned brief after backend validation and availability filtering.
+
+input_hash is the stable hash of the normalized structured brief input used for cache identity.
+
+cached=false means the brief was generated during this request. cached=true means the returned brief was retrieved from the application cache using the same normalized input_hash and represents the previously generated brief.
+
+generated_at is the original generation timestamp of the brief content. A cache hit does not update generated_at; the cache-hit response time is represented by the HTTP response timestamp, not generated_at.
+
+AI rules:
+- The LLM receives structured analytical values from the backend.
+- It must not invent forecast values, evidence, sources, confidence levels, or scenario results.
+- Insufficient inputs must be stated, not fabricated around.
+- The brief endpoint is optional and must not block core analytics.
+- Backend may cache identical structured inputs using the stable input hash.
+- Provider failure returns 503 / AI_UNAVAILABLE.
+- Provider timeout returns 504 / AI_TIMEOUT.
+- Core analytical endpoints remain usable when AI generation fails.
+
+
+## 7.12 Cross-endpoint filtering, pagination, provenance, CORS, and caching
+
+### Analysis-mode default
+
+All analytical endpoints that expose analysis_mode use OFFICIAL as the default. DEMO must always be explicit. No endpoint may silently mix OFFICIAL and DEMO records.
+
+For every endpoint that accepts analysis_mode, the response meta must echo the applied mode, including OFFICIAL when the caller did not supply the parameter.
+
+For endpoints where mode is derived rather than selected, such as evidence for a known forecast, the response preserves the persisted forecast's mode and provenance.
+
+### Pagination
+
+Collection endpoints use:
+- 1-based page
+- default page_size=25
+- maximum page_size=100
+
+page_size above 100 returns 422 / VALIDATION_ERROR.
+
+Collection responses include meta.page, meta.page_size, and meta.total. Dashboard list responses additionally use meta.list_totals and meta.truncated as defined in Section 7.1.
+
+### Period ranges
+
+All period_start / period_end filters are inclusive. Reversed ranges return 422 / VALIDATION_ERROR.
+
+### CORS
+
+FastAPI must enforce an explicit CORS allowlist through backend configuration, for example CORS_ALLOWED_ORIGINS, containing the deployed Vercel frontend origin(s) and required local development origins. Access-Control-Allow-Origin: * is not permitted for the deployed API.
+
+### HTTP caching
+
+MVP read endpoints use Cache-Control: no-store. Internal AI brief caching is server-side application caching and does not change the default read-endpoint HTTP cache policy.
+
+
+## 8. Shared Response Schemas and Contract References
+
+### 8.1 ForecastRecord
+
+Any endpoint returning a detailed forecast record must preserve the Issue #5 v1.1 field names exactly. Do not create alternate names such as forecasted_demand, shortage_amount, or confidence_score.
+
+ForecastRecord is the Issue #5 canonical analytical record plus the API-only forecast_id UUID string.
+
+### 8.2 Named nested schemas
+
+**DashboardSummary**
+
+    {
+      "forecast_results": 42,
+      "shortage_count": 12,
+      "balanced_count": 18,
+      "oversupply_count": 7,
+      "no_demand_count": 2,
+      "insufficient_data_count": 2,
+      "gap_ineligible_count": 1,
+      "warning_count": 8,
+      "emerging_skill_count": 6
+    }
+
+**DashboardShortageRecord**
+
+A compact subset of ForecastRecord containing at least forecast_id, analysis_mode, provenance_state, district_id, sector_id, skill_id, period, data_status, gap_eligible, gap, status, confidence_level, and evidence_coverage. Ranking is defined in Section 7.1.
+
+**DashboardEmergingSkillRecord**
+
+A compact subset of the Issue #5 / Issue #18 emerging-skill output containing at least district_id, sector_id, skill_id, recent_growth_rate, historical_growth_rate, signal_strength, emerging_skill_status, and the relevant history/provenance fields defined by those contracts.
+
+Ranking uses the same field names and deterministic rule as Section 7.1: signal_strength descending, then recent_growth_rate descending, then district_id, then skill_id. Do not rename these fields at the API layer.
+
+
+
+**DistrictRecord / DistrictItem**
+
+district_id, name, state_id, state_code, and lgd_district_code, where lgd_district_code is string or null.
+
+**SectorSummary**
+
+sector_id, sector_name, and the same mutually exclusive forecast-count fields defined by DashboardSummary for the district/sector scope.
+
+**SkillRecord / SkillItem**
+
+skill_id, name, sector_id, sector_name, and taxonomy_mappings.
+
+**EmergingSkillRecord**
+
+The structured output defined by Issue #18. The API preserves its finalized field names and explicit insufficient-data semantics.
+
+**WarningRecord**
+
+The structured warning output defined by Issue #17, including warning identifier, linked forecast/signal identifiers, type, severity, detected period, explanation code, provenance, forecast_classification (which copies the Issue #5 forecast status field), confidence/evidence fields, and ranking-supporting signals where exposed by #17.
+
+**GeographicSkillSummary**
+
+A deterministic geographic roll-up of the selected skill using the same forecast and count semantics as DashboardSummary; exact aggregation fields remain owned by the skill-intelligence implementation.
+
+### 8.3 Issue #5 nested-object references
+
+model, forecast_uncertainty, and confidence_inputs are not independently redefined here. They use the shapes and controlled semantics from Issue #5 v1.1.
+
+model is null whenever data_status is not SUFFICIENT.
+
+confidence_inputs preserves Issue #5 history semantics, including history_periods, total_history_periods, synthetic_history_periods, is_contiguous, and the documented coverage/freshness/error/uncertainty/source-count fields.
+
+### 8.4 Collection and single-resource envelopes
+
+Collection response:
+
+    {
+      "data": [],
+      "meta": {
+        "request_id": "req_123",
+        "page": 1,
+        "page_size": 25,
+        "total": 100,
+        "analysis_mode": "OFFICIAL"
+      }
+    }
+
+Single-resource analytical response:
+
+    {
+      "data": {},
+      "meta": {
+        "request_id": "req_123",
+        "analysis_mode": "OFFICIAL"
+      }
+    }
+
+meta.analysis_mode is included whenever the endpoint supports or derives an analytical mode.
+
+
+## 9. Provenance Rules
+
+OFFICIAL requires provenance_state = SOURCE_BACKED.
+
+DEMO explicitly exposes analysis_mode = DEMO. Its provenance_state is independent and may be SOURCE_BACKED, SYNTHETIC_DEMO, or MIXED_PROVENANCE according to the data materially used; DEMO does not by itself imply synthetic data.
+
+History diagnostics inside confidence_inputs retain Issue #5 v1.1 semantics: history_periods is source-backed usable history, total_history_periods is total usable model history, synthetic_history_periods is synthetic model history, and is_contiguous indicates whether observed years are consecutive. Missing/non-computable diagnostics are serialized as null when the documented key is included.
+
+The API never silently converts DEMO output into OFFICIAL output and never uses synthetic observations in an OFFICIAL analytical response.
+
+
+## 10. Filtering and Pagination
+
+Collection endpoints use 1-based page numbering and bounded page_size values with a maximum of 100.
+
+Filters that affect analytical interpretation must be explicit, especially analysis_mode, district, skill, sector, and period.
+
+For forecast collections, active_only is applied within the selected analysis_mode. Endpoints that expose active_only default it to true unless their endpoint contract explicitly states otherwise. The default ordering is documented in Section 7.6.
+
+All supplied period_start and period_end values are inclusive.
+
+
+## 11. HTTP Semantics
+
+- GET single/collection: 200
+- POST simulation: 200 for every valid request, including INSUFFICIENT_DATA baselines
+- POST brief generation: 200 on successful generation or cache hit
+- Query/path/header/body validation failure: 422 / VALIDATION_ERROR
+- Endpoint-level semantic request rejection: 400 / INVALID_REQUEST
+- Missing resource: 404 / RESOURCE_NOT_FOUND
+- Evidence absent for an existing forecast: 200 with an empty list
+- Unexpected backend error: 500 / INTERNAL_ERROR
+- Non-AI dependency unavailable: 503 / SERVICE_UNAVAILABLE
+- AI provider failure: 503 / AI_UNAVAILABLE
+- AI provider timeout: 504 / AI_TIMEOUT
+
+Valid requests with data_status = INSUFFICIENT_DATA return HTTP 200 with the documented analytical null semantics.
+
+HTTP status codes must not be used to represent analytical insufficiency.
+
+
+## 12. Implementation Boundary
+
+Issue #4 defines API contracts only. Implementation must use FastAPI/Pydantic models, validate inputs, map database/provenance state to the public contract, return stable error envelopes, preserve per-period provenance for multi-period responses, and enforce the CORS and HTTP-cache rules in Section 7.12.
+
+Frontend developers consume only the documented schemas in this document and the referenced Issue #5, #17, and #18 contracts.
+
+
+## 13. Contract Ownership
+
+| Area | Owner |
+|---|---|
+| HTTP envelopes, endpoint naming, validation/status mapping | #4 |
+| Database storage | #2 / #8 |
+| Forecast analytical fields and nested model/confidence/uncertainty shapes | #5 |
+| Canonical source/data availability | #7 |
+| Demand/supply methodology | #13 |
+| Forecasting methodology | #14 |
+| Gap classification | #15 |
+| Confidence/evidence scoring | #16 |
+| Early-warning taxonomy/rules/ranking | #17 |
+| Emerging-skill detection and output fields | #18 |
+| Simulator implementation | #19 |
+| Simulator frontend presentation | #29 |
+| Model evaluation metrics | #22 |
+| AI planning brief implementation/provider behaviour | #23 |
+
+
+## 14. Acceptance Checklist
+
+- [x] API responsibility separated from backend implementation
+- [x] REST versioning approach defined
+- [x] JSON naming and representation conventions defined
+- [x] Standard single-resource envelope defined
+- [x] Standard collection envelope defined
+- [x] Standard error envelope defined
+- [x] Dashboard endpoint defined
+- [x] Dashboard summary counts, named subsets, and deterministic ranking rules defined
+- [x] District endpoints defined
+- [x] Skills endpoints defined
+- [x] Forecast endpoint defined
+- [x] Forecast default sort and inclusive period filters defined
+- [x] Early-warning endpoint defined
+- [x] Evidence endpoint defined, including 404-vs-empty semantics
+- [x] Model-evaluation endpoint defined
+- [x] What-if simulator endpoint defined with explicit request/response schemas and internally consistent examples
+- [x] Simulator gap_reduction and shortage_closed_fraction semantics defined
+- [x] Simulator insufficient-data/no-baseline/gap-ineligible behaviour defined as HTTP 200, including the latest-stored-period horizon default test case
+
+- [x] Simulator note-code vocabulary separated from Issue #5 reason_code
+- [x] AI planning-brief endpoint defined
+- [x] AI failure/timeout contracts defined
+- [x] Forecast response mapped to Issue #5 v1.1
+- [x] Nested forecast object references and null rules defined
+- [x] Provenance and null semantics defined
+- [x] Consistent OFFICIAL analysis-mode default and response echo defined
+- [x] Pagination maximum and validation response defined
+- [x] Request-ID generation/correlation defined
+- [x] CORS allowlist defined
+- [x] MVP HTTP caching policy defined
+- [x] Cross-issue ownership defined
+
+
+## 15. Open Decisions / Follow-ups
+
+| Decision | Owner |
+|---|---|
+| Exact dashboard aggregation formulas beyond the documented count semantics | #13–#18 as applicable |
+| Final warning type/severity vocabulary and ranking implementation | #17 |
+| Final emerging-skill methodology and any output-field changes | #18 |
+| Exact model-evaluation metrics | #22 |
+| Final simulator implementation extensions beyond this request/response contract | #19 |
+| Final AI brief prompt/model/provider details | #23 |
+| Authentication / RBAC | Post-MVP architecture follow-up |
+| Rate limiting / quotas | Deployment/operations follow-up |
+
+These follow-ups must not silently change the stable core envelopes, forecast field names, provenance rules, simulator schema, or dashboard ranking/count semantics. Any breaking or interpretation-changing change requires a contract update before dependent implementation proceeds.
+
