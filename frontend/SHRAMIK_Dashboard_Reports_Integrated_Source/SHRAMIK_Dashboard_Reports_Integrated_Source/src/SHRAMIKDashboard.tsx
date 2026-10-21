@@ -354,7 +354,7 @@ function Header({
     if (mobileSearchOpen) mobileSearchInputRef.current?.focus();
   }, [mobileSearchOpen]);
   useEffect(() => {
-    setActiveSearchIndex(searchResults.length ? 0 : -1);
+    setActiveSearchIndex(-1);
   }, [searchResults]);
 
   const unreadCount = notifications.filter((item) => !item.read).length;
