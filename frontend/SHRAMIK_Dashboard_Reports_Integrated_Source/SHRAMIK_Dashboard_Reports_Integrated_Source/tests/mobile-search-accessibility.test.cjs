@@ -1,0 +1,24 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const appRoot = path.resolve(__dirname, '..');
+const source = fs.readFileSync(path.join(appRoot, 'src/SHRAMIKDashboard.tsx'), 'utf8');
+const styles = fs.readFileSync(path.join(appRoot, 'src/shramik-dashboard.css'), 'utf8');
+
+test('mobile view provides a keyboard-accessible search toggle', () => {
+  assert.match(source, /className="mobile-search-toggle icon-button"/);
+  assert.match(source, /aria-label=\{mobileSearchOpen \? 'Close search' : 'Open search'\}/);
+  assert.match(source, /aria-expanded=\{mobileSearchOpen\}/);
+  assert.match(source, /aria-controls="shramik-mobile-search"/);
+  assert.match(source, /id="shramik-mobile-search"/);
+});
+
+test('mobile search panel opens in the header and focuses the existing search input', () => {
+  assert.match(source, /if \(mobileSearchOpen\) mobileSearchInputRef\.current\?\.focus\(\)/);
+  assert.match(source, /setMobileSearchOpen\(false\);\s*setSearchOpen\(false\);/);
+  assert.match(source, /setSearchOpen\(false\); setMobileSearchOpen\(false\);/);
+  assert.match(styles, /\.topbar \.global-search\.mobile-search-open\{display:flex;position:absolute/);
+  assert.match(styles, /\.mobile-search-toggle\{display:grid;width:32px/);
+});
