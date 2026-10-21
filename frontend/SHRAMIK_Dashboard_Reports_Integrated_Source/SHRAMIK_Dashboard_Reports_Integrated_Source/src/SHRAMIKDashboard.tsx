@@ -758,10 +758,11 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   if (activePage === 'login' || activePage === 'request-access') return null;
 
   return <div className={`app-root data-mode-${adapter.mode}`}>
+    <a className="skip-link" href="#shramik-main">Skip to main content</a>
     <Header regions={regions} region={region} onRegionChange={handleRegionChange} onMenu={handleMobileMenuToggle} mobileOpen={mobileOpen} mobileSearchOpen={mobileSearchOpen} onMobileSearchToggle={handleMobileSearchToggle} profile={headerProfile} query={query} onQueryChange={setQuery} searchResults={searchResults} searchBusy={searchBusy} searchOpen={searchOpen} onSearchOpenChange={setSearchOpen} onSearchSelect={handleSearchSelect} notifications={notifications} notificationsOpen={notificationsOpen} onNotificationsToggle={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} onNotificationRead={(id) => void markRead(id)} profileOpen={profileOpen} onProfileToggle={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} onOpenSection={(section) => void openSection(section)} adapterMode={adapter.mode} authSession={authSession} onNavigateRoute={navigateAuthRoute} onSignOut={handleSignOut}/>
     <div className="app-layout">
       <Sidebar active={active} onNavigate={handleNavigate} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)}/>
-      <main className={activePage === 'dashboard' ? 'dashboard-main' : 'dashboard-main module-main'} aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
+      <main id="shramik-main" tabIndex={-1} className={activePage === 'dashboard' ? 'dashboard-main' : 'dashboard-main module-main'} aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
         <ModuleErrorBoundary key={activePage} moduleName={getRouteLabel(activePage)} onReturnDashboard={() => handleNavigate({ label: 'Dashboard', section: 'dashboard' })}>
         {activePage === 'skill-gaps' ? (demoMode
               ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>
