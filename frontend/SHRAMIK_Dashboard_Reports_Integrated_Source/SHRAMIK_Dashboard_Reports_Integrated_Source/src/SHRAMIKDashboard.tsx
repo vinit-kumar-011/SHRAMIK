@@ -588,12 +588,16 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
     const closeOverlays = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         const mobileSearchWasOpen = Boolean(document.querySelector('.global-search.mobile-search-open'));
+        const notificationsWereOpen = Boolean(document.querySelector('.notifications-popover'));
+        const profileWasOpen = Boolean(document.querySelector('.profile-popover'));
         setSearchOpen(false);
         setMobileSearchOpen(false);
         setNotificationsOpen(false);
         setProfileOpen(false);
         setMobileOpen(false);
         if (mobileSearchWasOpen) document.querySelector<HTMLButtonElement>('.mobile-search-toggle')?.focus();
+        else if (profileWasOpen) document.querySelector<HTMLButtonElement>('.profile-button')?.focus();
+        else if (notificationsWereOpen) document.querySelector<HTMLButtonElement>('.notification-button')?.focus();
         if (detail || detailLoading || detailError) { setDetail(null); setDetailLoading(false); setDetailError(''); }
       }
     };
