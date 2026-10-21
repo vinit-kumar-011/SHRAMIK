@@ -18,7 +18,7 @@ test('mobile view provides a keyboard-accessible search toggle', () => {
 test('mobile search panel opens in the header and focuses the existing search input', () => {
   assert.match(source, /if \(mobileSearchOpen\) mobileSearchInputRef\.current\?\.focus\(\)/);
   assert.match(source, /setMobileSearchOpen\(false\);\s*setSearchOpen\(false\);/);
-  assert.match(source, /setSearchOpen\(false\); setMobileSearchOpen\(false\);/);
+  assert.match(source, /setSearchOpen\(false\);\s*setMobileSearchOpen\(false\);/);
   assert.match(styles, /\.topbar \.global-search\.mobile-search-open\{display:flex;position:absolute/);
   assert.match(styles, /\.mobile-search-toggle\{display:grid;width:32px/);
 });
