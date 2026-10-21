@@ -12,7 +12,10 @@ test('Data Quality shows public visibility status for each analytical output tab
   for (const table of ['demand_observations', 'supply_observations', 'forecast_results', 'model_versions', 'emerging_skill_signals', 'early_warnings']) {
     assert.ok(source.includes("'" + table + "'"), 'should report visibility for ' + table);
   }
-  assert.match(source, /A lightweight public-read check \(at most one sampled row per table\)/);
+  assert.match(source, /intentionally excluded from the browser-facing/);
+  assert.match(source, /function publicOutputVisibility\(\)/);
+  assert.doesNotMatch(source, /checkPublicTable\(/, 'must not probe output tables excluded from the public proxy');
+  assert.doesNotMatch(source, /getRows<{ id: string }>/, 'must not attempt to inspect restricted output tables through public reads');
   assert.match(source, /“Restricted” means the public reader cannot inspect a table; it does not mean the table is empty/);
   assert.match(source, /status === 'Restricted' \? 'restricted' : 'pending'/);
 });
