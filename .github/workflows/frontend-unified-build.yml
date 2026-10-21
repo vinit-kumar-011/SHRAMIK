@@ -51,6 +51,35 @@ jobs:
           test -d dist/assets
       - name: Smoke-test production preview routes
         run: npm run test:preview
+      - name: Prepare Chromium for browser interaction QA
+        shell: bash
+        run: |
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo "CHROME_BIN=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          elif command -v google-chrome-stable >/dev/null 2>&1; then
+            echo "CHROME_BIN=$(command -v google-chrome-stable)" >> "$GITHUB_ENV"
+          elif command -v chromium >/dev/null 2>&1; then
+            echo "CHROME_BIN=$(command -v chromium)" >> "$GITHUB_ENV"
+          elif command -v chromium-browser >/dev/null 2>&1; then
+            echo "CHROME_BIN=$(command -v chromium-browser)" >> "$GITHUB_ENV"
+          else
+            npx --yes playwright install --with-deps chromium
+            CHROME_BIN="$(find "$HOME/.cache/ms-playwright" -type f -name chrome | head -n 1)"
+            test -x "$CHROME_BIN"
+            echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
+          fi
+      - name: Validate browser QA script syntax
+        run: node --check scripts/browser-interaction-qa.mjs
+      - name: Run Chromium interaction and responsive QA
+        run: node --experimental-websocket scripts/browser-interaction-qa.mjs
+      - name: Upload browser QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shramik-browser-qa-screenshots
+          path: frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/browser-qa-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Upload production build
         uses: actions/upload-artifact@v4
         with:
