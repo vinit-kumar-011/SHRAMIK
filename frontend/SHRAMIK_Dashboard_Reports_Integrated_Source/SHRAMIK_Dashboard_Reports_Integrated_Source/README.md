@@ -122,3 +122,8 @@ The simulator adapter contract and backend acceptance checks are documented in `
 The production app bundles a 36-feature state/UT GeoJSON for the regional-impact visualization. The data is OpenStreetMap-derived (ODbL 1.0) and has visible attribution in the map; its provenance and limitations are documented in `public/assets/INDIA_STATES_ATTRIBUTION.md`. It is best-effort, not an official/survey-grade boundary source. The map provides geometry only; it never derives missing labour-market metrics from shapes, and only adapter-returned comparable scenario results may colour regions.
 
 The Scenario Simulator REST adapter accepts either the API origin (for example `https://host`) or that origin ending in `/api/v1`. The production-preview smoke check verifies that the 36-feature GeoJSON and its OSM/ODbL attribution file are actually served from the built asset directory.
+
+
+## Service availability and release gates
+
+See [Release Readiness and Unavailable-Service Fallbacks](../../../docs/RELEASE_READINESS_AND_FALLBACKS.md) for the current safe fallbacks, required backend work, configuration rules and pre-deployment verification gates. Do not switch to REST or enable administration writes solely by setting a frontend URL/flag.
