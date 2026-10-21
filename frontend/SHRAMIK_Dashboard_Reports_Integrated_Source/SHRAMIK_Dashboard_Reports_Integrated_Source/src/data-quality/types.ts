@@ -1,6 +1,6 @@
 export type QualitySeverity = 'critical' | 'high' | 'medium' | 'low';
 export type QualityIssueStatus = 'open' | 'in_review' | 'resolved' | 'suppressed';
-export type QualityProvenance = 'SOURCE_BACKED' | 'DERIVED' | 'MIXED' | 'SYNTHETIC_DEMO';
+export type QualityProvenance = 'SOURCE_BACKED' | 'DERIVED' | 'MIXED' | 'SYNTHETIC_DEMO' | 'NOT_AVAILABLE';
 
 export interface QualityIssue {
   id: string;
@@ -36,6 +36,6 @@ export interface DataQualitySnapshot {
   meta: { provenance: QualityProvenance; note: string; sourceLabel?: string; updatedAt?: string | null };
 }
 export interface DataQualityDataAdapter {
-  readonly mode: 'mock' | 'rest';
+  readonly mode: 'mock' | 'rest' | 'unavailable';
   getSnapshot(signal?: AbortSignal): Promise<DataQualitySnapshot>;
 }
