@@ -197,6 +197,7 @@ test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
 test('Reports page is content-only and the canonical app owns its shared route/shell', () => {
   const page = fs.readFileSync(path.join(project, 'src', 'reports', 'ReportsPage.tsx'), 'utf8');
   const shell = fs.readFileSync(path.join(project, 'src', 'SHRAMIKDashboard.tsx'), 'utf8');
+  const reportsAdapter = fs.readFileSync(path.join(project, 'src', 'reports', 'adapter.ts'), 'utf8');
   assert.match(page, /Report Builder/);
   assert.match(page, /Report Library/);
   assert.match(page, /Report Preview/);
@@ -204,7 +205,7 @@ test('Reports page is content-only and the canonical app owns its shared route/s
   assert.match(shell, /import ReportsPage from '\.\/reports\/ReportsPage'/);
   assert.match(shell, /section: 'reports'/);
   assert.match(shell, /activePage === 'reports' \? <ReportsPage \/>/, 'the published-capable Report Builder should be mounted in live and demo modes');
-  assert.match(shell, /new PublishedReportsAdapter\(createLabourMarketDataAdapter\(\)\)/, 'without a Reports API, the builder uses the published-indicator adapter');
+  assert.match(reportsAdapter, /new PublishedReportsAdapter\(createLabourMarketDataAdapter\(\)\)/, 'without a Reports API, the builder uses the published-indicator adapter');
   assert.match(shell, /reports\.html|#reports/);
 });
 
