@@ -28,7 +28,7 @@ export default function RequestAccessPage({ onNavigate }: { onNavigate: (route: 
     }
   }
 
-  return <section className="sh-auth-page sh-access-page" aria-labelledby="access-heading">
+  return <main className="sh-auth-page sh-access-page" aria-labelledby="access-heading">
     <div className="sh-auth-copy">
       <div className="sh-auth-eyebrow"><FileLock2 size={16}/> WORKSPACE / ACCESS REVIEW</div>
       <h1>Good data<br/>needs good governance.</h1>
@@ -63,5 +63,5 @@ export default function RequestAccessPage({ onNavigate }: { onNavigate: (route: 
         <p className="sh-auth-disclaimer">Your request is visible only to authorized server-side reviewers. This page cannot read the queue, approve itself, or grant a role.</p>
       </>}
     </div>
-  </section>;
+  </main>;
 }
