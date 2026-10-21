@@ -48,6 +48,6 @@ export interface SupplySnapshot {
 }
 
 export interface SupplyInsightsDataAdapter {
-  readonly mode: 'mock' | 'rest';
+  readonly mode: 'mock' | 'rest' | 'unavailable';
   getSnapshot(geographyCode: string, signal?: AbortSignal): Promise<SupplySnapshot>;
 }
