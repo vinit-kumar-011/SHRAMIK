@@ -116,7 +116,7 @@ test('published-indicator CSV has real values and correctly escapes cells', asyn
   assert.match(csv.csvText, /Unemployment rate/);
   assert.match(csv.csvText, /3\.2%/);
   assert.match(csv.csvText, /PLFS 2025 Annual Report/);
-  assert.match(csv.csvText, /"Annual benchmark, not a forecast\\. Source: https:\/\/example\.gov\.in\/report"/);
+  assert.match(csv.csvText, /"Published source value Annual benchmark, not a forecast\. Source: https:\/\/example\.gov\.in\/report"/);
   assert.equal((await adapter.exportCsv(created.reportId, 'FORECASTS')).status, 'NOT_CONFIGURED');
 });
 
