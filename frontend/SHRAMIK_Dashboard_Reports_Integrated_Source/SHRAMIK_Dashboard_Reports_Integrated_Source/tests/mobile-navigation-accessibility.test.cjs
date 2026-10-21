@@ -7,6 +7,10 @@ const source = fs.readFileSync(
   path.resolve(__dirname, '../src/SHRAMIKDashboard.tsx'),
   'utf8',
 );
+const styles = fs.readFileSync(
+  path.resolve(__dirname, '../src/shramik-dashboard.css'),
+  'utf8',
+);
 const sidebarStart = source.indexOf('function Sidebar(');
 const headerStart = source.indexOf('function Header(');
 const workspaceStart = source.indexOf('function SHRAMIKWorkspace(');
@@ -51,4 +55,16 @@ test('mobile menu and mobile search close each other instead of stacking overlay
   assert.match(source, /const handleMobileMenuToggle = useCallback\(\(\) => \{/);
   assert.match(source, /if \(next\) \{\s*setMobileSearchOpen\(false\);\s*setSearchOpen\(false\);/);
   assert.match(source, /onMenu=\{handleMobileMenuToggle\}/);
+});
+
+
+test('mobile region selector stays inside its own hit target and does not cover the menu', () => {
+  const mobileLayoutStart = styles.indexOf('@media(max-width:620px)');
+  const smallLayoutStart = styles.indexOf('@media(max-width:360px)', mobileLayoutStart);
+  assert.ok(mobileLayoutStart >= 0 && smallLayoutStart > mobileLayoutStart, 'mobile header media-query bounds should exist');
+  const mobileLayout = styles.slice(mobileLayoutStart, smallLayoutStart);
+  assert.match(mobileLayout, /\.region-select\{[^}]*position:relative/);
+  assert.match(mobileLayout, /\.region-select\{[^}]*flex:0 0 35px/);
+  assert.match(mobileLayout, /\.region-select select\{position:absolute;width:100%;height:100%;opacity:0;inset:0\}/);
+  assert.match(styles.slice(smallLayoutStart), /\.region-select\{width:28px;flex-basis:28px\}/);
 });
