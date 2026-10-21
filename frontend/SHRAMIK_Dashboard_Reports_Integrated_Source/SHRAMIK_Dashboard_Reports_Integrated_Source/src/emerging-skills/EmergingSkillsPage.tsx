@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { unavailableEmergingSkillsDataAdapter } from './unavailableAdapter';
 import {
   Briefcase, Map as MapIcon, Network, ShieldAlert,
   TrendingUp, ChevronRight, Info, Activity, Layers, CheckCircle2,
@@ -13,7 +14,7 @@ import {
 // Domain Types
 // ------------------------------------------------------------------
 export type SkillCategory = 'EMERGING' | 'ACCELERATING' | 'ESTABLISHED' | 'DECLINING' | 'UNCLASSIFIED';
-export type ProvenanceState = 'SOURCE_BACKED' | 'DERIVED' | 'MIXED' | 'SYNTHETIC_DEMO';
+export type ProvenanceState = 'SOURCE_BACKED' | 'DERIVED' | 'MIXED' | 'SYNTHETIC_DEMO' | 'NOT_AVAILABLE';
 export type RelationBasis = 'DIRECT_OBSERVATION' | 'APPROVED_MAPPING' | 'DERIVED_ASSOCIATION';
 
 export interface EmergingSkillsFilters {
@@ -26,7 +27,7 @@ export interface EmergingSkillsFilters {
 export type EmergingSkillsView = 'overview' | 'momentum' | 'connections' | 'regional' | 'profile';
 
 export interface EmergingSkillsPageProps {
-  /** Supply the host app's adapter. When omitted, the page explicitly uses the demo adapter. */
+  /** Supply the host app's adapter. When omitted, the page fails closed until a service is configured. */
   dataAdapter?: EmergingSkillsDataAdapter;
   initialFilters?: Partial<EmergingSkillsFilters>;
   initialView?: EmergingSkillsView;
@@ -523,17 +524,17 @@ const OverviewView = ({
 
       {/* Evidence / findings */}
       <div className="bg-[#203A5B] text-white rounded-2xl p-6 shadow-[0_4px_16px_rgba(32,58,91,0.18)]">
-        <div className="flex items-start gap-4">
+        {summary?.meta.provenance === 'SYNTHETIC_DEMO' && <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
             <Info className="w-5 h-5 text-[#F2D34F]" />
           </div>
           <div>
-            <h3 className="font-bold text-lg mb-1">Key Findings</h3>
+            <h3 className="font-bold text-lg mb-1">Key Findings · Demo only</h3>
             <p className="text-sm text-white/80 leading-relaxed">
-              Emerging signals show the highest growth in <strong>Green Hydrogen Processing</strong> and <strong>Drone Fleet Maintenance</strong>, with regional intensity in Odisha, Telangana and Maharashtra. The synthetic demo dataset is marked <Badge variant="demo">SYNTHETIC_DEMO</Badge> and is not backed by verified posting sources.
+              Emerging signals show the highest growth in <strong>Green Hydrogen Processing</strong> and <strong>Drone Fleet Maintenance</strong>, with regional intensity in Odisha, Telangana and Maharashtra. These synthetic examples are not backed by verified posting sources.
             </p>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );
@@ -879,7 +880,7 @@ const ProfileEvidenceView = ({
                   <h4 className="font-bold text-[#171717] mb-3">Evidence Snapshot</h4>
                   <p className="text-sm text-[#62625C] leading-relaxed">{profileEvidence.classificationNotes}</p>
                   <div className="flex gap-3 mt-4">
-                    <Badge variant="demo">SYNTHETIC_DEMO</Badge>
+                    <ProvenanceStrip state={profileEvidence.provenanceState} />
                     <Badge variant="neutral">Rule {profileEvidence.ruleVersion}</Badge>
                   </div>
                 </div>
@@ -927,7 +928,7 @@ const ProfileEvidenceView = ({
                   <h5 className="font-bold text-sm text-[#171717] mb-2">Coverage & Quality</h5>
                   <div className="text-xs text-[#62625C] space-y-1">
                     <p>Provenance: <strong className="text-[#171717]">{profileEvidence.provenanceState}</strong></p>
-                    <p>Evidence count: <strong className="text-[#171717]">{profileEvidence.evidenceCount.toLocaleString()}</strong></p>
+                    <p>Evidence count: <strong className="text-[#171717]">{evidenceData ? profileEvidence.evidenceCount.toLocaleString() : 'Not supplied'}</strong></p>
                     <p>Updated: <strong className="text-[#171717]">{profileEvidence.updatedAt ? new Date(profileEvidence.updatedAt).toLocaleString() : 'Not supplied'}</strong></p>
                   </div>
                 </div>
@@ -1021,7 +1022,7 @@ const MetricBox = ({ label, value, sub, positive }: { label: string; value: stri
 type ViewTab = EmergingSkillsView;
 
 export const EmergingSkillsPage = ({ dataAdapter: suppliedAdapter, initialFilters, initialView = 'overview', onOpenSource }: EmergingSkillsPageProps = {}) => {
-  const adapter = useMemo(() => suppliedAdapter || demoEmergingSkillsDataAdapter, [suppliedAdapter]);
+  const adapter = useMemo(() => suppliedAdapter || unavailableEmergingSkillsDataAdapter, [suppliedAdapter]);
   const [activeTab, setActiveTab] = useState<ViewTab>(initialView);
   const [summary, setSummary] = useState<EmergingSkillsSummary | null>(null);
   const [skills, setSkills] = useState<EmergingSkill[]>([]);
@@ -1128,11 +1129,13 @@ export const EmergingSkillsPage = ({ dataAdapter: suppliedAdapter, initialFilter
   return (
     <div className="min-h-0 w-full bg-[#F7F6F0] text-[#171717] font-sans">
       {/* Provenance banner: the label follows the adapter actually in use. */}
-      <div className={`border-b px-6 py-2.5 flex items-center justify-center gap-2 text-xs font-semibold ${adapter === demoEmergingSkillsDataAdapter ? 'bg-[#F2D34F]/20 border-[#F2D34F]/30 text-[#8A6D1F]' : 'bg-[#20A89C]/10 border-[#20A89C]/25 text-[#185F59]'}`} role="status">
-        {adapter === demoEmergingSkillsDataAdapter ? <ShieldAlert className="w-3.5 h-3.5" /> : <Info className="w-3.5 h-3.5" />}
+      <div className={`border-b px-6 py-2.5 flex items-center justify-center gap-2 text-xs font-semibold ${adapter === demoEmergingSkillsDataAdapter ? 'bg-[#F2D34F]/20 border-[#F2D34F]/30 text-[#8A6D1F]' : adapter === unavailableEmergingSkillsDataAdapter ? 'bg-[#FFF4F2] border-[#B42318]/30 text-[#8A241A]' : 'bg-[#20A89C]/10 border-[#20A89C]/25 text-[#185F59]'}`} role="status">
+        {adapter === demoEmergingSkillsDataAdapter ? <ShieldAlert className="w-3.5 h-3.5" /> : adapter === unavailableEmergingSkillsDataAdapter ? <AlertCircle className="w-3.5 h-3.5" /> : <Info className="w-3.5 h-3.5" />}
         {adapter === demoEmergingSkillsDataAdapter
           ? 'Illustrative demo data (Provenance: SYNTHETIC_DEMO). Not for production analytics.'
-          : 'Connected data adapter. Review each panel’s provenance, coverage and quality metadata before interpreting results.'}
+          : adapter === unavailableEmergingSkillsDataAdapter
+            ? 'Emerging Skills API is not configured. No live skill signals are available.'
+            : 'Connected data adapter. Review each panel’s provenance, coverage and quality metadata before interpreting results.'}
       </div>
 
       {/* Page header */}
@@ -1185,6 +1188,13 @@ export const EmergingSkillsPage = ({ dataAdapter: suppliedAdapter, initialFilter
             <div className="w-10 h-10 border-4 border-[#F2D34F]/30 border-t-[#203A5B] rounded-full animate-spin mx-auto mb-4" />
             <p className="text-[#62625C] font-medium">Loading intelligence data...</p>
             <p className="text-xs text-[#62625C] mt-1">{adapter === demoEmergingSkillsDataAdapter ? 'Illustrative demo adapter' : 'Connected data adapter'}</p>
+          </div>
+        ) : loadError && !summary && skills.length === 0 ? (
+          <div className="bg-white border border-[#D8D6CD] rounded-2xl p-10 text-center shadow-[0_2px_6px_rgba(23,23,23,0.03)]" role="status">
+            <AlertCircle className="w-8 h-8 text-[#B42318] mx-auto mb-3" />
+            <h2 className="font-bold text-lg text-[#171717]">Emerging Skills results unavailable</h2>
+            <p className="text-sm text-[#62625C] mt-2">No skill counts, rankings, watchlist activity or findings are inferred while the service is unavailable.</p>
+            <button type="button" onClick={() => setRetryKey(key => key + 1)} className="mt-4 rounded-lg border border-[#292929] bg-[#F2D34F] px-4 py-2 text-sm font-semibold">Retry data load</button>
           </div>
         ) : (
           <>
