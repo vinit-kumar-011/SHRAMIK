@@ -58,11 +58,29 @@ Reports can remain useful before the analytical API is complete: report the real
 
 ## Pre-deployment verification gates
 
-1. The latest branch CI passes clean install, typecheck, full test suite, build, static entry checks and preview smoke tests.
-2. Browser tests cover all workspace routes at narrow-phone, phone, tablet and desktop widths; keyboard/focus flows and authentication interactions are retested.
-3. A real provisioned QA account confirms sign-in, session restore, session expiry and sign-out against the actual Supabase project. Browser mocks are not evidence of live authentication.
-4. Live service tests confirm which endpoints are deployed, the correct environment variables are set, and RLS/permissions behave as expected. Verify both successful and denied/empty requests.
-5. Compare the signed-in visual UI against the SHRAMIK design system and confirm the public landing page remains the default unauthenticated route.
-6. Re-check production/deployment config, secret exposure, dependency audit and rollback plan. Keep `main` untouched, keep the PR unmerged, and do not deploy until the user explicitly approves after reviewing these results.
+**Latest tested application head (21 Oct 2026):** `da3411153523669c2f941ed2227be332c10bb594`  
+**CI:** [run #323 — passed](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39625427318)
 
-**Release rule:** a module is “available” only when its real contract and intended data source work end-to-end. A UI that renders, a healthy server, a mock adapter, or a green build is not proof that the corresponding analytics, admin workflow or backend is operational.
+### Verification completed on the latest tested head
+
+- [x] Clean locked dependency install, TypeScript type-check, automated test suite, live published-KPI read smoke, production Vite build, generated-entry checks and direct route/asset smoke checks passed.
+- [x] Chromium interaction/responsive suite passed **32/32 checks** against the local production build. Coverage includes landing/login/request-access navigation, required form validation without submitting either form, login layout without horizontal overflow at 360/390/768/1365px, workspace rendering under an isolated test-only frontend session, Demand and Reports navigation, six module synthetic-preview entry/exit paths (Demand, Supply, Skill Gaps, Forecasts, Emerging Skills and Data Quality), preview reset after in-app navigation, and the local assumptions-only Scenario Simulator.
+- [x] Scenario browser checks confirmed visible `SYNTHETIC_DEMO` / assumption-only warnings and illustrative seat/completion/transition outputs while the demand estimate remains “Not available.” No calibrated forecast or jobs claim was presented.
+- [x] The browser QA run initiated no non-read HTTP requests and observed no uncaught JavaScript exceptions or browser console errors.
+- [x] CI uploaded [browser QA screenshots](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39625427318/artifacts/12355759634) (expires 28 Oct 2026) and the [built frontend artifact](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39625427318/artifacts/12356617443) (expires 4 Nov 2026).
+- [x] Public landing remains the default unauthenticated route; Login and Request Access remain outside the workspace shell. Synthetic preview actions are visibly labelled and local-only.
+
+### Still required before release approval
+
+1. [ ] **Real Supabase authentication:** use a designated, provisioned QA account to verify credentialed sign-in, session restoration, expiry/refresh and sign-out against the connected project. Chromium used an isolated test-only session only to test the protected shell; that is not a real login test. The access-request form was not submitted and no accounts or credentials were changed.
+2. [ ] **Broader interactive/visual review:** inspect screenshots and compare the signed-in workspace to the SHRAMIK Global Design System. The current browser flow is valuable targeted coverage, not a pixel-perfect review or an interactive test of every control on every workspace route. Continue keyboard/focus checks and exercise report export and other interactions where safe.
+3. [ ] **Validated analytical pipeline and API:** populate and validate source-backed demand, supply, compatible gaps, forecast, emerging-skill and early-warning result outputs; complete and contract-test the required application API. Published context indicators are not substitutes for these analytics.
+4. [ ] **Administration authorization boundary:** implement server-side token validation, authoritative role checks, pending-request review, account provisioning and audit logging before enabling privileged actions. Browser-side fixture state must never grant access.
+5. [ ] **Dependency audit:** investigate the 7 development-tree npm audit findings (2 moderate, 5 high) in the current dependency chain and verify a regression-tested fix. Do not apply a major dependency migration solely to silence the audit.
+6. [ ] Re-check the deployment configuration, secret exposure and rollback procedure before any future release.
+
+### Deployment and merge guard
+
+PR #62 remains open and draft; `main` remains `c118d02b46b3742d822b0c1bddd5f26faa26d231`. The latest tested application commit had zero Vercel deployments in both frontend and backend projects. **No deployment or merge is authorized by these checks.** Do not deploy until the user reviews the evidence and explicitly approves.
+
+**Release rule:** a module is “available” only when its real service contract and intended data source work end-to-end. A page rendering, a healthy server, synthetic fixture, isolated browser session or green build does not establish production readiness for analytics, authentication or privileged administration.
