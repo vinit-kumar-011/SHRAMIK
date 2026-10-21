@@ -171,7 +171,7 @@ export class PublishedReportsAdapter implements ReportsDataAdapter {
       if (key === 'SOURCES_METHOD') {
         const blocks: ReportBlock[] = [
           { kind: 'methodology', title: 'Published-indicator reporting method', version: 'published-indicators-v1', text: 'The report captures indicator values returned by the SHRAMIK public dashboard adapter. It preserves the adapter’s source label, update date, unit, definition and interpretation notes. The selected date range is not applied as a database filter, and no missing analytical output is imputed.' },
-          { kind: 'source_list', sources: [...uniqueSources.values()] },
+          { kind: 'source_list', sources: [...uniqueSources.values()].map((source) => ({ ...source, notes: source.notes?.join(' ') })) },
           { kind: 'callout', tone: 'warning', title: 'Unavailable analytical outputs', text: 'Demand, supply, gaps, forecasts, early warnings and emerging-skill signals require validated result tables and reporting endpoints. These sections remain unavailable until those outputs are published.' },
         ];
         return { key, title: 'Sources & Methodology', status: 'READY', blocks };

@@ -40,7 +40,7 @@ const fakeCard = {
   subtitle: 'Published annual benchmark · persons, all ages', value: 3.2, formattedValue: '3.2%',
   unit: '%', deltaPct: null, context: 'Published source value', trend: [],
   meta: { provenance: 'source-backed', sourceLabel: 'PLFS 2025 Annual Report', updatedAt: '2026-04-30',
-    notes: ['Annual benchmark; not a forecast.', 'Source: https://example.gov.in/report'] },
+    notes: ['Annual benchmark, not a forecast.', 'Source: https://example.gov.in/report'] },
 };
 function fakeAdapter() {
   return {
@@ -116,7 +116,7 @@ test('published-indicator CSV has real values and correctly escapes cells', asyn
   assert.match(csv.csvText, /Unemployment rate/);
   assert.match(csv.csvText, /3\.2%/);
   assert.match(csv.csvText, /PLFS 2025 Annual Report/);
-  assert.match(csv.csvText, /"Annual benchmark; not a forecast\. Source: https:\/\/example\.gov\.in\/report"/);
+  assert.match(csv.csvText, /"Annual benchmark, not a forecast\\. Source: https:\/\/example\.gov\.in\/report"/);
   assert.equal((await adapter.exportCsv(created.reportId, 'FORECASTS')).status, 'NOT_CONFIGURED');
 });
 
