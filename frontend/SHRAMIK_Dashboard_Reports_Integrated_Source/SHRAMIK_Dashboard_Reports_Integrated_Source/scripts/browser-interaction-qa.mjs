@@ -244,8 +244,8 @@ try {
 
   const demandNav = await cdp.evaluate(`(() => {const elements=Array.from(document.querySelectorAll('button.nav-item, a.nav-item'));const e=elements.find(x=>(x.innerText||'').trim().toLowerCase().includes('demand'));if(!e)return null;e.click();return (e.innerText||'').trim();})()`);
   await waitFor(() => cdp.evaluate(`location.pathname === '/demand'`), 'Demand navigation');
-  pageInfo = await cdp.evaluate(`({path:location.pathname,text:(document.body?.innerText||'').slice(0,500)})`);
-  record('Workspace navigation opens Demand', Boolean(demandNav) && pageInfo.path === '/demand' && /Demand/i.test(pageInfo.text), JSON.stringify({clicked:demandNav,page:pageInfo}));
+  pageInfo = await cdp.evaluate(`({path:location.pathname,title:document.querySelector('.dbi-hero h1')?.innerText||'',text:(document.body?.innerText||'').slice(0,500)})`);
+  record('Workspace navigation opens Demand', Boolean(demandNav) && pageInfo.path === '/demand' && /Demand/i.test(pageInfo.title), JSON.stringify({clicked:demandNav,page:pageInfo}));
 
   const reportsNav = await cdp.evaluate(`(() => {const elements=Array.from(document.querySelectorAll('button.nav-item, a.nav-item'));const e=elements.find(x=>(x.innerText||'').trim().toLowerCase().includes('reports'));if(!e)return null;e.click();return (e.innerText||'').trim();})()`);
   await waitFor(() => cdp.evaluate(`location.pathname === '/reports'`), 'Reports navigation');
@@ -297,8 +297,8 @@ try {
   record('Scenario Simulator defaults to clearly labelled assumptions-only planning', Boolean(plannerBefore.seats) && Boolean(plannerBefore.lag) && /LOCAL-PLANNING-NO-VALIDATED-BASELINE/.test(plannerBefore.baseline) && /does not produce official workforce demand/i.test(plannerBefore.notice), JSON.stringify(plannerBefore));
   await screenshot(cdp, 'scenario-planner-desktop.png');
   const runClick = await clickByText(cdp, 'Run Simulation');
-  await waitFor(() => cdp.evaluate(`/ILLUSTRATIVE \/ ASSUMPTION-ONLY OUTPUT/i.test(document.body?.innerText||'') && /SYNTHETIC_DEMO/.test(document.body?.innerText||'')`), 'local planning results with synthetic provenance', 15000);
-  const plannerResult = await cdp.evaluate(`(() => { const text=document.body?.innerText||''; return {provenance:/SYNTHETIC_DEMO/.test(text),warning:/ILLUSTRATIVE \/ ASSUMPTION-ONLY OUTPUT/i.test(text),notAvailable:(text.match(/Not available/g)||[]).length,seatMetric:/Illustrative seat opportunities \(cumulative\)/i.test(text),completionMetric:/Illustrative training completions/i.test(text),transitionMetric:/Potential post-training transitions \(not jobs\)/i.test(text),demandNotAvailable:/Projected Demand[\s\S]{0,80}Not available/i.test(text),calibratedClaim:/not a calibrated forecast/i.test(text)}; })()`);
+  await waitFor(() => cdp.evaluate(`(document.body?.innerText||'').includes('ILLUSTRATIVE / ASSUMPTION-ONLY OUTPUT') && (document.body?.innerText||'').includes('SYNTHETIC_DEMO')`), 'local planning results with synthetic provenance', 15000);
+  const plannerResult = await cdp.evaluate(`(() => { const text=document.body?.innerText||''; const cards=Array.from(document.querySelectorAll('.ss-kpi')); const demand=cards.find(card=>/Projected Demand/i.test(card.querySelector('span')?.innerText||'')); return {provenance:text.includes('SYNTHETIC_DEMO'),warning:text.includes('ILLUSTRATIVE / ASSUMPTION-ONLY OUTPUT'),seatMetric:text.includes('Illustrative seat opportunities (cumulative)'),completionMetric:text.includes('Illustrative training completions'),transitionMetric:text.includes('Potential post-training transitions (not jobs)'),demandNotAvailable:!!demand && /not available/i.test(demand.querySelector('strong')?.innerText||''),calibratedClaim:/not a calibrated forecast/i.test(text)}; })()`);
   record('Scenario Simulator shows assumption outputs while withholding unvalidated demand and job claims', Boolean(runClick) && plannerResult.provenance && plannerResult.warning && plannerResult.seatMetric && plannerResult.completionMetric && plannerResult.transitionMetric && plannerResult.demandNotAvailable && plannerResult.calibratedClaim, JSON.stringify(plannerResult));
   await screenshot(cdp, 'scenario-planner-results.png');
 
