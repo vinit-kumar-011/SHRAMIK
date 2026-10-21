@@ -1,0 +1,42 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
+const shell = read('src/SHRAMIKDashboard.tsx');
+const liveModules = read('src/live-data/DatabaseInsightsPage.tsx');
+const liveNotice = read('src/LiveModuleNotice.tsx');
+const forecastPage = read('src/forecasts/ForecastsEarlyWarningsPage.tsx');
+const forecastAdapter = read('src/forecasts/legacyAdapter.ts');
+
+test('source-backed readiness remains the default and exposes opt-in previews by module', () => {
+  for (const module of ['demand', 'supply', 'skill-gaps', 'forecasts', 'emerging-skills', 'data-quality']) {
+    assert.ok(shell.includes(`onPreviewDemo={() => setDemoPreviewPage('${module}')}`), module + ' must expose an explicit demo action');
+  }
+  assert.match(liveModules, /Open synthetic demo preview/);
+  assert.match(shell, /Illustrative preview — not live labour-market findings/);
+  assert.match(shell, /SYNTHETIC_DEMO/);
+  assert.match(shell, /Return to live view/);
+});
+test('module previews explicitly pin fixture adapters instead of silently substituting for live data', () => {
+  assert.match(shell, /new MockSkillGapDataAdapter\(\)/);
+  assert.match(shell, /createForecastsDataAdapter\(new MockForecastsAdapter\(\)\)/);
+  assert.match(shell, /adapter=\{mockSupplyInsightsDataAdapter\}/);
+  assert.match(shell, /dataAdapter=\{demoEmergingSkillsDataAdapter\}/);
+  assert.match(shell, /adapter=\{mockDataQualityDataAdapter\}/);
+  assert.match(shell, /adapter=\{mockAdministrationDataAdapter\}/);
+  assert.match(shell, /previewingModule = !demoMode && demoPreviewPage === activePage/);
+  assert.match(forecastAdapter, /adapterOverride\?: ForecastsDataAdapter/);
+  assert.match(forecastPage, /dataAdapter\?: ReturnType<typeof createForecastsDataAdapter>/);
+});
+test('administration preview explains fictional decisions cannot grant real access', () => {
+  assert.match(liveNotice, /Open a clearly labelled synthetic preview/);
+  assert.match(liveNotice, /does not approve real requests, create accounts or change permissions/);
+  assert.match(liveNotice, /onPreviewDemo\?/);
+});
+test('navigating away or using browser history exits the per-module preview', () => {
+  assert.match(shell, /setActivePage\(page\);\s*setDemoPreviewPage\(null\)/);
+  assert.match(shell, /setActivePage\(route\);\s*setDemoPreviewPage\(null\)/);
+});

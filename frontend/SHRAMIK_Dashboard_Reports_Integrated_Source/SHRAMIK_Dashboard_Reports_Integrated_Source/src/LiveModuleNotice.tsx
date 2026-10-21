@@ -7,6 +7,7 @@ export interface LiveModuleNoticeProps {
   explanation: string;
   requiredSetting: string;
   neededOutput: string;
+  onPreviewDemo?: () => void;
 }
 
 export default function LiveModuleNotice({
@@ -15,6 +16,7 @@ export default function LiveModuleNotice({
   explanation,
   requiredSetting,
   neededOutput,
+  onPreviewDemo,
 }: LiveModuleNoticeProps) {
   return <section className="live-module-notice" aria-labelledby="live-module-title">
     <header className="live-module-heading">
@@ -47,6 +49,8 @@ export default function LiveModuleNotice({
         <p>Navigation, route refresh, and the SHRAMIK civic-intelligence UI remain available. Configure the endpoint for this module to replace this status page with live results.</p>
       </article>
     </div>
+
+    {onPreviewDemo ? <section className="live-module-preview" aria-label="Synthetic module preview"><div><strong>Need to demonstrate the workflow before the API is ready?</strong><p>Open a clearly labelled synthetic preview. Sample identities and decisions are fictional; this does not approve real requests, create accounts or change permissions.</p></div><button type="button" onClick={onPreviewDemo}>Open synthetic Administration preview</button></section> : null}
 
     <footer className="live-module-footnote">
       <AlertTriangle size={17}/>

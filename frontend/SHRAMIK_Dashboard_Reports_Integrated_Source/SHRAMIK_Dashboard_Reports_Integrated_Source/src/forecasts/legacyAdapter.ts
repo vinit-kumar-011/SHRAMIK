@@ -1,9 +1,9 @@
 import { createForecastsAdapter } from './adapter';
-import type { AlertStatus, EntityType, ForecastFilters, ForecastSeriesResponse, RiskCell } from './types';
+import type { AlertStatus, EntityType, ForecastFilters, ForecastSeriesResponse, ForecastsDataAdapter, RiskCell } from './types';
 
 /** Keeps the developer-handoff page API call style while delegating to the canonical typed adapter. */
-export function createForecastsDataAdapter() {
-  const adapter = createForecastsAdapter();
+export function createForecastsDataAdapter(adapterOverride?: ForecastsDataAdapter) {
+  const adapter = adapterOverride ?? createForecastsAdapter();
   return {
     mode: adapter.mode,
     getFilterOptions: (signal?: AbortSignal) => adapter.getFilterOptions({ signal }),

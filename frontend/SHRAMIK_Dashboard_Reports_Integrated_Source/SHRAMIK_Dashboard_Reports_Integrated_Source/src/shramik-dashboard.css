@@ -28,3 +28,11 @@
 @media(prefers-reduced-motion:reduce){.skip-link{transition:none}}
 
 .region-select:focus-within{outline:3px solid var(--navy);outline-offset:3px}
+
+/* Explicit, per-module preview mode: source-backed pages remain the default. */
+.module-preview-banner{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:12px 14px;border:1.25px solid #8f4b16;border-radius:6px;background:#fff4df;box-shadow:2px 2px 0 rgba(23,23,23,.12);font-size:12px}
+.module-preview-badge{flex:0 0 auto;padding:5px 7px;border:1px solid #8f4b16;background:#ffe0aa;font-size:10px;font-weight:800;letter-spacing:.35px}
+.module-preview-copy{min-width:0;flex:1}.module-preview-copy strong{display:block}.module-preview-copy p{margin:4px 0 0;color:#5c4938;line-height:1.45}
+.module-preview-banner>button{flex:0 0 auto;padding:8px 10px;border:1px solid var(--ink);border-radius:5px;background:var(--surface);font-size:11px;font-weight:700}
+.module-preview-banner>button:hover{background:var(--yellow)}
+@media(max-width:620px){.module-preview-banner{align-items:flex-start;flex-wrap:wrap;padding:10px}.module-preview-copy{flex-basis:calc(100% - 112px)}.module-preview-banner>button{width:100%}}

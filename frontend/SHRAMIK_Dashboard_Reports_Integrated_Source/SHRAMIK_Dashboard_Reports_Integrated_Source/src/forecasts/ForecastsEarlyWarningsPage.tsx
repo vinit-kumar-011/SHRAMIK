@@ -290,8 +290,9 @@ function AlertDrawer({ response, loading, error, busyAction, actionError, note, 
   </aside></div>;
 }
 
-export default function ForecastsEarlyWarningsPage({ globalRegionCode = 'IN', onGlobalRegionChange }: { globalRegionCode?: string; onGlobalRegionChange?: (code: string) => void }) {
-  const [adapter] = useState(() => createForecastsDataAdapter());
+export default function ForecastsEarlyWarningsPage({ globalRegionCode = 'IN', onGlobalRegionChange, dataAdapter: suppliedAdapter }: { globalRegionCode?: string; onGlobalRegionChange?: (code: string) => void; dataAdapter?: ReturnType<typeof createForecastsDataAdapter> }) {
+  const [defaultAdapter] = useState(() => createForecastsDataAdapter());
+  const adapter = suppliedAdapter ?? defaultAdapter;
   const [activeView, setActiveView] = useState<ViewKey>(defaultView);
   const [filterOptions, setFilterOptions] = useState<ForecastFilterOptions | null>(null);
   const [optionsError, setOptionsError] = useState('');

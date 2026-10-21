@@ -344,10 +344,11 @@ function statusCount(snapshot: Snapshot, table: string): string {
   return 'Available';
 }
 
-export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavigate }: {
+export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavigate, onPreviewDemo }: {
   module: DatabaseModule;
   regionCode?: string;
   onNavigate?: (route: string) => void;
+  onPreviewDemo?: () => void;
 }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [error, setError] = useState('');
@@ -396,11 +397,13 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   if (error && !snapshot) return <section className="dbi-shell">
     <div className="dbi-hero"><div><div className="dbi-eyebrow">{page.eyebrow}</div><h1>{page.title}</h1><p>{page.subtitle}</p></div></div>
     <div className="dbi-error" role="alert"><Info size={18}/><div><strong>Live database read failed.</strong><p>{error}</p><button type="button" onClick={() => void refresh()}>Retry database connection</button></div></div>
+    {onPreviewDemo ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
   </section>;
 
   if (!snapshot) return <section className="dbi-shell">
     <div className="dbi-hero"><div><div className="dbi-eyebrow">{page.eyebrow}</div><h1>{page.title}</h1><p>{page.subtitle}</p></div></div>
     <div className="dbi-loading"><RefreshCw size={18} className="dbi-spin"/> Reading live source-backed data from Supabase…</div>
+    {onPreviewDemo ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
   </section>;
 
   const rates = ['UR', 'LFPR', 'WPR'].map(code => {
@@ -474,6 +477,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       <div className="dbi-hero-actions">
         <div className="dbi-source-count"><span>Registered sources</span><strong>{numberFormat(sourceCount)}</strong><small>{numberFormat(geographyCount)} states / UTs</small></div>
         <button className="dbi-refresh" type="button" onClick={() => void refresh()} disabled={refreshing}><RefreshCw size={15} className={refreshing ? 'dbi-spin' : ''}/>{refreshing ? 'Refreshing' : 'Refresh data'}</button>
+        {onPreviewDemo ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
       </div>
     </header>
 

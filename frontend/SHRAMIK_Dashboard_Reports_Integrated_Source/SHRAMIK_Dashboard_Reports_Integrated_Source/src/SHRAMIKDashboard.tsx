@@ -15,11 +15,14 @@ import type {
   SearchResult, UserProfile,
 } from './api/contracts';
 import SkillGapAnalysisPage from './skill-gaps/SkillGapAnalysisPage';
+import { MockSkillGapDataAdapter } from './skill-gaps/mockAdapter';
 import ForecastsPage from './forecasts/ForecastsPage';
+import { MockForecastsAdapter } from './forecasts/mockAdapter';
+import { createForecastsDataAdapter } from './forecasts/legacyAdapter';
 import ReportsPage from './reports/ReportsPage';
 import type { GapDetailPayload } from './skill-gaps/types';
 import { getPathForRoute, getRouteFromLocation, getRouteLabel, type ShramikRouteId } from './routing';
-import EmergingSkillsPage from './emerging-skills/EmergingSkillsPage.jsx';
+import EmergingSkillsPage, { demoEmergingSkillsDataAdapter } from './emerging-skills/EmergingSkillsPage.jsx';
 import { createEmergingSkillsDataAdapter } from './emerging-skills/adapter';
 import { ScenarioSimulatorPage } from './scenario-simulator/ScenarioSimulatorPage.jsx';
 import { MockScenarioSimulatorAdapter } from './scenario-simulator/adapters/MockScenarioSimulatorAdapter.js';
@@ -33,10 +36,13 @@ import { SupabaseDataSourcesAdapter } from './data-sources/supabase-adapter';
 import LiveModuleNotice from './LiveModuleNotice';
 import SupplyInsightsPage from './supply/SupplyInsightsPage';
 import { createSupplyInsightsDataAdapter } from './supply/adapter';
+import { mockSupplyInsightsDataAdapter } from './supply/mockAdapter';
 import DataQualityPage from './data-quality/DataQualityPage';
 import { createDataQualityDataAdapter } from './data-quality/adapter';
+import { mockDataQualityDataAdapter } from './data-quality/mockAdapter';
 import AdministrationPage from './administration/AdministrationPage';
 import { createAdministrationDataAdapter } from './administration/adapter';
+import { mockAdministrationDataAdapter } from './administration/mockAdapter';
 import ModuleErrorBoundary from './ModuleErrorBoundary';
 import SHRAMIKLandingPage from './landing/SHRAMIKLandingPage';
 import DatabaseInsightsPage from './live-data/DatabaseInsightsPage';
@@ -463,7 +469,10 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   const [defaultAdapter] = useState<LabourMarketDataAdapter>(() => createLabourMarketDataAdapter());
   const adapter = dataAdapter ?? defaultAdapter;
   const [activePage, setActivePage] = useState<ShramikRouteId>(getInitialPage);
+  const [demoPreviewPage, setDemoPreviewPage] = useState<ShramikRouteId | null>(null);
   const [active, setActive] = useState(() => getRouteLabel(getInitialPage()));
+  const [skillGapDemoAdapter] = useState(() => new MockSkillGapDataAdapter());
+  const [forecastDemoAdapter] = useState(() => createForecastsDataAdapter(new MockForecastsAdapter()));
   const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
   const [scenarioPlanningAdapter] = useState(() => new PlanningScenarioSimulatorAdapter());
   const [scenarioDataAdapter] = useState(() => {
@@ -517,6 +526,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
 
   const notify = useCallback((message: string) => setToast(message), []);
   const isLiveSupabase = adapter.mode === 'supabase';
+  const previewingModule = !demoMode && demoPreviewPage === activePage;
   const headerProfile = useMemo(() => profileForSession(authSession, profile), [authSession, profile]);
   const regionLabel = useMemo(() => regions.find((item) => item.code === region)?.label ?? dashboard?.regionName ?? region, [regions, region, dashboard?.regionName]);
 
@@ -524,6 +534,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
     const syncRoute = () => {
       const page = getInitialPage();
       setActivePage(page);
+       setDemoPreviewPage(null);
       setActive(getRouteLabel(page));
     };
     window.addEventListener('hashchange', syncRoute);
@@ -689,6 +700,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
     const path = getPathForRoute(route, import.meta.env.BASE_URL);
     setActive(label);
     setActivePage(route);
+    setDemoPreviewPage(null);
     setMobileOpen(false);
     setMobileSearchOpen(false);
     closeDetail();
@@ -768,37 +780,40 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
     <div className="app-layout">
       <Sidebar active={active} onNavigate={handleNavigate} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)}/>
       <main id="shramik-main" tabIndex={-1} className={activePage === 'dashboard' ? 'dashboard-main' : 'dashboard-main module-main'} aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
-        <ModuleErrorBoundary key={activePage} moduleName={getRouteLabel(activePage)} onReturnDashboard={() => handleNavigate({ label: 'Dashboard', section: 'dashboard' })}>
-        {activePage === 'skill-gaps' ? (demoMode
-              ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError}/>
-              : <DatabaseInsightsPage module="skill-gaps" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
-          : activePage === 'forecasts' ? (demoMode
-              ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/>
-              : <DatabaseInsightsPage module="forecasts" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
-          : activePage === 'reports' ? <ReportsPage />
-          : activePage === 'demand' ? (demoMode
-              ? <DemandInsightsPage dataAdapter={undefined} embedded onNavigate={(path: string, label?: string) => {
-                  const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
-                  if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
-                }}/>
-              : <DatabaseInsightsPage module="demand" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
-          : activePage === 'emerging-skills' ? (demoMode
-              ? <EmergingSkillsPage dataAdapter={emergingSkillsAdapter} />
-              : <DatabaseInsightsPage module="emerging-skills" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
-          : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} initialScope={undefined} onNavigate={(path: string) => {
-              const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
-              if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
-            }}/>
-          : activePage === 'data-sources' ? <DataSourcesPage adapter={dataSourcesAdapter}/>
-          : activePage === 'supply' ? (demoMode
-              ? <SupplyInsightsPage adapter={supplyAdapter} />
-              : <DatabaseInsightsPage module="supply" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
-          : activePage === 'data-quality' ? (demoMode
-              ? <DataQualityPage adapter={dataQualityAdapter} />
-              : <DatabaseInsightsPage module="data-quality" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
-          : activePage === 'administration' ? (!demoMode && !runtimeEnv?.VITE_ADMINISTRATION_API_BASE_URL?.trim()
-              ? <LiveModuleNotice title="Administration" eyebrow="SHRAMIK / GOVERNANCE & ACCESS" explanation="Access-request submissions are stored as pending, but this public client cannot read the queue, approve requests or grant roles. A server-authorized review/provisioning API is not configured." requiredSetting="VITE_ADMINISTRATION_API_BASE_URL" neededOutput="Deploy an authenticated admin API that checks server-side administrator authorization, records review decisions, provisions accounts through Supabase Auth and writes audit events."/>
-              : <AdministrationPage adapter={administrationAdapter} />)
+        {previewingModule ? <section className="module-preview-banner" role="status" aria-label="Synthetic demo preview notice"><span className="module-preview-badge">SYNTHETIC_DEMO</span><div className="module-preview-copy"><strong>Illustrative preview — not live labour-market findings</strong><p>All values, people and workflow records in this module are synthetic fixtures. Actions are local-only and do not change production data, approve real requests or grant access.</p></div><button type="button" onClick={() => setDemoPreviewPage(null)}>Return to live view</button></section> : null}
+         <ModuleErrorBoundary key={activePage} moduleName={getRouteLabel(activePage)} onReturnDashboard={() => handleNavigate({ label: 'Dashboard', section: 'dashboard' })}>
+        {activePage === 'skill-gaps' ? (demoMode || previewingModule
+               ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError} adapter={skillGapDemoAdapter}/>
+               : <DatabaseInsightsPage module="skill-gaps" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('skill-gaps')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+           : activePage === 'forecasts' ? (demoMode || previewingModule
+               ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} dataAdapter={forecastDemoAdapter}/>
+               : <DatabaseInsightsPage module="forecasts" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('forecasts')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+           : activePage === 'reports' ? <ReportsPage />
+           : activePage === 'demand' ? (demoMode || previewingModule
+               ? <DemandInsightsPage dataAdapter={undefined} embedded onNavigate={(path: string, label?: string) => {
+                   const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
+                   if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
+                 }}/>
+               : <DatabaseInsightsPage module="demand" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('demand')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+           : activePage === 'emerging-skills' ? (demoMode || previewingModule
+               ? <EmergingSkillsPage dataAdapter={demoEmergingSkillsDataAdapter} />
+               : <DatabaseInsightsPage module="emerging-skills" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('emerging-skills')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+           : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} initialScope={undefined} onNavigate={(path: string) => {
+               const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
+               if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
+             }}/>
+           : activePage === 'data-sources' ? <DataSourcesPage adapter={dataSourcesAdapter}/>
+           : activePage === 'supply' ? (demoMode || previewingModule
+               ? <SupplyInsightsPage adapter={mockSupplyInsightsDataAdapter} />
+               : <DatabaseInsightsPage module="supply" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('supply')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+           : activePage === 'data-quality' ? (demoMode || previewingModule
+               ? <DataQualityPage adapter={mockDataQualityDataAdapter} />
+               : <DatabaseInsightsPage module="data-quality" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('data-quality')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+           : activePage === 'administration' ? (demoMode || previewingModule
+               ? <AdministrationPage adapter={mockAdministrationDataAdapter} />
+               : !runtimeEnv?.VITE_ADMINISTRATION_API_BASE_URL?.trim()
+                 ? <LiveModuleNotice title="Administration" eyebrow="SHRAMIK / GOVERNANCE & ACCESS" explanation="Access-request submissions are stored as pending, but this public client cannot read the queue, approve requests or grant roles. A server-authorized review/provisioning API is not configured." requiredSetting="VITE_ADMINISTRATION_API_BASE_URL" neededOutput="Deploy an authenticated admin API that checks server-side administrator authorization, records review decisions, provisions accounts through Supabase Auth and writes audit events." onPreviewDemo={() => setDemoPreviewPage('administration')}/>
+                 : <AdministrationPage adapter={administrationAdapter} />)
           : activePage === 'dashboard' ? <>
         <section className="hero-band" aria-labelledby="page-title">
           <div className="hero-copy"><div className="breadcrumb">DASHBOARD <span>/</span> {regionLabel.toUpperCase()}</div><h1 id="page-title">India’s Labour Market<br className="desktop-break"/> at a Glance</h1><div className="title-underline"/><p>{isLiveSupabase ? 'Published workforce indicators, official registration snapshots and training-capacity context, with source dates and limitations.' : 'Key insights on demand, supply, skill gaps and emerging opportunities across sectors and regions.'}</p></div>
