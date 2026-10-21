@@ -34,3 +34,14 @@ test('header controls remain compact on very narrow phones', () => {
   assert.match(styles, /\.region-select\{width:28px\}/);
   assert.match(styles, /\.notification-button\{width:28px;flex-basis:28px\}/);
 });
+
+test('selecting a mobile search result restores focus to the visible search trigger', () => {
+  const start = source.indexOf('const handleSearchSelect');
+  const end = source.indexOf('const markRead', start);
+  assert.ok(start > 0 && end > start, 'search selection handler should be available');
+  const handler = source.slice(start, end);
+  assert.match(handler, /mobileSearchWasOpen = Boolean\(document\.querySelector\('\.global-search\.mobile-search-open'\)\)/);
+  assert.match(handler, /if \(mobileSearchWasOpen\) document\.querySelector<HTMLButtonElement>\('\.mobile-search-toggle'\)\?\.focus\(\)/);
+  assert.ok(handler.indexOf('mobileSearchWasOpen = Boolean') < handler.indexOf('setMobileSearchOpen(false)'));
+  assert.ok(handler.indexOf('setMobileSearchOpen(false)') < handler.indexOf("document.querySelector<HTMLButtonElement>('.mobile-search-toggle')?.focus()"));
+});
