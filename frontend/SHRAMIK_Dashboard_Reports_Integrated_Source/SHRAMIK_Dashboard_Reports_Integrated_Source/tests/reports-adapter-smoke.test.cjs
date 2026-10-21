@@ -203,7 +203,8 @@ test('Reports page is content-only and the canonical app owns its shared route/s
   assert.doesNotMatch(page, /<Sidebar\b|<Header\b/, 'Reports must not render a duplicate application shell');
   assert.match(shell, /import ReportsPage from '\.\/reports\/ReportsPage'/);
   assert.match(shell, /section: 'reports'/);
-  assert.match(shell, /activePage === 'reports' \? \(demoMode[\s\S]*?<ReportsPage \/>[\s\S]*?<DatabaseInsightsPage module="reports"/, 'production Reports uses the live database catalogue; the fixture Report Builder remains limited to explicit demo mode');
+  assert.match(shell, /activePage === 'reports' \? <ReportsPage \/>/, 'the published-capable Report Builder should be mounted in live and demo modes');
+  assert.match(shell, /new PublishedReportsAdapter\(createLabourMarketDataAdapter\(\)\)/, 'without a Reports API, the builder uses the published-indicator adapter');
   assert.match(shell, /reports\.html|#reports/);
 });
 

@@ -18,9 +18,10 @@ const MAX_SEATS = 200000;
 const SEAT_STEP = 1000;
 const LIMITATIONS = [
   "This is an assumptions-only local planning calculator, not a calibrated SHRAMIK model.",
+  "This calculator does not estimate labour demand, workforce supply, skill gaps, or employment outcomes.",
   "No validated demand, total workforce supply, forecast, skill-gap baseline, regional or sector distribution was loaded.",
   "Training completion and post-training transition rates are editable illustrative assumptions and are not source-backed estimates.",
-  "Calculated potential transitions are not employment outcomes, verified placements, or a count of jobs.",
+  "Potential transitions are not jobs; they are not verified placements or employment outcomes.",
   "Do not use these outputs for official policy, budgeting, or public reporting.",
 ];
 
