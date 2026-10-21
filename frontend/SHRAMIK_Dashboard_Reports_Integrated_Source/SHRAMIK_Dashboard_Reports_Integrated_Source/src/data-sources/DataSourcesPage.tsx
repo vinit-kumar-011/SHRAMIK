@@ -136,7 +136,7 @@ export function DataSourcesPage({adapter}:DataSourcesPageProps) {
     } catch(error) {setCreateError(errorMessage(error));setCreateState('error');}
   };
 
-  return <main className="data-sources-page" aria-labelledby={headingId}>
+  return <section className="data-sources-page" aria-labelledby={headingId}>
     <div className="page-heading-row">
       <div className="page-title-block"><div className="breadcrumbs"><span>Home</span><span aria-hidden="true">›</span><span aria-current="page">Data Sources</span></div><p className="eyebrow">DATA OPERATIONS / SOURCE REGISTRY</p><h1 id={headingId}>Data Sources<span className="title-period">.</span></h1><p className="page-intro">Manage and monitor the datasets used in SHRAMIK. Track integration status, freshness, coverage and field-mapping quality.</p></div>
       {adapter.capabilities?.createSource && <button className="button button-primary add-source" onClick={()=>{setShowCreate(true);setCreateState('idle');setCreateError('');}}><span aria-hidden="true">＋</span> Add New Source</button>}
@@ -187,7 +187,7 @@ export function DataSourcesPage({adapter}:DataSourcesPageProps) {
     {selected&&<SourceDrawer id={selected} adapter={adapter} onClose={closeDetails} onNotify={setToast}/>}
     {showCreate&&<CreateSourceDialog name={sourceName} setName={setSourceName} type={sourceType} setType={setSourceType} agency={sourceAgency} setAgency={setSourceAgency} purpose={sourcePurpose} setPurpose={setSourcePurpose} tags={sourceTags} setTags={setSourceTags} busy={createState==='saving'} error={createError} onClose={()=>setShowCreate(false)} onSubmit={submitCreate}/>}
     {toast&&<div className="toast" role="status" aria-live="polite"><span aria-hidden="true">✓</span>{toast}<button aria-label="Dismiss notification" onClick={()=>setToast(null)}>×</button></div>}
-  </main>;
+  </section>;
 }
 function MetricCard({icon,label,value,note,variant}:{icon:string;label:string;value?:number;note:string;variant:'navy'|'teal'|'orange'}) {
   return <article className={`metric-card metric-${variant}`}><span className="metric-icon" aria-hidden="true">{icon}</span><div className="metric-copy"><span className="metric-label">{label}</span><strong className="metric-value">{value==null?'—':number(value)}</strong><span className="metric-note">{note}</span></div></article>;
