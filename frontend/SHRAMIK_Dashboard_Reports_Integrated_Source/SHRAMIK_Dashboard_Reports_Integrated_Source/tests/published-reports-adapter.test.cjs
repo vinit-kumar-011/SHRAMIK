@@ -135,11 +135,13 @@ test('session library search, duplicate, deletion and unavailable region scopes 
   await assert.rejects(adapter.getReport(created.reportId), /not in this browser session/i);
 });
 
-test('default Reports adapter chooses explicit demo, configured REST, or published data instead of implicit fixtures', () => {
+test('default Reports adapter chooses explicit demo, explicit REST mode, or published data instead of implicit fixtures', () => {
   const factory = fs.readFileSync(path.join(src, 'adapter.ts'), 'utf8');
   assert.match(factory, /VITE_SHRAMIK_USE_DEMO_DATA === 'true'/);
-  assert.match(factory, /new PublishedReportsAdapter\(createLabourMarketDataAdapter\(\)\)/);
-  assert.match(factory, /if \(baseUrl\) return new RestReportsAdapter\(baseUrl\)/);
+  assert.match(factory, /const dataMode = env\\?\\.VITE_SHRAMIK_DATA_MODE\\?\\.trim\\(\\)\\.toLowerCase\\(\\)/);
+  assert.match(factory, /if \\(dataMode === 'rest' && baseUrl\\) return new RestReportsAdapter\\(baseUrl\\)/);
+  assert.doesNotMatch(factory, /if \\(baseUrl\\) return new RestReportsAdapter\\(baseUrl\\)/);
+  assert.match(factory, /new PublishedReportsAdapter\\(createLabourMarketDataAdapter\\(\\)\\)/);
 });
 
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
