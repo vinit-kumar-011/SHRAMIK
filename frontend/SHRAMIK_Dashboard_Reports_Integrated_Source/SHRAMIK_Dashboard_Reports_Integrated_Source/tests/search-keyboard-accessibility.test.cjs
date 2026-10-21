@@ -36,3 +36,7 @@ test('result selection is reset when the available list changes', () => {
   assert.match(header, /\}, \[searchResults\]\)/);
   assert.match(results, /role="status" aria-live="polite"/);
 });
+
+test('keyboard-active search option is visually highlighted', () => {
+  assert.match(styles, /\.search-results button\[aria-selected="true"\]\{background:#F8F1CB;box-shadow:inset 3px 0 0 var\(--navy\)\}/);
+});
