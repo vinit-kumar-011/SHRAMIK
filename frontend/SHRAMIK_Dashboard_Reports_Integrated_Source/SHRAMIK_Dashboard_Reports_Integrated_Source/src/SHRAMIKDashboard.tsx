@@ -19,6 +19,7 @@ import { MockSkillGapDataAdapter } from './skill-gaps/mockAdapter';
 import ForecastsPage from './forecasts/ForecastsPage';
 import { MockForecastsAdapter } from './forecasts/mockAdapter';
 import { createForecastsDataAdapter } from './forecasts/legacyAdapter';
+import { createEmergingSkillsDataAdapter } from './emerging-skills/adapter';
 import ReportsPage from './reports/ReportsPage';
 import type { GapDetailPayload } from './skill-gaps/types';
 import { getPathForRoute, getRouteFromLocation, getRouteLabel, type ShramikRouteId } from './routing';
@@ -34,8 +35,10 @@ import { createRestDataSourcesAdapter } from './data-sources/rest-adapter.js';
 import { SupabaseDataSourcesAdapter } from './data-sources/supabase-adapter';
 import LiveModuleNotice from './LiveModuleNotice';
 import SupplyInsightsPage from './supply/SupplyInsightsPage';
+import { createSupplyInsightsDataAdapter } from './supply/adapter';
 import { mockSupplyInsightsDataAdapter } from './supply/mockAdapter';
 import DataQualityPage from './data-quality/DataQualityPage';
+import { createDataQualityDataAdapter } from './data-quality/adapter';
 import { mockDataQualityDataAdapter } from './data-quality/mockAdapter';
 import AdministrationPage from './administration/AdministrationPage';
 import { createAdministrationDataAdapter } from './administration/adapter';
@@ -470,6 +473,9 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   const [active, setActive] = useState(() => getRouteLabel(getInitialPage()));
   const [skillGapDemoAdapter] = useState(() => new MockSkillGapDataAdapter());
   const [forecastDemoAdapter] = useState(() => createForecastsDataAdapter(new MockForecastsAdapter()));
+  const [emergingSkillsAdapter] = useState(() => createEmergingSkillsDataAdapter());
+  const [supplyAdapter] = useState(() => createSupplyInsightsDataAdapter());
+  const [dataQualityAdapter] = useState(() => createDataQualityDataAdapter());
   const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
   const [scenarioPlanningAdapter] = useState(() => new PlanningScenarioSimulatorAdapter());
   const [scenarioDataAdapter] = useState(() => {
@@ -789,23 +795,26 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
                    if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
                  }}/>
                : <DatabaseInsightsPage module="demand" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('demand')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
-           : activePage === 'emerging-skills' ? (demoMode || previewingModule
-               ? <EmergingSkillsPage dataAdapter={demoEmergingSkillsDataAdapter} />
+           : activePage === 'emerging-skills' ? (demoMode
+               ? <EmergingSkillsPage dataAdapter={emergingSkillsAdapter} />
+               : previewingModule ? <EmergingSkillsPage dataAdapter={demoEmergingSkillsDataAdapter} />
                : <DatabaseInsightsPage module="emerging-skills" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('emerging-skills')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
            : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} initialScope={undefined} onNavigate={(path: string) => {
                const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
                if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
              }}/>
            : activePage === 'data-sources' ? <DataSourcesPage adapter={dataSourcesAdapter}/>
-           : activePage === 'supply' ? (demoMode || previewingModule
-               ? <SupplyInsightsPage adapter={mockSupplyInsightsDataAdapter} />
+           : activePage === 'supply' ? (demoMode
+               ? <SupplyInsightsPage adapter={supplyAdapter} />
+               : previewingModule ? <SupplyInsightsPage adapter={mockSupplyInsightsDataAdapter} />
                : <DatabaseInsightsPage module="supply" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('supply')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
-           : activePage === 'data-quality' ? (demoMode || previewingModule
-               ? <DataQualityPage adapter={mockDataQualityDataAdapter} />
+           : activePage === 'data-quality' ? (demoMode
+               ? <DataQualityPage adapter={dataQualityAdapter} />
+               : previewingModule ? <DataQualityPage adapter={mockDataQualityDataAdapter} />
                : <DatabaseInsightsPage module="data-quality" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('data-quality')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
            : activePage === 'administration' ? (demoMode || previewingModule
                ? <AdministrationPage adapter={mockAdministrationDataAdapter} />
-               : !runtimeEnv?.VITE_ADMINISTRATION_API_BASE_URL?.trim()
+               : !demoMode && !runtimeEnv?.VITE_ADMINISTRATION_API_BASE_URL?.trim()
                  ? <LiveModuleNotice title="Administration" eyebrow="SHRAMIK / GOVERNANCE & ACCESS" explanation="Access-request submissions are stored as pending, but this public client cannot read the queue, approve requests or grant roles. A server-authorized review/provisioning API is not configured." requiredSetting="VITE_ADMINISTRATION_API_BASE_URL" neededOutput="Deploy an authenticated admin API that checks server-side administrator authorization, records review decisions, provisions accounts through Supabase Auth and writes audit events." onPreviewDemo={() => setDemoPreviewPage('administration')}/>
                  : <AdministrationPage adapter={administrationAdapter} />)
           : activePage === 'dashboard' ? <>
