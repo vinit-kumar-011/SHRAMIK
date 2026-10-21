@@ -1172,7 +1172,7 @@ export const EmergingSkillsPage = ({ dataAdapter: suppliedAdapter, initialFilter
       </div>
 
       {/* Main content */}
-      <main className="max-w-6xl mx-auto px-8 py-8">
+      <div className="max-w-6xl mx-auto px-8 py-8">
         {/* Shared filters */}
         <FilterBar filters={filters} onChange={(k, v) => { setFilters(f => ({ ...f, [k]: v })); setFilterApplied(false); }} onApply={handleApplyFilters} onReset={handleResetFilters} />
 
@@ -1235,7 +1235,7 @@ export const EmergingSkillsPage = ({ dataAdapter: suppliedAdapter, initialFilter
           </div>
           {adapter === demoEmergingSkillsDataAdapter ? <ProvenanceStrip state="SYNTHETIC_DEMO" note="Demo values are illustrative only." /> : <div className="text-[11px] text-[#62625C]">Provenance is supplied by the host adapter.</div>}
         </div>
-      </main>
+      </div>
     </div>
   );
 };
