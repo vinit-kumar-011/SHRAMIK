@@ -534,7 +534,16 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(''), 3600); return () => window.clearTimeout(timer); }, [toast]);
   useEffect(() => {
     const closeOverlays = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setSearchOpen(false); setMobileSearchOpen(false); setNotificationsOpen(false); setProfileOpen(false); setMobileOpen(false); if (detail || detailLoading || detailError) { setDetail(null); setDetailLoading(false); setDetailError(''); } }
+      if (event.key === 'Escape') {
+        const mobileSearchWasOpen = Boolean(document.querySelector('.global-search.mobile-search-open'));
+        setSearchOpen(false);
+        setMobileSearchOpen(false);
+        setNotificationsOpen(false);
+        setProfileOpen(false);
+        setMobileOpen(false);
+        if (mobileSearchWasOpen) document.querySelector<HTMLButtonElement>('.mobile-search-toggle')?.focus();
+        if (detail || detailLoading || detailError) { setDetail(null); setDetailLoading(false); setDetailError(''); }
+      }
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
