@@ -240,7 +240,7 @@ try {
   await screenshot(cdp, 'workspace-desktop.png');
 
   const navControls = await cdp.evaluate(`Array.from(document.querySelectorAll('button,a')).map(e=>({text:(e.innerText||'').trim(),aria:e.getAttribute('aria-label'),className:typeof e.className==='string'?e.className:''})).filter(x=>/nav-item/.test(x.className)).map(x=>x.text).filter(Boolean)`);
-  record('Workspace navigation exposes core modules', ['Demand','Supply','Reports','Administration'].every((needle) => navControls.some((label) => label.toLowerCase().includes(needle.toLowerCase())), JSON.stringify(navControls));
+  record('Workspace navigation exposes core modules', ['Demand','Supply','Reports','Administration'].every((needle) => navControls.some((label) => label.toLowerCase().includes(needle.toLowerCase()))), JSON.stringify(navControls));
 
   const demandNav = await cdp.evaluate(`(() => {const elements=Array.from(document.querySelectorAll('button.nav-item, a.nav-item'));const e=elements.find(x=>(x.innerText||'').trim().toLowerCase().includes('demand'));if(!e)return null;e.click();return (e.innerText||'').trim();})()`);
   await waitFor(() => cdp.evaluate(`location.pathname === '/demand'`), 'Demand navigation');
@@ -256,8 +256,10 @@ try {
 
   await setViewport(cdp, 390, 844);
   await navigate(cdp, origin + '/dashboard');
-  const mobileMenu = await cdp.evaluate(`(() => { const e=document.querySelector('button[aria-label="Open navigation"]'); if (!e) return null; e.click(); return {label:e.getAttribute('aria-label'),expanded:e.getAttribute('aria-expanded'),sidebar:!!document.querySelector('#shramik-sidebar'),inert:document.querySelector('#shramik-sidebar')?.hasAttribute('inert')}; })()`);
-  record('Mobile navigation opens the controlled sidebar without inert state', Boolean(mobileMenu) && mobileMenu.expanded === 'true' && mobileMenu.sidebar && mobileMenu.inert === false, JSON.stringify(mobileMenu));
+  const mobileClick = await cdp.evaluate(`(() => { const e=document.querySelector('button[aria-label="Open navigation"]'); if (!e) return null; e.click(); return true; })()`);
+  await waitFor(() => cdp.evaluate(`document.querySelector('button[aria-label="Close navigation"]')?.getAttribute('aria-expanded') === 'true' && !!document.querySelector('#shramik-sidebar') && !document.querySelector('#shramik-sidebar').hasAttribute('inert')`), 'mobile sidebar open state');
+  const mobileMenu = await cdp.evaluate(`(() => { const e=document.querySelector('button[aria-label="Close navigation"]'); const sidebar=document.querySelector('#shramik-sidebar'); return e && sidebar ? {label:e.getAttribute('aria-label'),expanded:e.getAttribute('aria-expanded'),sidebar:true,inert:sidebar.hasAttribute('inert')} : null; })()`);
+  record('Mobile navigation opens the controlled sidebar without inert state', Boolean(mobileClick) && Boolean(mobileMenu) && mobileMenu.expanded === 'true' && mobileMenu.sidebar && mobileMenu.inert === false, JSON.stringify(mobileMenu));
   const mobileMetrics = await cdp.evaluate(`({viewport:innerWidth,document:document.documentElement.scrollWidth,body:document.body.scrollWidth})`);
   record('Workspace shell has no horizontal overflow at 390px', Math.max(mobileMetrics.document,mobileMetrics.body) <= 392, JSON.stringify(mobileMetrics));
   await screenshot(cdp, 'workspace-mobile.png');
