@@ -196,10 +196,10 @@ test('REST errors remain explicit and do not trigger demo fallback', async () =>
 test('Reports remains on published indicators unless REST mode is explicitly selected', () => {
   const factoryPath = path.join(project, 'src', 'reports', 'adapter.ts');
   const factory = fs.readFileSync(factoryPath, 'utf8');
-  assert.match(factory, /const dataMode = env\?\.VITE_SHRAMIK_DATA_MODE\?\.trim\(\)\.toLowerCase\(\)/);
-  assert.match(factory, /if \(dataMode === 'rest' && baseUrl\) return new RestReportsAdapter\(baseUrl\)/);
-  assert.doesNotMatch(factory, /if \(baseUrl\) return new RestReportsAdapter\(baseUrl\)/);
-  assert.match(factory, /return new PublishedReportsAdapter\(createLabourMarketDataAdapter\(\)\)/);
+  assert.ok(factory.includes("const dataMode = env?.VITE_SHRAMIK_DATA_MODE?.trim().toLowerCase()"));
+  assert.ok(factory.includes("if (dataMode === 'rest' && baseUrl) return new RestReportsAdapter(baseUrl)"));
+  assert.ok(!factory.includes("if (baseUrl) return new RestReportsAdapter(baseUrl)"));
+  assert.ok(factory.includes("return new PublishedReportsAdapter(createLabourMarketDataAdapter())"));
 });
 
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
