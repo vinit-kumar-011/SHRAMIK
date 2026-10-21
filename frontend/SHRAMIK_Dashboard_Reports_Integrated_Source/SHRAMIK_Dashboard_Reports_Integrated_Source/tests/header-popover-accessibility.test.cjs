@@ -19,3 +19,11 @@ test('Escape returns keyboard focus to the control that opened the header popove
   assert.match(closeOverlays, /else if \(notificationsWereOpen\) document\.querySelector<HTMLButtonElement>\('\.notification-button'\)\?\.focus\(\)/);
   assert.match(closeOverlays, /if \(mobileSearchWasOpen\) document\.querySelector<HTMLButtonElement>\('\.mobile-search-toggle'\)\?\.focus\(\)/);
 });
+
+test('collapsed account trigger has a descriptive accessible name', () => {
+  const profileIndex = source.indexOf('className="profile-button"');
+  const profileButton = source.slice(profileIndex - 40, profileIndex + 310);
+  assert.match(profileButton, /aria-label=/);
+  assert.match(profileButton, /Open account menu for/);
+  assert.match(profileButton, /aria-expanded=\{profileOpen\}/);
+});
