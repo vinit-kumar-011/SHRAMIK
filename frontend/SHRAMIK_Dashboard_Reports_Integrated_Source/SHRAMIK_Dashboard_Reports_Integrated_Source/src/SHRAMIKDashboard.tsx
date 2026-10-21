@@ -330,10 +330,10 @@ function Sidebar({ active, onNavigate, mobileOpen, onClose }: { active: string; 
   </>;
 }
 
-function SearchResults({ results, busy, onSelect }: { results: SearchResult[]; busy: boolean; onSelect: (result: SearchResult) => void }) {
-  if (busy) return <div className="search-hint" role="status">Searching connected labour-market data…</div>;
-  if (!results.length) return <div className="search-hint">No matching results. Try a skill, occupation, sector or state.</div>;
-  return <div className="search-hint search-results" role="listbox" aria-label="Search results">{results.map((result) => <button key={`${result.kind}-${result.id}`} type="button" role="option" onClick={() => onSelect(result)}><strong>{result.label}</strong><small>{result.description}</small></button>)}</div>;
+function SearchResults({ results, busy, activeIndex, onSelect }: { results: SearchResult[]; busy: boolean; activeIndex: number; onSelect: (result: SearchResult) => void }) {
+  if (busy) return <div className="search-hint" role="status" aria-live="polite">Searching connected labour-market data…</div>;
+  if (!results.length) return <div className="search-hint" role="status" aria-live="polite">No matching results. Try a skill, occupation, sector or state.</div>;
+  return <div className="search-hint search-results" role="listbox" aria-label="Search results">{results.map((result, index) => <button id={'shramik-search-option-' + index} key={result.kind + '-' + result.id} type="button" role="option" aria-selected={index === activeIndex} onClick={() => onSelect(result)}><strong>{result.label}</strong><small>{result.description}</small></button>)}</div>;
 }
 
 function Header({
@@ -349,9 +349,13 @@ function Header({
   authSession: AuthSession | null; onNavigateRoute: (route: 'dashboard' | 'login' | 'request-access') => void; onSignOut: () => void;
 }) {
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const [activeSearchIndex, setActiveSearchIndex] = useState(-1);
   useEffect(() => {
     if (mobileSearchOpen) mobileSearchInputRef.current?.focus();
   }, [mobileSearchOpen]);
+  useEffect(() => {
+    setActiveSearchIndex(searchResults.length ? 0 : -1);
+  }, [searchResults]);
 
   const unreadCount = notifications.filter((item) => !item.read).length;
   const visibleRegionOptions = regions.length ? regions : [{ code: region, label: region, level: 'national' as const }];
@@ -359,8 +363,22 @@ function Header({
     <button className="mobile-menu icon-button" onClick={onMenu} type="button" aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen} aria-controls="shramik-sidebar"><Menu size={22}/></button>
     <div className="brand-lockup"><div className="brand-mark">S</div><div className="brand-word"><strong>SHRAMIK</strong><span>Labour Market<br/>Intelligence System</span></div></div>
     <button className="mobile-search-toggle icon-button" onClick={onMobileSearchToggle} type="button" aria-label={mobileSearchOpen ? 'Close search' : 'Open search'} aria-expanded={mobileSearchOpen} aria-controls="shramik-mobile-search"><Search size={19}/></button>
-    <div id="shramik-mobile-search" className={`global-search ${mobileSearchOpen ? 'mobile-search-open' : ''}`}><Search size={18}/><input ref={mobileSearchInputRef} value={query} onFocus={() => onSearchOpenChange(true)} onChange={(event) => { onQueryChange(event.target.value); onSearchOpenChange(true); }} onKeyDown={(event) => { if (event.key === 'Escape') onSearchOpenChange(false); }} placeholder="Search for skills, occupations, sectors or regions…" aria-label="Search labour market data" aria-expanded={searchOpen} aria-controls="shramik-search-results"/><kbd>Ctrl</kbd><kbd>K</kbd>
-      {searchOpen && query.trim().length >= 2 && <div id="shramik-search-results"><SearchResults results={searchResults} busy={searchBusy} onSelect={onSearchSelect}/></div>}
+    <div id="shramik-mobile-search" className={`global-search ${mobileSearchOpen ? 'mobile-search-open' : ''}`}><Search size={18}/><input ref={mobileSearchInputRef} value={query} onFocus={() => onSearchOpenChange(true)} onChange={(event) => { onQueryChange(event.target.value); onSearchOpenChange(true); }} onKeyDown={(event) => {
+      if (event.key === 'Escape') { onSearchOpenChange(false); return; }
+      if (event.key === 'ArrowDown' && query.trim().length >= 2 && searchResults.length) {
+        event.preventDefault();
+        onSearchOpenChange(true);
+        setActiveSearchIndex((index) => index < 0 ? 0 : (index + 1) % searchResults.length);
+      } else if (event.key === 'ArrowUp' && query.trim().length >= 2 && searchResults.length) {
+        event.preventDefault();
+        onSearchOpenChange(true);
+        setActiveSearchIndex((index) => index <= 0 ? searchResults.length - 1 : index - 1);
+      } else if (event.key === 'Enter' && searchOpen && activeSearchIndex >= 0 && searchResults[activeSearchIndex]) {
+        event.preventDefault();
+        onSearchSelect(searchResults[activeSearchIndex]);
+      }
+    }} aria-label="Search labour market data" role="combobox" aria-autocomplete="list" aria-expanded={searchOpen} aria-controls="shramik-search-results" aria-activedescendant={searchOpen && activeSearchIndex >= 0 && query.trim().length >= 2 ? 'shramik-search-option-' + activeSearchIndex : undefined} placeholder="Search for skills, occupations, sectors or regions…" aria-label="Search labour market data" aria-expanded={searchOpen} aria-controls="shramik-search-results"/><kbd>Ctrl</kbd><kbd>K</kbd>
+      {searchOpen && query.trim().length >= 2 && <div id="shramik-search-results"><SearchResults results={searchResults} busy={searchBusy} activeIndex={activeSearchIndex} onSelect={onSearchSelect}/></div>}
       {searchOpen && query.trim().length > 0 && query.trim().length < 2 && <div className="search-hint">Enter at least 2 characters to search.</div>}
     </div>
     <label className="region-select"><MapPin size={18}/><span className="sr-only">Choose region</span><select value={region} onChange={(event) => onRegionChange(event.target.value)} aria-label="Region">{visibleRegionOptions.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
