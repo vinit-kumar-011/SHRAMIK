@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import styles from './SHRAMIKLandingPage.module.css';
 import { SUPABASE_URL, supabaseHeaders } from '../supabase/config';
+import { getPathForRoute } from '../routing';
 
 type PublishedIndicator = {
   metric_code: string;
@@ -62,6 +63,12 @@ const previews: Record<PreviewKey, { title: string; period: string; labels: [str
 const navLinks = [
   ['Overview', '#sl-overview'], ['Published data', '#sl-live-indicators'], ['Capabilities', '#sl-capabilities'], ['How it works', '#sl-workflow'], ['Methodology', '#sl-transparency'], ['Workspace', '/dashboard'],
 ] as const;
+
+function resolveLandingHref(href: string): string {
+  if (href === '/dashboard') return getPathForRoute('dashboard', import.meta.env.BASE_URL);
+  if (href === '/login') return getPathForRoute('login', import.meta.env.BASE_URL);
+  return href;
+}
 
 export default function SHRAMIKLandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -182,8 +189,8 @@ export default function SHRAMIKLandingPage() {
           </a>
           <button ref={menuButtonRef} className={c('sl-menu-btn')} type="button" aria-expanded={menuOpen} aria-controls="sl-nav" onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? 'Close' : 'Menu'}</button>
           <nav className={[c('sl-nav'), menuOpen ? c('is-open') : ''].filter(Boolean).join(' ')} id="sl-nav" aria-label="Primary navigation">
-            {navLinks.map(([label, href]) => <a key={href} href={href} onClick={handleAnchorClick}>{label}</a>)}
-            <a className={c('sl-btn') + ' ' + c('sl-btn--primary')} href="/login">Sign in <span aria-hidden="true">→</span></a>
+            {navLinks.map(([label, href]) => <a key={href} href={resolveLandingHref(href)} onClick={handleAnchorClick}>{label}</a>)}
+            <a className={c('sl-btn') + ' ' + c('sl-btn--primary')} href={resolveLandingHref('/login')}>Sign in <span aria-hidden="true">→</span></a>
           </nav>
         </div>
       </header>
@@ -195,7 +202,7 @@ export default function SHRAMIKLandingPage() {
               <p className={c('sl-eyebrow')}>Labour Market Intelligence System</p>
               <h1 id="sl-hero-title"><span className={c('sl-hero-line')}>Data for People.</span><span className={c('sl-hero-line')}>Opportunities for</span><span className={c('sl-hero-line')}>a Stronger <span className={c('sl-underline')}>India.</span></span></h1>
               <p className={c('sl-lede')}>A data-driven platform to understand, plan and strengthen India's workforce.</p>
-              <div className={c('sl-ctas')}><a className={c('sl-btn') + ' ' + c('sl-btn--primary')} href="/dashboard">Open workspace <span aria-hidden="true">→</span></a><a className={c('sl-btn') + ' ' + c('sl-btn--secondary')} href="#sl-preview" onClick={handleAnchorClick}>View platform preview <span aria-hidden="true">↗</span></a></div>
+              <div className={c('sl-ctas')}><a className={c('sl-btn') + ' ' + c('sl-btn--primary')} href={resolveLandingHref('/dashboard')}>Open workspace <span aria-hidden="true">→</span></a><a className={c('sl-btn') + ' ' + c('sl-btn--secondary')} href="#sl-preview" onClick={handleAnchorClick}>View platform preview <span aria-hidden="true">↗</span></a></div>
               <div className={c('sl-promise')} aria-label="Platform principles"><span>Evidence-led insights</span><span>Traceable methods</span><span>Informed planning</span></div>
             </div>
             <figure className={[c('sl-art'), c('sl-reveal')].join(' ')} data-reveal aria-labelledby="sl-art-caption">
@@ -284,10 +291,10 @@ export default function SHRAMIKLandingPage() {
           </div>
         </div></section>
 
-        <section className={c('sl-final')} aria-labelledby="sl-final-title"><div className={c('sl-wrap')+' '+c('sl-final-grid')}><div><p className={c('sl-eyebrow')}>SHRAMIK · Labour Market Intelligence System</p><h2 id="sl-final-title">Turn workforce information into informed decisions.</h2><p>Explore a clearer, more connected approach to understanding India's workforce.</p></div><div className={c('sl-final-actions')}><a className={c('sl-btn')+' '+c('sl-btn--primary')} href="/login">Sign in to SHRAMIK <span aria-hidden="true">→</span></a><a className={c('sl-btn')+' '+c('sl-btn--secondary')} href="#sl-transparency" onClick={handleAnchorClick}>Read about transparency</a></div></div></section>
+        <section className={c('sl-final')} aria-labelledby="sl-final-title"><div className={c('sl-wrap')+' '+c('sl-final-grid')}><div><p className={c('sl-eyebrow')}>SHRAMIK · Labour Market Intelligence System</p><h2 id="sl-final-title">Turn workforce information into informed decisions.</h2><p>Explore a clearer, more connected approach to understanding India's workforce.</p></div><div className={c('sl-final-actions')}><a className={c('sl-btn')+' '+c('sl-btn--primary')} href={resolveLandingHref('/login')}>Sign in to SHRAMIK <span aria-hidden="true">→</span></a><a className={c('sl-btn')+' '+c('sl-btn--secondary')} href="#sl-transparency" onClick={handleAnchorClick}>Read about transparency</a></div></div></section>
       </main>
 
-      <footer className={c('sl-footer')}><div className={c('sl-wrap')}><div className={c('sl-footer-grid')}><div><a className={c('sl-brand')} href="#sl-top" aria-label="Back to SHRAMIK home" onClick={handleAnchorClick}><span className={c('sl-mark')} aria-hidden="true">S</span><span><span className={c('sl-brand-name')}>SHRAMIK</span><span className={c('sl-brand-sub')}>Labour Market Intelligence System</span></span></a><p className={c('sl-footer-description')}>A labour-market intelligence prototype with selected live source-backed indicators and clearly labelled illustrative previews.</p></div><nav aria-label="Footer navigation">{navLinks.map(([label,href])=><a key={href} href={href} onClick={handleAnchorClick}>{label}</a>)}<a href="/login">Sign in</a></nav></div><p className={c('sl-footer-note')}>SHRAMIK is an independent labour-market intelligence prototype and does not claim official government affiliation. The published-indicator cards above are live, source-backed reads; the platform preview uses illustrative values, and analytical outputs remain unavailable until validated results are published.</p></div></footer>
+      <footer className={c('sl-footer')}><div className={c('sl-wrap')}><div className={c('sl-footer-grid')}><div><a className={c('sl-brand')} href="#sl-top" aria-label="Back to SHRAMIK home" onClick={handleAnchorClick}><span className={c('sl-mark')} aria-hidden="true">S</span><span><span className={c('sl-brand-name')}>SHRAMIK</span><span className={c('sl-brand-sub')}>Labour Market Intelligence System</span></span></a><p className={c('sl-footer-description')}>A labour-market intelligence prototype with selected live source-backed indicators and clearly labelled illustrative previews.</p></div><nav aria-label="Footer navigation">{navLinks.map(([label,href])=><a key={href} href={resolveLandingHref(href)} onClick={handleAnchorClick}>{label}</a>)}<a href={resolveLandingHref('/login')}>Sign in</a></nav></div><p className={c('sl-footer-note')}>SHRAMIK is an independent labour-market intelligence prototype and does not claim official government affiliation. The published-indicator cards above are live, source-backed reads; the platform preview uses illustrative values, and analytical outputs remain unavailable until validated results are published.</p></div></footer>
     </div>
   );
 }
