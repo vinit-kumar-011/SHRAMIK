@@ -50,3 +50,16 @@ test('public auth back links return to the public landing page, not the protecte
   assert.doesNotMatch(accessPage, /onNavigate\('dashboard'\)/);
   assert.match(source, /const navigate = useCallback\(\(target: 'landing' \| 'dashboard' \| 'login' \| 'request-access'\)/);
 });
+
+
+test('live Administration route never renders demo review controls when its server API is missing', () => {
+  const adminStart = workspace.indexOf(": activePage === 'administration'");
+  const adminEnd = workspace.indexOf(": activePage === 'dashboard'", adminStart);
+  assert.ok(adminStart > 0 && adminEnd > adminStart, 'administration route branch must be present');
+  const adminRoute = workspace.slice(adminStart, adminEnd);
+  assert.match(adminRoute, /!demoMode && !runtimeEnv\?\.\s*VITE_ADMINISTRATION_API_BASE_URL\?\.trim\(\)/);
+  assert.match(adminRoute, /<LiveModuleNotice title="Administration"/);
+  assert.match(adminRoute, /Access-request submissions are stored as pending/);
+  assert.match(adminRoute, /cannot read the queue, approve requests or grant roles/);
+  assert.match(adminRoute, /<AdministrationPage adapter=\{administrationAdapter\} \/>/);
+});
