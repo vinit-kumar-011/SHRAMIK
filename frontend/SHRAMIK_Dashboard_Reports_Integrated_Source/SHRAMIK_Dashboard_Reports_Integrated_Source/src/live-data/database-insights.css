@@ -160,3 +160,5 @@
   .dbi-hero-meta { flex-direction: column; gap: 7px; }
   .dbi-footer { align-items: flex-start; flex-direction: column; }
 }
+
+.dbi-ranking-empty{display:flex;align-items:flex-start;gap:11px;padding:16px;border:1px dashed #d5d1c4;border-radius:6px;background:#faf9f3;color:#585950}.dbi-ranking-empty>svg{flex-shrink:0;margin-top:1px;color:#6b6d63}.dbi-ranking-empty strong{display:block;color:#373830;font-size:11px;font-weight:850}.dbi-ranking-empty p{margin:4px 0 8px;color:#6b6d63;font-size:10px;line-height:1.55}.dbi-ranking-empty button{padding:6px 10px;border:1px solid #292929;border-radius:4px;color:#171717;background:#f2d34f;font-size:10px;font-weight:800;cursor:pointer}.dbi-ranking-empty button:disabled{opacity:.6;cursor:wait}

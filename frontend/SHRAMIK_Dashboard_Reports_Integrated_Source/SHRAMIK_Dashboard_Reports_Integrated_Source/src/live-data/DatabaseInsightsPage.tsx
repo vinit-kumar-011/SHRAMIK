@@ -507,7 +507,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
         <KpiCard label="Reference sectors" value={numberFormat(sectorCount)} note="Canonical sector catalogue" icon="people"/>
       </> : null}
       {module === 'scenario-simulator' ? <>
-        <KpiCard label="Provisional training seats" value={numberFormat(seatTotal, true)} note="Available baseline context, not a forecast" icon="training"/>
+        <KpiCard label="Provisional training seats" value={visibleStateSeats.length ? numberFormat(seatTotal, true) : '—'} note={visibleStateSeats.length ? 'Available baseline context, not a forecast' : 'No published capacity value; a scenario baseline is unavailable'} icon="training"/>
         <KpiCard label="Forecast baseline" value={forecastStatus} note="Required before a scenario can be computed" icon="activity"/>
         <KpiCard label="Canonical skills" value={numberFormat(canonicalSkillCount)} note="Scenario entity reference catalogue" icon="database"/>
         <KpiCard label="Early warnings" value={warningStatus} note="Published output context" icon="people"/>
@@ -545,13 +545,13 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
 
     {module === 'supply' ? <>
       <section className="dbi-panel"><SectionHead title={regionCode === 'IN' ? 'Provisional training capacity by state' : 'Provisional training capacity · selected region'} note="Sum of source-backed CTS trade-level seat-capacity records for academic session 2026. It measures planned training capacity—not enrolment, completion or employed workers."/>
-        <div className="dbi-ranking-list">
+        {visibleStateSeats.length ? <div className="dbi-ranking-list">
           {visibleStateSeats.slice(0, 12).map((row, index) => <div className="dbi-ranking-row" key={row.id}>
             <span className="dbi-rank">{String(index + 1).padStart(2, '0')}</span><span className="dbi-ranking-name">{row.label}</span>
             <div className="dbi-bar-track"><span style={{ width: Math.max(2, (row.value / (visibleStateSeats[0]?.value || 1)) * 100) + '%' }}/></div>
             <strong className="dbi-ranking-value">{numberFormat(row.value)}</strong>
           </div>)}
-        </div>
+        </div> : <div className="dbi-ranking-empty" role="status"><Info size={17}/><div><strong>No published training-capacity rows for this geography</strong><p>No source-backed provisional CTS seat-capacity value is readable for the selected region and academic session. This is unavailable data, not zero capacity.</p><button type="button" onClick={() => void refresh()} disabled={refreshing}>{refreshing ? 'Refreshing…' : 'Retry data read'}</button></div></div>}
         <div className="dbi-table-foot"><SourceLink source={seatSource}/><span>Reference: Academic session 2026</span><Provenance/></div>
       </section>
       <div className="dbi-two-col">
@@ -619,7 +619,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
           <div className="dbi-readiness-list"><div className="dbi-readiness-item"><span className="dbi-status-dot" data-status="ready"/><span>Training capacity by trade and state</span><strong>Available</strong></div><div className="dbi-readiness-item"><span className="dbi-status-dot" data-status="ready"/><span>Canonical skill and sector catalogue</span><strong>Available</strong></div><div className="dbi-readiness-item"><span className="dbi-status-dot" data-status="pending"/><span>Published demand history</span><strong>{demandStatus}</strong></div><div className="dbi-readiness-item"><span className="dbi-status-dot" data-status="pending"/><span>Published forecast baseline</span><strong>{forecastStatus}</strong></div></div>
         </section>
         <section className="dbi-panel"><SectionHead title="Capacity context by state" note="Academic session 2026 provisional seat capacity; not worker supply."/>
-          <div className="dbi-ranking-list">{stateSeats.slice(0, 8).map((row, index) => <div className="dbi-ranking-row" key={row.id}><span className="dbi-rank">{String(index + 1).padStart(2, '0')}</span><span className="dbi-ranking-name">{row.label}</span><div className="dbi-bar-track"><span style={{ width: Math.max(2, row.value / (stateSeats[0]?.value || 1) * 100) + '%' }}/></div><strong className="dbi-ranking-value">{numberFormat(row.value)}</strong></div>)}</div>
+          {stateSeats.length ? <div className="dbi-ranking-list">{stateSeats.slice(0, 8).map((row, index) => <div className="dbi-ranking-row" key={row.id}><span className="dbi-rank">{String(index + 1).padStart(2, '0')}</span><span className="dbi-ranking-name">{row.label}</span><div className="dbi-bar-track"><span style={{ width: Math.max(2, row.value / (stateSeats[0]?.value || 1) * 100) + '%' }}/></div><strong className="dbi-ranking-value">{numberFormat(row.value)}</strong></div>)}</div> : <div className="dbi-ranking-empty" role="status"><Info size={17}/><div><strong>No source-backed capacity rows are readable</strong><p>The state-level capacity comparison needs published provisional CTS records for academic session 2026. No sample values are substituted.</p><button type="button" onClick={() => void refresh()} disabled={refreshing}>{refreshing ? 'Refreshing…' : 'Retry data read'}</button></div></div>}
           <div className="dbi-table-foot"><SourceLink source={seatSource}/><Provenance/></div>
         </section>
       </div>
