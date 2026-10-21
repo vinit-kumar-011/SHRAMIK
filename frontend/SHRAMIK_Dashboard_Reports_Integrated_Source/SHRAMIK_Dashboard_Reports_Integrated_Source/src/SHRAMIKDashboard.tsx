@@ -377,7 +377,7 @@ function Header({
         event.preventDefault();
         onSearchSelect(searchResults[activeSearchIndex]);
       }
-    }} aria-label="Search labour market data" role="combobox" aria-autocomplete="list" aria-expanded={searchOpen} aria-controls="shramik-search-results" aria-activedescendant={searchOpen && activeSearchIndex >= 0 && query.trim().length >= 2 ? 'shramik-search-option-' + activeSearchIndex : undefined} placeholder="Search for skills, occupations, sectors or regions…" aria-label="Search labour market data" aria-expanded={searchOpen} aria-controls="shramik-search-results"/><kbd>Ctrl</kbd><kbd>K</kbd>
+    }} aria-label="Search labour market data" role="combobox" aria-autocomplete="list" aria-expanded={searchOpen} aria-controls="shramik-search-results" aria-activedescendant={searchOpen && activeSearchIndex >= 0 && query.trim().length >= 2 ? 'shramik-search-option-' + activeSearchIndex : undefined} placeholder="Search for skills, occupations, sectors or regions…"/><kbd>Ctrl</kbd><kbd>K</kbd>
       {searchOpen && query.trim().length >= 2 && <div id="shramik-search-results"><SearchResults results={searchResults} busy={searchBusy} activeIndex={activeSearchIndex} onSelect={onSearchSelect}/></div>}
       {searchOpen && query.trim().length > 0 && query.trim().length < 2 && <div className="search-hint">Enter at least 2 characters to search.</div>}
     </div>
