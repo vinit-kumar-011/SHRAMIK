@@ -23,7 +23,6 @@ import ReportsPage from './reports/ReportsPage';
 import type { GapDetailPayload } from './skill-gaps/types';
 import { getPathForRoute, getRouteFromLocation, getRouteLabel, type ShramikRouteId } from './routing';
 import EmergingSkillsPage, { demoEmergingSkillsDataAdapter } from './emerging-skills/EmergingSkillsPage.jsx';
-import { createEmergingSkillsDataAdapter } from './emerging-skills/adapter';
 import { ScenarioSimulatorPage } from './scenario-simulator/ScenarioSimulatorPage.jsx';
 import { MockScenarioSimulatorAdapter } from './scenario-simulator/adapters/MockScenarioSimulatorAdapter.js';
 import { RestScenarioSimulatorAdapter } from './scenario-simulator/adapters/RestScenarioSimulatorAdapter.js';
@@ -35,10 +34,8 @@ import { createRestDataSourcesAdapter } from './data-sources/rest-adapter.js';
 import { SupabaseDataSourcesAdapter } from './data-sources/supabase-adapter';
 import LiveModuleNotice from './LiveModuleNotice';
 import SupplyInsightsPage from './supply/SupplyInsightsPage';
-import { createSupplyInsightsDataAdapter } from './supply/adapter';
 import { mockSupplyInsightsDataAdapter } from './supply/mockAdapter';
 import DataQualityPage from './data-quality/DataQualityPage';
-import { createDataQualityDataAdapter } from './data-quality/adapter';
 import { mockDataQualityDataAdapter } from './data-quality/mockAdapter';
 import AdministrationPage from './administration/AdministrationPage';
 import { createAdministrationDataAdapter } from './administration/adapter';
@@ -481,9 +478,6 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
     const demoEnabled = env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true';
     return apiBase ? new RestScenarioSimulatorAdapter(apiBase) : demoEnabled ? scenarioMockAdapter : scenarioPlanningAdapter;
   });
-  const [emergingSkillsAdapter] = useState(() => createEmergingSkillsDataAdapter());
-  const [supplyAdapter] = useState(() => createSupplyInsightsDataAdapter());
-  const [dataQualityAdapter] = useState(() => createDataQualityDataAdapter());
   const [administrationAdapter] = useState(() => createAdministrationDataAdapter());
   const [dataSourcesAdapter] = useState(() => {
     const apiBase = runtimeEnv?.VITE_DATA_SOURCES_API_BASE_URL?.trim();
