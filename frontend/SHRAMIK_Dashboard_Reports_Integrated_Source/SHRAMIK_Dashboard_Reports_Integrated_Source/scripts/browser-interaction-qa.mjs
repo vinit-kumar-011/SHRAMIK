@@ -266,29 +266,29 @@ try {
   for (const module of previewModules) {
     await navigate(cdp, origin + module.path);
     await waitFor(() => cdp.evaluate(
-      `!!document.querySelector('.live-module-notice') && Array.from(document.querySelectorAll('button')).some(button => (button.innerText||'').trim() === 'Open synthetic demo preview')`,
+      `!!document.querySelector('.dbi-shell') && Array.from(document.querySelectorAll('button')).some(button => (button.innerText||'').trim() === 'Open synthetic demo preview')`,
     ), `${module.label} source-backed readiness view`);
-    const liveBefore = await cdp.evaluate(`({path:location.pathname,notice:!!document.querySelector('.live-module-notice'),preview:!!document.querySelector('.module-preview-banner')})`);
+    const liveBefore = await cdp.evaluate(`({path:location.pathname,notice:!!document.querySelector('.dbi-shell'),preview:!!document.querySelector('.module-preview-banner')})`);
     const previewClick = await clickByText(cdp, 'Open synthetic demo preview', true);
     await waitFor(() => cdp.evaluate(
       `(() => { const banner=document.querySelector('.module-preview-banner'); return !!banner && /SYNTHETIC_DEMO/.test(banner.innerText) && /Illustrative preview — not live labour-market findings/.test(banner.innerText); })()`,
     ), `${module.label} synthetic preview banner`);
-    const previewState = await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),label:(document.querySelector('.module-preview-banner')?.innerText||'').slice(0,220),liveNotice:!!document.querySelector('.live-module-notice'),bodyHasModule:document.body.innerText.toLowerCase().includes(${JSON.stringify(module.label.toLowerCase())})})`);
+    const previewState = await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),label:(document.querySelector('.module-preview-banner')?.innerText||'').slice(0,220),liveNotice:!!document.querySelector('.dbi-shell'),bodyHasModule:document.body.innerText.toLowerCase().includes(${JSON.stringify(module.label.toLowerCase())})})`);
     record(`${module.label} preview is opt-in and explicitly labelled synthetic`, liveBefore.path === module.path && liveBefore.notice && !liveBefore.preview && Boolean(previewClick) && previewState.banner && previewState.label.includes('SYNTHETIC_DEMO') && previewState.bodyHasModule, JSON.stringify({liveBefore,previewState}));
     await screenshot(cdp, `preview-${module.path.slice(1)}.png`);
     const returnClick = await clickByText(cdp, 'Return to live view', true);
-    await waitFor(() => cdp.evaluate(`!document.querySelector('.module-preview-banner') && !!document.querySelector('.live-module-notice')`), `${module.label} return to live view`);
-    record(`${module.label} preview exits back to source-backed readiness`, Boolean(returnClick) && await cdp.evaluate(`!document.querySelector('.module-preview-banner') && !!document.querySelector('.live-module-notice')`), module.path);
+    await waitFor(() => cdp.evaluate(`!document.querySelector('.module-preview-banner') && !!document.querySelector('.dbi-shell')`), `${module.label} return to live view`);
+    record(`${module.label} preview exits back to source-backed readiness`, Boolean(returnClick) && await cdp.evaluate(`!document.querySelector('.module-preview-banner') && !!document.querySelector('.dbi-shell')`), module.path);
   }
 
   // The preview must also be cleared on in-app navigation, not just its explicit exit action.
   await navigate(cdp, origin + '/demand');
-  await waitFor(() => cdp.evaluate(`!!document.querySelector('.live-module-notice')`), 'Demand live notice before route-change preview test');
+  await waitFor(() => cdp.evaluate(`!!document.querySelector('.dbi-shell')`), 'Demand live notice before route-change preview test');
   await clickByText(cdp, 'Open synthetic demo preview', true);
   await waitFor(() => cdp.evaluate(`!!document.querySelector('.module-preview-banner')`), 'Demand synthetic preview before route-change test');
   const routeChange = await cdp.evaluate(`(() => { const e=Array.from(document.querySelectorAll('button.nav-item')).find(button=>(button.innerText||'').trim().toLowerCase()==='supply'); if(!e)return null; e.click(); return (e.innerText||'').trim(); })()`);
-  await waitFor(() => cdp.evaluate(`location.pathname === '/supply' && !document.querySelector('.module-preview-banner') && !!document.querySelector('.live-module-notice')`), 'preview cleared after in-app navigation');
-  record('Changing modules exits the previous module preview', routeChange === 'Supply', JSON.stringify(await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),liveNotice:!!document.querySelector('.live-module-notice')})`)));
+  await waitFor(() => cdp.evaluate(`location.pathname === '/supply' && !document.querySelector('.module-preview-banner') && !!document.querySelector('.dbi-shell')`), 'preview cleared after in-app navigation');
+  record('Changing modules exits the previous module preview', routeChange === 'Supply', JSON.stringify(await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),liveNotice:!!document.querySelector('.dbi-shell')})`)));
 
   // Exercise the default local assumptions-only planner without sending credentials or any non-read HTTP requests.
   await navigate(cdp, origin + '/scenario-simulator');
