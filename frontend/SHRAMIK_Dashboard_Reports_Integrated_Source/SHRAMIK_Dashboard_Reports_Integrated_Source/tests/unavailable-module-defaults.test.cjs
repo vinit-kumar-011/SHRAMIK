@@ -80,7 +80,7 @@ test('Data Quality presentation never shows zero findings when there is no data 
 
 test('Emerging Skills does not render the fixed sample findings as if they were live results', () => {
   const source = fs.readFileSync(path.join(root, 'src/emerging-skills/EmergingSkillsPage.tsx'), 'utf8');
-  assert.match(source, /suppliedAdapter \\|\\| unavailableEmergingSkillsDataAdapter/);
+  assert.match(source, /suppliedAdapter \\|\\| new UnavailableEmergingSkillsDataAdapter\\(\\)/);
   assert.match(source, /summary\\?\\.meta\\.provenance === 'SYNTHETIC_DEMO'/);
   assert.match(source, /Emerging Skills results unavailable/);
   assert.match(source, /evidenceData \\? profileEvidence\\.evidenceCount\\.toLocaleString\\(\\) : 'Not supplied'/);

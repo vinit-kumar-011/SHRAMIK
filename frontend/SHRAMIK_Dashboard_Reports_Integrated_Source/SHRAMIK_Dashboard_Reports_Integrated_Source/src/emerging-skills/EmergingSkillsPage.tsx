@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { unavailableEmergingSkillsDataAdapter } from './unavailableAdapter';
+import { UnavailableEmergingSkillsDataAdapter } from './unavailableAdapter';
 import {
   Briefcase, Map as MapIcon, Network, ShieldAlert,
   TrendingUp, ChevronRight, Info, Activity, Layers, CheckCircle2,
@@ -1022,7 +1022,7 @@ const MetricBox = ({ label, value, sub, positive }: { label: string; value: stri
 type ViewTab = EmergingSkillsView;
 
 export const EmergingSkillsPage = ({ dataAdapter: suppliedAdapter, initialFilters, initialView = 'overview', onOpenSource }: EmergingSkillsPageProps = {}) => {
-  const adapter = useMemo(() => suppliedAdapter || unavailableEmergingSkillsDataAdapter, [suppliedAdapter]);
+  const adapter = useMemo(() => suppliedAdapter || new UnavailableEmergingSkillsDataAdapter(), [suppliedAdapter]);
   const [activeTab, setActiveTab] = useState<ViewTab>(initialView);
   const [summary, setSummary] = useState<EmergingSkillsSummary | null>(null);
   const [skills, setSkills] = useState<EmergingSkill[]>([]);
@@ -1129,11 +1129,11 @@ export const EmergingSkillsPage = ({ dataAdapter: suppliedAdapter, initialFilter
   return (
     <div className="min-h-0 w-full bg-[#F7F6F0] text-[#171717] font-sans">
       {/* Provenance banner: the label follows the adapter actually in use. */}
-      <div className={`border-b px-6 py-2.5 flex items-center justify-center gap-2 text-xs font-semibold ${adapter === demoEmergingSkillsDataAdapter ? 'bg-[#F2D34F]/20 border-[#F2D34F]/30 text-[#8A6D1F]' : adapter === unavailableEmergingSkillsDataAdapter ? 'bg-[#FFF4F2] border-[#B42318]/30 text-[#8A241A]' : 'bg-[#20A89C]/10 border-[#20A89C]/25 text-[#185F59]'}`} role="status">
-        {adapter === demoEmergingSkillsDataAdapter ? <ShieldAlert className="w-3.5 h-3.5" /> : adapter === unavailableEmergingSkillsDataAdapter ? <AlertCircle className="w-3.5 h-3.5" /> : <Info className="w-3.5 h-3.5" />}
+      <div className={`border-b px-6 py-2.5 flex items-center justify-center gap-2 text-xs font-semibold ${adapter === demoEmergingSkillsDataAdapter ? 'bg-[#F2D34F]/20 border-[#F2D34F]/30 text-[#8A6D1F]' : adapter instanceof UnavailableEmergingSkillsDataAdapter ? 'bg-[#FFF4F2] border-[#B42318]/30 text-[#8A241A]' : 'bg-[#20A89C]/10 border-[#20A89C]/25 text-[#185F59]'}`} role="status">
+        {adapter === demoEmergingSkillsDataAdapter ? <ShieldAlert className="w-3.5 h-3.5" /> : adapter instanceof UnavailableEmergingSkillsDataAdapter ? <AlertCircle className="w-3.5 h-3.5" /> : <Info className="w-3.5 h-3.5" />}
         {adapter === demoEmergingSkillsDataAdapter
           ? 'Illustrative demo data (Provenance: SYNTHETIC_DEMO). Not for production analytics.'
-          : adapter === unavailableEmergingSkillsDataAdapter
+          : adapter instanceof UnavailableEmergingSkillsDataAdapter
             ? 'Emerging Skills API is not configured. No live skill signals are available.'
             : 'Connected data adapter. Review each panel’s provenance, coverage and quality metadata before interpreting results.'}
       </div>
