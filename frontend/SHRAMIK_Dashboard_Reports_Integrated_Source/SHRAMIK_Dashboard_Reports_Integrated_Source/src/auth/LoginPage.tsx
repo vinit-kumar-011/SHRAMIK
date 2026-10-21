@@ -26,7 +26,7 @@ export default function LoginPage({ onAuthenticated, onNavigate }: {
     }
   }
 
-  return <section className="sh-auth-page" aria-labelledby="login-heading">
+  return <main className="sh-auth-page" aria-labelledby="login-heading">
     <div className="sh-auth-copy">
       <div className="sh-auth-eyebrow"><ShieldCheck size={16}/> SECURE WORKSPACE ACCESS</div>
       <h1 id="login-heading">A clearer view<br/>of India’s workforce.</h1>
@@ -49,5 +49,5 @@ export default function LoginPage({ onAuthenticated, onNavigate }: {
       <button className="sh-auth-text-link" type="button" onClick={() => onNavigate('landing')}>Return to public home</button>
       <p className="sh-auth-disclaimer">Only accounts already provisioned in Supabase Auth can sign in. An access request does not automatically create an account or assign a role.</p>
     </div>
-  </section>;
+  </main>;
 }
