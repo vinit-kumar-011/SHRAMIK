@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import {
   Activity, AlertCircle, ArrowRight, Bell, BrainCircuit, Building2, CalendarDays,
   ChartColumn, Check, ChevronDown, ChevronRight, Database, Factory,
@@ -359,10 +359,47 @@ function Header({
 }
 
 function DetailDrawer({ detail, loading, error, onClose }: { detail: DetailPayload | null; loading: boolean; error: string; onClose: () => void }) {
-  if (!detail && !loading && !error) return null;
+  const isOpen = Boolean(detail || loading || error);
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      const active = document.activeElement;
+      returnFocusRef.current = active instanceof HTMLElement ? active : null;
+      wasOpenRef.current = true;
+      closeButtonRef.current?.focus();
+    } else if (!isOpen && wasOpenRef.current) {
+      const target = returnFocusRef.current;
+      if (target?.isConnected) target.focus();
+      returnFocusRef.current = null;
+      wasOpenRef.current = false;
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+  const handleDialogKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Tab') return;
+    const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )).filter((element) => element.tabIndex >= 0);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
   return <div className="detail-scrim" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <aside className="detail-drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title">
-      <div className="detail-heading"><div><span className="breadcrumb">SHRAMIK / DETAILS</span><h2 id="detail-title">{detail?.title ?? (loading ? 'Loading details' : 'Details unavailable')}</h2></div><button className="icon-button" type="button" onClick={onClose} aria-label="Close details"><X/></button></div>
+    <aside ref={dialogRef} className="detail-drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title" onKeyDown={handleDialogKeyDown}>
+      <div className="detail-heading"><div><span className="breadcrumb">SHRAMIK / DETAILS</span><h2 id="detail-title">{detail?.title ?? (loading ? 'Loading details' : 'Details unavailable')}</h2></div><button ref={closeButtonRef} className="icon-button" type="button" onClick={onClose} aria-label="Close details"><X/></button></div>
       {loading && <div className="detail-state"><RefreshCw className="spin-icon" size={20}/> Loading connected detail data…</div>}
       {!loading && error && <div className="inline-error"><AlertCircle size={17}/><span>{error}</span></div>}
       {!loading && detail && <>
