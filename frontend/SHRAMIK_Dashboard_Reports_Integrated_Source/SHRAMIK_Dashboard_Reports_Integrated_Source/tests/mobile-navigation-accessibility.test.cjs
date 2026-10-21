@@ -35,3 +35,12 @@ test('Ctrl+K does not focus the global search when it is hidden', () => {
   assert.match(workspace, /searchInput && searchInput\.getClientRects\(\)\.length > 0/);
   assert.match(workspace, /searchInput\.focus\(\)/);
 });
+
+test('mobile navigation traps Tab focus inside the open drawer', () => {
+  assert.match(sidebar, /const handleSidebarKeyDown = \(event: ReactKeyboardEvent<HTMLElement>\)/);
+  assert.match(sidebar, /if \(!mobileLayout \|\| !mobileOpen \|\| event\.key !== 'Tab'\) return/);
+  assert.match(sidebar, /querySelectorAll<HTMLButtonElement>\('\.nav-item'\)/);
+  assert.match(sidebar, /event\.shiftKey && document\.activeElement === first/);
+  assert.match(sidebar, /!event\.shiftKey && document\.activeElement === last/);
+  assert.match(sidebar, /onKeyDown=\{handleSidebarKeyDown\}/);
+});
