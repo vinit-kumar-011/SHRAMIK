@@ -225,13 +225,19 @@ async function getAllSourceMetrics(): Promise<MetricRow[]> {
   }
   return all;
 }
-async function checkPublicTable(table: string): Promise<TableVisibility> {
-  try {
-    const rows = await getRows<{ id: string }>(table, { select: 'id', limit: '1' });
-    return { state: rows.length ? 'HAS_ROWS' : 'NO_PUBLIC_ROWS', sampleRows: rows.length };
-  } catch {
-    return { state: 'RESTRICTED', sampleRows: 0 };
-  }
+// These analytical output tables are intentionally excluded from the browser-facing
+// public data proxy. Do not probe them from the client: that creates avoidable 400s
+// on every module load, and a failed public read cannot establish whether a table is
+// empty. A future authenticated server endpoint can replace this declared state.
+function publicOutputVisibility(): Record<string, TableVisibility> {
+  const tableNames = [
+    'demand_observations', 'supply_observations', 'forecast_results',
+    'model_versions', 'emerging_skill_signals', 'early_warnings',
+  ];
+  return Object.fromEntries(tableNames.map(table => [table, {
+    state: 'RESTRICTED' as const,
+    sampleRows: 0,
+  }]));
 }
 async function loadSnapshot(): Promise<Snapshot> {
   const warnings: string[] = [];
@@ -252,10 +258,7 @@ async function loadSnapshot(): Promise<Snapshot> {
     refs[result.name] = result.rows;
     if (result.error) warnings.push(result.name + ': ' + result.error);
   });
-  const tableNames = ['demand_observations', 'supply_observations', 'forecast_results', 'model_versions', 'emerging_skill_signals', 'early_warnings'];
-  const outputChecks = await Promise.all(tableNames.map(async table => [table, await checkPublicTable(table)] as const));
-  const outputs: Record<string, TableVisibility> = {};
-  outputChecks.forEach(([table, status]) => { outputs[table] = status; });
+  const outputs = publicOutputVisibility();
   return {
     metrics: metricRows,
     states: (refs.states || []) as StateRow[],
