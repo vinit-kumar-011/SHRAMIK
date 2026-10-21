@@ -322,23 +322,29 @@ function SearchResults({ results, busy, onSelect }: { results: SearchResult[]; b
 }
 
 function Header({
-  regions, region, onRegionChange, onMenu, mobileOpen, profile, query, onQueryChange, searchResults, searchBusy, searchOpen, onSearchOpenChange, onSearchSelect,
+  regions, region, onRegionChange, onMenu, mobileOpen, mobileSearchOpen, onMobileSearchToggle, profile, query, onQueryChange, searchResults, searchBusy, searchOpen, onSearchOpenChange, onSearchSelect,
   notifications, notificationsOpen, onNotificationsToggle, onNotificationRead, profileOpen, onProfileToggle, onOpenSection, adapterMode,
   authSession, onNavigateRoute, onSignOut,
 }: {
-  regions: RegionOption[]; region: string; onRegionChange: (v: string) => void; onMenu: () => void; mobileOpen: boolean; profile: UserProfile | null;
+  regions: RegionOption[]; region: string; onRegionChange: (v: string) => void; onMenu: () => void; mobileOpen: boolean; mobileSearchOpen: boolean; onMobileSearchToggle: () => void; profile: UserProfile | null;
   query: string; onQueryChange: (v: string) => void; searchResults: SearchResult[]; searchBusy: boolean; searchOpen: boolean;
   onSearchOpenChange: (v: boolean) => void; onSearchSelect: (result: SearchResult) => void;
   notifications: NotificationItem[]; notificationsOpen: boolean; onNotificationsToggle: () => void; onNotificationRead: (id: string) => void;
   profileOpen: boolean; onProfileToggle: () => void; onOpenSection: (section: string) => void; adapterMode: 'mock' | 'rest' | 'supabase';
   authSession: AuthSession | null; onNavigateRoute: (route: 'dashboard' | 'login' | 'request-access') => void; onSignOut: () => void;
 }) {
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (mobileSearchOpen) mobileSearchInputRef.current?.focus();
+  }, [mobileSearchOpen]);
+
   const unreadCount = notifications.filter((item) => !item.read).length;
   const visibleRegionOptions = regions.length ? regions : [{ code: region, label: region, level: 'national' as const }];
   return <header className="topbar">
     <button className="mobile-menu icon-button" onClick={onMenu} type="button" aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen} aria-controls="shramik-sidebar"><Menu size={22}/></button>
     <div className="brand-lockup"><div className="brand-mark">S</div><div className="brand-word"><strong>SHRAMIK</strong><span>Labour Market<br/>Intelligence System</span></div></div>
-    <div className="global-search"><Search size={18}/><input value={query} onFocus={() => onSearchOpenChange(true)} onChange={(event) => { onQueryChange(event.target.value); onSearchOpenChange(true); }} onKeyDown={(event) => { if (event.key === 'Escape') onSearchOpenChange(false); }} placeholder="Search for skills, occupations, sectors or regions…" aria-label="Search labour market data" aria-expanded={searchOpen} aria-controls="shramik-search-results"/><kbd>Ctrl</kbd><kbd>K</kbd>
+    <button className="mobile-search-toggle icon-button" onClick={onMobileSearchToggle} type="button" aria-label={mobileSearchOpen ? 'Close search' : 'Open search'} aria-expanded={mobileSearchOpen} aria-controls="shramik-mobile-search"><Search size={19}/></button>
+    <div id="shramik-mobile-search" className={`global-search ${mobileSearchOpen ? 'mobile-search-open' : ''}`}><Search size={18}/><input ref={mobileSearchInputRef} value={query} onFocus={() => onSearchOpenChange(true)} onChange={(event) => { onQueryChange(event.target.value); onSearchOpenChange(true); }} onKeyDown={(event) => { if (event.key === 'Escape') onSearchOpenChange(false); }} placeholder="Search for skills, occupations, sectors or regions…" aria-label="Search labour market data" aria-expanded={searchOpen} aria-controls="shramik-search-results"/><kbd>Ctrl</kbd><kbd>K</kbd>
       {searchOpen && query.trim().length >= 2 && <div id="shramik-search-results"><SearchResults results={searchResults} busy={searchBusy} onSelect={onSearchSelect}/></div>}
       {searchOpen && query.trim().length > 0 && query.trim().length < 2 && <div className="search-hint">Enter at least 2 characters to search.</div>}
     </div>
@@ -416,6 +422,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
   const [rankingsError, setRankingsError] = useState('');
@@ -527,7 +534,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(''), 3600); return () => window.clearTimeout(timer); }, [toast]);
   useEffect(() => {
     const closeOverlays = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { setSearchOpen(false); setNotificationsOpen(false); setProfileOpen(false); setMobileOpen(false); if (detail || detailLoading || detailError) { setDetail(null); setDetailLoading(false); setDetailError(''); } }
+      if (event.key === 'Escape') { setSearchOpen(false); setMobileSearchOpen(false); setNotificationsOpen(false); setProfileOpen(false); setMobileOpen(false); if (detail || detailLoading || detailError) { setDetail(null); setDetailLoading(false); setDetailError(''); } }
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
@@ -570,6 +577,14 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
     } finally { setDetailLoading(false); }
   }, [adapter, region]);
 
+  const handleMobileSearchToggle = useCallback(() => {
+    const next = !mobileSearchOpen;
+    setMobileSearchOpen(next);
+    setSearchOpen(next);
+    setNotificationsOpen(false);
+    setProfileOpen(false);
+  }, [mobileSearchOpen]);
+
   const handleNavigate = useCallback((item: typeof NAV_ITEMS[number] | { label: string; section: string }) => {
     const route = item.section as Exclude<ShramikRouteId, 'not-found'>;
     const label = getRouteLabel(route);
@@ -577,6 +592,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
     setActive(label);
     setActivePage(route);
     setMobileOpen(false);
+    setMobileSearchOpen(false);
     closeDetail();
     setSearchOpen(false);
     setNotificationsOpen(false);
@@ -605,6 +621,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
 
   const handleSearchSelect = useCallback(async (result: SearchResult) => {
     setQuery(result.label);
+    setMobileSearchOpen(false);
     setSearchOpen(false);
     if (result.kind === 'region') {
       setRegion(result.id);
@@ -646,7 +663,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   if (activePage === 'login' || activePage === 'request-access') return null;
 
   return <div className={`app-root data-mode-${adapter.mode}`}>
-    <Header regions={regions} region={region} onRegionChange={handleRegionChange} onMenu={() => setMobileOpen((value) => !value)} mobileOpen={mobileOpen} profile={headerProfile} query={query} onQueryChange={setQuery} searchResults={searchResults} searchBusy={searchBusy} searchOpen={searchOpen} onSearchOpenChange={setSearchOpen} onSearchSelect={handleSearchSelect} notifications={notifications} notificationsOpen={notificationsOpen} onNotificationsToggle={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} onNotificationRead={(id) => void markRead(id)} profileOpen={profileOpen} onProfileToggle={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} onOpenSection={(section) => void openSection(section)} adapterMode={adapter.mode} authSession={authSession} onNavigateRoute={navigateAuthRoute} onSignOut={handleSignOut}/>
+    <Header regions={regions} region={region} onRegionChange={handleRegionChange} onMenu={() => setMobileOpen((value) => !value)} mobileOpen={mobileOpen} mobileSearchOpen={mobileSearchOpen} onMobileSearchToggle={handleMobileSearchToggle} profile={headerProfile} query={query} onQueryChange={setQuery} searchResults={searchResults} searchBusy={searchBusy} searchOpen={searchOpen} onSearchOpenChange={setSearchOpen} onSearchSelect={handleSearchSelect} notifications={notifications} notificationsOpen={notificationsOpen} onNotificationsToggle={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} onNotificationRead={(id) => void markRead(id)} profileOpen={profileOpen} onProfileToggle={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} onOpenSection={(section) => void openSection(section)} adapterMode={adapter.mode} authSession={authSession} onNavigateRoute={navigateAuthRoute} onSignOut={handleSignOut}/>
     <div className="app-layout">
       <Sidebar active={active} onNavigate={handleNavigate} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)}/>
       <main className={activePage === 'dashboard' ? 'dashboard-main' : 'dashboard-main module-main'} aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
