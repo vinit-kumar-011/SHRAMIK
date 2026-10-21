@@ -1,5 +1,6 @@
 import { spawn, execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:net';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -18,6 +19,23 @@ const nonReadRequests = [];
 function record(name, passed, details = '') {
   results.push({ name, passed: Boolean(passed), details });
   console.log(`${passed ? 'PASS' : 'FAIL'} ${name}${details ? ` — ${details}` : ''}`);
+}
+
+async function findFreePort() {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once('error', reject);
+    server.listen(0, host, () => {
+      const address = server.address();
+      if (!address || typeof address === 'string') {
+        server.close();
+        reject(new Error('Could not allocate a local Chrome DevTools port.'));
+        return;
+      }
+      const port = address.port;
+      server.close((error) => error ? reject(error) : resolve(port));
+    });
+  });
 }
 
 function chromeBinary() {
@@ -175,23 +193,24 @@ try {
   }, 'Vite production preview');
 
   profile = await mkdtemp(path.join(os.tmpdir(), 'shramik-chromium-'));
+  const debugPort = await findFreePort();
+  let chromeStderr = '';
   chrome = spawn(chromeBinary(), [
     '--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
     '--no-first-run', '--no-default-browser-check', '--remote-allow-origins=*',
-    '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank',
-  ], { stdio: 'ignore' });
+    `--remote-debugging-port=${debugPort}`, `--user-data-dir=${profile}`, 'about:blank',
+  ], { stdio: ['ignore', 'ignore', 'pipe'] });
+  chrome.stderr?.on('data', chunk => {
+    chromeStderr = (chromeStderr + chunk.toString()).slice(-5000);
+  });
 
-  const portFile = path.join(profile, 'DevToolsActivePort');
-  const debugPort = await waitFor(async () => {
-    try {
-      const value = (await readFile(portFile, 'utf8')).split('\n')[0].trim();
-      return /^\d+$/.test(value) ? Number(value) : null;
-    } catch { return null; }
-  }, 'Chrome DevTools port');
   const devtools = `http://127.0.0.1:${debugPort}`;
   await waitFor(async () => {
+    if (chrome.exitCode !== null) {
+      throw new Error(`Chrome exited with code ${chrome.exitCode}. ${chromeStderr.slice(-1800)}`);
+    }
     try { return (await fetch(devtools + '/json/version')).ok; } catch { return false; }
-  }, 'Chrome DevTools endpoint');
+  }, 'Chrome DevTools endpoint', 20000);
 
   const targetResponse = await fetch(devtools + '/json/new?' + origin + '/', { method: 'PUT' });
   if (!targetResponse.ok) throw new Error(`Could not create browser target: HTTP ${targetResponse.status}`);
