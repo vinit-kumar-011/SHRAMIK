@@ -72,6 +72,13 @@ export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, b
       if (controller.signal.aborted) return;
       if (!data.entityTypes.length || !data.geographies.length || !data.evaluationYears.length) throw new Error("The simulator options response contains no supported choices.");
       setOptions(data);
+      setAdvancedParameters(current => {
+        const next = { ...current };
+        for (const parameter of data.supportedAdvancedParameters) {
+          if (next[parameter.key] === undefined && parameter.defaultValue !== undefined) next[parameter.key] = parameter.defaultValue;
+        }
+        return next;
+      });
       setDraft(previous => ({ ...previous,
         seats: clamp(previous.seats, data.additionalAnnualSeats.minimum, data.additionalAnnualSeats.maximum),
         lagYears: clamp(previous.lagYears, data.trainingLagMonths.minimum / 12, data.trainingLagMonths.maximum / 12),
@@ -175,7 +182,8 @@ export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, b
   const busy = status === "submitting" || status === "running" || status === "validating";
 
   return <div className="ss-page">
-    <header className="ss-hero"><div><div className="ss-breadcrumb">Home <span>›</span> Scenario Simulator</div><p className="ss-kicker">POLICY PLANNING WORKSPACE</p><h1>SCENARIO SIMULATOR</h1><p className="ss-intro">Explore how training and policy interventions could affect future skill demand and supply.</p><p className="ss-subintro">Configure → run → compare → investigate. Model calculations remain in the backend service.</p></div><div className="ss-hero-art" aria-hidden="true"><span>PEOPLE<br/>· SKILLS<br/>· OPPORTUNITIES</span><b>SIMULATE<br/>PLAN<br/>BRIDGE GAPS</b></div></header>
+    <header className="ss-hero"><div><div className="ss-breadcrumb">Home <span>›</span> Scenario Simulator</div><p className="ss-kicker">POLICY PLANNING WORKSPACE</p><h1>SCENARIO SIMULATOR</h1><p className="ss-intro">Explore a server-backed scenario when available, or calculate intervention-only planning counts using editable assumptions.</p><p className="ss-subintro">Without a validated baseline, the local fallback does not estimate labour demand, total workforce supply, skill gaps, or employment outcomes.</p></div><div className="ss-hero-art" aria-hidden="true"><span>PEOPLE<br/>· SKILLS<br/>· OPPORTUNITIES</span><b>SIMULATE<br/>PLAN<br/>BRIDGE GAPS</b></div></header>
+    {options?.baselines.some(item => item.baselineForecastRunId === "LOCAL-PLANNING-NO-VALIDATED-BASELINE") && <div className="ss-alert is-warn" role="note"><strong>Local assumptions-only mode.</strong> This planner calculates illustrative seat cohorts, completions and potential transitions from editable assumptions. It does not produce official workforce demand, supply, shortages, forecasts, or job counts.</div>}
     <section className="ss-scope" aria-label="Current scenario scope"><Scope label="Skill / Occupation" value={selectedEntity?.label ?? "— Not selected —"}/><Scope label="Geography" value={options?.geographies.find(g => g.id === draft.geographyId)?.label ?? draft.geographyId}/><Scope label="Baseline reference" value={selectedBaseline?.label ?? "No compatible baseline"}/><Scope label="Evaluation year" value={String(draft.evaluationYear)}/><Scope label="Run status" value={status === "idle" ? "Idle — configure and run" : status.replaceAll("_", " ").toLowerCase()}/></section>
     {!options && <div className={`ss-alert ${statusMessage ? "is-error" : ""}`} role="status">{statusMessage || "Loading simulator options…"}</div>}
     <div className="ss-workspace">
@@ -197,12 +205,12 @@ export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, b
         <div className="ss-tabs" role="tablist" aria-label="Simulation results views">{VIEWS.map(view => <button key={view.id} type="button" role="tab" aria-selected={activeView === view.id} onClick={() => loadView(view.id)}>{view.label}</button>)}</div>
         {viewError && <div className="ss-alert is-error" role="alert">{viewError}</div>}{viewLoading && <div className="ss-load" role="status">Loading {VIEWS.find(v => v.id === activeView)?.label.toLowerCase()} results…</div>}
         {!results ? <Empty title="No simulation run yet" text="Choose a supported skill or occupation, configure the intervention and baseline, then run a simulation."/> : <>
-          {results.run.provenance === "SYNTHETIC_DEMO" && <div className="ss-alert is-warn">ILLUSTRATIVE DEMO DATA — not a verified SHRAMIK estimate. No calibrated model was executed.</div>}
+          {results.run.provenance === "SYNTHETIC_DEMO" && <div className="ss-alert is-warn">ILLUSTRATIVE / ASSUMPTION-ONLY OUTPUT — not a verified SHRAMIK estimate. No calibrated model was executed.</div>}
           {activeView === "overview" && <Overview results={results} />}
           {activeView === "regional-impact" && <RegionalImpact rows={results.regionalImpact} selected={mapSelected} onSelect={setMapSelected} geoJsonUrl={boundaryGeoJsonUrl} />}
           {activeView === "sector-breakdown" && <Breakdown title="Sector Breakdown" rows={results.sectorBreakdown} dimension="sector" />}
           {activeView === "occupation-impact" && <Breakdown title="Occupation Impact" rows={results.occupationImpact} dimension="occupation" />}
-          {activeView === "sensitivity-analysis" && <section className="ss-result-section"><h3>Sensitivity Analysis</h3>{results.sensitivity ? <Sensitivity data={results.sensitivity}/> : <><p className="ss-muted">No sensitivity points were included with this run. Sensitivity is not an uncertainty interval.</p><button className="ss-button" type="button" onClick={onSensitivity} disabled={sensitivityLoading || !adapter.runSensitivity}>{sensitivityLoading ? "Requesting…" : "Request model-backed sensitivity"}</button>{sensitivityError && <div className="ss-alert is-warn" role="status">{sensitivityError}</div>}</>}</section>}
+          {activeView === "sensitivity-analysis" && <section className="ss-result-section"><h3>Sensitivity Analysis</h3>{results.sensitivity ? <Sensitivity data={results.sensitivity}/> : <><p className="ss-muted">No sensitivity points were included with this run. Sensitivity is not an uncertainty interval.</p><button className="ss-button" type="button" onClick={onSensitivity} disabled={sensitivityLoading || !adapter.runSensitivity}>{sensitivityLoading ? "Requesting…" : "Run sensitivity analysis"}</button>{sensitivityError && <div className="ss-alert is-warn" role="status">{sensitivityError}</div>}</>}</section>}
         </>}
       </section>
     </div>
@@ -227,7 +235,12 @@ function Overview({ results }: { results: ScenarioResults }) {
     { code: "SKILL_GAP", fallback: "Projected Skill Gap", sub: "Gap = demand − supply; positive means shortage" },
     { code: "GAP_TO_DEMAND_RATIO", fallback: "Gap-to-Demand Ratio", sub: "Shown only for comparable, valid demand" },
   ];
-  return <div className="ss-result-section"><div className="ss-kpis">{cards.map(card => { const item = get(card.code); return <article className="ss-kpi" key={card.code}><span>{item?.label ?? card.fallback}</span><strong>{item?.displayValue ?? (item?.scenarioValue != null ? fmt(item.scenarioValue, item.unitCode) : "Not available")}</strong><small>{item?.comparisonDisplay ?? item?.notAvailableReason ?? card.sub}</small>{item?.qualityStatus === "NOT_COMPARABLE" && <em>Not comparable</em>}</article>; })}</div><ProjectionChart series={results.series}/><div className="ss-runmeta"><h3>Run lineage &amp; limitations</h3><dl><dt>Run ID</dt><dd><code>{results.run.simulationRunId}</code></dd><dt>Baseline</dt><dd><code>{results.run.baselineForecastRunId}</code></dd><dt>Model</dt><dd>{results.run.modelName} · {results.run.modelVersion}</dd><dt>Quality</dt><dd>{results.run.qualityStatus}</dd><dt>Provenance</dt><dd>{results.run.provenance}</dd><dt>Last updated</dt><dd>{results.lastUpdatedAt ?? results.run.finishedAt ?? "Not supplied"}</dd></dl>{results.coverageSummary.length > 0 && <p><b>Coverage:</b> {results.coverageSummary.join(" ")}</p>}{[...results.run.limitations, ...results.limitations].map((item, i) => <p key={`${i}-${item}`}>• {item}</p>)}</div></div>;
+  const primaryCodes = new Set(cards.map(card => card.code));
+  const assumptionMetrics = results.outcomes.filter(item => !primaryCodes.has(item.metricCode));
+  return <div className="ss-result-section"><div className="ss-kpis">
+    {cards.map(card => { const item = get(card.code); return <article className="ss-kpi" key={card.code}><span>{item?.label ?? card.fallback}</span><strong>{item?.displayValue ?? (item?.scenarioValue != null ? fmt(item.scenarioValue, item.unitCode) : "Not available")}</strong><small>{item?.comparisonDisplay ?? item?.notAvailableReason ?? card.sub}</small>{item?.qualityStatus === "NOT_COMPARABLE" && <em>Not comparable</em>}</article>; })}
+    {assumptionMetrics.map(item => <article className="ss-kpi" key={item.metricCode}><span>{item.label}</span><strong>{item.displayValue ?? (item.scenarioValue != null ? fmt(item.scenarioValue, item.unitCode) : "Not available")}</strong><small>{item.comparisonDisplay ?? item.notAvailableReason ?? item.definition ?? "Illustrative assumption only."}</small><em>UNSUPPORTED · ASSUMPTION ONLY</em></article>)}
+  </div><ProjectionChart series={results.series}/><div className="ss-runmeta"><h3>Run lineage &amp; limitations</h3><dl><dt>Run ID</dt><dd><code>{results.run.simulationRunId}</code></dd><dt>Baseline</dt><dd><code>{results.run.baselineForecastRunId}</code></dd><dt>Model</dt><dd>{results.run.modelName} · {results.run.modelVersion}</dd><dt>Quality</dt><dd>{results.run.qualityStatus}</dd><dt>Provenance</dt><dd>{results.run.provenance}</dd><dt>Last updated</dt><dd>{results.lastUpdatedAt ?? results.run.finishedAt ?? "Not supplied"}</dd></dl>{results.coverageSummary.length > 0 && <p><b>Coverage:</b> {results.coverageSummary.join(" ")}</p>}{[...results.run.limitations, ...results.limitations].map((item, i) => <p key={i + "-" + item}>• {item}</p>)}</div></div>;
 }
 function ProjectionChart({ series }: { series: ScenarioResults["series"] }) {
   const names: Array<[keyof ScenarioResults["series"], string, string, boolean]> = [["baselineDemand", "Baseline demand", "#203A5B", true], ["scenarioDemand", "Scenario demand", "#53749A", false], ["baselineSupply", "Baseline supply", "#EB791D", true], ["scenarioSupply", "Scenario supply", "#20A89C", false]];

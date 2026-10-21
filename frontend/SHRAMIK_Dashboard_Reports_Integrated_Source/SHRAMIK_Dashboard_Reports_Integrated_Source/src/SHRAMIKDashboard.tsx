@@ -24,6 +24,7 @@ import { createEmergingSkillsDataAdapter } from './emerging-skills/adapter';
 import { ScenarioSimulatorPage } from './scenario-simulator/ScenarioSimulatorPage.jsx';
 import { MockScenarioSimulatorAdapter } from './scenario-simulator/adapters/MockScenarioSimulatorAdapter.js';
 import { RestScenarioSimulatorAdapter } from './scenario-simulator/adapters/RestScenarioSimulatorAdapter.js';
+import { PlanningScenarioSimulatorAdapter } from './scenario-simulator/adapters/PlanningScenarioSimulatorAdapter.js';
 import DemandInsightsPage from './demand/DemandInsightsPage.jsx';
 import { DataSourcesPage } from './data-sources/DataSourcesPage.jsx';
 import { mockDataSourcesAdapter } from './data-sources/mock-adapter.js';
@@ -464,10 +465,12 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   const [activePage, setActivePage] = useState<ShramikRouteId>(getInitialPage);
   const [active, setActive] = useState(() => getRouteLabel(getInitialPage()));
   const [scenarioMockAdapter] = useState(() => new MockScenarioSimulatorAdapter());
+  const [scenarioPlanningAdapter] = useState(() => new PlanningScenarioSimulatorAdapter());
   const [scenarioDataAdapter] = useState(() => {
     const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
     const apiBase = env?.VITE_SCENARIO_SIMULATOR_API_BASE_URL?.trim();
-    return apiBase ? new RestScenarioSimulatorAdapter(apiBase) : scenarioMockAdapter;
+    const demoEnabled = env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true';
+    return apiBase ? new RestScenarioSimulatorAdapter(apiBase) : demoEnabled ? scenarioMockAdapter : scenarioPlanningAdapter;
   });
   const [emergingSkillsAdapter] = useState(() => createEmergingSkillsDataAdapter());
   const [supplyAdapter] = useState(() => createSupplyInsightsDataAdapter());
@@ -772,9 +775,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
           : activePage === 'forecasts' ? (demoMode
               ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange}/>
               : <DatabaseInsightsPage module="forecasts" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
-          : activePage === 'reports' ? (demoMode
-              ? <ReportsPage />
-              : <DatabaseInsightsPage module="reports" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+          : activePage === 'reports' ? <ReportsPage />
           : activePage === 'demand' ? (demoMode
               ? <DemandInsightsPage dataAdapter={undefined} embedded onNavigate={(path: string, label?: string) => {
                   const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
@@ -784,12 +785,10 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
           : activePage === 'emerging-skills' ? (demoMode
               ? <EmergingSkillsPage dataAdapter={emergingSkillsAdapter} />
               : <DatabaseInsightsPage module="emerging-skills" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
-          : activePage === 'scenario-simulator' ? (demoMode
-              ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} initialScope={undefined} onNavigate={(path: string) => {
-                  const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
-                  if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
-                }}/>
-              : <DatabaseInsightsPage module="scenario-simulator" regionCode={region} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+          : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} initialScope={undefined} onNavigate={(path: string) => {
+              const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
+              if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
+            }}/>
           : activePage === 'data-sources' ? <DataSourcesPage adapter={dataSourcesAdapter}/>
           : activePage === 'supply' ? (demoMode
               ? <SupplyInsightsPage adapter={supplyAdapter} />

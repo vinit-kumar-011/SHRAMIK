@@ -234,3 +234,16 @@ test('public root mounts the React landing page and exposes live published indic
   assert.match(landingCss, /@media \(max-width: 900px\)/);
   assert.match(landingCss, /@media \(max-width: 480px\)/);
 });
+
+
+test('published reports and planning-only simulator remain useful when backend analytics endpoints are absent', () => {
+  assert.match(shell, /: activePage === 'reports' \? <ReportsPage \/>/);
+  assert.match(shell, /: activePage === 'scenario-simulator' \? <ScenarioSimulatorPage dataAdapter=\{scenarioDataAdapter\}/);
+  assert.match(shell, /new PlanningScenarioSimulatorAdapter\(\)/);
+  assert.match(shell, /demoEnabled \? scenarioMockAdapter : scenarioPlanningAdapter/);
+  const publishedReports = read('src/reports/adapter.ts');
+  assert.match(publishedReports, /new PublishedReportsAdapter\(createLabourMarketDataAdapter\(\)\)/);
+  const planner = read('src/scenario-simulator/adapters/PlanningScenarioSimulatorAdapter.ts');
+  assert.match(planner, /LOCAL-PLANNING-NO-VALIDATED-BASELINE/);
+  assert.match(planner, /does not estimate labour demand, workforce supply, skill gaps, or employment outcomes/i);
+});

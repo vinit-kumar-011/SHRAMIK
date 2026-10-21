@@ -42,6 +42,8 @@ export interface ScenarioSimulatorOptions {
     maximum?: number;
     step?: number;
     description?: string;
+    /** Optional, explicitly labelled illustrative default for assumption-only planning controls. */
+    defaultValue?: string | number | boolean;
   }>;
   geographies: SelectOption[];
   sectors: SelectOption[];
