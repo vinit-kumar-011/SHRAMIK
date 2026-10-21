@@ -7,6 +7,10 @@ const source = fs.readFileSync(
   path.resolve(__dirname, '../src/SHRAMIKDashboard.tsx'),
   'utf8',
 );
+const styles = fs.readFileSync(
+  path.resolve(__dirname, '../src/shramik-dashboard.css'),
+  'utf8',
+);
 const start = source.indexOf('function SearchResults(');
 const end = source.indexOf('function Header(', start);
 assert.ok(start > 0 && end > start, 'search result component and header should be available');
