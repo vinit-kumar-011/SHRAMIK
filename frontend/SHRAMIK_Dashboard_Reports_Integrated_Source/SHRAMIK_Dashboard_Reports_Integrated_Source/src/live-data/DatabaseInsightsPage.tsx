@@ -636,7 +636,27 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     </> : null}
 
     {module === 'data-quality' ? <>
-      <div className="dbi-note"><FileCheck2 size={17}/><div><strong>Public analytics view</strong><p>The metric inventory below is filtered to source-backed, non-synthetic records by the Supabase read policy. Staging-table row-level diagnostics and restricted administrative validation logs are not exposed through this public application.</p></div></div>
+      <div className="dbi-note"><FileCheck2 size={17}/><div><strong>Public analytics view</strong><p>The metric inventory below is filtered to source-backed, non-synthetic records by the Supabase read policy. Staging-table row-level diagnostics and restricted administrative validation logs are not exposed through this public application. “Restricted” means the public reader cannot inspect a table; it does not mean the table is empty.</p></div></div>
+      <div className="dbi-two-col">
+        <section className="dbi-panel"><SectionHead title="Analytical output visibility" note="A lightweight public-read check (at most one sampled row per table). “Available” means at least one row is readable, not that the output is validated or complete."/>
+          <div className="dbi-readiness-list">{([
+            ['Demand observations', 'demand_observations'],
+            ['Supply observations', 'supply_observations'],
+            ['Forecast results', 'forecast_results'],
+            ['Model versions', 'model_versions'],
+            ['Emerging-skill signals', 'emerging_skill_signals'],
+            ['Early warnings', 'early_warnings'],
+          ] as const).map(([label, table]) => { const status = statusCount(snapshot, table); const dot = status === 'Available' ? 'ready' : status === 'Restricted' ? 'restricted' : 'pending'; return <div className="dbi-readiness-item" key={table}><span className="dbi-status-dot" data-status={dot}/><span>{label}</span><strong>{status}</strong></div>; })}</div>
+        </section>
+        <section className="dbi-panel"><SectionHead title="Skill-to-sector mapping review" note="Mapping quality is reference-data quality. It is not evidence that a skill is in shortage or emerging."/>
+          <div className="dbi-readiness-list">
+            <div className="dbi-readiness-item"><span className="dbi-status-dot" data-status="ready"/><span>Canonical skill records</span><strong>{numberFormat(canonicalSkillCount)}</strong></div>
+            <div className="dbi-readiness-item"><span className="dbi-status-dot" data-status={lowConfidenceSkillCount > 0 ? 'restricted' : 'ready'}/><span>LOW-confidence sector mappings</span><strong>{numberFormat(lowConfidenceSkillCount)}</strong></div>
+            <div className="dbi-readiness-item"><span className="dbi-status-dot" data-status={lowConfidenceManualMappingCount > 0 ? 'restricted' : 'ready'}/><span>Manually mapped, LOW-confidence</span><strong>{numberFormat(lowConfidenceManualMappingCount)}</strong></div>
+          </div>
+          <p className="dbi-table-foot">{lowConfidenceSkillCount > 0 ? 'Review these occupation/sector links before policy interpretation. The current catalogue records LOW confidence and manual mapping provenance; it does not publish automated mapping validation.' : 'No LOW-confidence mappings are visible in the current public catalogue. This is not a substitute for a formal mapping audit.'}</p>
+        </section>
+      </div>
       <section className="dbi-panel"><SectionHead title="Metric coverage inventory" note="Record counts, latest available period and breadth of geography/source coverage per metric."/>
         <div className="dbi-table-tools"><label htmlFor="dbi-metric-search">Filter metrics</label><input id="dbi-metric-search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search indicators or codes"/></div>
         <DataTable columns={['Metric', 'Rows', 'Unit', 'Latest period', 'States / UTs', 'Sources']}>
