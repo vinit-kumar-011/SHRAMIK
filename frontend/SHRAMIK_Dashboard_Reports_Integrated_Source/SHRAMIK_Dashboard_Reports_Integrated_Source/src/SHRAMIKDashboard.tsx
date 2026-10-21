@@ -715,9 +715,11 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   }, [authSession, onAuthSessionChange, notify]);
 
   const handleSearchSelect = useCallback(async (result: SearchResult) => {
+    const mobileSearchWasOpen = Boolean(document.querySelector('.global-search.mobile-search-open'));
     setQuery(result.label);
     setMobileSearchOpen(false);
     setSearchOpen(false);
+    if (mobileSearchWasOpen) document.querySelector<HTMLButtonElement>('.mobile-search-toggle')?.focus();
     if (result.kind === 'region') {
       setRegion(result.id);
       return;
