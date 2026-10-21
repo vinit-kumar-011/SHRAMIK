@@ -13,7 +13,10 @@ export function createReportsAdapter(): ReportsDataAdapter {
   const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
   if (env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true') return new DemoReportsAdapter();
   const baseUrl = env?.VITE_SHRAMIK_API_BASE_URL?.trim();
-  if (baseUrl) return new RestReportsAdapter(baseUrl);
+  const dataMode = env?.VITE_SHRAMIK_DATA_MODE?.trim().toLowerCase();
+  // Keep Reports on published Supabase indicators unless REST mode is explicitly opted in.
+  // A configured base URL alone is not evidence that the proposed Reports API is deployed.
+  if (dataMode === 'rest' && baseUrl) return new RestReportsAdapter(baseUrl);
   return new PublishedReportsAdapter(createLabourMarketDataAdapter());
 }
 export type { ReportsDataAdapter } from './adapterTypes';
