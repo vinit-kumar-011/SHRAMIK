@@ -1010,7 +1010,7 @@ function DemandInsightsPage({ dataAdapter, onNavigate: onRoute, embedded = true 
     {!embedded && <Header adapter={A} regions={regionsForHeader} regionCode={headerRegionCode} onRegion={drillState} profile={profile} notes={notes} onRead={markRead} onMenu={() => setMenu(true)} onPick={(r) => r.type === 'region' ? drillState(r.id) : openDetail({ type: r.type, id: r.id, label: r.label })} />}
     <div className="shell">
       {!embedded && <Sidebar active="demand" onNav={onNavigate} open={menu} onClose={() => setMenu(false)} />}
-      <main className="main">
+      <div className="main">
         {shellError && <div className="inline-message" role="status">{shellError} · Some shared shell data may be unavailable.</div>}
         <section className="demand-intro" aria-labelledby="demand-page-title">
           <div><div className="crumb">Home / Demand Insights</div><h1 id="demand-page-title">Demand Insights</h1><div className="under"/><p>Explore where labour demand is concentrated, which occupations and skills are being requested, and how demand is changing across India.</p></div>
@@ -1061,7 +1061,7 @@ function DemandInsightsPage({ dataAdapter, onNavigate: onRoute, embedded = true 
           {isUpdating && <span role="status">Refreshing applied snapshot…</span>}
           <span className="sel-note">Map blocked pending verified GeoJSON + documented canonical code crosswalk. All mock metrics are illustrative, not official statistics.</span>
         </footer>
-      </main>
+      </div>
     </div>
     {drawer && <DetailDrawer d={drawer} onClose={() => setDrawer(null)}/>}
   </div>;
