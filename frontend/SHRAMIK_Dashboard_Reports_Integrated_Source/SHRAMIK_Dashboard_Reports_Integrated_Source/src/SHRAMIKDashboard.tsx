@@ -273,9 +273,32 @@ function SummaryPanel({ title, subtitle, kind, rows, onOpenSection, onOpenRow }:
 }
 
 function Sidebar({ active, onNavigate, mobileOpen, onClose }: { active: string; onNavigate: (item: typeof NAV_ITEMS[number] | { label: string; section: string }) => void; mobileOpen: boolean; onClose: () => void }) {
+  const asideRef = useRef<HTMLElement>(null);
+  const wasMobileOpen = useRef(false);
+  const [mobileLayout, setMobileLayout] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 980px)').matches);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 980px)');
+    const update = () => setMobileLayout(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    const aside = asideRef.current;
+    aside?.toggleAttribute('inert', mobileLayout && !mobileOpen);
+    if (mobileLayout && mobileOpen) {
+      aside?.querySelector<HTMLButtonElement>('.nav-item')?.focus();
+    } else if (mobileLayout && wasMobileOpen.current && !mobileOpen) {
+      document.querySelector<HTMLButtonElement>('.mobile-menu')?.focus();
+    }
+    wasMobileOpen.current = mobileOpen;
+  }, [mobileLayout, mobileOpen]);
+
   return <>
     {mobileOpen && <button className="mobile-scrim" aria-label="Close navigation" onClick={onClose}/>}
-    <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`} aria-label="Main navigation">
+    <aside id="shramik-sidebar" ref={asideRef} className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`} aria-label="Main navigation">
       <div className="sidebar-brand mobile-brand"><div className="brand-mark">S</div><div className="brand-copy"><strong>SHRAMIK</strong><span>Labour Market Intelligence</span></div></div>
       <nav className="nav-list">
         {NAV_ITEMS.map((item, index) => {
@@ -299,11 +322,11 @@ function SearchResults({ results, busy, onSelect }: { results: SearchResult[]; b
 }
 
 function Header({
-  regions, region, onRegionChange, onMenu, profile, query, onQueryChange, searchResults, searchBusy, searchOpen, onSearchOpenChange, onSearchSelect,
+  regions, region, onRegionChange, onMenu, mobileOpen, profile, query, onQueryChange, searchResults, searchBusy, searchOpen, onSearchOpenChange, onSearchSelect,
   notifications, notificationsOpen, onNotificationsToggle, onNotificationRead, profileOpen, onProfileToggle, onOpenSection, adapterMode,
   authSession, onNavigateRoute, onSignOut,
 }: {
-  regions: RegionOption[]; region: string; onRegionChange: (v: string) => void; onMenu: () => void; profile: UserProfile | null;
+  regions: RegionOption[]; region: string; onRegionChange: (v: string) => void; onMenu: () => void; mobileOpen: boolean; profile: UserProfile | null;
   query: string; onQueryChange: (v: string) => void; searchResults: SearchResult[]; searchBusy: boolean; searchOpen: boolean;
   onSearchOpenChange: (v: boolean) => void; onSearchSelect: (result: SearchResult) => void;
   notifications: NotificationItem[]; notificationsOpen: boolean; onNotificationsToggle: () => void; onNotificationRead: (id: string) => void;
@@ -313,7 +336,7 @@ function Header({
   const unreadCount = notifications.filter((item) => !item.read).length;
   const visibleRegionOptions = regions.length ? regions : [{ code: region, label: region, level: 'national' as const }];
   return <header className="topbar">
-    <button className="mobile-menu icon-button" onClick={onMenu} type="button" aria-label="Open navigation"><Menu size={22}/></button>
+    <button className="mobile-menu icon-button" onClick={onMenu} type="button" aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={mobileOpen} aria-controls="shramik-sidebar"><Menu size={22}/></button>
     <div className="brand-lockup"><div className="brand-mark">S</div><div className="brand-word"><strong>SHRAMIK</strong><span>Labour Market<br/>Intelligence System</span></div></div>
     <div className="global-search"><Search size={18}/><input value={query} onFocus={() => onSearchOpenChange(true)} onChange={(event) => { onQueryChange(event.target.value); onSearchOpenChange(true); }} onKeyDown={(event) => { if (event.key === 'Escape') onSearchOpenChange(false); }} placeholder="Search for skills, occupations, sectors or regions…" aria-label="Search labour market data" aria-expanded={searchOpen} aria-controls="shramik-search-results"/><kbd>Ctrl</kbd><kbd>K</kbd>
       {searchOpen && query.trim().length >= 2 && <div id="shramik-search-results"><SearchResults results={searchResults} busy={searchBusy} onSelect={onSearchSelect}/></div>}
@@ -507,7 +530,15 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
       if (event.key === 'Escape') { setSearchOpen(false); setNotificationsOpen(false); setProfileOpen(false); setMobileOpen(false); if (detail || detailLoading || detailError) { setDetail(null); setDetailLoading(false); setDetailError(''); } }
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); document.querySelector<HTMLInputElement>('.global-search input')?.focus(); setSearchOpen(true); }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        const searchInput = document.querySelector<HTMLInputElement>('.global-search input');
+        // The desktop search is hidden on narrow screens; never send keyboard focus into an invisible control.
+        if (searchInput && searchInput.getClientRects().length > 0) {
+          event.preventDefault();
+          searchInput.focus();
+          setSearchOpen(true);
+        }
+      }
     };
     window.addEventListener('keydown', closeOverlays);
     window.addEventListener('keydown', onKeyDown);
@@ -615,7 +646,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   if (activePage === 'login' || activePage === 'request-access') return null;
 
   return <div className={`app-root data-mode-${adapter.mode}`}>
-    <Header regions={regions} region={region} onRegionChange={handleRegionChange} onMenu={() => setMobileOpen(true)} profile={headerProfile} query={query} onQueryChange={setQuery} searchResults={searchResults} searchBusy={searchBusy} searchOpen={searchOpen} onSearchOpenChange={setSearchOpen} onSearchSelect={handleSearchSelect} notifications={notifications} notificationsOpen={notificationsOpen} onNotificationsToggle={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} onNotificationRead={(id) => void markRead(id)} profileOpen={profileOpen} onProfileToggle={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} onOpenSection={(section) => void openSection(section)} adapterMode={adapter.mode} authSession={authSession} onNavigateRoute={navigateAuthRoute} onSignOut={handleSignOut}/>
+    <Header regions={regions} region={region} onRegionChange={handleRegionChange} onMenu={() => setMobileOpen((value) => !value)} mobileOpen={mobileOpen} profile={headerProfile} query={query} onQueryChange={setQuery} searchResults={searchResults} searchBusy={searchBusy} searchOpen={searchOpen} onSearchOpenChange={setSearchOpen} onSearchSelect={handleSearchSelect} notifications={notifications} notificationsOpen={notificationsOpen} onNotificationsToggle={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} onNotificationRead={(id) => void markRead(id)} profileOpen={profileOpen} onProfileToggle={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} onOpenSection={(section) => void openSection(section)} adapterMode={adapter.mode} authSession={authSession} onNavigateRoute={navigateAuthRoute} onSignOut={handleSignOut}/>
     <div className="app-layout">
       <Sidebar active={active} onNavigate={handleNavigate} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)}/>
       <main className={activePage === 'dashboard' ? 'dashboard-main' : 'dashboard-main module-main'} aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
