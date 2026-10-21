@@ -664,9 +664,21 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
     const next = !mobileSearchOpen;
     setMobileSearchOpen(next);
     setSearchOpen(next);
+    if (next) setMobileOpen(false);
     setNotificationsOpen(false);
     setProfileOpen(false);
   }, [mobileSearchOpen]);
+
+  const handleMobileMenuToggle = useCallback(() => {
+    const next = !mobileOpen;
+    setMobileOpen(next);
+    if (next) {
+      setMobileSearchOpen(false);
+      setSearchOpen(false);
+      setNotificationsOpen(false);
+      setProfileOpen(false);
+    }
+  }, [mobileOpen]);
 
   const handleNavigate = useCallback((item: typeof NAV_ITEMS[number] | { label: string; section: string }) => {
     const route = item.section as Exclude<ShramikRouteId, 'not-found'>;
@@ -746,7 +758,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   if (activePage === 'login' || activePage === 'request-access') return null;
 
   return <div className={`app-root data-mode-${adapter.mode}`}>
-    <Header regions={regions} region={region} onRegionChange={handleRegionChange} onMenu={() => setMobileOpen((value) => !value)} mobileOpen={mobileOpen} mobileSearchOpen={mobileSearchOpen} onMobileSearchToggle={handleMobileSearchToggle} profile={headerProfile} query={query} onQueryChange={setQuery} searchResults={searchResults} searchBusy={searchBusy} searchOpen={searchOpen} onSearchOpenChange={setSearchOpen} onSearchSelect={handleSearchSelect} notifications={notifications} notificationsOpen={notificationsOpen} onNotificationsToggle={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} onNotificationRead={(id) => void markRead(id)} profileOpen={profileOpen} onProfileToggle={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} onOpenSection={(section) => void openSection(section)} adapterMode={adapter.mode} authSession={authSession} onNavigateRoute={navigateAuthRoute} onSignOut={handleSignOut}/>
+    <Header regions={regions} region={region} onRegionChange={handleRegionChange} onMenu={handleMobileMenuToggle} mobileOpen={mobileOpen} mobileSearchOpen={mobileSearchOpen} onMobileSearchToggle={handleMobileSearchToggle} profile={headerProfile} query={query} onQueryChange={setQuery} searchResults={searchResults} searchBusy={searchBusy} searchOpen={searchOpen} onSearchOpenChange={setSearchOpen} onSearchSelect={handleSearchSelect} notifications={notifications} notificationsOpen={notificationsOpen} onNotificationsToggle={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} onNotificationRead={(id) => void markRead(id)} profileOpen={profileOpen} onProfileToggle={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} onOpenSection={(section) => void openSection(section)} adapterMode={adapter.mode} authSession={authSession} onNavigateRoute={navigateAuthRoute} onSignOut={handleSignOut}/>
     <div className="app-layout">
       <Sidebar active={active} onNavigate={handleNavigate} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)}/>
       <main className={activePage === 'dashboard' ? 'dashboard-main' : 'dashboard-main module-main'} aria-busy={activePage === 'dashboard' ? loading || refreshing : undefined}>
