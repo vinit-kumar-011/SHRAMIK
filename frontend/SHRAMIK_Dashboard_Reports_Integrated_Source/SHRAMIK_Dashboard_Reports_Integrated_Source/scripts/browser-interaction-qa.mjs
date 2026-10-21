@@ -254,6 +254,54 @@ try {
   record('Workspace navigation opens the live-mode Reports builder', Boolean(reportsNav) && pageInfo.path === '/reports' && pageInfo.hasReportBuilder, JSON.stringify({clicked:reportsNav,page:pageInfo}));
   await screenshot(cdp, 'reports-desktop.png');
 
+  // Confirm each opt-in fixture preview has an unmistakable warning and can return to live/source-backed mode.
+  const previewModules = [
+    { path: '/demand', label: 'Demand' },
+    { path: '/supply', label: 'Supply' },
+    { path: '/skill-gaps', label: 'Skill Gaps' },
+    { path: '/forecasts', label: 'Forecasts' },
+    { path: '/emerging-skills', label: 'Emerging Skills' },
+    { path: '/data-quality', label: 'Data Quality' },
+  ];
+  for (const module of previewModules) {
+    await navigate(cdp, origin + module.path);
+    await waitFor(() => cdp.evaluate(
+      `!!document.querySelector('.live-module-notice') && Array.from(document.querySelectorAll('button')).some(button => (button.innerText||'').trim() === 'Open synthetic Administration preview')`,
+    ), `${module.label} source-backed readiness view`);
+    const liveBefore = await cdp.evaluate(`({path:location.pathname,notice:!!document.querySelector('.live-module-notice'),preview:!!document.querySelector('.module-preview-banner')})`);
+    const previewClick = await clickByText(cdp, 'Open synthetic Administration preview', true);
+    await waitFor(() => cdp.evaluate(
+      `(() => { const banner=document.querySelector('.module-preview-banner'); return !!banner && /SYNTHETIC_DEMO/.test(banner.innerText) && /Illustrative preview — not live labour-market findings/.test(banner.innerText); })()`,
+    ), `${module.label} synthetic preview banner`);
+    const previewState = await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),label:(document.querySelector('.module-preview-banner')?.innerText||'').slice(0,220),liveNotice:!!document.querySelector('.live-module-notice'),bodyHasModule:document.body.innerText.toLowerCase().includes(${JSON.stringify(module.label.toLowerCase())})})`);
+    record(`${module.label} preview is opt-in and explicitly labelled synthetic`, liveBefore.path === module.path && liveBefore.notice && !liveBefore.preview && Boolean(previewClick) && previewState.banner && previewState.label.includes('SYNTHETIC_DEMO') && previewState.bodyHasModule, JSON.stringify({liveBefore,previewState}));
+    await screenshot(cdp, `preview-${module.path.slice(1)}.png`);
+    const returnClick = await clickByText(cdp, 'Return to live view', true);
+    await waitFor(() => cdp.evaluate(`!document.querySelector('.module-preview-banner') && !!document.querySelector('.live-module-notice')`), `${module.label} return to live view`);
+    record(`${module.label} preview exits back to source-backed readiness`, Boolean(returnClick) && await cdp.evaluate(`!document.querySelector('.module-preview-banner') && !!document.querySelector('.live-module-notice')`), module.path);
+  }
+
+  // The preview must also be cleared on in-app navigation, not just its explicit exit action.
+  await navigate(cdp, origin + '/demand');
+  await waitFor(() => cdp.evaluate(`!!document.querySelector('.live-module-notice')`), 'Demand live notice before route-change preview test');
+  await clickByText(cdp, 'Open synthetic Administration preview', true);
+  await waitFor(() => cdp.evaluate(`!!document.querySelector('.module-preview-banner')`), 'Demand synthetic preview before route-change test');
+  const routeChange = await cdp.evaluate(`(() => { const e=Array.from(document.querySelectorAll('button.nav-item')).find(button=>(button.innerText||'').trim().toLowerCase()==='supply'); if(!e)return null; e.click(); return (e.innerText||'').trim(); })()`);
+  await waitFor(() => cdp.evaluate(`location.pathname === '/supply' && !document.querySelector('.module-preview-banner') && !!document.querySelector('.live-module-notice')`), 'preview cleared after in-app navigation');
+  record('Changing modules exits the previous module preview', routeChange === 'Supply', JSON.stringify(await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),liveNotice:!!document.querySelector('.live-module-notice')})`));
+
+  // Exercise the default local assumptions-only planner without sending credentials or any non-read HTTP requests.
+  await navigate(cdp, origin + '/scenario-simulator');
+  await waitFor(() => cdp.evaluate(`(() => { const body=document.body?.innerText||''; return !!document.querySelector('.ss-page') && !!document.querySelector('#ss-seats') && /Local assumptions-only mode/.test(body) && !!document.querySelector('.ss-entity-row.is-selected') && (document.querySelector('.ss-baseline code')?.innerText||'').includes('LOCAL-PLANNING-NO-VALIDATED-BASELINE'); })()`), 'default local planning adapter and baseline marker', 15000);
+  const plannerBefore = await cdp.evaluate(`({seats:document.querySelector('#ss-seats')?.value,lag:document.querySelector('#ss-lag')?.value,baseline:document.querySelector('.ss-baseline code')?.innerText,notice:(document.querySelector('.ss-alert.is-warn')?.innerText||'').slice(0,300)})`);
+  record('Scenario Simulator defaults to clearly labelled assumptions-only planning', Boolean(plannerBefore.seats) && Boolean(plannerBefore.lag) && /LOCAL-PLANNING-NO-VALIDATED-BASELINE/.test(plannerBefore.baseline) && /does not produce official workforce demand/i.test(plannerBefore.notice), JSON.stringify(plannerBefore));
+  await screenshot(cdp, 'scenario-planner-desktop.png');
+  const runClick = await clickByText(cdp, 'Run Simulation');
+  await waitFor(() => cdp.evaluate(`/ILLUSTRATIVE \/ ASSUMPTION-ONLY OUTPUT/i.test(document.body?.innerText||'') && /SYNTHETIC_DEMO/.test(document.body?.innerText||'')`), 'local planning results with synthetic provenance', 15000);
+  const plannerResult = await cdp.evaluate(`(() => { const text=document.body?.innerText||''; return {provenance:/SYNTHETIC_DEMO/.test(text),warning:/ILLUSTRATIVE \/ ASSUMPTION-ONLY OUTPUT/i.test(text),notAvailable:(text.match(/Not available/g)||[]).length,seatMetric:/Illustrative seat opportunities \(cumulative\)/i.test(text),completionMetric:/Illustrative training completions/i.test(text),transitionMetric:/Potential post-training transitions \(not jobs\)/i.test(text),demandNotAvailable:/Projected Demand[\s\S]{0,80}Not available/i.test(text),calibratedClaim:/not a calibrated forecast/i.test(text)}; })()`);
+  record('Scenario Simulator shows assumption outputs while withholding unvalidated demand and job claims', Boolean(runClick) && plannerResult.provenance && plannerResult.warning && plannerResult.seatMetric && plannerResult.completionMetric && plannerResult.transitionMetric && plannerResult.demandNotAvailable && plannerResult.calibratedClaim, JSON.stringify(plannerResult));
+  await screenshot(cdp, 'scenario-planner-results.png');
+
   await setViewport(cdp, 390, 844);
   await navigate(cdp, origin + '/dashboard');
   const mobileClick = await cdp.evaluate(`(() => { const e=document.querySelector('button[aria-label="Open navigation"]'); if (!e) return null; e.click(); return true; })()`);
