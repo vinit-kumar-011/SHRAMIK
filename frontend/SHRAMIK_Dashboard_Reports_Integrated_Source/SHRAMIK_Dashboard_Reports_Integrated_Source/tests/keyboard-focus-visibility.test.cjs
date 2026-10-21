@@ -16,3 +16,8 @@ test('global search replaces the suppressed input outline with a visible contain
   assert.match(styles, /\.global-search input:focus-visible\{outline:none\}/);
   assert.match(styles, /\.global-search:focus-within\{outline:3px solid var\(--navy\);outline-offset:3px\}/);
 });
+
+test('region dropdown keeps a visible focus ring when its own outline is suppressed', () => {
+  assert.match(styles, /\.region-select select\{[^}]*outline:none/);
+  assert.match(styles, /\.region-select:focus-within\{outline:3px solid var\(--navy\);outline-offset:3px\}/);
+});
