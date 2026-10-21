@@ -1,6 +1,6 @@
 export type AccessRequestStatus = 'pending' | 'approved' | 'denied';
 export type AdminUserStatus = 'active' | 'suspended';
-export type AdminProvenance = 'SOURCE_BACKED' | 'DERIVED' | 'MIXED' | 'SYNTHETIC_DEMO';
+export type AdminProvenance = 'SOURCE_BACKED' | 'DERIVED' | 'MIXED' | 'SYNTHETIC_DEMO' | 'NOT_AVAILABLE';
 
 export interface AccessRequest {
   id: string; name: string; email: string; organisation: string; requestedRole: string;
@@ -24,6 +24,6 @@ export interface AdministrationSnapshot {
   meta: { provenance: AdminProvenance; note: string; sourceLabel?: string; updatedAt?: string | null };
 }
 export interface AdministrationDataAdapter {
-  readonly mode: 'mock' | 'rest';
+  readonly mode: 'mock' | 'rest' | 'unavailable';
   getSnapshot(signal?: AbortSignal): Promise<AdministrationSnapshot>;
 }

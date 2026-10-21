@@ -6,7 +6,7 @@ export interface ReportListQuery {
 export interface ReportListResult { items: ReportListItem[]; total: number; page: number; pageSize: number; provenance: import('./types').ProvenanceState }
 export interface ExportResult { kind: 'BROWSER_PRINT' | 'SERVER_PDF' | 'CSV'; status: 'READY' | 'NOT_CONFIGURED' | 'FAILED'; downloadUrl?: string; message?: string }
 export interface ReportsDataAdapter {
-  mode: 'demo' | 'rest';
+  mode: 'demo' | 'rest' | 'published';
   getOptions(signal?: AbortSignal): Promise<ReportsOptions>;
   createReport(config: ReportConfig, signal?: AbortSignal): Promise<{ reportId: string; status: ReportStatus; document?: ReportDocumentModel; message?: string }>;
   getReport(reportId: string, signal?: AbortSignal): Promise<ReportDocumentModel>;
