@@ -150,3 +150,107 @@ test('access-request submission reports network failures in clear user-facing la
 });
 
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+
+
+test('session restoration retains a valid tab session without refreshing it early', async () => {
+  const oldWindow = global.window;
+  const oldFetch = global.fetch;
+  const sessionStorage = makeStorage();
+  const stored = {
+    access_token: 'access-valid',
+    refresh_token: 'refresh-valid',
+    expires_at: Math.floor(Date.now() / 1000) + 600,
+    user: { id: 'user-valid', email: 'analyst@example.org' },
+  };
+  sessionStorage.setItem('shramik.auth.session.v1', JSON.stringify(stored));
+  global.window = { sessionStorage };
+  const calls = [];
+  global.fetch = async (...args) => { calls.push(args); throw new Error('Should not fetch for a valid session'); };
+  try {
+    const restored = await sessionApi.restoreAuthSession();
+    assert.equal(restored.access_token, 'access-valid');
+    assert.equal(restored.user.id, 'user-valid');
+    assert.equal(calls.length, 0);
+  } finally {
+    global.fetch = oldFetch;
+    if (oldWindow === undefined) delete global.window; else global.window = oldWindow;
+  }
+});
+
+test('session restoration refreshes near-expiry sessions and saves the rotated tokens', async () => {
+  const oldWindow = global.window;
+  const oldFetch = global.fetch;
+  const sessionStorage = makeStorage();
+  sessionStorage.setItem('shramik.auth.session.v1', JSON.stringify({
+    access_token: 'access-old',
+    refresh_token: 'refresh-old',
+    expires_at: Math.floor(Date.now() / 1000) + 10,
+    user: { id: 'user-refresh', email: 'analyst@example.org' },
+  }));
+  global.window = { sessionStorage };
+  const calls = [];
+  global.fetch = async (url, init) => {
+    calls.push({ url: String(url), init });
+    return new Response(JSON.stringify({
+      access_token: 'access-new',
+      refresh_token: 'refresh-new',
+      expires_in: 3600,
+      user: { id: 'user-refresh', email: 'analyst@example.org' },
+    }), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+  try {
+    const restored = await sessionApi.restoreAuthSession();
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'https://test.supabase.co/auth/v1/token?grant_type=refresh_token');
+    assert.equal(JSON.parse(calls[0].init.body).refresh_token, 'refresh-old');
+    assert.equal(restored.access_token, 'access-new');
+    assert.equal(sessionApi.getStoredAuthSession().refresh_token, 'refresh-new');
+  } finally {
+    global.fetch = oldFetch;
+    if (oldWindow === undefined) delete global.window; else global.window = oldWindow;
+  }
+});
+
+test('session restoration clears a session when refresh is rejected', async () => {
+  const oldWindow = global.window;
+  const oldFetch = global.fetch;
+  const sessionStorage = makeStorage();
+  sessionStorage.setItem('shramik.auth.session.v1', JSON.stringify({
+    access_token: 'access-expired',
+    refresh_token: 'refresh-rejected',
+    expires_at: Math.floor(Date.now() / 1000) - 60,
+    user: { id: 'user-expired', email: 'analyst@example.org' },
+  }));
+  global.window = { sessionStorage };
+  global.fetch = async () => new Response(JSON.stringify({ message: 'Invalid refresh token' }), {
+    status: 400, headers: { 'content-type': 'application/json' },
+  });
+  try {
+    assert.equal(await sessionApi.restoreAuthSession(), null);
+    assert.equal(sessionApi.getStoredAuthSession(), null);
+  } finally {
+    global.fetch = oldFetch;
+    if (oldWindow === undefined) delete global.window; else global.window = oldWindow;
+  }
+});
+
+test('sign-out clears the local session even when the remote logout endpoint is unreachable', async () => {
+  const oldWindow = global.window;
+  const oldFetch = global.fetch;
+  const sessionStorage = makeStorage();
+  sessionStorage.setItem('shramik.auth.session.v1', JSON.stringify({
+    access_token: 'access-signout',
+    refresh_token: 'refresh-signout',
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    user: { id: 'user-signout' },
+  }));
+  global.window = { sessionStorage };
+  global.fetch = async () => { throw new TypeError('network unavailable'); };
+  try {
+    await sessionApi.signOut(sessionApi.getStoredAuthSession());
+    assert.equal(sessionApi.getStoredAuthSession(), null);
+  } finally {
+    global.fetch = oldFetch;
+    if (oldWindow === undefined) delete global.window; else global.window = oldWindow;
+  }
+});
