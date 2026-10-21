@@ -17,7 +17,11 @@ test('landing page keeps illustrative preview separate from live indicators', ()
   assert.doesNotMatch(landing, /does not claim official government affiliation or display live labour-market data/);
 });
 
-test('landing page points workspace visitors to the protected workspace/login route', () => {
-  assert.match(landing, /href="\/dashboard"/);
-  assert.match(landing, /href="\/login"/);
+test('landing page links use the canonical route helper and respect configured base paths', () => {
+  assert.match(landing, /getPathForRoute\('dashboard', import\.meta\.env\.BASE_URL\)/);
+  assert.match(landing, /getPathForRoute\('login', import\.meta\.env\.BASE_URL\)/);
+  assert.match(landing, /href=\{resolveLandingHref\(href\)\}/);
+  assert.match(landing, /href=\{resolveLandingHref\('\/login'\)\}/);
+  assert.match(landing, /href=\{resolveLandingHref\('\/dashboard'\)\}/);
+  assert.doesNotMatch(landing, /href="\/(?:dashboard|login)"/);
 });
