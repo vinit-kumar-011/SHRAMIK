@@ -288,7 +288,7 @@ try {
   await waitFor(() => cdp.evaluate(`!!document.querySelector('.module-preview-banner')`), 'Demand synthetic preview before route-change test');
   const routeChange = await cdp.evaluate(`(() => { const e=Array.from(document.querySelectorAll('button.nav-item')).find(button=>(button.innerText||'').trim().toLowerCase()==='supply'); if(!e)return null; e.click(); return (e.innerText||'').trim(); })()`);
   await waitFor(() => cdp.evaluate(`location.pathname === '/supply' && !document.querySelector('.module-preview-banner') && !!document.querySelector('.live-module-notice')`), 'preview cleared after in-app navigation');
-  record('Changing modules exits the previous module preview', routeChange === 'Supply', JSON.stringify(await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),liveNotice:!!document.querySelector('.live-module-notice')})`));
+  record('Changing modules exits the previous module preview', routeChange === 'Supply', JSON.stringify(await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),liveNotice:!!document.querySelector('.live-module-notice')})`)));
 
   // Exercise the default local assumptions-only planner without sending credentials or any non-read HTTP requests.
   await navigate(cdp, origin + '/scenario-simulator');
