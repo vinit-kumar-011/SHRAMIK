@@ -32,7 +32,7 @@ test('search results can be navigated with arrow keys and activated with Enter',
 });
 
 test('result selection is reset when the available list changes', () => {
-  assert.match(header, /setActiveSearchIndex\(searchResults\.length \? 0 : -1\)/);
+  assert.match(header, /setActiveSearchIndex\(-1\)/);
   assert.match(header, /\}, \[searchResults\]\)/);
   assert.match(results, /role="status" aria-live="polite"/);
 });
