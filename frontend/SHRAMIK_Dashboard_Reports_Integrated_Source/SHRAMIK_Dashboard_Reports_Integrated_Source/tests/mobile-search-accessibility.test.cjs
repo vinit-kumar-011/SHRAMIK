@@ -31,7 +31,7 @@ test('Escape returns focus from the hidden mobile search input to its trigger', 
 
 test('header controls remain compact on very narrow phones', () => {
   assert.match(styles, /@media\(max-width:360px\)\{\.topbar\{padding:0 6px;gap:4px\}/);
-  assert.match(styles, /\.region-select\{width:28px\}/);
+  assert.match(styles, /\.region-select\{width:28px;flex-basis:28px\}/);
   assert.match(styles, /\.notification-button\{width:28px;flex-basis:28px\}/);
 });
 
