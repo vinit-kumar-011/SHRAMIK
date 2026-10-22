@@ -12,6 +12,11 @@ test('Supply KPIs use unavailable instead of a false zero when a regional value 
   assert.match(source, /No published apprenticeship value for this region/);
 });
 
+test('Supply training-centre KPI states that it counts three source measures', () => {
+  assert.match(source, /label="Published training-centre measures"/);
+  assert.match(source, /3 measures: PMKVY centres, JSS centres and NAPS establishments/);
+});
+
 test('Supply table omits PMKVY when no source-backed observation exists', () => {
   assert.match(source, /pmkvyTrainedRows\.length \? <tr>/);
   assert.match(source, /empty="No published training or apprenticeship indicators are available for this region and period\."/);
