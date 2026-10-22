@@ -228,6 +228,23 @@ try {
 
   let pageInfo = await cdp.evaluate(`({title:document.title,text:(document.body?.innerText||'').slice(0,500),path:location.pathname})`);
   record('Public landing page mounts from the production build', pageInfo.path === '/' && /SHRAMIK/i.test(pageInfo.title) && /SHRAMIK/i.test(pageInfo.text), JSON.stringify(pageInfo));
+  const landingShowcaseState = await cdp.evaluate(`(() => {
+    const text = document.body?.innerText || '';
+    return {
+      showcaseLabel: text.includes('OFFICIAL SHOWCASE · SOURCE-BACKED ONLY'),
+      noDataNote: text.includes('No validated demand/supply trend published'),
+      noIllustrativeMetrics: text.includes('Not published') && text.includes('Not calculated'),
+      syntheticTrendPaths: document.querySelectorAll('path[class*="sl-chart-demand"], path[class*="sl-chart-supply"], path[class*="sl-chart-forecast"]').length,
+      illustrativeTabs: !!document.querySelector('[aria-label="Platform preview views"]'),
+    };
+  })()`);
+  record(
+    'Official landing preview suppresses illustrative trend lines and tabbed mock data',
+    landingShowcaseState.showcaseLabel && landingShowcaseState.noDataNote &&
+      landingShowcaseState.noIllustrativeMetrics && landingShowcaseState.syntheticTrendPaths === 0 &&
+      !landingShowcaseState.illustrativeTabs,
+    JSON.stringify(landingShowcaseState),
+  );
   await screenshot(cdp, 'landing-desktop.png');
 
   const loginNav = await clickByText(cdp, 'sign in');
