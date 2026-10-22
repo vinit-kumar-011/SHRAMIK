@@ -316,7 +316,9 @@ try {
       const demandCards = Array.from(document.querySelectorAll('.dbi-demand-kpi'));
       const demandCard = label => demandCards.find(card => (card.querySelector('small')?.innerText || '').trim() === label);
       const cardValue = label => (demandCard(label)?.querySelector('strong')?.innerText || '').trim();
-      const cardPeriod = label => (demandCard(label)?.querySelector('div span')?.innerText || '').trim();
+      const cardPeriod = label => Array.from(demandCard(label)?.querySelectorAll('span') || [])
+        .map(span => (span.innerText || '').trim())
+        .find(value => /monthly CWS|PLFS CY2025/i.test(value)) || '';
       return {
         path: location.pathname,
         liveShell: !!document.querySelector('.dbi-shell'),
