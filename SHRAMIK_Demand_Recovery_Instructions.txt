@@ -1,0 +1,26 @@
+SHRAMIK Demand Insights recovery
+===============================
+
+Why the incremental patch failed:
+- The working tree was already modified; `git apply --check` was comparing against old context.
+- The uploaded current diff shows the static legacy Demand page inserted before the interactive page.
+  The first branch returns early, so the new interactive branch is never reached. This is why filters
+  still looked disabled and the trend/region panels were still the old empty-state version.
+- Some strings in the diff are mojibake (for example `ΓÇö`, `ΓÇô`, and `┬╖`) from an encoding conversion.
+
+Safe repair:
+1. Copy `fix_shramik_demand_local.py` to `C:\Users\pc\Desktop\SHRAMIK`.
+2. From a PowerShell terminal in that folder, run:
+     py .\fix_shramik_demand_local.py
+   It makes backups next to each file, removes the obsolete early-return branch, retains the interactive
+   branch, and fixes the visible mojibake strings. It does not reset Git or deploy anything.
+3. Then run:
+     cd .\frontend\SHRAMIK_Dashboard_Reports_Integrated_Source\SHRAMIK_Dashboard_Reports_Integrated_Source
+     npm run typecheck
+     npm test
+     npm run build
+4. If any check fails, send the first actual TypeScript/test error. Do not apply the older incremental patch.
+
+The live database has no demand_observations rows, so a true total estimated demand and true demand-based
+occupation/skill rankings remain unavailable until compatible source-backed observations are populated.
+The repair uses NAPS only as related labour-market context and clearly labels examples as illustrative.

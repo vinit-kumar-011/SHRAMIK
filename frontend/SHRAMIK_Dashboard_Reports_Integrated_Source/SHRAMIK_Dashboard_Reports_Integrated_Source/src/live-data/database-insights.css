@@ -165,3 +165,208 @@
 
 .dbi-demo-preview { background: var(--dbi-surface); border-style: dashed; }
 .dbi-demo-preview:hover { background: #fff7d6; }
+
+/* Demand Insights — source-backed editorial layout aligned to the product reference. */
+.dbi-demand-reference {
+  padding: 8px clamp(12px, 1.35vw, 20px) 22px;
+  background-color: #faf7ee;
+  background-image: radial-gradient(rgba(91, 81, 58, .22) .75px, transparent .75px);
+  background-size: 10px 10px;
+}
+.dbi-demand-reference .dbi-demand-hero {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(235px, 300px) minmax(170px, 275px);
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 13px;
+  padding: 3px 0 7px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.dbi-demand-reference .dbi-demand-hero-copy { min-width: 0; }
+.dbi-demand-reference .dbi-demand-breadcrumb { display:flex;align-items:center;gap:9px;margin:0 0 10px;font-size:11px;color:#555249; }
+.dbi-demand-reference .dbi-demand-breadcrumb strong { color:#181818;font-weight:800; }
+.dbi-demand-reference .dbi-demand-hero h1 { margin:0 0 7px;font-family:'Anton','Bebas Neue','Oswald','Arial Narrow',Impact,sans-serif;font-size:clamp(42px,4.6vw,66px);font-weight:900;line-height:.9;letter-spacing:-.025em;text-transform:uppercase;color:#070707; }
+.dbi-demand-reference .dbi-demand-hero p { max-width:56em;margin:0;color:#33332e;font-size:12px;line-height:1.45; }
+.dbi-demand-reference .dbi-demand-meta { display:flex;flex-wrap:wrap;gap:6px 13px;margin-top:10px;color:#5a594f;font-size:9px; }
+.dbi-demand-reference .dbi-demand-meta span { display:inline-flex;align-items:center;gap:4px; }
+.dbi-demand-reference .dbi-demand-meta svg { color:#147e77; }
+.dbi-demand-reference .dbi-demand-callout { display:flex;align-items:center;gap:11px;min-width:0;min-height:82px;padding:12px;border:1px solid #292929;border-radius:8px;background:rgba(255,254,250,.94);box-shadow:3px 3px 0 #171717; }
+.dbi-demand-reference .dbi-demand-callout-icon { display:grid;place-items:center;flex:0 0 36px;height:36px;color:#101010; }
+.dbi-demand-reference .dbi-demand-callout small { display:block;color:#282821;font-size:10px;font-weight:700;line-height:1.3; }
+.dbi-demand-reference .dbi-demand-callout strong { display:block;margin:3px 0;font-family:'Anton','Bebas Neue','Oswald','Arial Narrow',Impact,sans-serif;font-size:32px;font-weight:800;line-height:.96;color:#111; }
+.dbi-demand-reference .dbi-demand-callout span:not(.dbi-demand-callout-icon) { display:block;color:#68665d;font-size:9px;line-height:1.35; }
+.dbi-demand-reference .dbi-demand-hero-art { display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0;height:118px;overflow:hidden; }
+.dbi-demand-reference .dbi-demand-hero-art img { width:min(74%,220px);height:100%;object-fit:contain;object-position:center bottom;mix-blend-mode:multiply; }
+.dbi-demand-reference .dbi-demand-hero-art div { flex:0 0 auto;font-size:10px;font-weight:900;letter-spacing:.1em;line-height:1.45;color:#151515; }
+.dbi-demand-reference .dbi-demand-filters { display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) auto;gap:9px;align-items:end;margin:0 0 13px;padding:10px 12px;border:1px solid #242424;border-radius:8px;background:rgba(255,254,250,.97);box-shadow:3px 3px 0 #171717; }
+.dbi-demand-reference .dbi-demand-filter { display:flex;flex-direction:column;gap:4px;min-width:0; }
+.dbi-demand-reference .dbi-demand-filter > span { font-size:10px;font-weight:800;color:#26251f; }
+.dbi-demand-reference .dbi-demand-filter button { display:flex;align-items:center;justify-content:space-between;gap:6px;height:34px;min-width:0;padding:0 9px;border:1px solid #d1cfc6;border-radius:5px;background:#fbfaf5;color:#535149;text-align:left;font-size:10px;white-space:nowrap;overflow:hidden; }
+.dbi-demand-reference .dbi-demand-filter button:disabled { opacity:1;cursor:not-allowed; }
+.dbi-demand-reference .dbi-demand-filter button span { flex:0 0 auto;color:#171717;font-size:13px; }
+.dbi-demand-reference .dbi-demand-refresh { display:flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 10px;border:1px solid #171717;border-radius:5px;background:#f2d34f;box-shadow:1.5px 1.5px 0 #171717;font-size:10px;font-weight:800;white-space:nowrap;cursor:pointer; }
+.dbi-demand-reference .dbi-demand-refresh:disabled { opacity:.7;cursor:wait; }
+.dbi-demand-reference .dbi-demand-kpis { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 13px; }
+.dbi-demand-reference .dbi-demand-kpi { display:flex;align-items:center;gap:10px;min-width:0;min-height:84px;padding:11px;border:1.3px solid #171717;border-radius:8px;background:#fffefa;box-shadow:3px 3px 0 #171717; }
+.dbi-demand-reference .dbi-demand-kpi-icon { display:grid;place-items:center;flex:0 0 43px;height:43px;border-radius:50%;color:#141414; }
+.dbi-demand-reference .dbi-demand-kpi > div { min-width:0;display:flex;flex-direction:column; }
+.dbi-demand-reference .dbi-demand-kpi small { font-size:10px;font-weight:700;line-height:1.25;color:#282720; }
+.dbi-demand-reference .dbi-demand-kpi strong { margin:3px 0 2px;font-family:'Anton','Bebas Neue','Oswald','Arial Narrow',Impact,sans-serif;font-size:clamp(22px,2.05vw,31px);font-weight:800;line-height:1;color:#0b0b0b;white-space:nowrap; }
+.dbi-demand-reference .dbi-demand-kpi > div > span { font-size:9px;line-height:1.3;color:#625f55; }
+.dbi-demand-reference .dbi-demand-kpi-blue { background:linear-gradient(110deg,#e8f3fb,#fffefa); }
+.dbi-demand-reference .dbi-demand-kpi-blue .dbi-demand-kpi-icon { background:#c7e3f4; }
+.dbi-demand-reference .dbi-demand-kpi-orange { background:linear-gradient(110deg,#fff0df,#fffefa); }
+.dbi-demand-reference .dbi-demand-kpi-orange .dbi-demand-kpi-icon { background:#ffd7b6; }
+.dbi-demand-reference .dbi-demand-kpi-teal { background:linear-gradient(110deg,#e4f6f3,#fffefa); }
+.dbi-demand-reference .dbi-demand-kpi-teal .dbi-demand-kpi-icon { background:#b9e8e3; }
+.dbi-demand-reference .dbi-demand-kpi-yellow { background:linear-gradient(110deg,#fff8d9,#fffefa); }
+.dbi-demand-reference .dbi-demand-kpi-yellow .dbi-demand-kpi-icon { background:#ffe17a; }
+.dbi-demand-reference .dbi-demand-middle { display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,1.15fr);gap:12px;align-items:stretch;margin-bottom:13px; }
+.dbi-demand-reference .dbi-demand-bottom { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.82fr);gap:12px;align-items:stretch;margin-bottom:13px; }
+.dbi-demand-reference .dbi-demand-panel { display:flex;flex-direction:column;min-width:0;padding:12px 13px;border:1.3px solid #292929;border-radius:8px;background:rgba(255,254,250,.97);box-shadow:3px 3px 0 #171717; }
+.dbi-demand-reference .dbi-demand-panel-head { display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-width:0;margin-bottom:7px; }
+.dbi-demand-reference .dbi-demand-panel-head h2 { margin:0;font-family:'Anton','Bebas Neue','Oswald','Arial Narrow',Impact,sans-serif;font-size:21px;font-weight:800;line-height:1.05;letter-spacing:-.015em;text-transform:uppercase;color:#121212; }
+.dbi-demand-reference .dbi-demand-panel-head p { margin:4px 0 0;font-size:10px;line-height:1.4;color:#68655c; }
+.dbi-demand-reference .dbi-demand-tag { display:inline-flex;align-items:center;flex:0 0 auto;padding:4px 7px;border:1px solid #cfcab8;border-radius:4px;background:#f5f2e8;color:#5c574a;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.04em; }
+.dbi-demand-reference .dbi-demand-tag-warn { background:#fff4cf;border-color:#e3ce8e;color:#795e16; }
+.dbi-demand-reference .dbi-demand-chart-grid { display:grid;grid-template-columns:28px minmax(0,1fr);gap:6px;min-height:206px; }
+.dbi-demand-reference .dbi-demand-chart-y { display:flex;flex-direction:column;justify-content:space-between;padding:5px 0 22px;color:#777268;font-size:9px; }
+.dbi-demand-reference .dbi-demand-chart-plot { position:relative;min-width:0;border-bottom:1px solid #bebbb1;background-image:linear-gradient(to bottom,rgba(145,139,125,.16) 1px,transparent 1px),linear-gradient(to right,rgba(145,139,125,.10) 1px,transparent 1px);background-size:100% 25%,12.5% 100%; }
+.dbi-demand-reference .dbi-demand-chart-empty { position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:18px;text-align:center; }
+.dbi-demand-reference .dbi-demand-chart-empty strong { font-size:12px;color:#333127; }
+.dbi-demand-reference .dbi-demand-chart-empty span { max-width:380px;color:#706b60;font-size:10px;line-height:1.45; }
+.dbi-demand-reference .dbi-demand-chart-axis { position:absolute;bottom:-20px;left:0;right:0;display:flex;justify-content:space-between;color:#777267;font-size:9px; }
+.dbi-demand-reference .dbi-demand-legend { display:flex;flex-wrap:wrap;gap:9px 15px;margin-top:29px;color:#656157;font-size:9px; }
+.dbi-demand-reference .dbi-demand-legend span { display:inline-flex;align-items:center;gap:5px; }
+.dbi-demand-reference .dbi-demand-legend-dot { width:7px;height:7px;border-radius:50%;background:#18518a; }
+.dbi-demand-reference .dbi-demand-legend-dash { width:17px;border-top:2px dashed #71b8e5; }
+.dbi-demand-reference .dbi-demand-region-body { display:grid;grid-template-columns:minmax(120px,.7fr) minmax(0,1.3fr);gap:10px;min-height:205px; }
+.dbi-demand-reference .dbi-demand-map-placeholder { position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:180px;padding:8px;border:1px dashed #ded5b9;border-radius:6px;background:#fff9e5;text-align:center;overflow:hidden; }
+.dbi-demand-reference .dbi-demand-map-placeholder img { width:100%;height:145px;object-fit:contain;filter:grayscale(1);opacity:.43;mix-blend-mode:multiply; }
+.dbi-demand-reference .dbi-demand-map-placeholder > span { position:relative;margin-top:-2px;color:#484438;font-size:9px;font-weight:800; }
+.dbi-demand-reference .dbi-demand-map-placeholder small { max-width:180px;margin-top:3px;color:#6b6558;font-size:8px;line-height:1.35; }
+.dbi-demand-reference .dbi-demand-region-table { min-width:0; }
+.dbi-demand-reference .dbi-demand-table-title { display:flex;flex-direction:column;gap:2px;padding:1px 0 7px;border-bottom:1px solid #dedbd1;font-size:10px;font-weight:800; }
+.dbi-demand-reference .dbi-demand-table-title small { color:#736d60;font-size:8px;font-weight:500; }
+.dbi-demand-reference .dbi-demand-region-row { display:grid;grid-template-columns:15px minmax(0,1fr) auto;gap:5px;align-items:center;padding:7px 0;border-bottom:1px solid #eae7de;font-size:9px; }
+.dbi-demand-reference .dbi-demand-region-row > span { color:#777166; }
+.dbi-demand-reference .dbi-demand-region-row strong { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600; }
+.dbi-demand-reference .dbi-demand-region-row b { white-space:nowrap;font-variant-numeric:tabular-nums; }
+.dbi-demand-reference .dbi-demand-bar { grid-column:2/4;height:5px;background:#f0e7d0;border-radius:2px;overflow:hidden; }
+.dbi-demand-reference .dbi-demand-bar i { display:block;height:100%;background:linear-gradient(90deg,#ffd96c,#c75c12); }
+.dbi-demand-reference .dbi-demand-empty-small { color:#706b60;font-size:10px; }
+.dbi-demand-reference .dbi-demand-panel-foot { margin-top:auto;padding-top:8px;color:#736d60;font-size:8px;line-height:1.4; }
+.dbi-demand-reference .dbi-demand-empty-ranking { display:flex;flex:1;flex-direction:column;align-items:flex-start;justify-content:center;min-height:180px;padding:14px 3px 4px; }
+.dbi-demand-reference .dbi-demand-empty-icon { display:grid;place-items:center;width:34px;height:34px;margin-bottom:9px;border:1px solid #e6d7a2;border-radius:50%;background:#fff4c9;color:#26251f; }
+.dbi-demand-reference .dbi-demand-empty-ranking strong { font-size:11px;color:#28271f; }
+.dbi-demand-reference .dbi-demand-empty-ranking p { margin:6px 0 0;color:#6b675d;font-size:10px;line-height:1.5; }
+.dbi-demand-reference .dbi-demand-insight-mark { display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:#fff2bc;color:#28261e; }
+.dbi-demand-reference .dbi-demand-insights ul { margin:4px 0 12px;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px; }
+.dbi-demand-reference .dbi-demand-insights li { padding-left:9px;border-left:3px solid #f2d34f;font-size:9px;line-height:1.45;color:#37352d; }
+.dbi-demand-reference .dbi-demand-insights li strong { font-weight:800; }
+.dbi-demand-reference .dbi-demand-preview { display:inline-flex;align-items:center;justify-content:center;gap:5px;align-self:flex-start;margin-top:auto;padding:7px 9px;border:1px solid #171717;border-radius:5px;background:#f2d34f;font-size:9px;font-weight:800;cursor:pointer; }
+.dbi-demand-reference .dbi-demand-evidence { margin:0 0 13px;border:1px solid #c8c4b7;border-radius:7px;background:rgba(255,254,250,.94); }
+.dbi-demand-reference .dbi-demand-evidence > summary { padding:11px 13px;font-size:11px;font-weight:800;cursor:pointer; }
+.dbi-demand-reference .dbi-demand-evidence-grid { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:0 12px 12px; }
+.dbi-demand-reference .dbi-demand-evidence-grid .dbi-demand-panel { box-shadow:none; }
+.dbi-demand-reference .dbi-demand-evidence-grid .dbi-section-head h2 { font-size:17px; }
+.dbi-demand-reference .dbi-footer { margin-top:9px; }
+@media (max-width: 1280px) {
+  .dbi-demand-reference .dbi-demand-hero { grid-template-columns:minmax(0,1fr) minmax(220px,285px); }
+  .dbi-demand-reference .dbi-demand-hero-art { display:none; }
+  .dbi-demand-reference .dbi-demand-filters { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .dbi-demand-reference .dbi-demand-refresh { min-height:34px; }
+  .dbi-demand-reference .dbi-demand-kpi { gap:8px;padding:9px; }
+  .dbi-demand-reference .dbi-demand-kpi-icon { flex-basis:37px;height:37px; }
+  .dbi-demand-reference .dbi-demand-middle { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+}
+@media (max-width: 900px) {
+  .dbi-demand-reference .dbi-demand-middle { grid-template-columns:minmax(0,1fr); }
+  .dbi-demand-reference .dbi-demand-bottom { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .dbi-demand-reference .dbi-demand-insights { grid-column:1/-1; }
+  .dbi-demand-reference .dbi-demand-evidence-grid { grid-template-columns:minmax(0,1fr); }
+}
+@media (max-width: 640px) {
+  .dbi-demand-reference { padding:12px; }
+  .dbi-demand-reference .dbi-demand-hero { grid-template-columns:minmax(0,1fr);gap:12px; }
+  .dbi-demand-reference .dbi-demand-hero h1 { font-size:42px; }
+  .dbi-demand-reference .dbi-demand-callout { max-width:none; }
+  .dbi-demand-reference .dbi-demand-filters { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .dbi-demand-reference .dbi-demand-kpis { grid-template-columns:repeat(2,minmax(0,1fr));gap:9px; }
+  .dbi-demand-reference .dbi-demand-kpi { align-items:flex-start;flex-direction:column;min-height:116px; }
+  .dbi-demand-reference .dbi-demand-kpi strong { font-size:27px; }
+  .dbi-demand-reference .dbi-demand-bottom { grid-template-columns:minmax(0,1fr); }
+  .dbi-demand-reference .dbi-demand-insights { grid-column:auto; }
+  .dbi-demand-reference .dbi-demand-region-body { grid-template-columns:minmax(0,1fr); }
+  .dbi-demand-reference .dbi-demand-map-placeholder { min-height:120px; }
+  .dbi-demand-reference .dbi-demand-map-placeholder img { height:100px; }
+}
+
+
+/* Interactive, source-backed Demand Insights refinements. */
+.dbi-demand-reference .dbi-demand-demo-launch { display:inline-flex;align-items:center;justify-content:center;gap:7px;position:absolute;right:0;bottom:4px;padding:8px 11px;border:1px solid #171717;border-radius:5px;background:#f2d34f;box-shadow:2px 2px 0 #171717;font-size:10px;font-weight:850;cursor:pointer; }
+.dbi-demand-reference .dbi-demand-hero { padding-bottom:40px; }
+.dbi-demand-reference .dbi-demand-filter select,
+.dbi-demand-reference .dbi-demand-filter input { display:block;width:100%;height:34px;min-width:0;padding:0 8px;border:1px solid #d1cfc6;border-radius:5px;background:#fbfaf5;color:#35342e;font-size:10px; }
+.dbi-demand-reference .dbi-demand-filter select:focus-visible,
+.dbi-demand-reference .dbi-demand-sort select:focus-visible { outline:2px solid #174d80;outline-offset:2px; }
+.dbi-demand-reference .dbi-demand-filter-status { display:flex;align-items:flex-start;gap:7px;margin:-4px 0 13px;padding:8px 10px;border:1px solid #e3d6a9;border-radius:5px;background:#fff9e7;color:#6b5b31;font-size:9px;line-height:1.45; }
+.dbi-demand-reference .dbi-demand-filter-status svg { flex:0 0 auto;margin-top:1px; }
+.dbi-demand-reference .dbi-demand-callout strong { font-size:clamp(18px,1.65vw,26px);letter-spacing:-.02em;white-space:nowrap; }
+.dbi-demand-reference .dbi-demand-callout span:not(.dbi-demand-callout-icon) { max-width:245px; }
+.dbi-demand-reference .dbi-demand-trend-content { min-width:0; }
+.dbi-demand-reference .dbi-demand-trend-caption { display:flex;flex-direction:column;gap:3px;margin:7px 0 0; }
+.dbi-demand-reference .dbi-demand-trend-caption strong { font-size:11px;color:#27261f; }
+.dbi-demand-reference .dbi-demand-trend-caption span { font-size:9px;color:#6d685d; }
+.dbi-demand-reference .dbi-demand-trend-svg { display:block;width:100%;height:auto;max-height:230px;overflow:visible;margin-top:3px; }
+.dbi-demand-reference .dbi-demand-chart-value { fill:#2d2a22;font-size:10px;font-weight:800; }
+.dbi-demand-reference .dbi-demand-chart-label { fill:#6c675d;font-size:10px; }
+.dbi-demand-reference .dbi-demand-chart-note { display:flex;align-items:flex-start;gap:5px;margin:5px 0 0;color:#6b675d;font-size:9px;line-height:1.45; }
+.dbi-demand-reference .dbi-demand-chart-note svg { flex:0 0 auto;margin-top:1px;color:#8c6b1f; }
+.dbi-demand-reference .dbi-demand-no-period { display:flex;flex-direction:column;justify-content:center;gap:6px;min-height:180px;padding:20px;border:1px dashed #d6cfbd;border-radius:6px;background:#fbf8ef;text-align:center; }
+.dbi-demand-reference .dbi-demand-no-period strong { font-size:12px;color:#333127; }
+.dbi-demand-reference .dbi-demand-no-period p { margin:0;color:#706b60;font-size:10px;line-height:1.5; }
+.dbi-demand-reference .dbi-demand-region-table-head { display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding-bottom:5px;border-bottom:1px solid #dedbd1; }
+.dbi-demand-reference .dbi-demand-region-table-head .dbi-demand-table-title { padding:0;border:0; }
+.dbi-demand-reference .dbi-demand-sort { display:flex;flex-direction:column;gap:3px;min-width:110px; }
+.dbi-demand-reference .dbi-demand-sort span { font-size:8px;color:#6e685c;font-weight:800; }
+.dbi-demand-reference .dbi-demand-sort select { max-width:145px;height:26px;padding:0 5px;border:1px solid #d1cfc6;border-radius:4px;background:#fbfaf5;font-size:8px;color:#403d34; }
+.dbi-demand-reference .dbi-demand-live-map { justify-content:center;gap:4px;background:#fff9e7; }
+.dbi-demand-reference .dbi-demand-india-map { display:block;width:100%;height:200px;max-height:240px;overflow:visible; }
+.dbi-demand-reference .dbi-demand-india-map path { transition:fill .12s ease,stroke .12s ease;cursor:pointer; }
+.dbi-demand-reference .dbi-demand-india-map path:focus-visible { outline:none;stroke:#111;stroke-width:2.5; }
+.dbi-demand-reference .dbi-demand-map-loading { min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#6d675a;font-size:9px; }
+.dbi-demand-reference .dbi-demand-map-loading svg { color:#b75618; }
+.dbi-demand-reference .dbi-demand-live-map > span { margin-top:0; }
+.dbi-demand-reference .dbi-demand-occupation-examples { display:flex;flex-direction:column;gap:0; }
+.dbi-demand-reference .dbi-demand-demo-note { display:flex;align-items:flex-start;gap:6px;margin:4px 0 8px;padding:7px;border:1px solid #e2d49b;border-radius:4px;background:#fff9e2;color:#6c5928;font-size:8px;line-height:1.4; }
+.dbi-demand-reference .dbi-demand-demo-note svg { flex:0 0 auto; }
+.dbi-demand-reference .dbi-demand-occupation-row { display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:7px;padding:8px 0;border-bottom:1px solid #eae7de;font-size:9px; }
+.dbi-demand-reference .dbi-demand-occupation-row > span { color:#6f695e; }
+.dbi-demand-reference .dbi-demand-occupation-row strong { font-size:9px;line-height:1.35; }
+.dbi-demand-reference .dbi-demand-occupation-row em { padding:3px 5px;border-radius:3px;background:#f8f0d5;color:#796522;font-size:7px;font-style:normal;font-weight:800;text-transform:uppercase; }
+.dbi-demand-reference .dbi-demand-skill-list { display:flex;flex-direction:column;gap:0; }
+.dbi-demand-reference .dbi-demand-skill-row { display:grid;grid-template-columns:17px minmax(0,1fr) auto;align-items:center;gap:7px;padding:8px 0;border-bottom:1px solid #eae7de; }
+.dbi-demand-reference .dbi-demand-skill-row > span { color:#777166;font-size:9px; }
+.dbi-demand-reference .dbi-demand-skill-row > div { display:flex;flex-direction:column;gap:3px;min-width:0; }
+.dbi-demand-reference .dbi-demand-skill-row strong { color:#292820;font-size:10px;line-height:1.25; }
+.dbi-demand-reference .dbi-demand-skill-row small { color:#777166;font-size:8px;line-height:1.3; }
+.dbi-demand-reference .dbi-demand-skill-row em { font-size:7px;font-style:normal;font-weight:850;white-space:nowrap;color:#6a633e;background:#f5efda;border:1px solid #e5dcb8;border-radius:3px;padding:3px 4px; }
+.dbi-demand-reference .dbi-demand-skill-row em[data-confidence="HIGH"] { color:#186745;background:#e8f6ec;border-color:#c1e4cb; }
+.dbi-demand-reference .dbi-demand-skill-row em[data-confidence="MEDIUM"] { color:#755b10;background:#fff6d7;border-color:#eadca7; }
+.dbi-demand-reference .dbi-demand-skill-row em[data-confidence="LOW"] { color:#8d4a21;background:#fff0e5;border-color:#e9c5ab; }
+@media (max-width: 1280px) {
+  .dbi-demand-reference .dbi-demand-demo-launch { position:static;justify-self:start;grid-column:1/-1;width:max-content; }
+  .dbi-demand-reference .dbi-demand-hero { padding-bottom:5px; }
+  .dbi-demand-reference .dbi-demand-filters { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media (max-width: 640px) {
+  .dbi-demand-reference .dbi-demand-demo-launch { width:100%; }
+  .dbi-demand-reference .dbi-demand-region-table-head { flex-direction:column; }
+  .dbi-demand-reference .dbi-demand-sort,.dbi-demand-reference .dbi-demand-sort select { width:100%;max-width:none; }
+  .dbi-demand-reference .dbi-demand-india-map { height:190px; }
+}

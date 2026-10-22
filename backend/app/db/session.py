@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from fastapi import HTTPException
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -17,7 +18,10 @@ SessionLocal = (
 
 def get_db() -> Generator[Session, None, None]:
     if SessionLocal is None:
-        raise RuntimeError("DATABASE_URL is not configured.")
+        raise HTTPException(
+            status_code=503,
+            detail="Database access is not configured on this API.",
+        )
 
     db = SessionLocal()
     try:

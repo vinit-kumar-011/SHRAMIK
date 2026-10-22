@@ -794,7 +794,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
                    const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
                    if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
                  }}/>
-               : <DatabaseInsightsPage module="demand" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('demand')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+               : <DatabaseInsightsPage module="demand" regionCode={region} onRegionChange={handleRegionChange} onPreviewDemo={() => setDemoPreviewPage('demand')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
            : activePage === 'emerging-skills' ? (demoMode
                ? <EmergingSkillsPage dataAdapter={emergingSkillsAdapter} />
                : previewingModule ? <EmergingSkillsPage dataAdapter={demoEmergingSkillsDataAdapter} />

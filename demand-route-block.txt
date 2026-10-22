@@ -1,0 +1,138 @@
+  if (isDemandModule(module)) {
+    const showPlfs = periodFilter === 'LATEST' || periodFilter === 'CY2025';
+    const showRegistrations = periodFilter === 'LATEST' || periodFilter === 'ESHRAM';
+    const showNaps = periodFilter === 'LATEST' || periodFilter.startsWith('FY');
+    const rateValue = (code: string) => {
+      const row = rates.find(item => item.code === code)?.row;
+      if (!showPlfs || !row) return '—';
+      return `${numberFormat(numeric(row.value_numeric))}${row.unit === 'percent' ? '%' : row.unit ? ` ${row.unit}` : ''}`;
+    };
+    const demandTableNote = 'The live database currently has no validated demand-observation rows. PLFS rates, e-Shram registrations and apprenticeship engagement are useful labour-market context, but none is relabelled as job demand.';
+    const selectedId = selectedStateId(snapshot, regionCode);
+    const sortedRegionRows = [...stateRegTotals]
+      .filter(row => regionCode === 'IN' || row.id === selectedId)
+      .sort((a, b) => regionSort === 'name' ? a.label.localeCompare(b.label) : b.value - a.value);
+    const visibleSkills = snapshot.skills
+      .filter(skill => sectorFilter === 'ALL' || skill.sector_id === sectorFilter)
+      .filter(skill => skillFilter === 'ALL' || skill.id === skillFilter)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const napsByPeriod = new Map<string, number>();
+    snapshot.metrics.forEach(row => {
+      if (row.metric_code !== 'SPACE_GEOSPATIAL_NAPS_APPRENTICES_ENGAGED' || row.observation_grain !== 'STATE') return;
+      if (regionCode !== 'IN' && row.state_id !== selectedId) return;
+      napsByPeriod.set(row.reference_period, (napsByPeriod.get(row.reference_period) || 0) + numeric(row.value_numeric));
+    });
+    const napsTrend = [...napsByPeriod.entries()].map(([period, value]) => ({ period, value })).sort((a, b) => a.period.localeCompare(b.period));
+    const trendMax = Math.max(1, ...napsTrend.map(point => point.value));
+    const trendLinePoints = napsTrend.map((point, index) => {
+      const x = napsTrend.length < 2 ? 260 : 38 + index * (444 / (napsTrend.length - 1));
+      const y = 176 - (point.value / trendMax) * 126;
+      return `${x},${y}`;
+    }).join(' ');
+    const currentStateName = regionCode === 'IN' ? 'All India' : (snapshot.states.find(state => state.code === regionCode || state.id === selectedId)?.name || regionCode);
+    const maxRegistration = Math.max(1, ...stateRegTotals.map(row => row.value));
+    const periodNote = periodFilter === 'LATEST' ? 'Latest available record from each source' : periodFilter === 'CY2025' ? 'PLFS benchmark period · CY2025' : periodFilter === 'ESHRAM' ? 'e-Shram snapshot · 14 July 2026' : `Apprenticeship context · ${periodFilter}`;
+    const illustrativeOccupations = [
+      'Retail Salespersons', 'Construction Labourers', 'Software Developers',
+      'Drivers and Mobile Plant Operators', 'Teaching Professionals',
+    ];
+    return <section className="dbi-shell dbi-demand-reference">
+      <header className="dbi-demand-hero">
+        <div className="dbi-demand-hero-copy">
+          <div className="dbi-demand-breadcrumb"><span>Home</span><span aria-hidden="true">›</span><strong>Demand Insights</strong></div>
+          <h1>Demand Insights</h1>
+          <p>Explore labour-market evidence across India. Published workforce indicators are shown alongside a clear status for validated job-demand analytics.</p>
+          <div className="dbi-demand-meta"><span><ShieldCheck size={13}/> Source-backed, non-synthetic records</span><span><Database size={13}/>{numberFormat(totalMetrics)} metric rows loaded</span><span>Updated {new Date(snapshot.loadedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>
+        </div>
+        <div className="dbi-demand-callout" title={demandTableNote}>
+          <span className="dbi-demand-callout-icon"><Activity size={25}/></span>
+          <div><small>Total Estimated Demand</small><strong>Not published</strong><span>No validated estimate published from the current demand data</span></div>
+        </div>
+        <div className="dbi-demand-hero-art" aria-hidden="true"><img src="/assets/industrial-skyline.png" alt=""/><div>DATA<br/>INSIGHTS<br/>PLANNING<br/>OPPORTUNITIES</div></div>
+        {onPreviewDemo ? <button className="dbi-demand-demo-launch" type="button" onClick={onPreviewDemo}>Open illustrative demo <ArrowUpRight size={14}/></button> : null}
+      </header>
+
+      <section className="dbi-demand-filters" aria-label="Demand insights filters">
+        <label className="dbi-demand-filter"><span>Time Period</span><select value={periodFilter} onChange={event => setPeriodFilter(event.target.value)}><option value="LATEST">Latest per source</option><option value="CY2025">Calendar year 2025 · PLFS</option><option value="ESHRAM">14 July 2026 · e-Shram</option><option value="FY2023-24">FY 2023–24 · NAPS</option><option value="FY2024-25">FY 2024–25 · NAPS</option><option value="FY2025-26">FY 2025–26 · NAPS</option></select></label>
+        <label className="dbi-demand-filter"><span>Geography</span><select value={regionCode === 'IN' ? 'national' : 'state'} onChange={event => { if (event.target.value === 'national') onRegionChange?.('IN'); else if (regionCode === 'IN') onRegionChange?.(snapshot.states.find(state => state.code === 'OD')?.code || snapshot.states[0]?.code || 'IN'); }}><option value="national">All India</option><option value="state">State / UT</option></select></label>
+        <label className="dbi-demand-filter"><span>State / UT</span><select value={regionCode} onChange={event => onRegionChange?.(event.target.value)}><option value="IN">All States</option>{snapshot.states.slice().sort((a, b) => a.name.localeCompare(b.name)).map(state => <option key={state.id} value={state.code}>{state.name}</option>)}</select></label>
+        <label className="dbi-demand-filter"><span>Sector</span><select value={sectorFilter} onChange={event => { setSectorFilter(event.target.value); setSkillFilter('ALL'); }}><option value="ALL">All Sectors</option>{snapshot.sectors.slice().sort((a, b) => a.name.localeCompare(b.name)).map(sector => <option key={sector.id} value={sector.id}>{sector.name}</option>)}</select></label>
+        <label className="dbi-demand-filter"><span>Occupation (NCO)</span><select value={occupationScope} onChange={event => { setOccupationScope(event.target.value); if (event.target.value === 'DEMO') onPreviewDemo?.(); }}><option value="LIVE">Live ranking · unavailable</option><option value="EXAMPLES">Illustrative role examples</option><option value="DEMO">Open illustrative demo…</option></select></label>
+        <label className="dbi-demand-filter"><span>Skill</span><select value={skillFilter} onChange={event => setSkillFilter(event.target.value)}><option value="ALL">All Skills</option>{snapshot.skills.filter(skill => sectorFilter === 'ALL' || skill.sector_id === sectorFilter).slice().sort((a, b) => a.name.localeCompare(b.name)).map(skill => <option key={skill.id} value={skill.id}>{skill.name}</option>)}</select></label>
+        <button className="dbi-demand-refresh" type="button" disabled={refreshing} onClick={() => void refresh()}><RefreshCw size={14} className={refreshing ? 'dbi-spin' : ''}/>{refreshing ? 'Refreshing' : 'Refresh data'}</button>
+      </section>
+      <div className="dbi-demand-filter-status" role="status"><Info size={14}/><span>{periodNote}. Region selection updates the national/state context; sector and skill selections filter the canonical skill catalogue. These filters cannot create job-demand estimates where no demand observations exist.</span></div>
+
+      <section className="dbi-demand-kpis" aria-label="Published labour-market indicators">
+        <article className="dbi-demand-kpi dbi-demand-kpi-blue"><span className="dbi-demand-kpi-icon"><Activity size={23}/></span><div><small>Unemployment Rate</small><strong>{rateValue('UR')}</strong><span>{showPlfs ? 'Persons aged 15+ · PLFS CY2025' : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
+        <article className="dbi-demand-kpi dbi-demand-kpi-orange"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>Labour Force Participation</small><strong>{rateValue('LFPR')}</strong><span>{showPlfs ? 'Persons aged 15+ · PLFS CY2025' : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
+        <article className="dbi-demand-kpi dbi-demand-kpi-teal"><span className="dbi-demand-kpi-icon"><GraduationCap size={23}/></span><div><small>Worker Population Ratio</small><strong>{rateValue('WPR')}</strong><span>{showPlfs ? 'Persons aged 15+ · PLFS CY2025' : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
+        <article className="dbi-demand-kpi dbi-demand-kpi-yellow"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>e-Shram Registrations</small><strong>{showRegistrations && registration ? numberFormat(numeric(registration.value_numeric), true) : '—'}</strong><span>{showRegistrations && registration ? `${periodLabel(registration.reference_period)} · registrations, not job demand` : 'Select the e-Shram snapshot to view this measure'}</span></div></article>
+      </section>
+
+      <div className="dbi-demand-middle">
+        <section className="dbi-demand-panel dbi-demand-trend" aria-labelledby="dbi-demand-trend-title">
+          <div className="dbi-demand-panel-head"><div><h2 id="dbi-demand-trend-title">Demand Trend</h2><p>Job-demand series is not published; related source-backed context is shown below</p></div><span className="dbi-demand-tag dbi-demand-tag-warn">No demand rows</span></div>
+          {showNaps ? <div className="dbi-demand-trend-content">
+            <div className="dbi-demand-trend-caption"><strong>Apprentices engaged (NAPS)</strong><span>Related labour-market context · not job demand · {currentStateName}</span></div>
+            <svg className="dbi-demand-trend-svg" viewBox="0 0 520 220" role="img" aria-label={`Source-backed apprenticeship engagement context for ${currentStateName}`}>
+              {[0,1,2,3].map(index => <line key={index} x1="30" x2="495" y1={28 + index * 42} y2={28 + index * 42} stroke="#e8e4d9" strokeWidth="1"/>)}
+              <line x1="30" x2="495" y1="184" y2="184" stroke="#c9c4b7" strokeWidth="1"/>
+              <polyline points={trendLinePoints} fill="none" stroke="#174d80" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"/>
+              {napsTrend.map((point, index) => { const x = napsTrend.length < 2 ? 260 : 38 + index * (444 / (napsTrend.length - 1)); const y = 176 - (point.value / trendMax) * 126; const active = periodFilter === point.period; return <g key={point.period}><circle cx={x} cy={y} r={active ? 6 : 4.5} fill={active ? '#f2c93d' : '#174d80'} stroke="#fffefa" strokeWidth="2"><title>{periodLabel(point.period)}: {numberFormat(point.value)} apprentices engaged</title></circle><text x={x} y={Math.max(17, y - 12)} textAnchor="middle" className="dbi-demand-chart-value">{numberFormat(point.value, true)}</text><text x={x} y="204" textAnchor="middle" className="dbi-demand-chart-label">{compactPeriodLabel(point.period)}</text></g>; })}
+            </svg>
+            <p className="dbi-demand-chart-note"><Info size={13}/> The NAPS series sums state/UT apprentice-engagement counts for the selected geography. It is a training-program indicator, not a proxy for vacancies or estimated demand.</p>
+          </div> : <div className="dbi-demand-no-period"><strong>No NAPS series for this period selection</strong><p>Choose “Latest per source” or one of the NAPS financial years to view the published apprenticeship context trend.</p></div>}
+          <div className="dbi-demand-legend"><span><i className="dbi-demand-legend-dot"/> Published NAPS counts</span><span><i className="dbi-demand-legend-dash"/> No validated demand forecast available</span></div>
+        </section>
+
+        <section className="dbi-demand-panel dbi-demand-region" aria-labelledby="dbi-demand-region-title">
+          <div className="dbi-demand-panel-head"><div><h2 id="dbi-demand-region-title">Regional Labour-Market Context</h2><p>e-Shram registrations by State / UT · not job demand</p></div><span className="dbi-demand-tag">{showRegistrations ? '36 state / UT rows' : 'Choose e-Shram period'}</span></div>
+          {showRegistrations ? <div className="dbi-demand-region-body">
+            <div className="dbi-demand-map-placeholder dbi-demand-live-map">
+              {indiaMap ? <svg viewBox="0 0 260 260" role="img" aria-label="India state map coloured by e-Shram registrations. Select a state to filter the page." className="dbi-demand-india-map">
+                {indiaMap.features.map(feature => {
+                  const code = feature.properties.code.split('-').pop() || '';
+                  const state = snapshot.states.find(item => item.code === code || item.id === feature.properties.code);
+                  const row = state ? stateRegTotals.find(item => item.id === state.id) : undefined;
+                  const selected = regionCode !== 'IN' && state?.id === selectedId;
+                  return <path key={feature.properties.code} d={indiaFeaturePath(feature)} fill={registrationColor(row?.value || 0, maxRegistration)} stroke={selected ? '#171717' : '#fffefa'} strokeWidth={selected ? 1.6 : .65} role={state ? 'button' : undefined} tabIndex={state ? 0 : -1} aria-label={state ? `${state.name}: ${row ? numberFormat(row.value, true) + ' registrations' : 'no registration record'}` : feature.properties.name} onClick={() => state && onRegionChange?.(state.code)} onKeyDown={event => { if (state && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onRegionChange?.(state.code); } }}><title>{feature.properties.name}: {row ? numberFormat(row.value, true) + ' registrations' : 'No published registration record'}</title></path>;
+                })}
+              </svg> : <div className="dbi-demand-map-loading"><MapPin size={26}/><span>Loading official state boundaries…</span></div>}
+              <span>Click a state to filter</span><small>Colour = registration count. This is not a demand heatmap.</small>
+            </div>
+            <div className="dbi-demand-region-table"><div className="dbi-demand-region-table-head"><div className="dbi-demand-table-title">Worker registrations <small>Snapshot: 14 July 2026</small></div><label className="dbi-demand-sort"><span>Sort</span><select value={regionSort} onChange={event => setRegionSort(event.target.value as 'registrations' | 'name')}><option value="registrations">Most registrations</option><option value="name">State name A–Z</option></select></label></div>
+              {sortedRegionRows.slice(0, 6).map((row, index) => <div className="dbi-demand-region-row" key={row.id}><span>{regionCode === 'IN' ? index + 1 : '•'}</span><strong>{row.label}</strong><b>{numberFormat(row.value, true)}</b><div className="dbi-demand-bar"><i style={{ width: `${Math.max(5, Math.min(100, row.value / maxRegistration * 100))}%` }}/></div></div>)}
+              {!sortedRegionRows.length ? <p className="dbi-demand-empty-small">No state-level registrations were published for this selection.</p> : null}
+            </div>
+          </div> : <div className="dbi-demand-no-period"><strong>e-Shram registrations are from 14 July 2026</strong><p>Choose “Latest per source” or “e-Shram snapshot” to view regional registration context.</p></div>}
+          <div className="dbi-demand-panel-foot">e-Shram counts represent cumulative worker registrations, not employment, vacancies or available labour supply.</div>
+        </section>
+      </div>
+
+      <div className="dbi-demand-bottom">
+        <section className="dbi-demand-panel dbi-demand-ranking"><div className="dbi-demand-panel-head"><div><h2>{occupationScope === 'EXAMPLES' ? 'Occupation Explorer' : 'Top Occupations by Demand'}</h2><p>{occupationScope === 'EXAMPLES' ? 'Illustrative NCO-style role examples · not ranked by demand' : 'NCO-2015 taxonomy is staged; demand ranking requires validated occupation-linked observations'}</p></div><span className="dbi-demand-tag dbi-demand-tag-warn">No demand rows</span></div>
+          {occupationScope === 'EXAMPLES' ? <div className="dbi-demand-occupation-examples"><div className="dbi-demand-demo-note"><Info size={14}/> Illustrative role examples only. These are not a ranked list and have no live demand values.</div>{illustrativeOccupations.map((occupation, index) => <div className="dbi-demand-occupation-row" key={occupation}><span>{index + 1}</span><strong>{occupation}</strong><em>Illustrative</em></div>)}</div> : <div className="dbi-demand-empty-ranking"><span className="dbi-demand-empty-icon"><FileCheck2 size={22}/></span><strong>Occupation rankings are not published</strong><p>The database has 3,451 current NCO-2015 occupation records in a protected staging table, but the public reader cannot browse that catalogue. More importantly, there are no demand-observation rows to rank occupations by job demand.</p><button type="button" onClick={() => setOccupationScope('EXAMPLES')}>Show illustrative role examples <ArrowUpRight size={13}/></button></div>}
+        </section>
+        <section className="dbi-demand-panel dbi-demand-ranking"><div className="dbi-demand-panel-head"><div><h2>Skills Explorer</h2><p>Canonical skills available in the database · no demand ranking published</p></div><span className="dbi-demand-tag">{visibleSkills.length} skills</span></div>
+          {visibleSkills.length ? <div className="dbi-demand-skill-list">{visibleSkills.map((skill, index) => <div className="dbi-demand-skill-row" key={skill.id}><span>{index + 1}</span><div><strong>{skill.name}</strong><small>{sectorsForSkill(skill)}</small></div><em data-confidence={(skill.sector_mapping_confidence || 'LOW').toUpperCase()}>{(skill.sector_mapping_confidence || 'LOW').toUpperCase()} mapping</em></div>)}</div> : <div className="dbi-demand-empty-ranking"><strong>No canonical skills match this filter</strong><p>Choose another sector or skill to reset the catalogue filter.</p><button type="button" onClick={() => { setSectorFilter('ALL'); setSkillFilter('ALL'); }}>Reset catalogue filters</button></div>}
+          <p className="dbi-demand-chart-note"><Info size={13}/> These are canonical taxonomy records, not a demand ranking. Numeric skill-demand indices will appear only when linked observations are published.</p>
+        </section>
+        <section className="dbi-demand-panel dbi-demand-insights"><div className="dbi-demand-panel-head"><div><h2>Demand Insights</h2><p>Evidence-led interpretation</p></div><span className="dbi-demand-insight-mark"><Info size={18}/></span></div>
+          <ul><li><strong>{numberFormat(totalMetrics)} source-backed metric rows</strong> are readable in this snapshot.</li><li>PLFS rates describe labour-market context, not job-posting demand.</li><li>e-Shram counts measure registrations, not available workers or vacancies.</li><li>NAPS apprenticeship engagement provides related programme context, not a vacancy trend.</li><li>Forecasts and regional occupation/skill rankings remain unavailable until compatible demand observations are published.</li></ul>
+          {onPreviewDemo ? <button className="dbi-demand-preview" type="button" onClick={onPreviewDemo}>Open illustrative demo <ArrowUpRight size={14}/></button> : null}
+        </section>
+      </div>
+
+      <details className="dbi-demand-evidence"><summary>Published source evidence and definitions</summary><div className="dbi-demand-evidence-grid">
+        <section className="dbi-demand-panel"><SectionHead title="PLFS 2025 benchmarks · age 15+" note="Published annual rates for persons aged 15+, combined rural/urban. A selected-region value is shown only when published for this exact age/sex/area slice; otherwise the row is explicitly labelled India (national)."/><DataTable columns={['Indicator', 'Published value', 'Period', 'Geography', 'Source']}>
+          {rates.map(({ code, label, row }) => row ? <tr key={code}><td><strong>{label}</strong><small>{code}</small></td><td className="dbi-number">{numberFormat(numeric(row.value_numeric))}{row.unit === 'percent' ? '%' : ' ' + row.unit}</td><td>{periodLabel(row.reference_period)}</td><td>{row.state_id ? stateLabel(snapshot, row) : 'India (national)'}</td><td><SourceLink source={sourceFor(snapshot, row.source_id) || employmentSource}/></td></tr> : null)}
+          {rates.every(item => !item.row) ? <tr><td colSpan={5} className="dbi-empty-cell">No canonical person-level PLFS slice is published for this region.</td></tr> : null}
+        </DataTable></section>
+        <section className="dbi-demand-panel"><SectionHead title="Worker-registration distribution" note="Cumulative e-Shram registrations are not job demand, employment or available labour supply."/><DataTable columns={['State / UT', 'Registrations', 'Reference', 'Source']}>
+          {stateRegTotals.slice(0, 10).map(row => <tr key={row.id}><td><strong>{row.label}</strong></td><td className="dbi-number">{numberFormat(row.value, true)}</td><td>{periodLabel(row.period)}</td><td><SourceLink source={sourceFor(snapshot, row.sourceId) || registrationSource}/></td></tr>)}
+        </DataTable></section>
+      </div><div className="dbi-note"><Info size={17}/><div><strong>Interpretation boundary</strong><p>{demandTableNote} Published PLFS and registration context is kept separate from validated job-demand analytics.</p></div></div></details>
+      <footer className="dbi-footer"><span><ShieldCheck size={14}/> Source-backed database view · Synthetic data excluded</span><span>{numberFormat(totalMetrics)} readable metric records · {numberFormat(districtCount)} district references</span><button type="button" onClick={() => onNavigate?.('data-sources')}>Open Data Sources <ArrowUpRight size={14}/></button></footer>
+    </section>;
+  }

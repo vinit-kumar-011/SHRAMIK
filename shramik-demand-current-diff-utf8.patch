@@ -1,0 +1,631 @@
+diff --git a/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/SHRAMIKDashboard.tsx b/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/SHRAMIKDashboard.tsx
+index f4b5532..1203d31 100644
+--- a/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/SHRAMIKDashboard.tsx
++++ b/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/SHRAMIKDashboard.tsx
+@@ -794,7 +794,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
+                    const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
+                    if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
+                  }}/>
+-               : <DatabaseInsightsPage module="demand" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('demand')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
++               : <DatabaseInsightsPage module="demand" regionCode={region} onRegionChange={handleRegionChange} onPreviewDemo={() => setDemoPreviewPage('demand')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+            : activePage === 'emerging-skills' ? (demoMode
+                ? <EmergingSkillsPage dataAdapter={emergingSkillsAdapter} />
+                : previewingModule ? <EmergingSkillsPage dataAdapter={demoEmergingSkillsDataAdapter} />
+diff --git a/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/live-data/DatabaseInsightsPage.tsx b/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/live-data/DatabaseInsightsPage.tsx
+index 4e6239f..241c9cc 100644
+--- a/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/live-data/DatabaseInsightsPage.tsx
++++ b/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/live-data/DatabaseInsightsPage.tsx
+@@ -1,4 +1,4 @@
+-import { Activity, ArrowUpRight, Database, FileCheck2, GraduationCap, Info, RefreshCw, ShieldCheck, Users } from 'lucide-react';
++import { Activity, ArrowUpRight, Database, FileCheck2, GraduationCap, Info, MapPin, RefreshCw, ShieldCheck, Users } from 'lucide-react';
+ import { Children, useEffect, useMemo, useState } from 'react';
+ import type { ReactNode } from 'react';
+ 
+@@ -25,6 +25,16 @@ type SectorRow = { id: string; code: string; name: string; description: string |
+ type SkillRow = { id: string; code: string; name: string; sector_id: string; sector_mapping_method: string; sector_mapping_confidence: string; description: string | null };
+ type SourceRow = { id: string; name: string; publisher: string; source_type: string; url: string | null; publication_date: string | null; accessed_at: string | null; coverage_start: number | null; coverage_end: number | null; notes: string | null };
+ type TableVisibility = { state: 'HAS_ROWS' | 'NO_PUBLIC_ROWS' | 'RESTRICTED'; sampleRows: number };
++type GeoPosition = [number, number];
++type GeoRing = GeoPosition[];
++type GeoPolygon = GeoRing[];
++type IndiaFeature = {
++  type: 'Feature';
++  properties: { name: string; code: string };
++  geometry: { type: 'Polygon'; coordinates: GeoPolygon } | { type: 'MultiPolygon'; coordinates: GeoPolygon[] };
++};
++type IndiaFeatureCollection = { type: 'FeatureCollection'; features: IndiaFeature[] };
++
+ type Snapshot = {
+   metrics: MetricRow[];
+   states: StateRow[];
+@@ -176,6 +186,35 @@ function mostRecentRows(snapshot: Snapshot, code: string, regionCode = 'IN'): Me
+   }
+   return rows;
+ }
++function isDemandModule(module: DatabaseModule): boolean {
++  return module === 'demand';
++}
++
++function indiaFeaturePath(feature: IndiaFeature, width = 260, height = 260): string {
++  const polygons: GeoPolygon[] = feature.geometry.type === 'Polygon'
++    ? [feature.geometry.coordinates]
++    : feature.geometry.coordinates;
++  const project = ([longitude, latitude]: GeoPosition) => [
++    ((longitude - 68) / (98 - 68)) * width,
++    ((38.5 - latitude) / (38.5 - 5)) * height,
++  ] as const;
++  return polygons.map(polygon => polygon.map(ring => ring.map((point, index) => {
++    const [x, y] = project(point);
++    return `${index === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`;
++  }).join(' ') + ' Z').join(' ')).join(' ');
++}
++function registrationColor(value: number, maxValue: number): string {
++  const ratio = maxValue > 0 ? value / maxValue : 0;
++  if (ratio >= 0.75) return '#b94a0e';
++  if (ratio >= 0.5) return '#dc7117';
++  if (ratio >= 0.25) return '#f2a83d';
++  if (ratio > 0) return '#f8d783';
++  return '#f3ead0';
++}
++function compactPeriodLabel(period: string): string {
++  return period.replace('FY', '').replace('-', 'ΓÇô');
++}
++
+ function stateTotals(snapshot: Snapshot, rows: MetricRow[]): Array<{ id: string; label: string; value: number; unit: string; period: string; sourceId: string | null }> {
+   const grouped = new Map<string, { value: number; unit: string; period: string; sourceId: string | null }>();
+   rows.forEach(row => {
+@@ -344,18 +383,42 @@ function statusCount(snapshot: Snapshot, table: string): string {
+   return 'Available';
+ }
+ 
+-export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavigate, onPreviewDemo }: {
++export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavigate, onRegionChange, onPreviewDemo }: {
+   module: DatabaseModule;
+   regionCode?: string;
+   onNavigate?: (route: string) => void;
++  onRegionChange?: (value: string) => void;
+   onPreviewDemo?: () => void;
+ }) {
+   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+   const [error, setError] = useState('');
+   const [refreshing, setRefreshing] = useState(false);
+   const [query, setQuery] = useState('');
++  const [indiaMap, setIndiaMap] = useState<IndiaFeatureCollection | null>(null);
++  const [sectorFilter, setSectorFilter] = useState('ALL');
++  const [skillFilter, setSkillFilter] = useState('ALL');
++  const [occupationScope, setOccupationScope] = useState('EXAMPLES');
++  const [regionSort, setRegionSort] = useState<'registrations' | 'name'>('registrations');
++  const [periodFilter, setPeriodFilter] = useState('LATEST');
+   const page = TITLES[module];
+ 
++  useEffect(() => {
++    if (module === 'demand') window.scrollTo({ top: 0, behavior: 'auto' });
++  }, [module]);
++
++  useEffect(() => {
++    if (module !== 'demand') return;
++    let active = true;
++    fetch('/assets/india-states.geojson', { headers: { Accept: 'application/geo+json, application/json' } })
++      .then(response => {
++        if (!response.ok) throw new Error('Map boundaries are not available.');
++        return response.json() as Promise<IndiaFeatureCollection>;
++      })
++      .then(data => { if (active && data?.type === 'FeatureCollection' && Array.isArray(data.features)) setIndiaMap(data); })
++      .catch(() => { if (active) setIndiaMap(null); });
++    return () => { active = false; };
++  }, [module]);
++
+   useEffect(() => {
+     let active = true;
+     setError('');
+@@ -394,13 +457,13 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
+     }
+   }
+ 
+-  if (error && !snapshot) return <section className="dbi-shell">
++  if (error && !snapshot) return <section className={module === 'demand' ? 'dbi-shell dbi-demand-reference' : 'dbi-shell'}>
+     <div className="dbi-hero"><div><div className="dbi-eyebrow">{page.eyebrow}</div><h1>{page.title}</h1><p>{page.subtitle}</p></div></div>
+     <div className="dbi-error" role="alert"><Info size={18}/><div><strong>Live database read failed.</strong><p>{error}</p><button type="button" onClick={() => void refresh()}>Retry database connection</button></div></div>
+     {onPreviewDemo ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
+   </section>;
+ 
+-  if (!snapshot) return <section className="dbi-shell">
++  if (!snapshot) return <section className={module === 'demand' ? 'dbi-shell dbi-demand-reference' : 'dbi-shell'}>
+     <div className="dbi-hero"><div><div className="dbi-eyebrow">{page.eyebrow}</div><h1>{page.title}</h1><p>{page.subtitle}</p></div></div>
+     <div className="dbi-loading"><RefreshCw size={18} className="dbi-spin"/> Reading live source-backed data from SupabaseΓÇª</div>
+     {onPreviewDemo ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
+@@ -466,6 +529,232 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
+       ? 'The public database currently exposes no demand-observation or supply-observation rows for this view. The system therefore does not calculate or display a numerical skill gap.'
+       : 'A skill gap is shown only when compatible demand and supply observations are available through the validated analytical contract.';
+ 
++  if (module === 'demand') {
++    const rateValue = (code: string) => {
++      const row = rates.find(item => item.code === code)?.row;
++      if (!row) return 'ΓÇö';
++      return `${numberFormat(numeric(row.value_numeric))}${row.unit === 'percent' ? '%' : row.unit ? ` ${row.unit}` : ''}`;
++    };
++    const latestRate = rates.find(item => item.row)?.row;
++    const demandTableNote = demandStatus === 'Restricted'
++      ? 'Demand-observation records are restricted from the public reader. No headline estimate is calculated.'
++      : demandStatus === 'Available'
++        ? 'Demand-observation rows are visible, but this page does not aggregate them into a headline until units, periods and geography are validated.'
++        : 'No source-backed demand-observation rows are currently published to this public view. No demand total or trend is inferred.';
++    return <section className="dbi-shell dbi-demand-reference">
++      <header className="dbi-demand-hero">
++        <div className="dbi-demand-hero-copy">
++          <div className="dbi-demand-breadcrumb"><span>Home</span><span aria-hidden="true">ΓÇ║</span><strong>Demand Insights</strong></div>
++          <h1>Demand Insights</h1>
++          <p>Explore labour-market evidence across India. Published workforce indicators are shown alongside a clear status for validated job-demand analytics.</p>
++          <div className="dbi-demand-meta"><span><ShieldCheck size={13}/> Source-backed, non-synthetic records</span><span><Database size={13}/>{numberFormat(totalMetrics)} metric rows loaded</span><span>Updated {new Date(snapshot.loadedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>
++        </div>
++        <div className="dbi-demand-callout" title={demandTableNote}>
++          <span className="dbi-demand-callout-icon"><Activity size={25}/></span>
++          <div><small>Total Estimated Demand</small><strong>ΓÇö</strong><span>{demandStatus === 'Available' ? 'Visible rows ┬╖ validated aggregate pending' : 'No validated estimate published'}</span></div>
++        </div>
++        <div className="dbi-demand-hero-art" aria-hidden="true"><img src="/assets/industrial-skyline.png" alt=""/><div>DATA<br/>INSIGHTS<br/>PLANNING<br/>OPPORTUNITIES</div></div>
++      </header>
++
++      <section className="dbi-demand-filters" aria-label="Demand filter availability">
++        <div className="dbi-demand-filter"><span>Time Period</span><button type="button" disabled title="A validated demand time-series is not yet published">{latestRate ? periodLabel(latestRate.reference_period) : 'Latest published'} <span>Γîä</span></button></div>
++        <div className="dbi-demand-filter"><span>Geography</span><button type="button" disabled>{regionCode === 'IN' ? 'All India' : stateLabel(snapshot, { state_id: selectedStateId(snapshot, regionCode) } as MetricRow)} <span>Γîä</span></button></div>
++        <div className="dbi-demand-filter"><span>State / UT</span><button type="button" disabled>{regionCode === 'IN' ? 'All States' : (snapshot.states.find(state => state.code === regionCode)?.name || regionCode)} <span>Γîä</span></button></div>
++        <div className="dbi-demand-filter"><span>Sector</span><button type="button" disabled title="Sector demand breakdown is not published">Not available <span>Γîä</span></button></div>
++        <div className="dbi-demand-filter"><span>Occupation (NCO)</span><button type="button" disabled title="Occupation demand breakdown is not published">Not available <span>Γîä</span></button></div>
++        <div className="dbi-demand-filter"><span>Skill</span><button type="button" disabled title="Skill demand breakdown is not published">Not available <span>Γîä</span></button></div>
++        <button className="dbi-demand-refresh" type="button" disabled={refreshing} onClick={() => void refresh()}><RefreshCw size={14} className={refreshing ? 'dbi-spin' : ''}/>{refreshing ? 'Refreshing' : 'Refresh data'}</button>
++      </section>
++
++      <section className="dbi-demand-kpis" aria-label="Published labour market indicators">
++        <article className="dbi-demand-kpi dbi-demand-kpi-blue"><span className="dbi-demand-kpi-icon"><Activity size={23}/></span><div><small>Unemployment Rate</small><strong>{rateValue('UR')}</strong><span>Persons aged 15+ ┬╖ published PLFS</span></div></article>
++        <article className="dbi-demand-kpi dbi-demand-kpi-orange"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>Labour Force Participation</small><strong>{rateValue('LFPR')}</strong><span>Persons aged 15+ ┬╖ published PLFS</span></div></article>
++        <article className="dbi-demand-kpi dbi-demand-kpi-teal"><span className="dbi-demand-kpi-icon"><GraduationCap size={23}/></span><div><small>Worker Population Ratio</small><strong>{rateValue('WPR')}</strong><span>Persons aged 15+ ┬╖ published PLFS</span></div></article>
++        <article className="dbi-demand-kpi dbi-demand-kpi-yellow"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>e-Shram Registrations</small><strong>{registration ? numberFormat(numeric(registration.value_numeric), true) : 'ΓÇö'}</strong><span>{registration ? `${periodLabel(registration.reference_period)} ┬╖ registrations, not job demand` : 'No published registration snapshot'}</span></div></article>
++      </section>
++
++      <div className="dbi-demand-middle">
++        <section className="dbi-demand-panel dbi-demand-trend" aria-labelledby="dbi-demand-trend-title">
++          <div className="dbi-demand-panel-head"><div><h2 id="dbi-demand-trend-title">Demand Trend</h2><p>Validated job-demand observations over time</p></div><span className="dbi-demand-tag">Time series</span></div>
++          <div className="dbi-demand-chart-grid" role="img" aria-label="Demand trend is unavailable because no validated job-demand time series is published.">
++            <div className="dbi-demand-chart-y"><span>High</span><span>ΓÇö</span><span>ΓÇö</span><span>Low</span></div>
++            <div className="dbi-demand-chart-plot"><div className="dbi-demand-chart-empty"><strong>No published demand time series</strong><span>{demandTableNote}</span></div><div className="dbi-demand-chart-axis"><span>Historical period</span><span>Forecast period</span></div></div>
++          </div>
++          <div className="dbi-demand-legend"><span><i className="dbi-demand-legend-dot"/> Source-backed demand</span><span><i className="dbi-demand-legend-dash"/> Forecast / uncertainty (not yet available)</span></div>
++        </section>
++
++        <section className="dbi-demand-panel dbi-demand-region" aria-labelledby="dbi-demand-region-title">
++          <div className="dbi-demand-panel-head"><div><h2 id="dbi-demand-region-title">Demand by Region</h2><p>State-level demand is shown only when compatible published rows exist</p></div><span className="dbi-demand-tag dbi-demand-tag-warn">Unavailable</span></div>
++          <div className="dbi-demand-region-body">
++            <div className="dbi-demand-map-placeholder"><img src="/assets/india-map-illustrative.png" alt=""/><span>Illustrative map only</span><small>No demand values are mapped to this artwork.</small></div>
++            <div className="dbi-demand-region-table"><div className="dbi-demand-table-title">Worker registrations <small>Context metric ┬╖ not demand</small></div>
++              {stateRegTotals.length ? stateRegTotals.slice(0, 6).map((row, index) => <div className="dbi-demand-region-row" key={row.id}><span>{index + 1}</span><strong>{row.label}</strong><b>{numberFormat(row.value, true)}</b><div className="dbi-demand-bar"><i style={{ width: `${Math.max(5, Math.min(100, row.value / Math.max(...stateRegTotals.slice(0, 6).map(item => item.value), 1) * 100))}%` }}/></div></div>) : <p className="dbi-demand-empty-small">No state-level registration rows are published.</p>}
++            </div>
++          </div>
++          <div className="dbi-demand-panel-foot"><span>Registration totals are cumulative enrolments, not employment or vacancies.</span></div>
++        </section>
++      </div>
++
++      <div className="dbi-demand-bottom">
++        <section className="dbi-demand-panel dbi-demand-ranking"><div className="dbi-demand-panel-head"><div><h2>Top Occupations by Demand</h2><p>Validated NCO-coded demand</p></div><span className="dbi-demand-tag">Not published</span></div><div className="dbi-demand-empty-ranking"><span className="dbi-demand-empty-icon"><FileCheck2 size={22}/></span><strong>No occupation-demand records</strong><p>Occupation rankings will appear when source-backed demand observations include a validated NCO mapping and comparable units.</p></div></section>
++        <section className="dbi-demand-panel dbi-demand-ranking"><div className="dbi-demand-panel-head"><div><h2>Top Skills by Demand</h2><p>Validated skill-demand signals</p></div><span className="dbi-demand-tag">Not published</span></div><div className="dbi-demand-empty-ranking"><span className="dbi-demand-empty-icon"><GraduationCap size={22}/></span><strong>No skill-demand records</strong><p>Skill rankings will appear after validated occupation/skill mappings and published demand signals are available.</p></div></section>
++        <section className="dbi-demand-panel dbi-demand-insights"><div className="dbi-demand-panel-head"><div><h2>Demand Insights</h2><p>Evidence-led interpretation</p></div><span className="dbi-demand-insight-mark"><Info size={18}/></span></div>
++          <ul><li><strong>{numberFormat(totalMetrics)} source-backed metric rows</strong> are readable in this snapshot.</li><li>PLFS rates describe labour-market context, not job-posting demand.</li><li>e-Shram counts measure registrations, not available workers or vacancies.</li><li>Forecasts and regional demand rankings stay unavailable until compatible observations are published.</li></ul>
++          {onPreviewDemo ? <button className="dbi-demand-preview" type="button" onClick={onPreviewDemo}>Open illustrative demo <ArrowUpRight size={14}/></button> : null}
++        </section>
++      </div>
++
++      <details className="dbi-demand-evidence"><summary>Published source evidence and definitions</summary><div className="dbi-demand-evidence-grid">
++        <section className="dbi-demand-panel"><SectionHead title="PLFS 2025 benchmarks ┬╖ age 15+" note="Published annual rates for persons aged 15+, combined rural/urban. A selected-region value is shown only when published for this exact age/sex/area slice; otherwise the row is explicitly labelled India (national)."/><DataTable columns={['Indicator', 'Published value', 'Period', 'Geography', 'Source']}>
++          {rates.map(({ code, label, row }) => row ? <tr key={code}><td><strong>{label}</strong><small>{code}</small></td><td className="dbi-number">{numberFormat(numeric(row.value_numeric))}{row.unit === 'percent' ? '%' : ' ' + row.unit}</td><td>{periodLabel(row.reference_period)}</td><td>{row.state_id ? stateLabel(snapshot, row) : 'India (national)'}</td><td><SourceLink source={sourceFor(snapshot, row.source_id) || employmentSource}/></td></tr> : null)}
++          {rates.every(item => !item.row) ? <tr><td colSpan={5} className="dbi-empty-cell">No canonical person-level PLFS slice is published for this region.</td></tr> : null}
++        </DataTable></section>
++        <section className="dbi-demand-panel"><SectionHead title="Worker-registration distribution" note="Cumulative e-Shram registrations are not job demand, employment or available labour supply."/><DataTable columns={['State / UT', 'Registrations', 'Reference', 'Source']}>
++          {stateRegTotals.slice(0, 10).map(row => <tr key={row.id}><td><strong>{row.label}</strong></td><td className="dbi-number">{numberFormat(row.value, true)}</td><td>{periodLabel(row.period)}</td><td><SourceLink source={sourceFor(snapshot, row.sourceId) || registrationSource}/></td></tr>)}
++        </DataTable></section>
++      </div><div className="dbi-note"><Info size={17}/><div><strong>Interpretation boundary</strong><p>{demandTableNote} Published PLFS and registration context is kept separate from validated job-demand analytics.</p></div></div></details>
++      <footer className="dbi-footer"><span><ShieldCheck size={14}/> Source-backed database view ┬╖ Synthetic data excluded</span><span>{numberFormat(totalMetrics)} readable metric records ┬╖ {numberFormat(districtCount)} district references</span><button type="button" onClick={() => onNavigate?.('data-sources')}>Open Data Sources <ArrowUpRight size={14}/></button></footer>
++    </section>;
++  }
++
++  if (isDemandModule(module)) {
++    const showPlfs = periodFilter === 'LATEST' || periodFilter === 'CY2025';
++    const showRegistrations = periodFilter === 'LATEST' || periodFilter === 'ESHRAM';
++    const showNaps = periodFilter === 'LATEST' || periodFilter.startsWith('FY');
++    const rateValue = (code: string) => {
++      const row = rates.find(item => item.code === code)?.row;
++      if (!showPlfs || !row) return 'ΓÇö';
++      return `${numberFormat(numeric(row.value_numeric))}${row.unit === 'percent' ? '%' : row.unit ? ` ${row.unit}` : ''}`;
++    };
++    const demandTableNote = 'The live database currently has no validated demand-observation rows. PLFS rates, e-Shram registrations and apprenticeship engagement are useful labour-market context, but none is relabelled as job demand.';
++    const selectedId = selectedStateId(snapshot, regionCode);
++    const sortedRegionRows = [...stateRegTotals]
++      .filter(row => regionCode === 'IN' || row.id === selectedId)
++      .sort((a, b) => regionSort === 'name' ? a.label.localeCompare(b.label) : b.value - a.value);
++    const visibleSkills = snapshot.skills
++      .filter(skill => sectorFilter === 'ALL' || skill.sector_id === sectorFilter)
++      .filter(skill => skillFilter === 'ALL' || skill.id === skillFilter)
++      .sort((a, b) => a.name.localeCompare(b.name));
++    const napsByPeriod = new Map<string, number>();
++    snapshot.metrics.forEach(row => {
++      if (row.metric_code !== 'SPACE_GEOSPATIAL_NAPS_APPRENTICES_ENGAGED' || row.observation_grain !== 'STATE') return;
++      if (regionCode !== 'IN' && row.state_id !== selectedId) return;
++      napsByPeriod.set(row.reference_period, (napsByPeriod.get(row.reference_period) || 0) + numeric(row.value_numeric));
++    });
++    const napsTrend = [...napsByPeriod.entries()].map(([period, value]) => ({ period, value })).sort((a, b) => a.period.localeCompare(b.period));
++    const trendMax = Math.max(1, ...napsTrend.map(point => point.value));
++    const trendLinePoints = napsTrend.map((point, index) => {
++      const x = napsTrend.length < 2 ? 260 : 38 + index * (444 / (napsTrend.length - 1));
++      const y = 176 - (point.value / trendMax) * 126;
++      return `${x},${y}`;
++    }).join(' ');
++    const currentStateName = regionCode === 'IN' ? 'All India' : (snapshot.states.find(state => state.code === regionCode || state.id === selectedId)?.name || regionCode);
++    const maxRegistration = Math.max(1, ...stateRegTotals.map(row => row.value));
++    const periodNote = periodFilter === 'LATEST' ? 'Latest available record from each source' : periodFilter === 'CY2025' ? 'PLFS benchmark period ┬╖ CY2025' : periodFilter === 'ESHRAM' ? 'e-Shram snapshot ┬╖ 14 July 2026' : `Apprenticeship context ┬╖ ${periodFilter}`;
++    const illustrativeOccupations = [
++      'Retail Salespersons', 'Construction Labourers', 'Software Developers',
++      'Drivers and Mobile Plant Operators', 'Teaching Professionals',
++    ];
++    return <section className="dbi-shell dbi-demand-reference">
++      <header className="dbi-demand-hero">
++        <div className="dbi-demand-hero-copy">
++          <div className="dbi-demand-breadcrumb"><span>Home</span><span aria-hidden="true">ΓÇ║</span><strong>Demand Insights</strong></div>
++          <h1>Demand Insights</h1>
++          <p>Explore labour-market evidence across India. Published workforce indicators are shown alongside a clear status for validated job-demand analytics.</p>
++          <div className="dbi-demand-meta"><span><ShieldCheck size={13}/> Source-backed, non-synthetic records</span><span><Database size={13}/>{numberFormat(totalMetrics)} metric rows loaded</span><span>Updated {new Date(snapshot.loadedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>
++        </div>
++        <div className="dbi-demand-callout" title={demandTableNote}>
++          <span className="dbi-demand-callout-icon"><Activity size={25}/></span>
++          <div><small>Total Estimated Demand</small><strong>Not published</strong><span>No validated estimate published from the current demand data</span></div>
++        </div>
++        <div className="dbi-demand-hero-art" aria-hidden="true"><img src="/assets/industrial-skyline.png" alt=""/><div>DATA<br/>INSIGHTS<br/>PLANNING<br/>OPPORTUNITIES</div></div>
++        {onPreviewDemo ? <button className="dbi-demand-demo-launch" type="button" onClick={onPreviewDemo}>Open illustrative demo <ArrowUpRight size={14}/></button> : null}
++      </header>
++
++      <section className="dbi-demand-filters" aria-label="Demand insights filters">
++        <label className="dbi-demand-filter"><span>Time Period</span><select value={periodFilter} onChange={event => setPeriodFilter(event.target.value)}><option value="LATEST">Latest per source</option><option value="CY2025">Calendar year 2025 ┬╖ PLFS</option><option value="ESHRAM">14 July 2026 ┬╖ e-Shram</option><option value="FY2023-24">FY 2023ΓÇô24 ┬╖ NAPS</option><option value="FY2024-25">FY 2024ΓÇô25 ┬╖ NAPS</option><option value="FY2025-26">FY 2025ΓÇô26 ┬╖ NAPS</option></select></label>
++        <label className="dbi-demand-filter"><span>Geography</span><select value={regionCode === 'IN' ? 'national' : 'state'} onChange={event => { if (event.target.value === 'national') onRegionChange?.('IN'); else if (regionCode === 'IN') onRegionChange?.(snapshot.states.find(state => state.code === 'OD')?.code || snapshot.states[0]?.code || 'IN'); }}><option value="national">All India</option><option value="state">State / UT</option></select></label>
++        <label className="dbi-demand-filter"><span>State / UT</span><select value={regionCode} onChange={event => onRegionChange?.(event.target.value)}><option value="IN">All States</option>{snapshot.states.slice().sort((a, b) => a.name.localeCompare(b.name)).map(state => <option key={state.id} value={state.code}>{state.name}</option>)}</select></label>
++        <label className="dbi-demand-filter"><span>Sector</span><select value={sectorFilter} onChange={event => { setSectorFilter(event.target.value); setSkillFilter('ALL'); }}><option value="ALL">All Sectors</option>{snapshot.sectors.slice().sort((a, b) => a.name.localeCompare(b.name)).map(sector => <option key={sector.id} value={sector.id}>{sector.name}</option>)}</select></label>
++        <label className="dbi-demand-filter"><span>Occupation (NCO)</span><select value={occupationScope} onChange={event => { setOccupationScope(event.target.value); if (event.target.value === 'DEMO') onPreviewDemo?.(); }}><option value="LIVE">Live ranking ┬╖ unavailable</option><option value="EXAMPLES">Illustrative role examples</option><option value="DEMO">Open illustrative demoΓÇª</option></select></label>
++        <label className="dbi-demand-filter"><span>Skill</span><select value={skillFilter} onChange={event => setSkillFilter(event.target.value)}><option value="ALL">All Skills</option>{snapshot.skills.filter(skill => sectorFilter === 'ALL' || skill.sector_id === sectorFilter).slice().sort((a, b) => a.name.localeCompare(b.name)).map(skill => <option key={skill.id} value={skill.id}>{skill.name}</option>)}</select></label>
++        <button className="dbi-demand-refresh" type="button" disabled={refreshing} onClick={() => void refresh()}><RefreshCw size={14} className={refreshing ? 'dbi-spin' : ''}/>{refreshing ? 'Refreshing' : 'Refresh data'}</button>
++      </section>
++      <div className="dbi-demand-filter-status" role="status"><Info size={14}/><span>{periodNote}. Region selection updates the national/state context; sector and skill selections filter the canonical skill catalogue. These filters cannot create job-demand estimates where no demand observations exist.</span></div>
++
++      <section className="dbi-demand-kpis" aria-label="Published labour-market indicators">
++        <article className="dbi-demand-kpi dbi-demand-kpi-blue"><span className="dbi-demand-kpi-icon"><Activity size={23}/></span><div><small>Unemployment Rate</small><strong>{rateValue('UR')}</strong><span>{showPlfs ? 'Persons aged 15+ ┬╖ PLFS CY2025' : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
++        <article className="dbi-demand-kpi dbi-demand-kpi-orange"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>Labour Force Participation</small><strong>{rateValue('LFPR')}</strong><span>{showPlfs ? 'Persons aged 15+ ┬╖ PLFS CY2025' : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
++        <article className="dbi-demand-kpi dbi-demand-kpi-teal"><span className="dbi-demand-kpi-icon"><GraduationCap size={23}/></span><div><small>Worker Population Ratio</small><strong>{rateValue('WPR')}</strong><span>{showPlfs ? 'Persons aged 15+ ┬╖ PLFS CY2025' : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
++        <article className="dbi-demand-kpi dbi-demand-kpi-yellow"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>e-Shram Registrations</small><strong>{showRegistrations && registration ? numberFormat(numeric(registration.value_numeric), true) : 'ΓÇö'}</strong><span>{showRegistrations && registration ? `${periodLabel(registration.reference_period)} ┬╖ registrations, not job demand` : 'Select the e-Shram snapshot to view this measure'}</span></div></article>
++      </section>
++
++      <div className="dbi-demand-middle">
++        <section className="dbi-demand-panel dbi-demand-trend" aria-labelledby="dbi-demand-trend-title">
++          <div className="dbi-demand-panel-head"><div><h2 id="dbi-demand-trend-title">Demand Trend</h2><p>Job-demand series is not published; related source-backed context is shown below</p></div><span className="dbi-demand-tag dbi-demand-tag-warn">No demand rows</span></div>
++          {showNaps ? <div className="dbi-demand-trend-content">
++            <div className="dbi-demand-trend-caption"><strong>Apprentices engaged (NAPS)</strong><span>Related labour-market context ┬╖ not job demand ┬╖ {currentStateName}</span></div>
++            <svg className="dbi-demand-trend-svg" viewBox="0 0 520 220" role="img" aria-label={`Source-backed apprenticeship engagement context for ${currentStateName}`}>
++              {[0,1,2,3].map(index => <line key={index} x1="30" x2="495" y1={28 + index * 42} y2={28 + index * 42} stroke="#e8e4d9" strokeWidth="1"/>)}
++              <line x1="30" x2="495" y1="184" y2="184" stroke="#c9c4b7" strokeWidth="1"/>
++              <polyline points={trendLinePoints} fill="none" stroke="#174d80" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"/>
++              {napsTrend.map((point, index) => { const x = napsTrend.length < 2 ? 260 : 38 + index * (444 / (napsTrend.length - 1)); const y = 176 - (point.value / trendMax) * 126; const active = periodFilter === point.period; return <g key={point.period}><circle cx={x} cy={y} r={active ? 6 : 4.5} fill={active ? '#f2c93d' : '#174d80'} stroke="#fffefa" strokeWidth="2"><title>{periodLabel(point.period)}: {numberFormat(point.value)} apprentices engaged</title></circle><text x={x} y={Math.max(17, y - 12)} textAnchor="middle" className="dbi-demand-chart-value">{numberFormat(point.value, true)}</text><text x={x} y="204" textAnchor="middle" className="dbi-demand-chart-label">{compactPeriodLabel(point.period)}</text></g>; })}
++            </svg>
++            <p className="dbi-demand-chart-note"><Info size={13}/> The NAPS series sums state/UT apprentice-engagement counts for the selected geography. It is a training-program indicator, not a proxy for vacancies or estimated demand.</p>
++          </div> : <div className="dbi-demand-no-period"><strong>No NAPS series for this period selection</strong><p>Choose ΓÇ£Latest per sourceΓÇ¥ or one of the NAPS financial years to view the published apprenticeship context trend.</p></div>}
++          <div className="dbi-demand-legend"><span><i className="dbi-demand-legend-dot"/> Published NAPS counts</span><span><i className="dbi-demand-legend-dash"/> No validated demand forecast available</span></div>
++        </section>
++
++        <section className="dbi-demand-panel dbi-demand-region" aria-labelledby="dbi-demand-region-title">
++          <div className="dbi-demand-panel-head"><div><h2 id="dbi-demand-region-title">Regional Labour-Market Context</h2><p>e-Shram registrations by State / UT ┬╖ not job demand</p></div><span className="dbi-demand-tag">{showRegistrations ? '36 state / UT rows' : 'Choose e-Shram period'}</span></div>
++          {showRegistrations ? <div className="dbi-demand-region-body">
++            <div className="dbi-demand-map-placeholder dbi-demand-live-map">
++              {indiaMap ? <svg viewBox="0 0 260 260" role="img" aria-label="India state map coloured by e-Shram registrations. Select a state to filter the page." className="dbi-demand-india-map">
++                {indiaMap.features.map(feature => {
++                  const code = feature.properties.code.split('-').pop() || '';
++                  const state = snapshot.states.find(item => item.code === code || item.id === feature.properties.code);
++                  const row = state ? stateRegTotals.find(item => item.id === state.id) : undefined;
++                  const selected = regionCode !== 'IN' && state?.id === selectedId;
++                  return <path key={feature.properties.code} d={indiaFeaturePath(feature)} fill={registrationColor(row?.value || 0, maxRegistration)} stroke={selected ? '#171717' : '#fffefa'} strokeWidth={selected ? 1.6 : .65} role={state ? 'button' : undefined} tabIndex={state ? 0 : -1} aria-label={state ? `${state.name}: ${row ? numberFormat(row.value, true) + ' registrations' : 'no registration record'}` : feature.properties.name} onClick={() => state && onRegionChange?.(state.code)} onKeyDown={event => { if (state && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onRegionChange?.(state.code); } }}><title>{feature.properties.name}: {row ? numberFormat(row.value, true) + ' registrations' : 'No published registration record'}</title></path>;
++                })}
++              </svg> : <div className="dbi-demand-map-loading"><MapPin size={26}/><span>Loading official state boundariesΓÇª</span></div>}
++              <span>Click a state to filter</span><small>Colour = registration count. This is not a demand heatmap.</small>
++            </div>
++            <div className="dbi-demand-region-table"><div className="dbi-demand-region-table-head"><div className="dbi-demand-table-title">Worker registrations <small>Snapshot: 14 July 2026</small></div><label className="dbi-demand-sort"><span>Sort</span><select value={regionSort} onChange={event => setRegionSort(event.target.value as 'registrations' | 'name')}><option value="registrations">Most registrations</option><option value="name">State name AΓÇôZ</option></select></label></div>
++              {sortedRegionRows.slice(0, 6).map((row, index) => <div className="dbi-demand-region-row" key={row.id}><span>{regionCode === 'IN' ? index + 1 : 'ΓÇó'}</span><strong>{row.label}</strong><b>{numberFormat(row.value, true)}</b><div className="dbi-demand-bar"><i style={{ width: `${Math.max(5, Math.min(100, row.value / maxRegistration * 100))}%` }}/></div></div>)}
++              {!sortedRegionRows.length ? <p className="dbi-demand-empty-small">No state-level registrations were published for this selection.</p> : null}
++            </div>
++          </div> : <div className="dbi-demand-no-period"><strong>e-Shram registrations are from 14 July 2026</strong><p>Choose ΓÇ£Latest per sourceΓÇ¥ or ΓÇ£e-Shram snapshotΓÇ¥ to view regional registration context.</p></div>}
++          <div className="dbi-demand-panel-foot">e-Shram counts represent cumulative worker registrations, not employment, vacancies or available labour supply.</div>
++        </section>
++      </div>
++
++      <div className="dbi-demand-bottom">
++        <section className="dbi-demand-panel dbi-demand-ranking"><div className="dbi-demand-panel-head"><div><h2>{occupationScope === 'EXAMPLES' ? 'Occupation Explorer' : 'Top Occupations by Demand'}</h2><p>{occupationScope === 'EXAMPLES' ? 'Illustrative NCO-style role examples ┬╖ not ranked by demand' : 'NCO-2015 taxonomy is staged; demand ranking requires validated occupation-linked observations'}</p></div><span className="dbi-demand-tag dbi-demand-tag-warn">No demand rows</span></div>
++          {occupationScope === 'EXAMPLES' ? <div className="dbi-demand-occupation-examples"><div className="dbi-demand-demo-note"><Info size={14}/> Illustrative role examples only. These are not a ranked list and have no live demand values.</div>{illustrativeOccupations.map((occupation, index) => <div className="dbi-demand-occupation-row" key={occupation}><span>{index + 1}</span><strong>{occupation}</strong><em>Illustrative</em></div>)}</div> : <div className="dbi-demand-empty-ranking"><span className="dbi-demand-empty-icon"><FileCheck2 size={22}/></span><strong>Occupation rankings are not published</strong><p>The database has 3,451 current NCO-2015 occupation records in a protected staging table, but the public reader cannot browse that catalogue. More importantly, there are no demand-observation rows to rank occupations by job demand.</p><button type="button" onClick={() => setOccupationScope('EXAMPLES')}>Show illustrative role examples <ArrowUpRight size={13}/></button></div>}
++        </section>
++        <section className="dbi-demand-panel dbi-demand-ranking"><div className="dbi-demand-panel-head"><div><h2>Skills Explorer</h2><p>Canonical skills available in the database ┬╖ no demand ranking published</p></div><span className="dbi-demand-tag">{visibleSkills.length} skills</span></div>
++          {visibleSkills.length ? <div className="dbi-demand-skill-list">{visibleSkills.map((skill, index) => <div className="dbi-demand-skill-row" key={skill.id}><span>{index + 1}</span><div><strong>{skill.name}</strong><small>{sectorsForSkill(skill)}</small></div><em data-confidence={(skill.sector_mapping_confidence || 'LOW').toUpperCase()}>{(skill.sector_mapping_confidence || 'LOW').toUpperCase()} mapping</em></div>)}</div> : <div className="dbi-demand-empty-ranking"><strong>No canonical skills match this filter</strong><p>Choose another sector or skill to reset the catalogue filter.</p><button type="button" onClick={() => { setSectorFilter('ALL'); setSkillFilter('ALL'); }}>Reset catalogue filters</button></div>}
++          <p className="dbi-demand-chart-note"><Info size={13}/> These are canonical taxonomy records, not a demand ranking. Numeric skill-demand indices will appear only when linked observations are published.</p>
++        </section>
++        <section className="dbi-demand-panel dbi-demand-insights"><div className="dbi-demand-panel-head"><div><h2>Demand Insights</h2><p>Evidence-led interpretation</p></div><span className="dbi-demand-insight-mark"><Info size={18}/></span></div>
++          <ul><li><strong>{numberFormat(totalMetrics)} source-backed metric rows</strong> are readable in this snapshot.</li><li>PLFS rates describe labour-market context, not job-posting demand.</li><li>e-Shram counts measure registrations, not available workers or vacancies.</li><li>NAPS apprenticeship engagement provides related programme context, not a vacancy trend.</li><li>Forecasts and regional occupation/skill rankings remain unavailable until compatible demand observations are published.</li></ul>
++          {onPreviewDemo ? <button className="dbi-demand-preview" type="button" onClick={onPreviewDemo}>Open illustrative demo <ArrowUpRight size={14}/></button> : null}
++        </section>
++      </div>
++
++      <details className="dbi-demand-evidence"><summary>Published source evidence and definitions</summary><div className="dbi-demand-evidence-grid">
++        <section className="dbi-demand-panel"><SectionHead title="PLFS 2025 benchmarks ┬╖ age 15+" note="Published annual rates for persons aged 15+, combined rural/urban. A selected-region value is shown only when published for this exact age/sex/area slice; otherwise the row is explicitly labelled India (national)."/><DataTable columns={['Indicator', 'Published value', 'Period', 'Geography', 'Source']}>
++          {rates.map(({ code, label, row }) => row ? <tr key={code}><td><strong>{label}</strong><small>{code}</small></td><td className="dbi-number">{numberFormat(numeric(row.value_numeric))}{row.unit === 'percent' ? '%' : ' ' + row.unit}</td><td>{periodLabel(row.reference_period)}</td><td>{row.state_id ? stateLabel(snapshot, row) : 'India (national)'}</td><td><SourceLink source={sourceFor(snapshot, row.source_id) || employmentSource}/></td></tr> : null)}
++          {rates.every(item => !item.row) ? <tr><td colSpan={5} className="dbi-empty-cell">No canonical person-level PLFS slice is published for this region.</td></tr> : null}
++        </DataTable></section>
++        <section className="dbi-demand-panel"><SectionHead title="Worker-registration distribution" note="Cumulative e-Shram registrations are not job demand, employment or available labour supply."/><DataTable columns={['State / UT', 'Registrations', 'Reference', 'Source']}>
++          {stateRegTotals.slice(0, 10).map(row => <tr key={row.id}><td><strong>{row.label}</strong></td><td className="dbi-number">{numberFormat(row.value, true)}</td><td>{periodLabel(row.period)}</td><td><SourceLink source={sourceFor(snapshot, row.sourceId) || registrationSource}/></td></tr>)}
++        </DataTable></section>
++      </div><div className="dbi-note"><Info size={17}/><div><strong>Interpretation boundary</strong><p>{demandTableNote} Published PLFS and registration context is kept separate from validated job-demand analytics.</p></div></div></details>
++      <footer className="dbi-footer"><span><ShieldCheck size={14}/> Source-backed database view ┬╖ Synthetic data excluded</span><span>{numberFormat(totalMetrics)} readable metric records ┬╖ {numberFormat(districtCount)} district references</span><button type="button" onClick={() => onNavigate?.('data-sources')}>Open Data Sources <ArrowUpRight size={14}/></button></footer>
++    </section>;
++  }
+   return <section className="dbi-shell">
+     <header className="dbi-hero">
+       <div className="dbi-hero-copy">
+@@ -485,10 +774,6 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
+     {snapshot.warnings.length > 0 ? <div className="dbi-inline-warning"><Info size={16}/>Some reference tables could not be read; displayed values are limited to the sources that loaded successfully.</div> : null}
+ 
+     <div className="dbi-kpi-grid">
+-      {module === 'demand' ? <>
+-        {rates.map(({ code, label, row }) => <KpiCard key={code} label={label} value={row ? numberFormat(numeric(row.value_numeric), false) : 'ΓÇö'} unit={row?.unit === 'percent' ? '%' : row?.unit} note={row ? 'Persons aged 15+ ┬╖ ' + periodLabel(row.reference_period) + ' ┬╖ ' + (row.state_id ? stateLabel(snapshot, row) : 'India (national)') : 'No published value for this slice'} icon="activity"/>)}
+-        <KpiCard label="e-Shram registrations" value={registration ? numberFormat(numeric(registration.value_numeric), true) : 'ΓÇö'} note={registration ? periodLabel(registration.reference_period) + ' ┬╖ registrations, not job demand' : 'No published registration snapshot'} icon="people"/>
+-      </> : null}
+       {module === 'supply' ? <>
+         <KpiCard label="Provisional CTS seat capacity" value={visibleStateSeats.length ? numberFormat(seatTotal, true) : 'ΓÇö'} note={visibleStateSeats.length ? (regionCode === 'IN' ? 'Academic session 2026 ┬╖ seats, not completions' : 'Selected region ┬╖ academic session 2026') : 'No published seat-capacity value for this region'} icon="training"/>
+         <KpiCard label="CTS ITIs" value={itiRows.length ? numberFormat(itiTotal, true) : 'ΓÇö'} note={itiRows.length ? periodLabel(itiRows[0].reference_period) + ' ┬╖ ' + itiCoverage : 'No published institute count for this region'} icon="database"/>
+@@ -533,23 +818,6 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
+       </> : null}
+     </div>
+ 
+-    {module === 'demand' ? <>
+-      <div className="dbi-two-col">
+-        <section className="dbi-panel"><SectionHead title="PLFS 2025 benchmarks ┬╖ age 15+" note="Published annual rates for persons aged 15+, combined rural/urban. A selected-region value is shown only when published for this exact age/sex/area slice; otherwise the row is explicitly labelled India (national). The landing page may show a separate all-ages benchmark."/>
+-          <DataTable columns={['Indicator', 'Published value', 'Period', 'Geography', 'Source']}>
+-            {rates.map(({ code, label, row }) => row ? <tr key={code}><td><strong>{label}</strong><small>{code}</small></td><td className="dbi-number">{numberFormat(numeric(row.value_numeric))}{row.unit === 'percent' ? '%' : ' ' + row.unit}</td><td>{periodLabel(row.reference_period)}</td><td>{row.state_id ? stateLabel(snapshot, row) : 'India (national)'}</td><td><SourceLink source={sourceFor(snapshot, row.source_id) || employmentSource}/></td></tr> : null)}
+-            {rates.every(item => !item.row) ? <tr><td colSpan={5} className="dbi-empty-cell">No canonical person-level PLFS slice is published for this region.</td></tr> : null}
+-          </DataTable>
+-        </section>
+-        <section className="dbi-panel"><SectionHead title="Worker-registration distribution" note="State-level e-Shram registrations are cumulative registration counts, not employment, vacancy volume or available labour supply."/>
+-          <DataTable columns={['State / UT', 'Registrations', 'Reference', 'Source']}>
+-            {stateRegTotals.slice(0, 10).map(row => <tr key={row.id}><td><strong>{row.label}</strong></td><td className="dbi-number">{numberFormat(row.value, true)}</td><td>{periodLabel(row.period)}</td><td><SourceLink source={sourceFor(snapshot, row.sourceId) || registrationSource}/></td></tr>)}
+-          </DataTable>
+-        </section>
+-      </div>
+-      <div className="dbi-note"><Info size={17}/><div><strong>Interpretation boundary</strong><p>Direct demand_observations are not yet populated for the public application. This page gives users source-backed labour-market context without mislabelling worker registrations or PLFS rates as vacancy demand.</p></div></div>
+-    </> : null}
+-
+     {module === 'supply' ? <>
+       <section className="dbi-panel"><SectionHead title={regionCode === 'IN' ? 'Provisional training capacity by state' : 'Provisional training capacity ┬╖ selected region'} note="Sum of source-backed CTS trade-level seat-capacity records for academic session 2026. It measures planned training capacityΓÇönot enrolment, completion or employed workers."/>
+         {visibleStateSeats.length ? <div className="dbi-ranking-list">
+diff --git a/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/live-data/database-insights.css b/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/live-data/database-insights.css
+index 7c0206a..9a92b1c 100644
+--- a/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/live-data/database-insights.css
++++ b/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/live-data/database-insights.css
+@@ -165,3 +165,207 @@
+ 
+ .dbi-demo-preview { background: var(--dbi-surface); border-style: dashed; }
+ .dbi-demo-preview:hover { background: #fff7d6; }
++
++/* Demand Insights ΓÇö source-backed editorial layout aligned to the product reference. */
++.dbi-demand-reference {
++  padding: 8px clamp(12px, 1.35vw, 20px) 22px;
++  background-color: #faf7ee;
++  background-image: radial-gradient(rgba(91, 81, 58, .22) .75px, transparent .75px);
++  background-size: 10px 10px;
++}
++.dbi-demand-reference .dbi-demand-hero {
++  display: grid;
++  grid-template-columns: minmax(260px, 1fr) minmax(235px, 300px) minmax(170px, 275px);
++  align-items: center;
++  gap: 14px;
++  margin: 0 0 13px;
++  padding: 3px 0 7px;
++  overflow: visible;
++  border: 0;
++  border-radius: 0;
++  background: transparent;
++  box-shadow: none;
++}
++.dbi-demand-reference .dbi-demand-hero-copy { min-width: 0; }
++.dbi-demand-reference .dbi-demand-breadcrumb { display:flex;align-items:center;gap:9px;margin:0 0 10px;font-size:11px;color:#555249; }
++.dbi-demand-reference .dbi-demand-breadcrumb strong { color:#181818;font-weight:800; }
++.dbi-demand-reference .dbi-demand-hero h1 { margin:0 0 7px;font-family:'Anton','Bebas Neue','Oswald','Arial Narrow',Impact,sans-serif;font-size:clamp(42px,4.6vw,66px);font-weight:900;line-height:.9;letter-spacing:-.025em;text-transform:uppercase;color:#070707; }
++.dbi-demand-reference .dbi-demand-hero p { max-width:56em;margin:0;color:#33332e;font-size:12px;line-height:1.45; }
++.dbi-demand-reference .dbi-demand-meta { display:flex;flex-wrap:wrap;gap:6px 13px;margin-top:10px;color:#5a594f;font-size:9px; }
++.dbi-demand-reference .dbi-demand-meta span { display:inline-flex;align-items:center;gap:4px; }
++.dbi-demand-reference .dbi-demand-meta svg { color:#147e77; }
++.dbi-demand-reference .dbi-demand-callout { display:flex;align-items:center;gap:11px;min-width:0;min-height:82px;padding:12px;border:1px solid #292929;border-radius:8px;background:rgba(255,254,250,.94);box-shadow:3px 3px 0 #171717; }
++.dbi-demand-reference .dbi-demand-callout-icon { display:grid;place-items:center;flex:0 0 36px;height:36px;color:#101010; }
++.dbi-demand-reference .dbi-demand-callout small { display:block;color:#282821;font-size:10px;font-weight:700;line-height:1.3; }
++.dbi-demand-reference .dbi-demand-callout strong { display:block;margin:3px 0;font-family:'Anton','Bebas Neue','Oswald','Arial Narrow',Impact,sans-serif;font-size:32px;font-weight:800;line-height:.96;color:#111; }
++.dbi-demand-reference .dbi-demand-callout span:not(.dbi-demand-callout-icon) { display:block;color:#68665d;font-size:9px;line-height:1.35; }
++.dbi-demand-reference .dbi-demand-hero-art { display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0;height:118px;overflow:hidden; }
++.dbi-demand-reference .dbi-demand-hero-art img { width:min(74%,220px);height:100%;object-fit:contain;object-position:center bottom;mix-blend-mode:multiply; }
++.dbi-demand-reference .dbi-demand-hero-art div { flex:0 0 auto;font-size:10px;font-weight:900;letter-spacing:.1em;line-height:1.45;color:#151515; }
++.dbi-demand-reference .dbi-demand-filters { display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) auto;gap:9px;align-items:end;margin:0 0 13px;padding:10px 12px;border:1px solid #242424;border-radius:8px;background:rgba(255,254,250,.97);box-shadow:3px 3px 0 #171717; }
++.dbi-demand-reference .dbi-demand-filter { display:flex;flex-direction:column;gap:4px;min-width:0; }
++.dbi-demand-reference .dbi-demand-filter > span { font-size:10px;font-weight:800;color:#26251f; }
++.dbi-demand-reference .dbi-demand-filter button { display:flex;align-items:center;justify-content:space-between;gap:6px;height:34px;min-width:0;padding:0 9px;border:1px solid #d1cfc6;border-radius:5px;background:#fbfaf5;color:#535149;text-align:left;font-size:10px;white-space:nowrap;overflow:hidden; }
++.dbi-demand-reference .dbi-demand-filter button:disabled { opacity:1;cursor:not-allowed; }
++.dbi-demand-reference .dbi-demand-filter button span { flex:0 0 auto;color:#171717;font-size:13px; }
++.dbi-demand-reference .dbi-demand-refresh { display:flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 10px;border:1px solid #171717;border-radius:5px;background:#f2d34f;box-shadow:1.5px 1.5px 0 #171717;font-size:10px;font-weight:800;white-space:nowrap;cursor:pointer; }
++.dbi-demand-reference .dbi-demand-refresh:disabled { opacity:.7;cursor:wait; }
++.dbi-demand-reference .dbi-demand-kpis { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 13px; }
++.dbi-demand-reference .dbi-demand-kpi { display:flex;align-items:center;gap:10px;min-width:0;min-height:84px;padding:11px;border:1.3px solid #171717;border-radius:8px;background:#fffefa;box-shadow:3px 3px 0 #171717; }
++.dbi-demand-reference .dbi-demand-kpi-icon { display:grid;place-items:center;flex:0 0 43px;height:43px;border-radius:50%;color:#141414; }
++.dbi-demand-reference .dbi-demand-kpi > div { min-width:0;display:flex;flex-direction:column; }
++.dbi-demand-reference .dbi-demand-kpi small { font-size:10px;font-weight:700;line-height:1.25;color:#282720; }
++.dbi-demand-reference .dbi-demand-kpi strong { margin:3px 0 2px;font-family:'Anton','Bebas Neue','Oswald','Arial Narrow',Impact,sans-serif;font-size:clamp(22px,2.05vw,31px);font-weight:800;line-height:1;color:#0b0b0b;white-space:nowrap; }
++.dbi-demand-reference .dbi-demand-kpi > div > span { font-size:9px;line-height:1.3;color:#625f55; }
++.dbi-demand-reference .dbi-demand-kpi-blue { background:linear-gradient(110deg,#e8f3fb,#fffefa); }
++.dbi-demand-reference .dbi-demand-kpi-blue .dbi-demand-kpi-icon { background:#c7e3f4; }
++.dbi-demand-reference .dbi-demand-kpi-orange { background:linear-gradient(110deg,#fff0df,#fffefa); }
++.dbi-demand-reference .dbi-demand-kpi-orange .dbi-demand-kpi-icon { background:#ffd7b6; }
++.dbi-demand-reference .dbi-demand-kpi-teal { background:linear-gradient(110deg,#e4f6f3,#fffefa); }
++.dbi-demand-reference .dbi-demand-kpi-teal .dbi-demand-kpi-icon { background:#b9e8e3; }
++.dbi-demand-reference .dbi-demand-kpi-yellow { background:linear-gradient(110deg,#fff8d9,#fffefa); }
++.dbi-demand-reference .dbi-demand-kpi-yellow .dbi-demand-kpi-icon { background:#ffe17a; }
++.dbi-demand-reference .dbi-demand-middle { display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,1.15fr);gap:12px;align-items:stretch;margin-bottom:13px; }
++.dbi-demand-reference .dbi-demand-bottom { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.82fr);gap:12px;align-items:stretch;margin-bottom:13px; }
++.dbi-demand-reference .dbi-demand-panel { display:flex;flex-direction:column;min-width:0;padding:12px 13px;border:1.3px solid #292929;border-radius:8px;background:rgba(255,254,250,.97);box-shadow:3px 3px 0 #171717; }
++.dbi-demand-reference .dbi-demand-panel-head { display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-width:0;margin-bottom:7px; }
++.dbi-demand-reference .dbi-demand-panel-head h2 { margin:0;font-family:'Anton','Bebas Neue','Oswald','Arial Narrow',Impact,sans-serif;font-size:21px;font-weight:800;line-height:1.05;letter-spacing:-.015em;text-transform:uppercase;color:#121212; }
++.dbi-demand-reference .dbi-demand-panel-head p { margin:4px 0 0;font-size:10px;line-height:1.4;color:#68655c; }
++.dbi-demand-reference .dbi-demand-tag { display:inline-flex;align-items:center;flex:0 0 auto;padding:4px 7px;border:1px solid #cfcab8;border-radius:4px;background:#f5f2e8;color:#5c574a;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.04em; }
++.dbi-demand-reference .dbi-demand-tag-warn { background:#fff4cf;border-color:#e3ce8e;color:#795e16; }
++.dbi-demand-reference .dbi-demand-chart-grid { display:grid;grid-template-columns:28px minmax(0,1fr);gap:6px;min-height:206px; }
++.dbi-demand-reference .dbi-demand-chart-y { display:flex;flex-direction:column;justify-content:space-between;padding:5px 0 22px;color:#777268;font-size:9px; }
++.dbi-demand-reference .dbi-demand-chart-plot { position:relative;min-width:0;border-bottom:1px solid #bebbb1;background-image:linear-gradient(to bottom,rgba(145,139,125,.16) 1px,transparent 1px),linear-gradient(to right,rgba(145,139,125,.10) 1px,transparent 1px);background-size:100% 25%,12.5% 100%; }
++.dbi-demand-reference .dbi-demand-chart-empty { position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:18px;text-align:center; }
++.dbi-demand-reference .dbi-demand-chart-empty strong { font-size:12px;color:#333127; }
++.dbi-demand-reference .dbi-demand-chart-empty span { max-width:380px;color:#706b60;font-size:10px;line-height:1.45; }
++.dbi-demand-reference .dbi-demand-chart-axis { position:absolute;bottom:-20px;left:0;right:0;display:flex;justify-content:space-between;color:#777267;font-size:9px; }
++.dbi-demand-reference .dbi-demand-legend { display:flex;flex-wrap:wrap;gap:9px 15px;margin-top:29px;color:#656157;font-size:9px; }
++.dbi-demand-reference .dbi-demand-legend span { display:inline-flex;align-items:center;gap:5px; }
++.dbi-demand-reference .dbi-demand-legend-dot { width:7px;height:7px;border-radius:50%;background:#18518a; }
++.dbi-demand-reference .dbi-demand-legend-dash { width:17px;border-top:2px dashed #71b8e5; }
++.dbi-demand-reference .dbi-demand-region-body { display:grid;grid-template-columns:minmax(120px,.7fr) minmax(0,1.3fr);gap:10px;min-height:205px; }
++.dbi-demand-reference .dbi-demand-map-placeholder { position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:180px;padding:8px;border:1px dashed #ded5b9;border-radius:6px;background:#fff9e5;text-align:center;overflow:hidden; }
++.dbi-demand-reference .dbi-demand-map-placeholder img { width:100%;height:145px;object-fit:contain;filter:grayscale(1);opacity:.43;mix-blend-mode:multiply; }
++.dbi-demand-reference .dbi-demand-map-placeholder > span { position:relative;margin-top:-2px;color:#484438;font-size:9px;font-weight:800; }
++.dbi-demand-reference .dbi-demand-map-placeholder small { max-width:180px;margin-top:3px;color:#6b6558;font-size:8px;line-height:1.35; }
++.dbi-demand-reference .dbi-demand-region-table { min-width:0; }
++.dbi-demand-reference .dbi-demand-table-title { display:flex;flex-direction:column;gap:2px;padding:1px 0 7px;border-bottom:1px solid #dedbd1;font-size:10px;font-weight:800; }
++.dbi-demand-reference .dbi-demand-table-title small { color:#736d60;font-size:8px;font-weight:500; }
++.dbi-demand-reference .dbi-demand-region-row { display:grid;grid-template-columns:15px minmax(0,1fr) auto;gap:5px;align-items:center;padding:7px 0;border-bottom:1px solid #eae7de;font-size:9px; }
++.dbi-demand-reference .dbi-demand-region-row > span { color:#777166; }
++.dbi-demand-reference .dbi-demand-region-row strong { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600; }
++.dbi-demand-reference .dbi-demand-region-row b { white-space:nowrap;font-variant-numeric:tabular-nums; }
++.dbi-demand-reference .dbi-demand-bar { grid-column:2/4;height:5px;background:#f0e7d0;border-radius:2px;overflow:hidden; }
++.dbi-demand-reference .dbi-demand-bar i { display:block;height:100%;background:linear-gradient(90deg,#ffd96c,#c75c12); }
++.dbi-demand-reference .dbi-demand-empty-small { color:#706b60;font-size:10px; }
++.dbi-demand-reference .dbi-demand-panel-foot { margin-top:auto;padding-top:8px;color:#736d60;font-size:8px;line-height:1.4; }
++.dbi-demand-reference .dbi-demand-empty-ranking { display:flex;flex:1;flex-direction:column;align-items:flex-start;justify-content:center;min-height:180px;padding:14px 3px 4px; }
++.dbi-demand-reference .dbi-demand-empty-icon { display:grid;place-items:center;width:34px;height:34px;margin-bottom:9px;border:1px solid #e6d7a2;border-radius:50%;background:#fff4c9;color:#26251f; }
++.dbi-demand-reference .dbi-demand-empty-ranking strong { font-size:11px;color:#28271f; }
++.dbi-demand-reference .dbi-demand-empty-ranking p { margin:6px 0 0;color:#6b675d;font-size:10px;line-height:1.5; }
++.dbi-demand-reference .dbi-demand-insight-mark { display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:#fff2bc;color:#28261e; }
++.dbi-demand-reference .dbi-demand-insights ul { margin:4px 0 12px;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px; }
++.dbi-demand-reference .dbi-demand-insights li { padding-left:9px;border-left:3px solid #f2d34f;font-size:9px;line-height:1.45;color:#37352d; }
++.dbi-demand-reference .dbi-demand-insights li strong { font-weight:800; }
++.dbi-demand-reference .dbi-demand-preview { display:inline-flex;align-items:center;justify-content:center;gap:5px;align-self:flex-start;margin-top:auto;padding:7px 9px;border:1px solid #171717;border-radius:5px;background:#f2d34f;font-size:9px;font-weight:800;cursor:pointer; }
++.dbi-demand-reference .dbi-demand-evidence { margin:0 0 13px;border:1px solid #c8c4b7;border-radius:7px;background:rgba(255,254,250,.94); }
++.dbi-demand-reference .dbi-demand-evidence > summary { padding:11px 13px;font-size:11px;font-weight:800;cursor:pointer; }
++.dbi-demand-reference .dbi-demand-evidence-grid { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:0 12px 12px; }
++.dbi-demand-reference .dbi-demand-evidence-grid .dbi-demand-panel { box-shadow:none; }
++.dbi-demand-reference .dbi-demand-evidence-grid .dbi-section-head h2 { font-size:17px; }
++.dbi-demand-reference .dbi-footer { margin-top:9px; }
++@media (max-width: 1280px) {
++  .dbi-demand-reference .dbi-demand-hero { grid-template-columns:minmax(0,1fr) minmax(220px,285px); }
++  .dbi-demand-reference .dbi-demand-hero-art { display:none; }
++  .dbi-demand-reference .dbi-demand-filters { grid-template-columns:repeat(3,minmax(0,1fr)); }
++  .dbi-demand-reference .dbi-demand-refresh { min-height:34px; }
++  .dbi-demand-reference .dbi-demand-kpi { gap:8px;padding:9px; }
++  .dbi-demand-reference .dbi-demand-kpi-icon { flex-basis:37px;height:37px; }
++  .dbi-demand-reference .dbi-demand-middle { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
++}
++@media (max-width: 900px) {
++  .dbi-demand-reference .dbi-demand-middle { grid-template-columns:minmax(0,1fr); }
++  .dbi-demand-reference .dbi-demand-bottom { grid-template-columns:repeat(2,minmax(0,1fr)); }
++  .dbi-demand-reference .dbi-demand-insights { grid-column:1/-1; }
++  .dbi-demand-reference .dbi-demand-evidence-grid { grid-template-columns:minmax(0,1fr); }
++}
++@media (max-width: 640px) {
++  .dbi-demand-reference { padding:12px; }
++  .dbi-demand-reference .dbi-demand-hero { grid-template-columns:minmax(0,1fr);gap:12px; }
++  .dbi-demand-reference .dbi-demand-hero h1 { font-size:42px; }
++  .dbi-demand-reference .dbi-demand-callout { max-width:none; }
++  .dbi-demand-reference .dbi-demand-filters { grid-template-columns:repeat(2,minmax(0,1fr)); }
++  .dbi-demand-reference .dbi-demand-kpis { grid-template-columns:repeat(2,minmax(0,1fr));gap:9px; }
++  .dbi-demand-reference .dbi-demand-kpi { align-items:flex-start;flex-direction:column;min-height:116px; }
++  .dbi-demand-reference .dbi-demand-kpi strong { font-size:27px; }
++  .dbi-demand-reference .dbi-demand-bottom { grid-template-columns:minmax(0,1fr); }
++  .dbi-demand-reference .dbi-demand-insights { grid-column:auto; }
++  .dbi-demand-reference .dbi-demand-region-body { grid-template-columns:minmax(0,1fr); }
++  .dbi-demand-reference .dbi-demand-map-placeholder { min-height:120px; }
++  .dbi-demand-reference .dbi-demand-map-placeholder img { height:100px; }
++}
++
++/* Interactive, source-backed Demand Insights refinements. */
++.dbi-demand-reference .dbi-demand-demo-launch { display:inline-flex;align-items:center;justify-content:center;gap:7px;position:absolute;right:0;bottom:4px;padding:8px 11px;border:1px solid #171717;border-radius:5px;background:#f2d34f;box-shadow:2px 2px 0 #171717;font-size:10px;font-weight:850;cursor:pointer; }
++.dbi-demand-reference .dbi-demand-hero { padding-bottom:40px; }
++.dbi-demand-reference .dbi-demand-filter select,
++.dbi-demand-reference .dbi-demand-filter input { display:block;width:100%;height:34px;min-width:0;padding:0 8px;border:1px solid #d1cfc6;border-radius:5px;background:#fbfaf5;color:#35342e;font-size:10px; }
++.dbi-demand-reference .dbi-demand-filter select:focus-visible,
++.dbi-demand-reference .dbi-demand-sort select:focus-visible { outline:2px solid #174d80;outline-offset:2px; }
++.dbi-demand-reference .dbi-demand-filter-status { display:flex;align-items:flex-start;gap:7px;margin:-4px 0 13px;padding:8px 10px;border:1px solid #e3d6a9;border-radius:5px;background:#fff9e7;color:#6b5b31;font-size:9px;line-height:1.45; }
++.dbi-demand-reference .dbi-demand-filter-status svg { flex:0 0 auto;margin-top:1px; }
++.dbi-demand-reference .dbi-demand-callout strong { font-size:clamp(18px,1.65vw,26px);letter-spacing:-.02em;white-space:nowrap; }
++.dbi-demand-reference .dbi-demand-callout span:not(.dbi-demand-callout-icon) { max-width:245px; }
++.dbi-demand-reference .dbi-demand-trend-content { min-width:0; }
++.dbi-demand-reference .dbi-demand-trend-caption { display:flex;flex-direction:column;gap:3px;margin:7px 0 0; }
++.dbi-demand-reference .dbi-demand-trend-caption strong { font-size:11px;color:#27261f; }
++.dbi-demand-reference .dbi-demand-trend-caption span { font-size:9px;color:#6d685d; }
++.dbi-demand-reference .dbi-demand-trend-svg { display:block;width:100%;height:auto;max-height:230px;overflow:visible;margin-top:3px; }
++.dbi-demand-reference .dbi-demand-chart-value { fill:#2d2a22;font-size:10px;font-weight:800; }
++.dbi-demand-reference .dbi-demand-chart-label { fill:#6c675d;font-size:10px; }
++.dbi-demand-reference .dbi-demand-chart-note { display:flex;align-items:flex-start;gap:5px;margin:5px 0 0;color:#6b675d;font-size:9px;line-height:1.45; }
++.dbi-demand-reference .dbi-demand-chart-note svg { flex:0 0 auto;margin-top:1px;color:#8c6b1f; }
++.dbi-demand-reference .dbi-demand-no-period { display:flex;flex-direction:column;justify-content:center;gap:6px;min-height:180px;padding:20px;border:1px dashed #d6cfbd;border-radius:6px;background:#fbf8ef;text-align:center; }
++.dbi-demand-reference .dbi-demand-no-period strong { font-size:12px;color:#333127; }
++.dbi-demand-reference .dbi-demand-no-period p { margin:0;color:#706b60;font-size:10px;line-height:1.5; }
++.dbi-demand-reference .dbi-demand-region-table-head { display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding-bottom:5px;border-bottom:1px solid #dedbd1; }
++.dbi-demand-reference .dbi-demand-region-table-head .dbi-demand-table-title { padding:0;border:0; }
++.dbi-demand-reference .dbi-demand-sort { display:flex;flex-direction:column;gap:3px;min-width:110px; }
++.dbi-demand-reference .dbi-demand-sort span { font-size:8px;color:#6e685c;font-weight:800; }
++.dbi-demand-reference .dbi-demand-sort select { max-width:145px;height:26px;padding:0 5px;border:1px solid #d1cfc6;border-radius:4px;background:#fbfaf5;font-size:8px;color:#403d34; }
++.dbi-demand-reference .dbi-demand-live-map { justify-content:center;gap:4px;background:#fff9e7; }
++.dbi-demand-reference .dbi-demand-india-map { display:block;width:100%;height:200px;max-height:240px;overflow:visible; }
++.dbi-demand-reference .dbi-demand-india-map path { transition:fill .12s ease,stroke .12s ease;cursor:pointer; }
++.dbi-demand-reference .dbi-demand-india-map path:focus-visible { outline:none;stroke:#111;stroke-width:2.5; }
++.dbi-demand-reference .dbi-demand-map-loading { min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#6d675a;font-size:9px; }
++.dbi-demand-reference .dbi-demand-map-loading svg { color:#b75618; }
++.dbi-demand-reference .dbi-demand-live-map > span { margin-top:0; }
++.dbi-demand-reference .dbi-demand-occupation-examples { display:flex;flex-direction:column;gap:0; }
++.dbi-demand-reference .dbi-demand-demo-note { display:flex;align-items:flex-start;gap:6px;margin:4px 0 8px;padding:7px;border:1px solid #e2d49b;border-radius:4px;background:#fff9e2;color:#6c5928;font-size:8px;line-height:1.4; }
++.dbi-demand-reference .dbi-demand-demo-note svg { flex:0 0 auto; }
++.dbi-demand-reference .dbi-demand-occupation-row { display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:7px;padding:8px 0;border-bottom:1px solid #eae7de;font-size:9px; }
++.dbi-demand-reference .dbi-demand-occupation-row > span { color:#6f695e; }
++.dbi-demand-reference .dbi-demand-occupation-row strong { font-size:9px;line-height:1.35; }
++.dbi-demand-reference .dbi-demand-occupation-row em { padding:3px 5px;border-radius:3px;background:#f8f0d5;color:#796522;font-size:7px;font-style:normal;font-weight:800;text-transform:uppercase; }
++.dbi-demand-reference .dbi-demand-skill-list { display:flex;flex-direction:column;gap:0; }
++.dbi-demand-reference .dbi-demand-skill-row { display:grid;grid-template-columns:17px minmax(0,1fr) auto;align-items:center;gap:7px;padding:8px 0;border-bottom:1px solid #eae7de; }
++.dbi-demand-reference .dbi-demand-skill-row > span { color:#777166;font-size:9px; }
++.dbi-demand-reference .dbi-demand-skill-row > div { display:flex;flex-direction:column;gap:3px;min-width:0; }
++.dbi-demand-reference .dbi-demand-skill-row strong { color:#292820;font-size:10px;line-height:1.25; }
++.dbi-demand-reference .dbi-demand-skill-row small { color:#777166;font-size:8px;line-height:1.3; }
++.dbi-demand-reference .dbi-demand-skill-row em { font-size:7px;font-style:normal;font-weight:850;white-space:nowrap;color:#6a633e;background:#f5efda;border:1px solid #e5dcb8;border-radius:3px;padding:3px 4px; }
++.dbi-demand-reference .dbi-demand-skill-row em[data-confidence="HIGH"] { color:#186745;background:#e8f6ec;border-color:#c1e4cb; }
++.dbi-demand-reference .dbi-demand-skill-row em[data-confidence="MEDIUM"] { color:#755b10;background:#fff6d7;border-color:#eadca7; }
++.dbi-demand-reference .dbi-demand-skill-row em[data-confidence="LOW"] { color:#8d4a21;background:#fff0e5;border-color:#e9c5ab; }
++@media (max-width: 1280px) {
++  .dbi-demand-reference .dbi-demand-demo-launch { position:static;justify-self:start;grid-column:1/-1;width:max-content; }
++  .dbi-demand-reference .dbi-demand-hero { padding-bottom:5px; }
++  .dbi-demand-reference .dbi-demand-filters { grid-template-columns:repeat(3,minmax(0,1fr)); }
++}
++@media (max-width: 640px) {
++  .dbi-demand-reference .dbi-demand-demo-launch { width:100%; }
++  .dbi-demand-reference .dbi-demand-region-table-head { flex-direction:column; }
++  .dbi-demand-reference .dbi-demand-sort,.dbi-demand-reference .dbi-demand-sort select { width:100%;max-width:none; }
++  .dbi-demand-reference .dbi-demand-india-map { height:190px; }
++}
+diff --git a/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/shramik-dashboard.css b/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/shramik-dashboard.css
+index dbd76e1..effd1e9 100644
+--- a/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/shramik-dashboard.css
++++ b/frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/src/shramik-dashboard.css
+@@ -1,8 +1,8 @@
+ @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+ :root{font-family:'IBM Plex Sans',Arial,sans-serif;color:#171717;background:#F7F6F0;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;--canvas:#F7F6F0;--surface:#FFFEFA;--surface-muted:#F0EFE8;--ink:#171717;--muted:#62625C;--border:#292929;--border-soft:#D8D6CD;--yellow:#F2D34F;--yellow-hover:#EAC83B;--navy:#203A5B;--orange:#EB791D;--teal:#20A89C;--success:#137B51;--danger:#D82F2F;--shadow:3px 3px 0 var(--ink);--display:'Barlow Condensed','Arial Narrow',Impact,sans-serif}
+ *{box-sizing:border-box}html{min-width:320px;background:var(--canvas)}body{margin:0;background:var(--canvas);min-width:320px;min-height:100vh}body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(rgba(35,35,32,.27) .72px,transparent .9px);background-size:18px 18px;background-position:0 0}button,input,select{font:inherit}button{color:inherit}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--navy);outline-offset:3px}button{cursor:pointer}.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+-.app-root{position:relative;z-index:1;min-height:100vh}.topbar{height:78px;position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:18px;padding:0 26px;border-bottom:1px solid var(--border-soft);background:rgba(247,246,240,.98)}.brand-lockup{display:flex;align-items:center;gap:10px;flex:0 0 345px;min-width:0}.brand-mark{display:flex;align-items:center;justify-content:center;width:48px;height:48px;flex:0 0 48px;border:2px solid var(--ink);border-radius:9px;background:var(--yellow);box-shadow:2px 2px 0 var(--ink);font:900 36px/.9 var(--display);letter-spacing:-2px;color:#080808}.brand-word{display:flex;align-items:center;gap:13px;min-width:0}.brand-word strong,.brand-copy strong{font:900 33px/.9 var(--display);letter-spacing:-.8px}.brand-word span{padding-left:12px;border-left:1px solid var(--border-soft);font:700 11px/1.1 var(--display);letter-spacing:.3px;text-transform:uppercase;max-width:100px}.global-search{height:44px;display:flex;align-items:center;gap:9px;position:relative;min-width:140px;max-width:560px;flex:1;padding:0 12px;border:1.3px solid var(--border);border-radius:8px;background:rgba(255,254,250,.68)}.global-search input{width:100%;min-width:0;border:0;outline:none;background:transparent;font-size:13px;color:var(--ink)}.global-search input:focus-visible{outline:none}.global-search:focus-within{outline:3px solid var(--navy);outline-offset:3px}.global-search kbd{font-size:10px;padding:3px 5px;border:1px solid var(--border-soft);border-radius:4px;background:#fffdf6;color:var(--muted)}.search-hint{position:absolute;top:49px;left:0;right:0;background:#fffef9;border:1px solid var(--border);border-radius:6px;padding:11px;font-size:12px;box-shadow:var(--shadow);z-index:5}.region-select{height:44px;display:flex;align-items:center;gap:7px;min-width:168px;max-width:205px;padding:0 10px;border:1px solid #8A8983;border-radius:8px;background:#FBF9F1}.region-select select{appearance:none;min-width:0;flex:1;border:0;outline:none;background:transparent;font-size:12px;font-weight:700;white-space:nowrap}.icon-button{height:40px;width:40px;flex:0 0 40px;display:grid;place-items:center;position:relative;border:0;border-radius:8px;background:transparent}.icon-button:hover{background:var(--surface-muted)}.notification-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:#E23C2B;border:1px solid var(--canvas)}.profile-button{display:flex;align-items:center;gap:10px;border:0;background:transparent;padding:3px 0 3px 3px;text-align:left;white-space:nowrap}.avatar{height:43px;width:43px;display:grid;place-items:center;flex:0 0 43px;border:1.5px solid var(--ink);border-radius:50%;background:var(--yellow);box-shadow:2px 2px 0 var(--ink);font:700 25px var(--display)}.profile-name{display:flex;flex-direction:column;gap:2px;font-size:12px}.profile-name small{color:var(--muted);font-size:10px}.mobile-menu,.mobile-brand,.mobile-search-toggle{display:none}.app-layout{display:grid;grid-template-columns:224px minmax(0,1fr);align-items:stretch}.sidebar{position:sticky;top:78px;height:calc(100vh - 78px);min-height:610px;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border-soft);background:rgba(247,246,240,.7);padding:22px 14px 14px}.nav-list{display:flex;flex-direction:column;gap:4px;position:relative;z-index:2}.nav-item{width:100%;height:46px;display:flex;align-items:center;gap:13px;padding:0 14px;border:1px solid transparent;border-radius:6px;background:transparent;text-align:left;font-size:14px;font-weight:600;transition:background .15s,border-color .15s}.nav-item svg{flex:0 0 20px}.nav-item:hover{background:rgba(255,255,255,.7)}.nav-item.active{background:var(--yellow);border:1.4px solid var(--ink);box-shadow:1.5px 1.5px 0 var(--ink)}.nav-divider{height:1px;background:#C8C6BC;margin:12px 2px 9px}.sidebar-art{position:absolute;left:0;right:0;bottom:130px;height:250px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;pointer-events:none;opacity:.97}.sidebar-art img{width:100%;height:100%;object-fit:cover;object-position:center bottom;mix-blend-mode:multiply}.mission-note{position:relative;z-index:2;margin-top:auto;display:flex;align-items:center;gap:11px;padding:12px;border:1px solid #BDBBB0;border-radius:6px;background:rgba(250,248,239,.96)}.mission-note p{margin:0;font-size:12px;line-height:1.25}.mission-icon{height:31px;width:31px;flex:0 0 31px;display:grid;place-items:center;border:1px solid var(--border-soft);border-radius:50%;background:var(--yellow)}
+-.dashboard-main{min-width:0;padding:20px 20px 14px;max-width:1800px;width:100%;margin:0 auto}.hero-band{min-height:206px;display:grid;grid-template-columns:minmax(340px,.95fr) minmax(420px,1.25fr);align-items:center;position:relative;margin-bottom:12px;overflow:visible}.hero-copy{position:relative;z-index:2;align-self:center;padding:5px 0 8px 12px}.breadcrumb{font:600 12px/1.3 var(--display);letter-spacing:.5px;text-transform:uppercase;color:#242424;margin-bottom:8px}.breadcrumb span{color:#8E8A7C;padding:0 4px}.hero-copy h1{font:900 clamp(40px,3.35vw,58px)/.91 var(--display);letter-spacing:-.7px;text-transform:uppercase;max-width:620px;margin:0}.title-underline{width:164px;height:9px;background:var(--yellow);margin:12px 0 11px}.hero-copy p{font-size:14px;line-height:1.45;color:#33332F;max-width:520px;margin:0}.hero-art-wrap{position:absolute;right:0;top:-3px;bottom:0;width:57%;display:flex;align-items:center;justify-content:flex-end;will-change:transform;pointer-events:none;transition:transform .06s linear}.hero-art{width:100%;height:100%;object-fit:contain;object-position:center center;mix-blend-mode:multiply}.sticky-note-art{position:absolute;top:11px;right:-2px;width:120px;max-height:126px;object-fit:contain;transform:rotate(3deg);mix-blend-mode:multiply}.hero-accent-dot{position:absolute;right:8%;bottom:12px;width:18px;height:18px;border-radius:50%;background:var(--orange);border:1px solid rgba(23,23,23,.12)}
++.app-root{position:relative;z-index:1;min-height:100vh}.topbar{height:66px;position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--border-soft);background:rgba(247,246,240,.98)}.brand-lockup{display:flex;align-items:center;gap:10px;flex:0 0 315px;min-width:0}.brand-mark{display:flex;align-items:center;justify-content:center;width:42px;height:42px;flex:0 0 42px;border:2px solid var(--ink);border-radius:9px;background:var(--yellow);box-shadow:2px 2px 0 var(--ink);font:900 32px/.9 var(--display);letter-spacing:-2px;color:#080808}.brand-word{display:flex;align-items:center;gap:13px;min-width:0}.brand-word strong,.brand-copy strong{font:900 30px/.9 var(--display);letter-spacing:-.8px}.brand-word span{padding-left:12px;border-left:1px solid var(--border-soft);font:700 11px/1.1 var(--display);letter-spacing:.3px;text-transform:uppercase;max-width:100px}.global-search{height:38px;display:flex;align-items:center;gap:9px;position:relative;min-width:140px;max-width:560px;flex:1;padding:0 12px;border:1.3px solid var(--border);border-radius:8px;background:rgba(255,254,250,.68)}.global-search input{width:100%;min-width:0;border:0;outline:none;background:transparent;font-size:13px;color:var(--ink)}.global-search input:focus-visible{outline:none}.global-search:focus-within{outline:3px solid var(--navy);outline-offset:3px}.global-search kbd{font-size:10px;padding:3px 5px;border:1px solid var(--border-soft);border-radius:4px;background:#fffdf6;color:var(--muted)}.search-hint{position:absolute;top:49px;left:0;right:0;background:#fffef9;border:1px solid var(--border);border-radius:6px;padding:11px;font-size:12px;box-shadow:var(--shadow);z-index:5}.region-select{height:38px;display:flex;align-items:center;gap:7px;min-width:168px;max-width:205px;padding:0 10px;border:1px solid #8A8983;border-radius:8px;background:#FBF9F1}.region-select select{appearance:none;min-width:0;flex:1;border:0;outline:none;background:transparent;font-size:12px;font-weight:700;white-space:nowrap}.icon-button{height:40px;width:40px;flex:0 0 40px;display:grid;place-items:center;position:relative;border:0;border-radius:8px;background:transparent}.icon-button:hover{background:var(--surface-muted)}.notification-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:#E23C2B;border:1px solid var(--canvas)}.profile-button{display:flex;align-items:center;gap:10px;border:0;background:transparent;padding:3px 0 3px 3px;text-align:left;white-space:nowrap}.avatar{height:43px;width:43px;display:grid;place-items:center;flex:0 0 43px;border:1.5px solid var(--ink);border-radius:50%;background:var(--yellow);box-shadow:2px 2px 0 var(--ink);font:700 25px var(--display)}.profile-name{display:flex;flex-direction:column;gap:2px;font-size:12px}.profile-name small{color:var(--muted);font-size:10px}.mobile-menu,.mobile-brand,.mobile-search-toggle{display:none}.app-layout{display:grid;grid-template-columns:224px minmax(0,1fr);align-items:stretch}.sidebar{position:sticky;top:66px;height:calc(100vh - 66px);min-height:610px;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border-soft);background:rgba(247,246,240,.7);padding:14px 12px 12px}.nav-list{display:flex;flex-direction:column;gap:3px;position:relative;z-index:2}.nav-item{width:100%;height:38px;display:flex;align-items:center;gap:11px;padding:0 11px;border:1px solid transparent;border-radius:6px;background:transparent;text-align:left;font-size:13px;font-weight:600;transition:background .15s,border-color .15s}.nav-item svg{flex:0 0 20px}.nav-item:hover{background:rgba(255,255,255,.7)}.nav-item.active{background:var(--yellow);border:1.4px solid var(--ink);box-shadow:1.5px 1.5px 0 var(--ink)}.nav-divider{height:1px;background:#C8C6BC;margin:7px 2px 6px}.sidebar-art{position:absolute;left:0;right:0;top:min(555px,calc(100% - 220px));bottom:auto;height:205px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;pointer-events:none;opacity:.92;z-index:0;mask-image:linear-gradient(to bottom,transparent 0%,#000 18%,#000 78%,transparent 100%)}.sidebar-art img{width:100%;height:100%;object-fit:cover;object-position:center bottom;mix-blend-mode:multiply}.sidebar .nav-list{z-index:3}.sidebar .mission-note{z-index:3}.mission-note{position:relative;z-index:2;margin-top:auto;display:flex;align-items:center;gap:11px;padding:12px;border:1px solid #BDBBB0;border-radius:6px;background:rgba(250,248,239,.96)}.mission-note p{margin:0;font-size:12px;line-height:1.25}.mission-icon{height:31px;width:31px;flex:0 0 31px;display:grid;place-items:center;border:1px solid var(--border-soft);border-radius:50%;background:var(--yellow)}
++.dashboard-main{min-width:0;padding:20px 20px 14px;max-width:1800px;width:100%;margin:0 auto}.dashboard-main.module-main:has(.sh.embedded){padding-top:28px}.dashboard-main.module-main .sh.embedded .main{padding-top:20px!important;margin-top:0!important;position:relative;z-index:1}.hero-band{min-height:206px;display:grid;grid-template-columns:minmax(340px,.95fr) minmax(420px,1.25fr);align-items:center;position:relative;margin-bottom:12px;overflow:visible}.hero-copy{position:relative;z-index:2;align-self:center;padding:5px 0 8px 12px}.breadcrumb{font:600 12px/1.3 var(--display);letter-spacing:.5px;text-transform:uppercase;color:#242424;margin-bottom:8px}.breadcrumb span{color:#8E8A7C;padding:0 4px}.hero-copy h1{font:900 clamp(40px,3.35vw,58px)/.91 var(--display);letter-spacing:-.7px;text-transform:uppercase;max-width:620px;margin:0}.title-underline{width:164px;height:9px;background:var(--yellow);margin:12px 0 11px}.hero-copy p{font-size:14px;line-height:1.45;color:#33332F;max-width:520px;margin:0}.hero-art-wrap{position:absolute;right:0;top:-3px;bottom:0;width:57%;display:flex;align-items:center;justify-content:flex-end;will-change:transform;pointer-events:none;transition:transform .06s linear}.hero-art{width:100%;height:100%;object-fit:contain;object-position:center center;mix-blend-mode:multiply}.sticky-note-art{position:absolute;top:11px;right:-2px;width:120px;max-height:126px;object-fit:contain;transform:rotate(3deg);mix-blend-mode:multiply}.hero-accent-dot{position:absolute;right:8%;bottom:12px;width:18px;height:18px;border-radius:50%;background:var(--orange);border:1px solid rgba(23,23,23,.12)}
+ .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.kpi-card{--tone:var(--navy);height:145px;min-width:0;display:grid;grid-template-columns:44px minmax(0,1fr);grid-template-rows:1fr auto;column-gap:10px;position:relative;padding:16px 13px 10px;border:1.35px solid var(--border);border-radius:8px;background:rgba(255,254,250,.93);box-shadow:3px 3px 0 var(--ink);text-align:left;transition:transform .16s,box-shadow .16s}.kpi-card:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}.tone-navy{--tone:var(--navy)}.tone-teal{--tone:var(--teal)}.tone-orange{--tone:var(--orange)}.kpi-icon{grid-column:1;grid-row:1;display:flex;align-items:flex-start;justify-content:center;color:var(--ink);padding-top:1px}.kpi-main{grid-column:2;grid-row:1 / span 2;min-width:0;padding-right:6px}.eyebrow{font:800 17px/.98 var(--display);text-transform:uppercase;letter-spacing:.15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kpi-subtitle{font-size:11px;color:#54534D;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kpi-value{font:800 clamp(29px,2.5vw,43px)/.98 var(--display);color:var(--tone);margin-top:7px;letter-spacing:-.5px}.kpi-change{display:flex;align-items:center;gap:5px;margin-top:6px;font-size:11px;color:var(--success);white-space:nowrap}.kpi-change span{color:#55544E;font-size:10px}.kpi-spark{position:absolute;bottom:9px;right:10px;width:92px;height:34px;color:var(--tone);opacity:.95}.sparkline{width:100%;height:100%;overflow:visible}.kpi-spark-empty{display:flex;align-items:center;justify-content:flex-end;width:100%;height:100%;padding-right:4px;color:var(--muted);font-size:9px;font-weight:700;letter-spacing:.15px;text-align:right;white-space:nowrap;opacity:.9}.card-open{position:absolute;right:9px;top:10px;width:23px;height:23px;border:1px solid #C8C6BB;border-radius:50%;display:grid;place-items:center;background:#FFFEF9;opacity:.9}.kpi-card:hover .card-open{background:var(--yellow)}
+ .middle-grid{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(0,1fr);gap:14px;margin-bottom:14px}.panel{min-width:0;border:1.15px solid var(--border);border-radius:7px;background:rgba(255,254,249,.82);padding:14px 15px 12px}.trend-panel,.regional-panel{min-height:264px}.panel-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.panel-header h2{font:800 24px/.95 var(--display);text-transform:uppercase;letter-spacing:-.1px;margin:0}.panel-header p{font-size:12px;color:#53524C;margin:4px 0 0}.select-wrap{position:relative;display:inline-flex;align-items:center;gap:7px;min-width:114px;height:34px;padding:0 9px;border:1px solid #A9A69B;border-radius:7px;background:#FBF9F2;flex-shrink:0}.select-wrap select{appearance:none;width:100%;border:0;outline:none;background:transparent;padding-right:9px;font-size:11px;cursor:pointer}.select-wrap svg{position:absolute;right:8px;pointer-events:none}.compact-select{min-width:92px}.chart-legend{display:flex;justify-content:flex-end;gap:18px;font-size:11px;margin:6px 8px 0 0}.chart-legend span{display:flex;align-items:center;gap:6px}.legend-line{display:inline-block;width:22px;height:0;border-top:3px solid}.legend-line.demand{border-color:var(--navy)}.legend-line.supply{border-color:var(--teal);border-top-style:dashed}.trend-chart{position:relative;height:175px;margin-top:0}.trend-chart svg{width:100%;height:100%;display:block;overflow:visible}.chart-grid{stroke:#D8D5CA;stroke-width:1;stroke-dasharray:2 2}.chart-vgrid{stroke:#E2DED2;stroke-width:1;stroke-dasharray:2 3}.chart-axis{font:11px 'IBM Plex Sans',Arial,sans-serif;fill:#44443F}.chart-demand{fill:none;stroke:var(--navy);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.chart-supply{fill:none;stroke:var(--teal);stroke-width:2.8;stroke-dasharray:7 5;stroke-linecap:round;stroke-linejoin:round}.point-demand{fill:var(--navy)}.point-supply{fill:var(--teal)}.chart-next{position:absolute;bottom:6px;right:4px;border:1px solid #A9A69B;border-radius:50%;width:31px;height:31px;background:#FFFEF8;display:grid;place-items:center}.chart-next:hover{background:var(--yellow)}.regional-content{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(180px,.8fr);gap:12px;align-items:center;margin-top:12px}.map-block{display:flex;align-items:center;gap:7px;min-width:0}.map-block img{width:61%;max-height:185px;object-fit:contain;mix-blend-mode:multiply}.map-legend{display:flex;flex-direction:column;gap:9px;font-size:11px;color:#4B4A44}.map-legend span{display:flex;align-items:center;gap:7px;white-space:nowrap}.map-dot{height:12px;width:12px;border-radius:50%;display:inline-block}.map-dot.high{background:#154578}.map-dot.medium{background:#6397C0}.map-dot.low{background:#BCD0DE}.state-list{border-left:1px solid #DAD7CE;padding-left:12px;min-width:0}.state-list h3{font-size:12px;margin:0 0 7px;font-weight:700}.state-row{display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:7px;padding:6px 0;border-top:1px solid #E2DED4;font-size:11px}.state-row strong{font-size:11px;font-weight:700;white-space:nowrap}.rank{font-weight:700}.button-primary,.button-outline{display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}.button-primary{height:32px;padding:0 11px;background:var(--yellow);border:1px solid var(--ink);border-radius:6px;box-shadow:1.5px 1.5px 0 var(--ink);font-size:11px;font-weight:700}.button-primary:hover{background:var(--yellow-hover)}.state-cta{width:100%;margin-top:7px}
+ .summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.summary-panel{min-height:244px;padding:13px 13px 10px}.summary-panel .panel-header{align-items:flex-start}.summary-panel .panel-header h2{font-size:22px}.summary-panel .panel-header p{font-size:11px}.button-outline{height:31px;padding:0 9px;border:1px solid #AAA79D;border-radius:6px;background:#FFFEF8;font-size:11px;font-weight:600}.button-outline:hover{border-color:var(--ink);background:var(--yellow)}.data-rows{margin-top:8px}.data-row{width:100%;height:32px;display:grid;grid-template-columns:22px minmax(80px,1fr) auto minmax(55px,30%);align-items:center;gap:8px;padding:2px 1px;border:0;border-top:1px solid transparent;background:transparent;text-align:left}.data-row:hover{background:rgba(242,211,79,.14)}.row-icon{display:flex;align-items:center;justify-content:center;color:var(--ink)}.row-icon.tone-navy{color:var(--navy)}.row-icon.tone-teal{color:var(--teal)}.row-icon.tone-orange{color:var(--orange)}.row-name{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.row-delta{font-size:11px;color:var(--success);white-space:nowrap}.row-value{font-size:11px;color:#292929;white-space:nowrap}.bar-track{display:block;height:17px;border-radius:3px;background:#E8E5DA;overflow:hidden}.bar-fill{display:block;height:100%;border-radius:2px;background:var(--tone)}.tone-navy.bar-fill{background:var(--navy)}.tone-teal.bar-fill{background:var(--teal)}.tone-orange.bar-fill{background:var(--orange)}.summary-gaps .data-row{grid-template-columns:22px minmax(78px,1fr) auto minmax(75px,40%)}.summary-forecasts .data-row{grid-template-columns:22px minmax(85px,1fr) auto minmax(62px,29%)}.method-note{min-height:42px;display:flex;align-items:center;gap:9px;color:#5D5B54;padding:11px 2px 0;font-size:11px}.note-marker{display:grid;place-items:center;width:17px;height:17px;flex:0 0 17px;border:1px solid #AAA79B;border-radius:50%;font:700 11px Georgia,serif}.method-note p{margin:0;line-height:1.35;flex:1}.method-note strong{color:#30302B}.updated{display:flex;align-items:center;gap:5px;white-space:nowrap;color:#66645E;font-size:10px}.toast-message{position:fixed;z-index:80;right:22px;bottom:22px;max-width:min(450px,calc(100vw - 32px));display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border:1.2px solid var(--border);border-radius:7px;box-shadow:4px 4px 0 var(--ink);background:#fffef8;font-size:13px}.toast-message button{border:0;background:transparent;padding:0;display:grid;place-items:center;flex:0 0 20px}.mobile-scrim{display:none}
