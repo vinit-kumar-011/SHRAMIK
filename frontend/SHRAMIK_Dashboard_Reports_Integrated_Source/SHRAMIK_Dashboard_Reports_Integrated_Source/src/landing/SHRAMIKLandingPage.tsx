@@ -71,6 +71,17 @@ function resolveLandingHref(href: string): string {
 }
 
 export default function SHRAMIKLandingPage() {
+  const runtimeEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+  const showcaseMode = runtimeEnv?.MODE === 'production' || runtimeEnv?.VITE_SHRAMIK_SHOWCASE_MODE === 'true';
+  const showcasePreview = {
+    title: 'Published workforce context',
+    period: 'Source-backed context only',
+    labels: ['Demand estimate', 'Supply estimate', 'Validated skill gap'],
+    values: ['Not published', 'Not published', 'Not calculated'],
+    note: 'Official showcase mode: current published data supports labour-market context, but no validated national demand/supply time series is available for a trend or gap chart. No trend has been invented.',
+    demand: '',
+    supply: '',
+  };
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerScrolled, setHeaderScrolled] = useState(false);
   const [activeStage, setActiveStage] = useState(0);
