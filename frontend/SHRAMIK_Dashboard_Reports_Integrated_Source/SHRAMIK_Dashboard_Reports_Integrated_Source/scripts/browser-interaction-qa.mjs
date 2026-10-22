@@ -15,6 +15,9 @@ const results = [];
 const pageExceptions = [];
 const consoleErrors = [];
 const nonReadRequests = [];
+const networkResponses = [];
+const networkFailures = [];
+const networkRequests = new Map();
 
 function record(name, passed, details = '') {
   results.push({ name, passed: Boolean(passed), details });
@@ -72,9 +75,27 @@ class CDP {
         if (message.method === 'Network.requestWillBeSent') {
           const request = message.params?.request;
           const method = request?.method;
+          if (request?.url) networkRequests.set(message.params.requestId, request.url);
           if (method && !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())) {
             nonReadRequests.push({ method, url: request.url });
           }
+        }
+        if (message.method === 'Network.responseReceived') {
+          const response = message.params?.response;
+          if (response?.url) networkResponses.push({
+            url: response.url,
+            status: response.status,
+            mimeType: response.mimeType,
+            fromDiskCache: response.fromDiskCache,
+          });
+        }
+        if (message.method === 'Network.loadingFailed') {
+          networkFailures.push({
+            url: networkRequests.get(message.params?.requestId) || '',
+            errorText: message.params?.errorText || 'Unknown network failure',
+            canceled: Boolean(message.params?.canceled),
+            blockedReason: message.params?.blockedReason || null,
+          });
         }
         return;
       }
@@ -444,6 +465,8 @@ try {
   }
 
   // Data Sources must expose only the registry response and its actual status metadata.
+  const dataSourcesResponseCheckpoint = networkResponses.length;
+  const dataSourcesFailureCheckpoint = networkFailures.length;
   await navigate(cdp, origin + '/data-sources');
   await waitFor(() => cdp.evaluate(`(() => {
     const root = document.querySelector('.data-sources-page');
@@ -487,6 +510,8 @@ try {
       proxyDiagnostic,
     };
   })()`);
+  dataSourcesState.networkResponses = networkResponses.slice(dataSourcesResponseCheckpoint).filter(item => item.url.includes('/api/shramik-data') || item.url.includes('/rest/v1/data_sources'));
+  dataSourcesState.networkFailures = networkFailures.slice(dataSourcesFailureCheckpoint).filter(item => item.url.includes('/api/shramik-data') || item.url.includes('/rest/v1/data_sources'));
   const dataSourcesSafe = dataSourcesState.mounted && dataSourcesState.registryResponse &&
     !dataSourcesState.explicitError && !dataSourcesState.syntheticNotice &&
     dataSourcesState.sourceBackedOnly && dataSourcesState.rowCount > 0 &&
