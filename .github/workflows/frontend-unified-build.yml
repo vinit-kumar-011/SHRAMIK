@@ -1,6 +1,13 @@
 name: SHRAMIK unified frontend
 
 on:
+  push:
+    branches: [fix/backend-api-route-integration]
+    paths:
+      - 'frontend/SHRAMIK_Dashboard_Reports_Integrated_Source/SHRAMIK_Dashboard_Reports_Integrated_Source/**'
+      - 'api/**'
+      - 'vercel.json'
+      - '.github/workflows/frontend-unified-build.yml'
   pull_request:
     branches: [main]
     paths:
