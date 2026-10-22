@@ -558,6 +558,23 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   const registration = registrationRows.find(row => regionCode === 'IN' ? !row.state_id : row.state_id === selectedStateId(snapshot, regionCode))
     || registrationRows.find(row => !row.state_id)
     || registrationRows[0];
+  // The NCS figure is a dated national portal snapshot, not all-market labour demand.
+  // Keep its lower-bound phrase from the source metadata rather than formatting it as exact.
+  const ncsVacancySnapshot = snapshot.metrics
+    .filter(row => {
+      const d = row.dimension_values || {};
+      return row.metric_code === 'NCS_PORTAL_ACTIVE_VACANCIES'
+        && row.observation_grain === 'NATIONAL'
+        && !row.state_id
+        && row.unit === 'vacancies'
+        && row.provenance_state === 'SOURCE_BACKED'
+        && row.is_synthetic === false
+        && d.metric_role === 'PORTAL_ACTIVE_LISTINGS_CONTEXT'
+        && d.coverage_scope === 'NCS portal only'
+        && d.reported_comparator === 'greater_than'
+        && Boolean(row.as_of_date);
+    })
+    .sort((a, b) => String(b.as_of_date).localeCompare(String(a.as_of_date)))[0];
   const seatTotal = selectedTotals(snapshot, stateSeats, regionCode);
   const itiRows = preferRowsForScope(mostRecentRows(snapshot, 'CTS_ITI_COUNT', regionCode), regionCode);
   const itiTotal = itiRows.reduce((sum, row) => sum + numeric(row.value_numeric), 0);
@@ -762,6 +779,15 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
         <section className="dbi-demand-panel"><SectionHead title="Worker-registration distribution" note="Cumulative e-Shram registrations are not job demand, employment or available labour supply."/><DataTable columns={['State / UT', 'Registrations', 'Reference', 'Source']}>
           {stateRegTotals.slice(0, 10).map(row => <tr key={row.id}><td><strong>{row.label}</strong></td><td className="dbi-number">{numberFormat(row.value, true)}</td><td>{periodLabel(row.period)}</td><td><SourceLink source={sourceFor(snapshot, row.sourceId) || registrationSource}/></td></tr>)}
         </DataTable></section>
+        <section className="dbi-demand-panel"><SectionHead title="NCS portal active-vacancy snapshot" note="A Ministry-published count of active vacancy listings on National Career Service (NCS), as of the stated date. This is a portal-only lower bound, not all vacancies in India and not a district-by-skill demand estimate."/><DataTable columns={['Published indicator', 'Reported value', 'As of', 'Coverage', 'Source']}>
+          {ncsVacancySnapshot ? <tr key={ncsVacancySnapshot.id}>
+            <td><strong>Active vacancies reported on NCS</strong><small>NCS portal listings · national aggregate</small></td>
+            <td className="dbi-number">{textValue(ncsVacancySnapshot.dimension_values?.display_value) || 'See source publication'}</td>
+            <td>{ncsVacancySnapshot.as_of_date ? new Date(ncsVacancySnapshot.as_of_date + 'T00:00:00Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : periodLabel(ncsVacancySnapshot.reference_period)}</td>
+            <td>India · NCS portal only</td>
+            <td><SourceLink source={sourceFor(snapshot, ncsVacancySnapshot.source_id)}/></td>
+          </tr> : <tr><td colSpan={5} className="dbi-empty-cell">No source-backed NCS portal snapshot is published in the connected database.</td></tr>}
+        </DataTable><p className="dbi-muted">The publication says “over 17.68 lakh”; this lower-bound figure is not an exact count and is not used to calculate the “Total Estimated Demand” KPI or official skill-gap forecasts.</p></section>
       </div><div className="dbi-note"><Info size={17}/><div><strong>Interpretation boundary</strong><p>{demandTableNote} Published PLFS and registration context is kept separate from validated job-demand analytics.</p></div></div></details>
       <footer className="dbi-footer"><span><ShieldCheck size={14}/> Source-backed database view · Synthetic data excluded</span><span>{numberFormat(totalMetrics)} readable metric records · {numberFormat(districtCount)} district references</span><button type="button" onClick={() => onNavigate?.('data-sources')}>Open Data Sources <ArrowUpRight size={14}/></button></footer>
     </section>;
