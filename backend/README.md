@@ -55,7 +55,7 @@ The committed DGE pilot transcription is `data/processed/employment_exchange_vac
 python -m app.ingestion.csv_loader --kind demand --input ..\data\processed\employment_exchange_vacancies_state_2022.csv --source-name "Employment Exchange Statistics 2023 (reference period 2022)" --publisher "Directorate General of Employment / Ministry of Labour & Employment" --source-url "https://dge.gov.in/dge/sites/default/files/2023-03/Employment_Exchange_2023.pdf" --source-type REPORT
 ```
 
-The connected Supabase project already has these 34 observations, so the expected dry-run result is 34 unchanged and 0 inserts. The CSV and retrieval hash are pinned to LF line endings by the root `.gitattributes`. Values remain State × Year and source-rounded; they are not mapped to districts or skills.
+The connected Supabase project already has these 34 observations, so the dry run should validate all 34 rows without writing anything. If a deliberate `--apply` is later used, the loader should recognise matching observation rows as unchanged and add no duplicate demand rows. The CSV and retrieval hash are pinned to LF line endings by the root `.gitattributes`. Values remain State × Year and source-rounded; they are not mapped to districts or skills.
 
 The audited source-metric promotion adapter normalizes two existing official, **state-level training-pipeline** metrics from source metric storage into `supply_observations`. It preserves the source/retrieval/evidence references, retains each fiscal year in a transformation note, and does not infer district or skill dimensions. It is dry-run by default:
 
