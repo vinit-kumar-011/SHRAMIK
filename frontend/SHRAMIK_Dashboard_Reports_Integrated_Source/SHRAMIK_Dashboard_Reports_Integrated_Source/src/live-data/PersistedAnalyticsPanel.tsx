@@ -144,6 +144,11 @@ export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsM
       setLoading(true);
       setError('');
       try {
+        if (!env?.DEV && !configuredBase) {
+          throw new Error(
+            'The authenticated analytics API is not configured for this production build. Set VITE_SHRAMIK_API_BASE_URL to the approved SHRAMIK FastAPI service URL. Official analytics remain unavailable until that service is connected; this page will not fall back to synthetic results.',
+          );
+        }
         const session = await restoreAuthSession();
         if (!session?.access_token) {
           throw new Error('Your SHRAMIK session is missing or expired. Sign in again to read protected analytics.');
