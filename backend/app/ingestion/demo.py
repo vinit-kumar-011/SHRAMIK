@@ -151,7 +151,7 @@ def seed_demo() -> dict[str, Any]:
                 "quantity_semantics": "STOCK",
                 "demand_signal_type": DEMAND_SIGNAL,
                 "supply_signal_type": SUPPLY_SIGNAL,
-                "generator_formula": "trend-plus-seeded-small-jitter-v1",
+                "generator_formula": "accelerating-demand-plus-seeded-small-jitter-v1",
             }
             run_id = _ensure_generation_run(conn, parameters)
 
@@ -164,7 +164,7 @@ def seed_demo() -> dict[str, Any]:
                     for year_index, year in enumerate(YEARS):
                         demand_value = max(
                             0,
-                            round(demand_base * (1 + 0.045 * year_index) + rng.randint(-10, 10)),
+                            round(demand_base * (1 + 0.025 * year_index + 0.012 * year_index * year_index) + rng.randint(-10, 10)),
                         )
                         supply_value = max(
                             0,
