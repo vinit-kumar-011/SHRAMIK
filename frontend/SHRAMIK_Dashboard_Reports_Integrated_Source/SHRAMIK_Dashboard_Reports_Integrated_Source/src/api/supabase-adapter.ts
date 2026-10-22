@@ -106,29 +106,33 @@ function sourceForRegional(row: RegionalRow): SourceMeta {
   return { sourceLabel: row.source_label || SUPABASE_SOURCE_LABEL, sourceUrl: row.source_url, updatedAt: row.as_of_date, note: row.interpretation_note };
 }
 
-type CatalogueRow = { id: string; code: string; name: string; description: string | null };
+type CatalogueRow = { id: string; code: string; name: string; description: string | null; is_active?: boolean };
 const NAPS_METRIC = 'SPACE_GEOSPATIAL_NAPS_APPRENTICES_ENGAGED';
 const PMKVY_METRIC = 'SPACE_GEOSPATIAL_PMKVY_TRAINED_ORIENTED';
 
 function catalogueDashboardRows(rows: CatalogueRow[], kind: 'skill' | 'sector'): DashboardRow[] {
-  const notes = kind === 'skill'
-    ? 'Canonical skill reference only. No validated emerging-skill signal is published for this item.'
-    : 'Canonical sector reference only. No comparable demand/supply pair is available to calculate a sector gap.';
   const tones: DashboardRow['tone'][] = ['navy', 'teal', 'orange'];
-  return rows.slice(0, 5).map((row, index) => ({
-    id: `catalogue-${kind}-${row.id}`,
-    name: row.name,
-    formattedValue: kind === 'skill' ? 'Catalogue' : 'Mapped',
-    tone: tones[index % tones.length],
-    iconKey: kind === 'skill' ? 'brain-circuit' : 'building-2',
-    meta: {
-      provenance: 'source-backed',
-      sourceLabel: 'SHRAMIK canonical reference catalogue',
-      updatedAt: null,
-      coverage: rows.length + (kind === 'skill' ? ' active skills' : ' active sectors'),
-      notes: [notes, row.code],
-    },
-  }));
+  return rows.slice(0, 5).map((row, index) => {
+    const notes = kind === 'skill'
+      ? row.is_active === false
+        ? 'Canonical skill reference is inactive pending review of its occupation/sector mapping. Do not treat it as approved for skill-gap or emerging-skill analysis.'
+        : 'Canonical skill reference only. No validated emerging-skill signal is published for this item.'
+      : 'Canonical sector reference only. No comparable demand/supply pair is available to calculate a sector gap.';
+    return {
+      id: `catalogue-${kind}-${row.id}`,
+      name: row.name,
+      formattedValue: kind === 'skill' ? (row.is_active === false ? 'Review mapping' : 'Catalogue') : 'Mapped',
+      tone: tones[index % tones.length],
+      iconKey: kind === 'skill' ? 'brain-circuit' : 'building-2',
+      meta: {
+        provenance: 'source-backed',
+        sourceLabel: 'SHRAMIK canonical reference catalogue',
+        updatedAt: null,
+        coverage: rows.length + (kind === 'skill' ? ' canonical skills' : ' active sectors'),
+        notes: [notes, row.code],
+      },
+    };
+  });
 }
 
 function programmeRowsForRegion(rows: SourceMetricRow[], regionCode: string, stateId: string): SourceMetricRow[] {
@@ -507,8 +511,7 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
     let programmeMetrics: SourceMetricRow[] = [];
     const supportingReads = await Promise.allSettled([
       this.rows<CatalogueRow>('skills', {
-        select: 'id,code,name,description',
-        is_active: 'eq.true',
+        select: 'id,code,name,description,is_active',
         order: 'name.asc',
         limit: '100',
       }, query.signal),
