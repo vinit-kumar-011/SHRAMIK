@@ -1,6 +1,7 @@
 -- Expose only the source-registry metadata required by the public, read-only Data Sources UI.
--- Deliberately do not grant table-level SELECT: notes and created_at remain unavailable
--- through the public REST API. The existing SELECT RLS policy still limits visible rows.
+-- Keep notes and created_at unavailable to anon/authenticated; table-level SELECT is not granted.
+-- The existing SELECT RLS policy still limits visible rows.
+REVOKE SELECT (notes, created_at) ON TABLE public.data_sources FROM anon, authenticated;
 GRANT SELECT (
     id,
     name,
