@@ -18,7 +18,7 @@ test('Emerging Skills confidence badges safely handle missing mapping metadata',
 });
 
 test('Emerging Skills never invents signal history without published observations', () => {
-  assert.match(source, //Signals require validated historical coverage//);
-  assert.match(source, //authenticated results panel above shows persisted signals for the selected mode//);
-  assert.match(source, //Awaiting historical series//);
+  assert.match(source, /Signals require validated historical coverage/);
+  assert.match(source, /authenticated results panel above shows persisted signals for the selected mode/);
+  assert.match(source, /Awaiting historical series/);
 });
