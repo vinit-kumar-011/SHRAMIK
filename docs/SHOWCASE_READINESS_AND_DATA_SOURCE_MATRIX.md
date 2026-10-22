@@ -18,6 +18,8 @@ The four stages are sound, with one adjustment: the visual lock and source audit
 
 ## 2. Showcase safety gate already implemented
 
+**Latest verified production candidate:** [Frontend CI run 39765275317](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39765275317), commit `2b9dc8ef699b110d8d6d052b54f3fd93f8cc7603`, passed **198 frontend tests (0 failures)**, type-check, live Supabase published-KPI reads (7 cards), production build, route smoke tests, and Chromium interaction/responsive QA. Chromium explicitly verified the production landing preview has zero illustrative demand/supply/forecast path elements, hides the mock-preview tabs, and displays “OFFICIAL SHOWCASE · SOURCE-BACKED ONLY.” The official-only module checks also passed; QA issued no non-read-only requests and saw no uncaught browser exceptions. This was a CI build/preview only; no Vercel deployment occurred.
+
 The production UI now enters official-only showcase mode by default:
 
 - Production builds ignore `VITE_SHRAMIK_USE_DEMO_DATA=true` and disable the mock dashboard path.
@@ -117,7 +119,9 @@ Keep the existing DGE 2022 vacancy-notified dataset as an official historical ag
 
 **Public KPI view updated:** migration `supabase/migrations/20261022120000_add_monthly_plfs_cws_public_kpis.sql` exposes the latest *complete* monthly CWS release as three separate cards: LFPR 55.5%, WPR 52.7%, and UR 5.0% for September 2026. It requires all three metrics at the same national month and the exact `combined / person / 15_years_and_above / current_weekly_status` definitions, filters out synthetic records, and preserves the annual CY2025 unemployment benchmark as a separate item. The frontend live-data smoke now requires those three codes and checks the periods/source labels are correctly separated. A successful run on commit `0effe01f30b8495620fd0328b4a75491df9169e5` verified all **7** public KPI rows and the separate annual benchmark: [frontend verification](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39764373549).
 
-The Demand page's `Latest per source` cards prefer this monthly series for India and display “September 2026 · monthly CWS · persons aged 15+”; choosing `Calendar year 2025` continues to show the annual 2025 records. National monthly values are never applied to a selected State/UT. These rates remain context—not vacancy demand or workforce supply—and official forecasts remain **0**.
+The Demand page's `Latest per source` cards prefer this monthly series for India and display “September 2026 · monthly CWS · persons aged 15+”; choosing `Calendar year 2025` continues to show the annual 2025 records. National monthly values are never applied to a selected State/UT. A regression test now locks these period/granularity rules. These rates remain context—not vacancy demand or workforce supply—and official forecasts remain **0**.
+
+**Production landing-page preview:** the existing UI frame is retained for visual continuity, but production no longer draws its illustrative demand/supply/forecast paths or offers the Overview / Skill gaps / Forecasts preview tabs. It displays “Not published” / “Not calculated” and an explicit no-validated-series message instead. Development mode retains the clearly labelled mock previews for QA only.
 
 **Scheduled refresh behavior:** `.github/workflows/plfs-source-refresh.yml` captures the rendered MoSPI page and validates new releases. Push-triggered runs are check-only; weekly schedule runs write only when the GitHub Actions secret `SHRAMIK_DATABASE_URL` is present. Without that secret, scheduled runs deliberately fall back to check-only with a warning. The secret is still required to make future monthly releases persist automatically; the initial September 2026 load and KPI-view migration are already in Supabase.
 
