@@ -773,9 +773,9 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     </> : null}
 
     {module === 'forecasts' ? <>
-      <div className="dbi-note dbi-note-warn" role="status"><Info size={17}/><div><strong>No validated forecast result is available in this view</strong><p>{forecastInputsRestricted
-        ? 'One or more forecast input/output tables are restricted by the public read policy. “Restricted” means this application cannot inspect that table; it does not prove the underlying table is empty. Authenticated forecasts and warnings are shown in the results panel above; this checklist describes only direct browser-safe table visibility.'
-        : 'We will not manufacture projections from dashboard indicators. Validated forecast results, model-version metadata and an auditable calculation run are required before a forecast line or early-warning result can appear here.'}</p></div></div>
+      <div className="dbi-note dbi-note-warn" role="status"><Info size={17}/><div><strong>{forecastInputsRestricted ? 'Direct browser table visibility is restricted' : 'No validated official forecast is available'}</strong><p>{forecastInputsRestricted
+        ? 'The checklist below reflects only direct browser-safe table visibility. “Restricted” means this app cannot query those tables through the public data path; it does not prove the tables are empty. Authenticated persisted results for the selected analysis mode are shown in the panel above.'
+        : 'Official mode has no validated source-backed forecast results yet. SHRAMIK will not manufacture projections from dashboard indicators; official forecasts require compatible, validated district-by-skill history and an auditable calculation run.'}</p></div></div>
       <div className="dbi-two-col">
         <section className="dbi-panel"><SectionHead title="Output readiness" note="These checks describe direct browser-safe table visibility; authenticated rows are shown in the panel above."/>
           <div className="dbi-readiness-list">{[['Demand observations', demandStatus], ['Supply observations', supplyStatus], ['Forecast results', forecastStatus], ['Model versions', modelStatus], ['Early warnings', warningStatus]].map(([label, status]) => <div className="dbi-readiness-item" key={label}><span className="dbi-status-dot" data-status={status === 'Available' ? 'ready' : status === 'Restricted' ? 'restricted' : 'pending'}/><span>{label}</span><strong>{status}</strong></div>)}</div>
