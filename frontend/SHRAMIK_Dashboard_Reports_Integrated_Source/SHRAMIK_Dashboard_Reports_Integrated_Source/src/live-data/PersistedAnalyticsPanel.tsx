@@ -267,7 +267,7 @@ export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsM
           ? 'Validated source-backed yearly histories are not yet available for eligible district-skill series.'
           : 'Run the labelled demo batch pipeline and refresh to view its explicitly synthetic signals.'}</p></div></div>}
       </section>}
-      <footer className="pai-footer"><span>Last refreshed {new Date(data.loadedAt).toLocaleString('en-IN')}</span><span>Request IDs are available in the browser network panel for diagnostics.</span></footer>
+      <footer className="pai-footer"><span>Results fetched {new Date(data.loadedAt).toLocaleString('en-IN')}</span><span>Request IDs are available in the browser network panel for diagnostics.</span></footer>
     </> : null}
   </section>;
 }
