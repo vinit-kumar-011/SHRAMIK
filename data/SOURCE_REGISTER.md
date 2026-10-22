@@ -278,3 +278,28 @@ This dataset build is ready for downstream development only when:
 - the final dataset can be regenerated without manual spreadsheet edits
 
 Until then, do not use synthetic coverage to claim official data sufficiency.
+
+
+## 2F. National Career Service active-vacancy snapshot (2026-10-22)
+
+### Ministry of Labour & Employment / Press Information Bureau — NCS portal count
+
+**Official release:** [PIB Press Release PRID 2147927, posted 5 August 2026](https://www.pib.gov.in/PressReleasePage.aspx?PRID=2147927&lang=2&reg=48).
+
+The release reports **over 17.68 lakh active vacancies on the National Career Service (NCS) portal as of 15 July 2026**. A source-backed national observation has been registered in Supabase as:
+
+- `metric_code=NCS_PORTAL_ACTIVE_VACANCIES`
+- `observation_grain=NATIONAL`
+- `reference_period=AS_OF_2026-07-15`
+- `value_numeric=1,768,000`, unit `vacancies`, source comparison `greater_than`
+- `provenance_state=SOURCE_BACKED`, `is_synthetic=false`
+
+**Display and analysis rules:**
+
+1. Display the publisher's lower-bound wording **“Over 17.68 lakh”**; do not format 1,768,000 as an exact count.
+2. Label it **“NCS portal active vacancies”** and show the 15 July 2026 as-of date. It refers only to vacancy listings represented on NCS, not all vacancies in India.
+3. Keep it in `source_metric_observations` as portal-snapshot context. Do not promote it to `demand_observations`, aggregate it as total labour-market demand, allocate it to states/districts/skills, or use it for official skill-gap/forecast calculations.
+4. The initial observation is a manual transcription of an official release. Its `retrieval_id` is NULL because the raw publication artifact and SHA-256 were not archived when the value was registered. This must be rectified by a reproducible source capture before this source can be considered ingestion-automated.
+5. NCS's public search/latest-updates interface is not yet an approved bulk feed. Its “Latest Updates” view was observed to have an older page-level update date (28 September 2026) when reviewed on 22 October. Do not scrape listings automatically or represent them as a live, exhaustive national vacancy census unless DGE confirms an approved structured retrieval route and terms for use/display.
+
+**Decision:** use this one dated portal aggregate as visible source-backed context only. Continue to use “Total Estimated Demand — Not published” until a compatible, methodologically supported demand measure is available. The existing DGE Employment Exchange Statistics 2023 source remains a separate State/UT × Year(2022) vacancy-notified flow, not a substitute for current NCS listings.
