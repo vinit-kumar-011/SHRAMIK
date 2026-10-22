@@ -465,7 +465,9 @@ function ModuleRouteFallback({ route }: { route: ShramikRouteId }) {
 
 function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionChange }: SHRAMIKWorkspaceProps) {
   const runtimeEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
-  const demoMode = runtimeEnv?.VITE_SHRAMIK_USE_DEMO_DATA === 'true';
+  // Every production build is official/showcase-safe. Demo fixtures remain available in development only.
+  const showcaseMode = runtimeEnv?.MODE === 'production' || runtimeEnv?.VITE_SHRAMIK_SHOWCASE_MODE === 'true';
+  const demoMode = !showcaseMode && runtimeEnv?.VITE_SHRAMIK_USE_DEMO_DATA === 'true';
   const [defaultAdapter] = useState<LabourMarketDataAdapter>(() => createLabourMarketDataAdapter());
   const adapter = dataAdapter ?? defaultAdapter;
   const [activePage, setActivePage] = useState<ShramikRouteId>(getInitialPage);
@@ -481,7 +483,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   const [scenarioDataAdapter] = useState(() => {
     const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
     const apiBase = env?.VITE_SCENARIO_SIMULATOR_API_BASE_URL?.trim();
-    const demoEnabled = env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true';
+    const demoEnabled = !showcaseMode && env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true';
     return apiBase ? new RestScenarioSimulatorAdapter(apiBase) : demoEnabled ? scenarioMockAdapter : scenarioPlanningAdapter;
   });
   const [administrationAdapter] = useState(() => createAdministrationDataAdapter());
@@ -526,7 +528,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
 
   const notify = useCallback((message: string) => setToast(message), []);
   const isLiveSupabase = adapter.mode === 'supabase';
-  const previewingModule = !demoMode && demoPreviewPage === activePage;
+  const previewingModule = !showcaseMode && !demoMode && demoPreviewPage === activePage;
   const headerProfile = useMemo(() => profileForSession(authSession, profile), [authSession, profile]);
   const regionLabel = useMemo(() => regions.find((item) => item.code === region)?.label ?? dashboard?.regionName ?? region, [regions, region, dashboard?.regionName]);
 
