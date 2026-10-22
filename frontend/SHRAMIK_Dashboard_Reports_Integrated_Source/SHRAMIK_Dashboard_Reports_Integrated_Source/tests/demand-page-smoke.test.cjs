@@ -32,12 +32,13 @@ test('latest national PLFS cards prefer only source-backed monthly CWS values wh
   assert.match(source, /d\.age_domain === '15_years_and_above'/);
   assert.match(source, /d\.survey_basis === 'current_weekly_status'/);
   assert.match(source, /d\.frequency === 'monthly'/);
-  assert.match(source, /const item = canonicalRate\(snapshot, code, regionCode, periodFilter === 'LATEST'\)/);
+  assert.match(source, /periodFilter === 'MONTHLY_CWS'\\s*\\?\\s*latestMonthlyCwsRate/);
+  assert.match(source, /canonicalRate\\(snapshot, code, regionCode, periodFilter === 'LATEST'\\)/);
 });
 
 test('monthly PLFS display period remains distinct from annual CY2025', () => {
   assert.match(source, /function plfsCardPeriodLabel\(row: MetricRow \| undefined\)/);
   assert.match(source, /monthly CWS · persons aged 15\+/);
   assert.match(source, /return 'Persons aged 15\+ · PLFS CY2025'/);
-  assert.match(source, /Calendar year 2025 · PLFS/);
+  assert.match(source, /Calendar year 2025 · PLFS \\(annual\\)/);
 });
