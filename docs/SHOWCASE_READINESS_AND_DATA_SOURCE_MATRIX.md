@@ -300,3 +300,29 @@ No Vercel deployment was made for this checkpoint.
 - PLFS annual source and monthly release catalogue: [PLFS 2025 report](https://mospi.gov.in/uploads/publications_reports/publications_reports1780040415321_0624fb13-fb47-40bc-b470-7c7e9635c3ef_PLFS_2025_F_REV_29052026.pdf), [eSankhyiki PLFS catalogue](https://esankhyiki.mospi.gov.in/catalogue-main/catalogue?page=0&product=PLFS).
 - ITI/training reference: [DGT](https://dgt.gov.in/en), [Skill India Digital](https://www.skillindiadigital.gov.in/home).
 - Existing detailed source audit: `data/SOURCE_REGISTER.md`.
+
+
+## Follow-up QA and source/hosting recheck — 22 October 2026, 15:00 UTC
+
+### Visual implementation checked after the 214-test checkpoint
+
+- Latest tested source commit: `3f01bb902026f47a9c17b0bce7b60be115f9a146` on `fix/backend-api-route-integration`.
+- [Frontend CI run 39800083406](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39800083406) completed successfully. Type-check passed; **216 tests passed, 0 failed**; live Supabase published-KPI verification, production build, static entry checks, route smoke tests, and Chromium interaction/responsive QA passed.
+- The screenshot artifact from that run was reviewed. The live data modules had been painting over the app's shared canvas and drawing a separate yellow dot pattern inside each hero panel, contrary to `DESIGN_LOCK.md`. Commit `af8fb9c00d5fe684def18d6e2e9df10905f3f99d` changes `src/live-data/database-insights.css` so the module shell inherits the shared fixed dotted canvas and the hero uses the normal surface; commit `3f01bb902026f47a9c17b0bce7b60be115f9a146` adds regression coverage. The post-change Supply and Forecasts screenshots confirm that the extra yellow hero pattern is gone. The fix is CI/preview verified only; no deployment was made.
+- Other inspected views continue to follow official-only data behaviour. In particular, Forecasts/Emerging Skills retain explicit unavailable states rather than substituting demo records; the Scenario Simulator refuses to run without an approved source-backed baseline.
+
+### Backend hosting rechecked after the prior checkpoint
+
+- The stable backend health endpoint, `https://shramik-backend-api.vercel.app/api/health`, returns HTTP 200.
+- The stable alias's current `/openapi.json` exposes only `/api/health`; `/api/v1/analytics/status` returns HTTP 404. This remains a hard blocker: do not configure the frontend's `VITE_SHRAMIK_API_BASE_URL` to the stable alias until the required protected routes are served there.
+- A distinct deployment associated with `feature/backend-analytics-read-api` exposes the expected analytics paths in OpenAPI, but the checker could not verify authenticated database reads through that unique deployment because Vercel Deployment Protection blocked the direct request. Route presence in OpenAPI is not proof of a successful authenticated query.
+- Read-only Vercel environment inspection now lists the backend `DATABASE_URL` key for Production as well as `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `CORS_ALLOWED_ORIGINS` and `ENVIRONMENT`; secret values are not copied into the repository or browser. The separately required GitHub Actions `SHRAMIK_DATABASE_URL` secret still needs its own verification before scheduled ingestion can persist anything.
+- No environment configuration, alias, deployment, merge, or database write was changed during this check.
+
+### Demand-feed access and refresh implications
+
+- The official [NCS job search](https://www.ncs.gov.in/) supports location, sector/role and posted-date filters, making it a possible future observation source. However, the [NCS onboarding policy](https://www.ncs.gov.in/NCSPolicyDocuments/NCS%20Onboarding%20Policy_07Jan2016.pdf) restricts re-use and dissemination of data drawn from the portal without consent. Do not build an unattended scraper/feed adapter or republish portal records for SHRAMIK before obtaining written permission and confirming supported access conditions.
+- The [OGD Employment Exchanges catalogue](https://www.data.gov.in/catalog/employment-exchanges-data) lists legacy monthly July 2012–April 2013 and annual live-register 2002–2011 resources. It cannot substitute for a current district-by-skill demand feed.
+- DGT's [provisional CTS 2026 seat matrix](https://www.dgt.gov.in/en/node/4675) is a source-backed, release-oriented capacity input; it is a dated source snapshot, not real-time job demand.
+- Therefore, do not advertise current total labour demand, a district-by-skill shortage, emerging-skill momentum or an official forecast until the source, right to use it, granularity, compatible history, and methodology are all verified. Continue showing the valid source-backed context currently stored and keep unsupported analytical results unavailable.
+
