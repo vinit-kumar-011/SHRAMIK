@@ -107,7 +107,7 @@ test('production defaults to the Supabase adapter unless REST mode is explicitly
   assert.match(supabase, /occupationForecasts: trainingContextRows/);
   assert.match(dashboard, /trendKind === 'training-programmes'/);
   assert.match(dashboard, /row\.displayScore !== undefined/, 'catalogue/context rows should not render misleading zero-length score bars');
-  assert.match(dashboard, /Canonical skill references from Supabase/);
+  assert.match(supabase, /Canonical skill reference is inactive pending review of its occupation\/sector mapping/);
   assert.match(dashboard, /adapter\.mode === 'supabase' \? 'Supabase live data'/);
   assert.ok(dashboard.includes("'Loading source-backed data:'"), 'loading state must not be labelled as a prototype');
   assert.ok(dashboard.includes("'Source-backed data unavailable:'"), 'failed source-backed reads must have their own status');
