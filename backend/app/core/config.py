@@ -18,6 +18,7 @@ CorsOrigins = Annotated[list[str], NoDecode, BeforeValidator(_split_comma_separa
 class Settings(BaseSettings):
     app_name: str = "SHRAMIK API"
     environment: str = "development"
+    showcase_mode: bool = Field(default=False, validation_alias="SHRAMIK_SHOWCASE_MODE")
     api_prefix: str = "/api"
     database_url: str | None = None
     supabase_url: str | None = None
