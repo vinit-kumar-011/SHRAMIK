@@ -361,3 +361,18 @@ The official [eSankhyiki PLFS catalogue](https://esankhyiki.mospi.gov.in/catalog
 
 **Implication:** near-term scheduled ingestion should safely automate MoSPI PLFS release discovery, DGT release/snapshot monitoring, and existing public-source metadata. For current district/occupation/skill demand, retain the NCS consent gate and seek an authorized data-sharing route with DGE/NCS or other job sources whose terms permit collection and redistribution. Do not claim full live demand automation until that access is secured and actually tested.
 
+
+### Read-only Supabase analytics inventory recheck — 22 October 2026
+
+A direct read-only query against the connected Supabase project returned:
+
+| Canonical table/scope | Current rows |
+|---|---:|
+| Source-backed, non-synthetic demand observations | 34 |
+| Source-backed, non-synthetic supply observations | 182 |
+| Active official source-backed forecast outputs marked `SUFFICIENT` | 0 |
+| Active official source-backed early warnings backed by sufficient active forecasts | 0 |
+| Active official source-backed emerging-skill signals marked `SUFFICIENT` | 0 |
+| Synthetic source-metric observations | 0 |
+
+These are current inventory counts, not market indicators. The 182 supply rows include training/capacity and programme context with different semantics and reference periods; they must not be summed into a total number of available workers or compared directly against vacancy flows. This recheck was read-only: it performed no database writes.
