@@ -773,6 +773,47 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
   const handleGapDetailError = useCallback((message: string) => { setDetail(null); setDetailLoading(false); setDetailError(message); }, []);
   const handleRankingMetricChange = (value: RegionMetric) => setRankingMetric(value);
 
+  const footerStateLabel = dashboard?.meta.provenance === 'source-backed'
+    ? 'Data notes:'
+    : dashboard?.meta.provenance === 'mixed'
+      ? 'Mixed data:'
+      : dashboard?.meta.provenance === 'derived'
+        ? 'Derived data:'
+        : dashboard?.meta.provenance === 'mock'
+          ? 'Prototype preview:'
+          : loading
+            ? 'Loading source-backed data:'
+            : error
+              ? 'Source-backed data unavailable:'
+              : 'Data status:';
+  const footerStateMessage = dashboard?.meta.provenance === 'source-backed'
+    ? `${dashboard.meta.sourceLabel}. Check the detail panels for source notes, units and coverage.`
+    : dashboard?.meta.provenance === 'mixed'
+      ? 'This view combines indicators with different provenance. Inspect each card for source, period, units and coverage.'
+      : dashboard?.meta.provenance === 'derived'
+        ? 'Derived values are calculated from displayed source-backed records; see the details for the method and coverage.'
+        : dashboard?.meta.provenance === 'mock'
+          ? 'Illustrative values are enabled for local development only and are not verified labour-market statistics.'
+          : loading
+            ? 'Waiting for the live data request to finish. Values appear only after a successful read.'
+            : error
+              ? `${error} No synthetic values have been substituted.`
+              : 'No validated snapshot is available for this selection. No synthetic values have been substituted.';
+  const footerStateClass = dashboard?.meta.provenance ?? (loading ? 'loading' : error ? 'unavailable' : 'unknown');
+  const footerStateBadge = dashboard?.meta.provenance === 'source-backed'
+    ? 'Source-backed'
+    : dashboard?.meta.provenance === 'mixed'
+      ? 'Mixed provenance'
+      : dashboard?.meta.provenance === 'derived'
+        ? 'Derived values'
+        : dashboard?.meta.provenance === 'mock'
+          ? 'Illustrative data'
+          : loading
+            ? 'Loading'
+            : error
+              ? 'Unavailable'
+              : 'No snapshot';
+
   // Public routes are rendered by the parent. Never mount auth pages inside the workspace shell.
   if (activePage === 'login' || activePage === 'request-access') return null;
 
@@ -856,7 +897,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
             onOpenSection={(section) => void openSection(section)}
             onOpenRow={(row, section) => void openRow(row, section)}/>
         </section>
-        <footer className="method-note"><span className="note-marker">i</span><p><strong>{dashboard?.meta.provenance === 'source-backed' ? 'Data notes:' : 'Prototype preview:'}</strong> {dashboard?.meta.provenance === 'source-backed' ? `${dashboard.meta.sourceLabel}. Check the detail panels for source notes, units and coverage.` : 'All numbers currently visible come from an illustrative adapter unless a source-backed API is configured; do not treat them as verified labour-market statistics.'}</p><span className={`data-status-footer ${dashboard?.meta.provenance ?? 'mock'}`}><span className="status-dot"/>{dashboard?.meta.provenance === 'source-backed' ? 'Source-backed' : dashboard?.meta.provenance === 'mixed' ? 'Mixed provenance' : dashboard?.meta.provenance === 'derived' ? 'Derived values' : 'Illustrative data'}</span><span className="updated"><CalendarDays size={14}/>{dashboard?.meta.updatedAt ? formatUpdated(dashboard.meta.updatedAt) : 'Update unavailable'}</span><span className="updated"><Database size={14}/>{adapter.mode === 'rest' ? 'REST API' : adapter.mode === 'supabase' ? 'Supabase live data' : 'Mock adapter'}</span><button className="refresh-button" type="button" onClick={refresh} disabled={loading || refreshing} aria-label="Refresh dashboard data"><RefreshCw size={13} className={refreshing ? 'spin-icon' : ''}/> Refresh</button></footer>
+        <footer className="method-note"><span className="note-marker">i</span><p><strong>{footerStateLabel}</strong> {footerStateMessage}</p><span className={`data-status-footer ${footerStateClass}`}><span className="status-dot"/>{footerStateBadge}</span><span className="updated"><CalendarDays size={14}/>{dashboard?.meta.updatedAt ? formatUpdated(dashboard.meta.updatedAt) : 'Update unavailable'}</span><span className="updated"><Database size={14}/>{adapter.mode === 'rest' ? 'REST API' : adapter.mode === 'supabase' ? 'Supabase live data' : 'Mock adapter'}</span><button className="refresh-button" type="button" onClick={refresh} disabled={loading || refreshing} aria-label="Refresh dashboard data"><RefreshCw size={13} className={refreshing ? 'spin-icon' : ''}/> Refresh</button></footer>
         </> : <ModuleRouteFallback route={activePage} />}
         </ModuleErrorBoundary>
       </main>
