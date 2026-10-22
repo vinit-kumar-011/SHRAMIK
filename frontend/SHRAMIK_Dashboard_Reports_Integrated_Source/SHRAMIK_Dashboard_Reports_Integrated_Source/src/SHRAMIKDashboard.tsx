@@ -164,14 +164,14 @@ function KpiCard({ item, index, onOpen }: { item: MetricCardData; index: number;
   return <button type="button" className={`kpi-card tone-${tone}`} onClick={() => onOpen(item)} aria-label={`Open ${item.title} details`}>
     <div className="kpi-icon"><Icon size={25} strokeWidth={2.1} /></div>
     <div className="kpi-main">
-      <div className="eyebrow">{item.title}</div>
+      <div className={`eyebrow${item.title.length > 24 ? ' kpi-title-multiline' : ''}`} title={item.title}>{item.title}</div>
       <div className="kpi-subtitle">{item.subtitle}</div>
       <div className="kpi-value">{item.formattedValue}</div>
       {item.deltaPct === null ? <div className="kpi-change source-context"><span>{item.context}</span></div> : <div className={`kpi-change ${item.deltaPct < 0 ? 'change-negative' : ''}`}><TrendingUp size={18} strokeWidth={2.8}/><strong>{item.deltaPct > 0 ? '+' : ''}{item.deltaPct}%</strong><span>{item.context}</span></div>}
     </div>
     <div className="kpi-spark">{item.trend.length >= 2
       ? <Sparkline values={item.trend} tone={tone} id={item.id} />
-      : <span className="kpi-spark-empty" aria-label="Historical trend unavailable">History unavailable</span>}</div>
+      : <span className="kpi-spark-empty" aria-label="No historical trend series is published for this metric">No trend series</span>}</div>
     <span className="card-open"><ChevronRight size={15}/></span>
   </button>;
 }
