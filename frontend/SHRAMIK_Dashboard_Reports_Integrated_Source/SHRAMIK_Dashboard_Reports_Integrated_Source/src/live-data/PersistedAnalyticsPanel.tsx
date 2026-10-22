@@ -92,6 +92,7 @@ type PanelData = {
 };
 
 const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+const showcaseMode = env?.MODE === 'production' || env?.VITE_SHRAMIK_SHOWCASE_MODE === 'true';
 const configuredBase = (env?.VITE_SHRAMIK_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
 // In Vite dev/preview, use the same-origin proxy to avoid browser CORS preflights.
 const API_BASE = env?.DEV ? '' : configuredBase.replace(/\/api\/v1(?:\/forecasts)?$/i, '');
@@ -198,7 +199,7 @@ export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsM
         <label className="pai-mode-label">Analysis mode
           <select value={mode} onChange={event => setMode(event.target.value as AnalyticsMode)} aria-label="Analysis mode">
             <option value="OFFICIAL">Official · source-backed</option>
-            <option value="DEMO">Demo · synthetic</option>
+            {!showcaseMode ? <option value="DEMO">Demo · synthetic</option> : null}
           </select>
         </label>
         <button type="button" className="pai-refresh" onClick={() => setRefreshKey(value => value + 1)} disabled={loading}>
