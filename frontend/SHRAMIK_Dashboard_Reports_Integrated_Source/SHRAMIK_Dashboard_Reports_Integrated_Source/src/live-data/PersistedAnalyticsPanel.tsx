@@ -21,6 +21,11 @@ type ItemsEnvelope<T> = {
   meta: ApiMeta;
 };
 
+type SkillsEnvelope = {
+  data: Array<{ skill_id: string; name: string; sector_name?: string }>;
+  meta: ApiMeta;
+};
+
 type StatusEnvelope = {
   data: {
     source_inputs?: {
@@ -118,7 +123,7 @@ async function getJson<T>(path: string, token: string, signal: AbortSignal): Pro
         : 'Analytics API returned HTTP ' + response.status + '.',
     );
   }
-  return body as T;
+  return body as unknown as T;
 }
 
 export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsModule }) {
@@ -141,11 +146,12 @@ export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsM
           throw new Error('Your SHRAMIK session is missing or expired. Sign in again to read protected analytics.');
         }
         const query = '?analysis_mode=' + mode + '&limit=100&offset=0';
-        const [status, forecasts, warnings, emergingSkills] = await Promise.all([
+        const [status, forecasts, warnings, emergingSkills, skills] = await Promise.all([
           getJson<StatusEnvelope>('/api/v1/analytics/status', session.access_token, controller.signal),
           getJson<ItemsEnvelope<ForecastRow>>('/api/v1/analytics/forecasts' + query, session.access_token, controller.signal),
           getJson<ItemsEnvelope<WarningRow>>('/api/v1/analytics/early-warnings' + query, session.access_token, controller.signal),
           getJson<ItemsEnvelope<EmergingSkillRow>>('/api/v1/analytics/emerging-skills' + query, session.access_token, controller.signal),
+          getJson<SkillsEnvelope>('/api/v1/skills?page_size=100&active_only=false', session.access_token, controller.signal),
         ]);
         if (active) {
           setData({
@@ -153,6 +159,7 @@ export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsM
             forecasts,
             warnings,
             emergingSkills,
+            skills,
             loadedAt: new Date().toISOString(),
           });
         }
@@ -176,6 +183,7 @@ export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsM
   const warningRows = data?.warnings.data.items ?? [];
   const emergingRows = data?.emergingSkills.data.items ?? [];
   const inputCounts = data?.status.data.source_inputs;
+  const skillName = (skillId: string) => data?.skills.data.find(skill => skill.skill_id === skillId)?.name ?? skillId;
 
   return <section className="pai-panel" aria-label="Authenticated persisted analytics">
     <header className="pai-header">
@@ -223,7 +231,7 @@ export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsM
           {forecastRows.length ? <div className="pai-table-wrap"><table className="pai-table">
             <thead><tr><th>Target year</th><th>District</th><th>Skill ID</th><th>Demand</th><th>Supply</th><th>Gap</th><th>Status</th><th>Confidence</th><th>Provenance</th></tr></thead>
             <tbody>{forecastRows.map(row => <tr key={row.id}>
-              <td>{row.period_year}</td><td>{row.district_id}</td><td><code>{row.skill_id}</code></td>
+              <td>{row.period_year}</td><td>{row.district_id}</td><td><strong>{skillName(row.skill_id)}</strong><small><code>{row.skill_id}</code></small></td>
               <td>{formatNumber(row.forecast_demand)}</td><td>{formatNumber(row.forecast_supply)}</td><td>{formatNumber(row.gap)}</td>
               <td><span className="pai-status">{row.status || row.data_status}</span></td><td>{row.confidence_level || '—'}</td><td>{row.provenance_state}</td>
             </tr>)}</tbody>
