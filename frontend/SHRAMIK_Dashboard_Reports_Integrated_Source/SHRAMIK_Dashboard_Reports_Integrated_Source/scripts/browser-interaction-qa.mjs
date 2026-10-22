@@ -327,6 +327,8 @@ try {
         demoModeOption: options.some(option => option.value === 'DEMO' || /demo · synthetic/i.test(option.innerText)),
         illustrativeOccupationOptions: !!occupation && Array.from(occupation.options).some(option => ['EXAMPLES', 'DEMO'].includes(option.value)),
         syntheticNotice: !!document.querySelector('.pai-notice-demo'),
+        analyticsApiConfigurationNotice: (document.body?.innerText || '').includes('The authenticated analytics API is not configured for this production build'),
+        analyticsHttp500Notice: (document.body?.innerText || '').includes('Analytics API returned HTTP 500'),
         monthlyPlfsContext: location.pathname === '/demand' ? {
           unemployment: cardValue('Unemployment Rate'),
           labourForceParticipation: cardValue('Labour Force Participation'),
@@ -340,6 +342,13 @@ try {
     const officialOnly = state.path === module.path && state.liveShell && !state.previewButton &&
       !state.previewBanner && !state.demoModeOption && !state.illustrativeOccupationOptions && !state.syntheticNotice;
     record(`${module.label} production view exposes only source-backed/showcase controls`, officialOnly, JSON.stringify(state));
+    if (['/forecasts', '/emerging-skills'].includes(module.path)) {
+      const apiStateIsHonest = state.analyticsApiConfigurationNotice && !state.analyticsHttp500Notice;
+      record(`${module.label} explains missing production API configuration without calling a nonexistent route`, apiStateIsHonest, JSON.stringify({
+        configuredNotice: state.analyticsApiConfigurationNotice,
+        misleadingHttp500: state.analyticsHttp500Notice,
+      }));
+    }
     if (module.path === '/demand') {
       const plfs = state.monthlyPlfsContext || {};
       const asPercent = value => Number(String(value).replace('%', '').replace(/,/g, '').trim());
