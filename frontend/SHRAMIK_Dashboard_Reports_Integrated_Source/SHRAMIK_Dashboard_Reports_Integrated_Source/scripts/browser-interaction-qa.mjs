@@ -447,20 +447,34 @@ try {
   await navigate(cdp, origin + '/data-sources');
   await waitFor(() => cdp.evaluate(`(() => {
     const root = document.querySelector('.data-sources-page');
-    return !!root?.querySelector('.connection-note') &&
-      !!root.querySelector('.source-table tbody tr');
-  })()`), 'Source-backed Data Sources registry with at least one row');
-  const dataSourcesState = await cdp.evaluate(`(() => {
+    return !!root && (!!root.querySelector('.connection-note') || !!root.querySelector('.error-state'));
+  })()`), 'Data Sources registry loaded or explicit error state');
+  const dataSourcesState = await cdp.evaluate(`(async () => {
     const root = document.querySelector('.data-sources-page');
     const text = root?.innerText || '';
     const rows = Array.from(root?.querySelectorAll('.source-table tbody tr') || []);
     const lifecycleUnknown = rows.filter(row => row.querySelector('.status-stack')?.innerText.includes('Unknown')).length;
     const provenanceTags = Array.from(root?.querySelectorAll('.provenance') || []).map(el => (el.innerText || '').trim());
     const registrySummary = root?.querySelector('.registry-panel .section-heading p:last-child')?.innerText || '';
+    let proxyDiagnostic;
+    try {
+      const response = await fetch('/api/shramik-data?table=data_sources&select=id,name,source_type,publisher,url,publication_date,accessed_at,coverage_start,coverage_end&order=name.asc&limit=1000');
+      const bodyText = await response.text();
+      let body;
+      try { body = JSON.parse(bodyText); } catch { body = bodyText.slice(0, 500); }
+      proxyDiagnostic = {
+        status: response.status,
+        arrayRows: Array.isArray(body) ? body.length : null,
+        body: Array.isArray(body) ? undefined : body,
+      };
+    } catch (error) {
+      proxyDiagnostic = {error: error instanceof Error ? error.message : String(error)};
+    }
     return {
       mounted: !!root,
       registryResponse: !!root?.querySelector('.connection-note'),
       explicitError: !!root?.querySelector('.error-state'),
+      errorText: root?.querySelector('.error-state')?.innerText || '',
       syntheticNotice: !!root?.querySelector('.demo-notice'),
       provenanceTags,
       sourceBackedOnly: provenanceTags.length > 0 && provenanceTags.every(tag => tag === 'Source-backed'),
@@ -470,13 +484,16 @@ try {
       overstatesFreshness: /All sources are up to date|Every source is healthy|Live feed connected/i.test(text),
       hasSourceRegisterTitle: /Registered sources/i.test(text),
       internalColumnsNotRendered: !/created_at|internal notes/i.test(text),
+      proxyDiagnostic,
     };
   })()`);
   const dataSourcesSafe = dataSourcesState.mounted && dataSourcesState.registryResponse &&
     !dataSourcesState.explicitError && !dataSourcesState.syntheticNotice &&
     dataSourcesState.sourceBackedOnly && dataSourcesState.rowCount > 0 &&
     !dataSourcesState.overstatesFreshness && dataSourcesState.hasSourceRegisterTitle &&
-    dataSourcesState.internalColumnsNotRendered;
+    dataSourcesState.internalColumnsNotRendered &&
+    dataSourcesState.proxyDiagnostic?.status === 200 &&
+    dataSourcesState.proxyDiagnostic?.arrayRows > 0;
   record('Data Sources loads source-backed registry rows with restricted columns and no fake freshness',
     dataSourcesSafe, JSON.stringify(dataSourcesState));
   await screenshot(cdp, 'showcase-data-sources.png');
