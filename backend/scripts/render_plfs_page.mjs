@@ -144,15 +144,42 @@ async function main() {
   await cdp.send('Page.enable');
   await cdp.send('Runtime.enable');
   await cdp.send('Network.enable');
-  await cdp.send('Page.navigate', { url: sourceUrl });
+  const navigation = await cdp.send('Page.navigate', { url: sourceUrl });
+  if (navigation.errorText) {
+    throw new Error(`Official MoSPI navigation failed: ${navigation.errorText}`);
+  }
 
   let lastObservedState = null;
   const page = await waitFor(async () => {
     const state = await cdp.evaluate(`(() => {
-      const text = document.body?.innerText || '';
+      const bodyText = document.body?.innerText || '';
+      const labelledNodes = Array.from(document.querySelectorAll('img[alt], [aria-label], [title]'));
+      const localContext = labelledNodes.map((node) => {
+        const labels = [node.getAttribute('alt'), node.getAttribute('aria-label'), node.getAttribute('title')]
+          .filter(value => typeof value === 'string' && value.trim())
+          .join(' ');
+        let parent = node.parentElement;
+        let bestContext = '';
+        let depth = 0;
+        while (parent && parent !== document.body && depth < 6) {
+          const candidate = (parent.innerText || parent.textContent || '').replace(/\\s+/g, ' ').trim();
+          if (candidate && candidate.length < 2200) {
+            bestContext = candidate;
+            if (/\\d{1,3}(?:\\.\\d+)?\\s*%/.test(candidate) &&
+                /(?:January|February|March|April|May|June|July|August|September|October|November|December|जनवरी|फरवरी|मार्च|अप्रैल|मई|जून|जुलाई|अगस्त|सितंबर|सितम्बर|अक्टूबर|अक्तूबर|नवंबर|नवम्बर|दिसंबर|दिसम्बर)\\s*20\\d{2}/i.test(candidate)) {
+              break;
+            }
+          }
+          parent = parent.parentElement;
+          depth += 1;
+        }
+        return labels ? `${bestContext} ${labels}`.trim() : '';
+      }).filter(Boolean);
+      const text = [bodyText, ...localContext].filter(Boolean).join('\\n');
       return {
         title: document.title || '',
         text,
+        bodyText,
         html: document.documentElement?.outerHTML || '',
         readyState: document.readyState,
         url: location.href
@@ -182,9 +209,15 @@ async function main() {
   });
 
   const htmlPath = path.join(outputDir, 'plfs-page-rendered.html');
+  const sourceDomPath = path.join(outputDir, 'plfs-page-source-dom.html');
   const textPath = path.join(outputDir, 'plfs-page-visible-text.txt');
   const metadataPath = path.join(outputDir, 'plfs-browser-capture.json');
-  await writeFile(htmlPath, page.html, 'utf8');
+  const escapeHtml = value => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Persist the measured visible/accessible strings in one deterministic text document
+  // for the strict parser. Archive the real DOM separately for audit/debugging.
+  const normalizedHtml = `<!doctype html><html><body><pre>${escapeHtml(page.text)}</pre></body></html>`;
+  await writeFile(htmlPath, normalizedHtml, 'utf8');
+  await writeFile(sourceDomPath, page.html, 'utf8');
   await writeFile(textPath, page.text, 'utf8');
   await writeFile(metadataPath, JSON.stringify({
     sourceUrl,
@@ -193,8 +226,11 @@ async function main() {
     renderedAtUtc: new Date().toISOString(),
     readyState: page.readyState,
     htmlBytes: Buffer.byteLength(page.html, 'utf8'),
+    normalizedTextCharacters: page.text.length,
+    bodyTextCharacters: page.bodyText.length,
     visibleTextCharacters: page.text.length,
-    captureMethod: 'Chromium-rendered DOM; raw HTTP response is JavaScript shell',
+    captureMethod: 'Chromium-rendered visible text plus local accessible labels; original DOM retained separately',
+    sourceDomFile: sourceDomPath.split(path.sep).pop(),
   }, null, 2) + '\n', 'utf8');
 
   console.log(JSON.stringify({
