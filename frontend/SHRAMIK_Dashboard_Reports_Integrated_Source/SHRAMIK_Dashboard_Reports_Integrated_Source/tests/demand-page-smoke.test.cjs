@@ -46,6 +46,9 @@ test('NCS portal active vacancies are displayed only as a dated national lower-b
   assert.match(source, /not an exact count/);
   assert.match(source, /not used to calculate the .Total Estimated Demand. KPI/);
   assert.match(source, /row\.is_synthetic === false/);
+  assert.match(source, /function SourceLink\(\{ source, fallbackUrl, fallbackLabel \}/);
+  assert.match(source, /fallbackUrl=\{textValue\(ncsVacancySnapshot\.dimension_values\?\.source_url\)\}/);
+  assert.match(source, /fallbackLabel="PIB · NCS portal vacancy release"/);
 });
 
 test('monthly PLFS display period remains distinct from annual CY2025', () => {
