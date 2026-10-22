@@ -6,6 +6,7 @@ import argparse
 import csv
 import hashlib
 import json
+from decimal import Decimal, InvalidOperation
 from collections import defaultdict
 from pathlib import Path
 from urllib.parse import urlparse
@@ -171,6 +172,15 @@ def _ensure_capabilities(
                "semantics": semantics, "start_year": min(years), "end_year": max(years)})
 
 
+def _numeric_values_equal(left: Any, right: Any) -> bool:
+    """Compare database numerics by value rather than Decimal display scale."""
+    try:
+        left_value, right_value = Decimal(str(left)), Decimal(str(right))
+    except (InvalidOperation, ValueError, TypeError):
+        return False
+    return left_value.is_finite() and right_value.is_finite() and left_value == right_value
+
+
 def _observation_exists(conn: Connection, row: dict[str, Any], kind: str,
                         source_id: str) -> dict[str, Any] | None:
     table = "demand_observations" if kind == "demand" else "supply_observations"
@@ -281,7 +291,7 @@ def ingest_csv(*, path: Path, kind: str, source_name: str, publisher: str,
                 if current:
                     is_same = (
                         current[measure_col] is not None
-                        and str(current[measure_col]) == str(value)
+                        and _numeric_values_equal(current[measure_col], value)
                         and current["quantity_unit"] == row["quantity_unit"]
                         and current["quantity_semantics"] == row["quantity_semantics"]
                         and current["transformation_note"] == row["transformation_note"]
