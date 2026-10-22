@@ -158,8 +158,8 @@ async function main() {
       };
     })()`);
     const hasLabels = requiredLabels.every(label => state.text.includes(label));
-    const hasMonthlyValues = /\\d{1,3}(?:\\.\\d+)?\\s*%/.test(state.text)
-      && /(September|August|October)\\s+20\\d{2}/i.test(state.text);
+    const hasMonth = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+20\\d{2}/i.test(state.text);
+    const hasMonthlyValues = /\\d{1,3}(?:\\.\\d+)?\\s*%/.test(state.text) && hasMonth;
     if (state.readyState === 'complete' && state.text.length > 1200 && hasLabels && hasMonthlyValues) {
       return state;
     }
