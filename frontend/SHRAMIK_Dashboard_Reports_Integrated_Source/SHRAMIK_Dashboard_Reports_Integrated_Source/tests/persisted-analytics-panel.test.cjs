@@ -21,8 +21,8 @@ test('official and demo outputs are visibly distinguished', () => {
   assert.match(panel, /value="OFFICIAL"/);
   assert.match(panel, /value="DEMO"/);
   assert.match(panel, /Synthetic demo mode/);
-  assert.match(panel, /not be cited as government data or policy evidence/);
-  assert.match(panel, /SOURCE_BACKED/);
+  assert.match(panel, /Do not cite it as government data or policy evidence/);
+  assert.match(panel, /source-backed/);
 });
 
 test('live forecast and emerging skill pages render the authenticated results panel', () => {
