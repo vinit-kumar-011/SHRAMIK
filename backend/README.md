@@ -72,14 +72,20 @@ python -m app.ingestion.promote_source_metrics --apply
 
 These PMKVY trained/oriented and NAPS apprentices-engaged measures are training/apprenticeship flows, **not employed-worker stock**. They must not be compared directly with vacancy counts or fed into the district-by-skill baseline. The official analytics pipeline requires compatible `DISTRICT_SKILL` demand and supply series with at least three common years.
 
-For presentation and integration smoke testing, the separately labelled synthetic pilot can be created and processed:
+## Synthetic fixtures: local development only
+
+**Do not seed synthetic history into the shared Supabase project or SIH showcase environment.** The production UI is official-only and does not offer a demo mode. The pilot synthetic observations/outputs previously used for integration testing were removed from the shared Supabase analytical tables on 22 October 2026; only the append-only generation audit record remains.
+
+The demo generator is now guarded: it permits a local throwaway database by default and refuses remote database URLs. Remote writes require both the explicit CLI flag `--allow-synthetic-remote-db` and environment variable `SHRAMIK_ALLOW_SYNTHETIC_REMOTE_DB=true`; never enable that override for SHRAMIK's shared or SIH database.
+
+For offline unit tests, rely on fixtures and mocked adapters. If a developer specifically needs a disposable local Postgres database, start it with a localhost `DATABASE_URL` before running:
 
 ```powershell
 python -m app.ingestion.demo
 python -m app.ingestion.pipeline --mode DEMO
 ```
 
-Demo output is stored as `SYNTHETIC_DEMO` and returned only when the analytics endpoints are queried with `analysis_mode=DEMO`. It must not be described as source-backed evidence. Official runs require an explicit demand signal, supply signal, and `--confirm-compatible-signals` after reviewing the source semantics.
+Synthetic values use `SYNTHETIC_DEMO` provenance and must never be described as source-backed evidence. Official runs require compatible source-backed demand/supply series and explicit signals after reviewing their semantics.
 
 ## Tests
 
