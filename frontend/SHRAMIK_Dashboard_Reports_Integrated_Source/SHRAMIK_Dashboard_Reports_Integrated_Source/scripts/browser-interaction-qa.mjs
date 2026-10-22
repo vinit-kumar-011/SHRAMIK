@@ -302,8 +302,11 @@ try {
 
   // The preview must also be cleared on in-app navigation, not just its explicit exit action.
   await navigate(cdp, origin + '/demand');
-  await waitFor(() => cdp.evaluate(`!!document.querySelector('.dbi-shell')`), 'Demand live notice before route-change preview test');
-  await clickByText(cdp, 'Open synthetic demo preview', true);
+  await waitFor(() => cdp.evaluate(
+    `!!document.querySelector('.dbi-shell') && Array.from(document.querySelectorAll('button')).some(button => (button.innerText||'').trim() === 'Open synthetic demo preview')`,
+  ), 'Demand preview control before route-change test');
+  const routePreviewClick = await clickByText(cdp, 'Open synthetic demo preview', true);
+  if (!routePreviewClick) throw new Error('Demand synthetic preview control was not found for route-change test.');
   await waitFor(() => cdp.evaluate(`!!document.querySelector('.module-preview-banner')`), 'Demand synthetic preview before route-change test');
   const routeChange = await cdp.evaluate(`(() => { const e=Array.from(document.querySelectorAll('button.nav-item')).find(button=>(button.innerText||'').trim().toLowerCase()==='supply'); if(!e)return null; e.click(); return (e.innerText||'').trim(); })()`);
   await waitFor(() => cdp.evaluate(`location.pathname === '/supply' && !document.querySelector('.module-preview-banner') && !!document.querySelector('.dbi-shell')`), 'preview cleared after in-app navigation');
