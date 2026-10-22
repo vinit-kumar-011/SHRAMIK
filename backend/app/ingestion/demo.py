@@ -34,6 +34,43 @@ DEMO_NOTE = (
 )
 
 
+PILOT_DISTRICT_ALIASES = (
+    ("cuttack", "kataka"),
+    ("ganjam",),
+    ("khordha", "khurda"),
+)
+
+
+def _resolve_pilot_districts(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Resolve the fixed demo pilot without inventing district IDs.
+
+    The loaded national reference roster uses the display spelling "Kataka" for
+    the canonical district row (LGD-backed ID IN-LGD-350) in this database.
+    Accept "Cuttack" as its common display alias, while preserving the stored ID
+    and display name in the generation metadata.
+    """
+    by_normalized_name = {row["name"].strip().lower(): dict(row) for row in rows}
+    chosen = []
+    for aliases in PILOT_DISTRICT_ALIASES:
+        match = next(
+            (by_normalized_name[name] for name in aliases if name in by_normalized_name),
+            None,
+        )
+        if match:
+            chosen.append(match)
+    if len(chosen) != len(PILOT_DISTRICT_ALIASES):
+        missing = [
+            "/".join(aliases)
+            for aliases in PILOT_DISTRICT_ALIASES
+            if not any(name in by_normalized_name for name in aliases)
+        ]
+        raise RuntimeError(
+            "Could not resolve the demo pilot districts against the canonical district roster. "
+            f"Missing aliases: {missing}"
+        )
+    return chosen
+
+
 def _district_selection(conn) -> tuple[str, list[dict[str, Any]]]:
     state = conn.execute(
         text("SELECT id FROM public.states WHERE code = 'OD' LIMIT 1")
@@ -49,22 +86,7 @@ def _district_selection(conn) -> tuple[str, list[dict[str, Any]]]:
         """),
         {"state_id": state},
     ).mappings().all()
-    by_normalized_name = {row["name"].strip().lower(): dict(row) for row in rows}
-    chosen = []
-    for preferred_names in (
-        ("cuttack",),
-        ("ganjam",),
-        ("khordha", "khurda"),
-    ):
-        match = next((by_normalized_name[name] for name in preferred_names if name in by_normalized_name), None)
-        if match:
-            chosen.append(match)
-    if len(chosen) != 3:
-        raise RuntimeError(
-            "Could not resolve the demo pilot districts Cuttack, Ganjam, and Khordha/Khurda "
-            "against the local district reference roster."
-        )
-    return str(state), chosen
+    return str(state), _resolve_pilot_districts([dict(row) for row in rows])
 
 
 def _ensure_generation_run(conn, parameters: dict[str, Any]) -> str:
