@@ -150,6 +150,7 @@ test('an empty successful published KPI view falls back to source-backed observa
     { id: 'seat-1', metric_code: 'CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE', value_numeric: 29420, unit: 'seats', state_id: 'IN-OD', reference_period: 'ACADEMIC_SESSION_2026', as_of_date: '2026-07-08', dimension_values: {}, provenance_state: 'SOURCE_BACKED', is_synthetic: false },
     { id: 'iti-1', metric_code: 'CTS_ITI_COUNT', value_numeric: 526, unit: 'ITIs', state_id: 'IN-OD', reference_period: 'AS_OF_2024-10-31', as_of_date: '2024-10-31', dimension_values: {}, provenance_state: 'SOURCE_BACKED', is_synthetic: false },
     { id: 'ur-1', metric_code: 'UR', value_numeric: 3.1, unit: 'percent', state_id: null, reference_period: 'CY2025', as_of_date: '2026-10-14', dimension_values: { sex: 'person', area: 'combined', age_domain: 'all_ages' }, provenance_state: 'SOURCE_BACKED', is_synthetic: false },
+    { id: 'cws-ur-1', metric_code: 'CWS_UR', value_numeric: 5.0, unit: 'percent', state_id: null, reference_period: 'MONTHLY_2026-09', as_of_date: null, dimension_values: { sex: 'person', area: 'combined', age_domain: '15_years_and_above', survey_basis: 'current_weekly_status' }, provenance_state: 'SOURCE_BACKED', is_synthetic: false },
   ];
   const fetcher = async (input) => {
     const url = String(input);
@@ -167,10 +168,12 @@ test('an empty successful published KPI view falls back to source-backed observa
     () => new Headers({ apikey: 'test-public-key', Authorization: 'Bearer test-public-key', Accept: 'application/json' }),
   );
   const data = await adapter.getDashboard({ regionCode: 'IN', periodYears: 5 });
-  assert.ok(data.kpis.length >= 4, 'raw source-backed rows should repopulate the dashboard KPI cards');
+  assert.equal(data.kpis.length, 4, 'fallback must retain the same four-card dashboard shape');
   assert.ok(data.kpis.some(item => item.id === 'eshram-registration-count'));
   assert.ok(data.kpis.some(item => item.id === 'cts-provisional-seat-capacity-by-trade-state'));
-  assert.ok(data.kpis.some(item => item.id === 'ur'));
+  assert.ok(data.kpis.some(item => item.id === 'cts-iti-count'));
+  assert.ok(data.kpis.some(item => item.id === 'cws-ur' && item.value === 5));
+  assert.ok(!data.kpis.some(item => item.id === 'ur'), 'monthly CWS unemployment takes priority over annual UR');
   assert.ok(data.meta.notes.some(note => note.includes('published dashboard view returned no rows')));
   assert.ok(calls.some(url => url.includes('/sh_public_dashboard_kpis?')));
   assert.ok(calls.some(url => url.includes('/source_metric_observations?')));
