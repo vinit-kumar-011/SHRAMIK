@@ -160,6 +160,15 @@ test('public proxy rejects ungranted columns and returns useful upstream errors'
     assert.match(invalidOrder.body.error, /non-allow-listed column/);
     assert.equal(fetchCount, 0);
 
+    const internalNotes = responseCapture();
+    await handler({
+      method: 'GET',
+      query: { table: 'data_sources', select: 'id,name,notes' },
+    }, internalNotes);
+    assert.equal(internalNotes.code, 400, 'internal source notes must not be exposed through the public reader');
+    assert.match(internalNotes.body.error, /allow-listed/);
+    assert.equal(fetchCount, 0, 'rejected internal columns must not query Supabase');
+
     const upstream = responseCapture();
     await handler({ method: 'GET', query: { table: 'states', select: 'id,name,code' } }, upstream);
     assert.equal(upstream.code, 403);
@@ -210,6 +219,13 @@ test('repository-root Vercel API handler boots standalone and serves an allow-li
     const missingTable = responseCapture();
     await rootHandler({ method: 'GET', query: {} }, missingTable);
     assert.equal(missingTable.code, 400, 'a cold function invocation should execute the handler, not fail at module load');
+
+    const internalNotes = responseCapture();
+    await rootHandler({
+      method: 'GET',
+      query: { table: 'data_sources', select: 'id,name,notes' },
+    }, internalNotes);
+    assert.equal(internalNotes.code, 400, 'the repository-root Vercel handler must apply the same restricted source-note allow-list');
 
     const res = responseCapture();
     await rootHandler({ method: 'GET', query: { table: 'states', select: 'id,name,code', limit: '3' } }, res);
