@@ -78,6 +78,40 @@ test('public proxy exposes allowed source-backed reads and forces non-synthetic 
   }
 });
 
+test('public proxy exposes inactive canonical skills for review without activating them', async () => {
+  const originalFetch = global.fetch;
+  const originalEnv = process.env;
+  let request;
+  global.fetch = async (input, init) => {
+    request = { url: String(input), init };
+    return new Response(JSON.stringify([{
+      id: 'nco2015_7112_0200', code: 'nco2015_7112_0200', name: 'Bricklayerer, Construction',
+      description: null, is_active: false,
+    }]), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+  process.env.VITE_SUPABASE_URL = 'https://unit-test.supabase.co';
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_unit_test';
+  try {
+    const res = responseCapture();
+    await handler({
+      method: 'GET',
+      query: { table: 'skills', select: 'id,code,name,description,is_active', order: 'name.asc', limit: '5' },
+    }, res);
+    assert.equal(res.code, 200);
+    assert.equal(res.body.length, 1);
+    assert.equal(res.body[0].is_active, false);
+    const url = new URL(request.url);
+    assert.equal(url.searchParams.get('select'), 'id,code,name,description,is_active');
+    assert.equal(url.searchParams.has('is_active'), false, 'the public reader must not hide review-only skill references by default');
+
+    const rootHandlerSource = fs.readFileSync(rootDeployHandlerPath, 'utf8');
+    assert.match(rootHandlerSource, /'sector_mapping_confidence', 'description', 'is_active'/, 'the deployed root handler must expose the same approved review-status field');
+  } finally {
+    global.fetch = originalFetch;
+    process.env = originalEnv;
+  }
+});
+
 test('public proxy rejects non-allowlisted tables and methods without querying Supabase', async () => {
   const originalFetch = global.fetch;
   let fetchCount = 0;
