@@ -506,8 +506,8 @@ try {
       demoNotice: !!root?.querySelector('.administration-demo-notice'),
       previewEntryPoint: buttons.some(button => /synthetic Administration preview|Approve locally|Deny locally/i.test(button.innerText || '')),
       sourceUnavailableExplained: isNoticeOnly
-        ? text.includes('A server-authorized review/provisioning API is not configured')
-          && text.includes('No fabricated outputs')
+        ? text.includes('LIVE MODE · API NOT CONNECTED')
+          && text.includes('cannot read the queue, approve requests or grant roles')
         : (unavailableNotice && text.includes('No real access requests, user records or audit events are shown'))
           || (errorNotice && text.includes('Administration data unavailable.')),
       noRequestOrUserRows: requestRows === 0,
@@ -529,8 +529,8 @@ try {
       return {
         auditTabOpened: !Array.from(root?.querySelectorAll('button') || []).some(button => /Audit log/i.test(button.innerText || '')),
         noAuditRows: !root?.querySelector('.administration-table'),
-        explicitEmptyAuditState: text.includes('No fabricated outputs') &&
-          text.includes('server-authorized review/provisioning API is not configured'),
+        explicitEmptyAuditState: text.includes('LIVE MODE · API NOT CONNECTED') &&
+          text.includes('cannot read the queue, approve requests or grant roles'),
       };
     })()`);
   } else {
