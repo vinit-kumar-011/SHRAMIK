@@ -19,6 +19,7 @@ from app.ingestion.db import get_engine
 
 GENERATOR_NAME = "shramik_demo_pilot"
 GENERATOR_VERSION = "1.1.0"
+DEMO_SOURCE_RELEASE = f"SYNTHETIC_DEMO_v{GENERATOR_VERSION}"
 RANDOM_SEED = 20261022
 YEARS = tuple(range(2021, 2026))
 SKILL_IDS = (
@@ -216,11 +217,11 @@ def seed_demo() -> dict[str, Any]:
                                 VALUES
                                     (:state_id, :district_id, NULL, :skill_id, 'DISTRICT_SKILL',
                                      'YEAR', :year, :value, 'persons', 'STOCK', :signal, NULL,
-                                     'SYNTHETIC_DEMO_v1', 'SYNTHETIC_DEMO', TRUE, :run_id, :note)
+                                     :source_release, 'SYNTHETIC_DEMO', TRUE, :run_id, :note)
                             """), {
                                 "state_id": state_id, "district_id": district["id"],
                                 "skill_id": skill_id, "year": year, "value": demand_value,
-                                "signal": DEMAND_SIGNAL, "run_id": run_id, "note": DEMO_NOTE,
+                                "signal": DEMAND_SIGNAL, "source_release": DEMO_SOURCE_RELEASE, "run_id": run_id, "note": DEMO_NOTE,
                             })
                             inserted_demand += 1
                         elif float(previous) == float(demand_value):
@@ -246,12 +247,12 @@ def seed_demo() -> dict[str, Any]:
                                 VALUES
                                     (:state_id, :district_id, NULL, :skill_id, 'DISTRICT_SKILL',
                                      'YEAR', :year, :value, NULL, NULL, NULL, 'persons', 'STOCK',
-                                     :signal, NULL, 'SYNTHETIC_DEMO_v1', 'SYNTHETIC_DEMO', TRUE,
+                                     :signal, NULL, :source_release, 'SYNTHETIC_DEMO', TRUE,
                                      :run_id, :note)
                             """), {
                                 "state_id": state_id, "district_id": district["id"],
                                 "skill_id": skill_id, "year": year, "value": supply_value,
-                                "signal": SUPPLY_SIGNAL, "run_id": run_id, "note": DEMO_NOTE,
+                                "signal": SUPPLY_SIGNAL, "source_release": DEMO_SOURCE_RELEASE, "run_id": run_id, "note": DEMO_NOTE,
                             })
                             inserted_supply += 1
                         elif float(previous_supply) == float(supply_value):
