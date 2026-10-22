@@ -50,7 +50,9 @@ function toSource(row: RegistryRow): DataSourceRecord {
     geographicCoverage: [],
     reportingPeriods: periods,
     sourceReleaseDate: row.publication_date,
-    lastSuccessfulRetrievalAt: row.accessed_at,
+    // data_sources.accessed_at is registry metadata; it is not a confirmed source download.
+    registryMetadataAccessedAt: row.accessed_at,
+    lastSuccessfulRetrievalAt: null,
     lastValidatedAt: null,
     // Do not imply that a registered URL is connected, fresh, validated or ingestible.
     lifecycleStatus: row.url ? 'UNKNOWN' : 'NOT_CONFIGURED',
@@ -164,6 +166,7 @@ export class SupabaseDataSourcesAdapter implements DataSourcesDataAdapter {
         active: filtered.filter(source => source.lifecycleStatus === 'ACTIVE').length,
         needsAttention: filtered.filter(source => ['PENDING_VALIDATION', 'STALE', 'FAILED'].includes(source.lifecycleStatus)).length,
         notConfigured: filtered.filter(source => source.lifecycleStatus === 'NOT_CONFIGURED').length,
+        unknownStatus: filtered.filter(source => source.lifecycleStatus === 'UNKNOWN').length,
       },
       facets: { agencies },
     };
