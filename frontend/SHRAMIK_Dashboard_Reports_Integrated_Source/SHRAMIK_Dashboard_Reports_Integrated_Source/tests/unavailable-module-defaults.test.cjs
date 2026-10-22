@@ -85,8 +85,8 @@ test('module factories have unavailable defaults and production-safe demo guards
   ];
   for (const [file, apiEnv, unavailableClass] of checks) {
     const source = fs.readFileSync(path.join(root, file), 'utf8');
-    assert.match(source, /const showcaseMode = env\\?\\.MODE === 'production' \\|\\| env\\?\\.VITE_SHRAMIK_SHOWCASE_MODE === 'true'/, file + ' must detect production/showcase mode');
-    assert.match(source, /if \\(!showcaseMode && env\\?\\.VITE_SHRAMIK_USE_DEMO_DATA === 'true'/, file + ' must ignore demo flag in production');
+    assert.ok(source.includes("const showcaseMode = env?.MODE === 'production' || env?.VITE_SHRAMIK_SHOWCASE_MODE === 'true'"), file + ' must detect production/showcase mode');
+    assert.ok(source.includes("if (!showcaseMode && env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true'"), file + ' must ignore demo flag in production');
     assert.ok(source.includes(apiEnv), file + ' must allow configuration of a real API');
     assert.ok(source.includes('new ' + unavailableClass + '()'), file + ' must fail closed when unconfigured');
   }
