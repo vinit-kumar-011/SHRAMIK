@@ -214,7 +214,7 @@ export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsM
     {inputCounts ? <div className="pai-input-counts">
       <div><span>Demand observations</span><strong>{formatNumber(inputCounts.demand_observations)}</strong></div>
       <div><span>Supply observations</span><strong>{formatNumber(inputCounts.supply_observations)}</strong></div>
-      <small>Total persisted input rows from the status endpoint, including synthetic demo rows after they are generated. Output tables remain filtered by the selected analysis mode.</small>
+      <small>Source-backed, non-synthetic input rows only. Synthetic demo rows are excluded from these counts; published outputs above are filtered by the selected analysis mode.</small>
     </div> : null}
 
     {error ? <div className="pai-error" role="alert"><AlertTriangle size={17} /><div><strong>Could not load analytics</strong><p>{error}</p><small>Check that the backend is running, the browser session is valid, and the local /api/v1 proxy targets port 8000.</small></div></div> : null}
