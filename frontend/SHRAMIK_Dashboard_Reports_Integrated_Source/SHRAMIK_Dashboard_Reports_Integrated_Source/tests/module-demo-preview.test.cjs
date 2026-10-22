@@ -13,7 +13,7 @@ const forecastAdapter = read('src/forecasts/legacyAdapter.ts');
 
 test('source-backed readiness remains the default and exposes opt-in previews by module', () => {
   for (const module of ['demand', 'supply', 'skill-gaps', 'forecasts', 'emerging-skills', 'data-quality']) {
-    assert.ok(shell.includes(`onPreviewDemo={() => setDemoPreviewPage('${module}')}`), module + ' must expose an explicit demo action');
+    assert.ok(shell.includes(`onPreviewDemo={showcaseMode ? undefined : () => setDemoPreviewPage('${module}')}`), module + ' must expose demo actions only outside showcase mode');
   }
   assert.match(liveModules, /Open synthetic demo preview/);
   assert.match(shell, /Illustrative preview — not live labour-market findings/);
