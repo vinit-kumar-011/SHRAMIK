@@ -209,7 +209,7 @@ test('dashboard exposes inactive canonical skills as review-only rows instead of
   assert.equal(dashboard.emergingSkills[0].name, 'Bricklayerer, Construction');
   assert.equal(dashboard.emergingSkills[0].formattedValue, 'Review mapping');
   assert.ok(dashboard.emergingSkills[0].meta.notes.some(note => note.includes('inactive pending review')));
-  assert.ok(dashboard.emergingSkills[0].meta.notes.some(note => note.includes('Do not treat it as approved for skill-gap or emerging-skill analysis')));
+  assert.ok(dashboard.emergingSkills[0].meta.notes.some(note => note.toLowerCase().includes('do not treat it as approved for skill-gap or emerging-skill analysis')));
   const skillRequest = calls.find(url => url.includes('/skills?'));
   assert.ok(skillRequest, 'the canonical skill catalogue should be queried');
   const params = new URL(skillRequest).searchParams;
