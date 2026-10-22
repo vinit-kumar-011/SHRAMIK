@@ -32,6 +32,23 @@ The production UI now enters official-only showcase mode by default:
 
 Synthetic fixtures remain isolated in the database/development tooling for regression tests. The production user experience and Official API mode must not query or display them. Do not run the demo ingestion/pipeline in the showcase environment.
 
+## 2A. Latest visual and deployed-API audit (22 October 2026)
+
+The latest browser-QA screenshot artifact from [frontend CI run 39767812605](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39767812605) was manually inspected after the CI passed. This exposed two defects the prior automated check had missed:
+
+1. The Demand hero still showed **“Open illustrative demo”** even though the other synthetic preview button was hidden. The JSX is now guarded by `!showcaseMode`, and the Chromium QA script now detects both labels so the same omission cannot regress.
+2. The production preview’s Forecasts/Emerging Skills pages attempted `/api/v1/...` when the production API base URL was empty. They showed HTTP 500 because the Vite production preview has no FastAPI dev proxy. The component now short-circuits that state with an explicit `VITE_SHRAMIK_API_BASE_URL` configuration notice and never falls back to synthetic rows. A CI run is in progress to confirm this last change end-to-end.
+
+### Confirmed Vercel API blocker (read-only inspection; no deployment made)
+
+- Frontend project: `shramik-unified-app` (`prj_VJ5aKbRNuLDLQryt8ySoGgNYbXmh`). Its configured Production/Preview environment variables currently list `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, but **not** `VITE_SHRAMIK_API_BASE_URL`.
+- Backend project: `shramik-backend-api` (`prj_m5fK22ZULMDScsyzSzBh92Y8ElMp`), stable domain `https://shramik-backend-api.vercel.app`. `/api/health` returns HTTP 200, but `/openapi.json` lists only `/api/health`; `/api/v1/analytics/status` returns HTTP 404.
+- The latest inspected backend deployment is on branch `feature/frontend-unified-app`, commit `9ee28fb0ecbb6e0a02a6cef2dc9ee71e24acf7b6`. That deployed revision does not expose the new reference/analytics routes that exist on `fix/backend-api-route-integration`.
+
+**This is a hard deployment gate.** The frontend cannot show authenticated forecasts/early-warning/emerging-skill results in a hosted production build until the intended backend revision is deployed to the backend project and its OpenAPI schema confirms the required routes; then the frontend project must receive `VITE_SHRAMIK_API_BASE_URL=https://shramik-backend-api.vercel.app` (or the approved backend domain) and be rebuilt. The backend must also allow the frontend origin in CORS. Do not set the base URL to the current deployment yet: its analytics routes return 404.
+
+No deployment, merge, environment change or database write was performed during this audit. The purpose of this section is to record the exact pre-deployment blockers so they cannot be mistaken for a successful analytics integration.
+
 ## 3. Current source-backed database facts
 
 These counts were checked in the connected SHRAMIK Supabase project on 22 October 2026. They are database inventory facts, not labour-market findings.
