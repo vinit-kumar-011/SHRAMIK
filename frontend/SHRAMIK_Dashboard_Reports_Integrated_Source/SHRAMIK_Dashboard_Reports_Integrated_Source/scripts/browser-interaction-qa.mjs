@@ -274,8 +274,40 @@ try {
   await cdp.evaluate(`sessionStorage.setItem('shramik.auth.session.v1', JSON.stringify({access_token:'qa-only-invalid-token',refresh_token:'qa-only-refresh-token',expires_at:Math.floor(Date.now()/1000)+3600,user:{id:'qa-only-user',email:'qa-only@example.invalid'}}))`);
   await setViewport(cdp, 1365, 900);
   await navigate(cdp, origin + '/dashboard');
+  await waitFor(() => cdp.evaluate(
+    `!document.querySelector('.load-strip') && document.querySelectorAll('.kpi-skeleton').length === 0`,
+  ), 'Dashboard source-backed read completes or reports an error', 20000);
   pageInfo = await cdp.evaluate(`({path:location.pathname,text:(document.body?.innerText||'').slice(0,700),hasMain:!!document.querySelector('#shramik-main')})`);
   record('Protected workspace shell renders with an isolated test-only session', pageInfo.path === '/dashboard' && pageInfo.hasMain && /Dashboard/i.test(pageInfo.text), JSON.stringify(pageInfo));
+  const dashboardState = await cdp.evaluate(`(() => {
+    const app = document.querySelector('.app-root');
+    const footer = document.querySelector('.data-status-footer');
+    const bodyText = document.body?.innerText || '';
+    const footerText = (document.querySelector('.method-note')?.innerText || '');
+    const loading = !!document.querySelector('.load-strip') || document.querySelectorAll('.kpi-skeleton').length > 0;
+    const provenanceClass = Array.from(footer?.classList || []).find(name => ['source-backed','mixed','derived','mock','loading','unavailable','unknown'].includes(name)) || '';
+    const honestState = ['source-backed','mixed','derived','loading','unavailable','unknown'].includes(provenanceClass);
+    return {
+      adapterMode: Array.from(app?.classList || []).find(name => name.startsWith('data-mode-')) || '',
+      loading,
+      provenanceClass,
+      footerText: footerText.slice(0, 340),
+      hasDashboardError: bodyText.includes('Dashboard data unavailable.'),
+      hasSourceBackedEmptyState: bodyText.includes('No source-backed KPI cards are available'),
+      honestStatus: footerText.includes('Data notes:') || footerText.includes('Loading source-backed data:') ||
+        footerText.includes('Source-backed data unavailable:') || footerText.includes('No validated snapshot is available') ||
+        footerText.includes('Mixed data:') || footerText.includes('Derived data:'),
+      misleadingIllustrativeStatus: footerText.includes('Prototype preview:') || footerText.includes('Illustrative data'),
+    };
+  })()`);
+  const dashboardHonest = !dashboardState.loading && dashboardState.honestStatus &&
+    (dashboardState.adapterMode !== 'data-mode-supabase' || !dashboardState.misleadingIllustrativeStatus) &&
+    (dashboardState.provenanceClass === 'source-backed' || dashboardState.provenanceClass === 'mixed' ||
+      dashboardState.provenanceClass === 'derived' || dashboardState.hasDashboardError ||
+      dashboardState.hasSourceBackedEmptyState || dashboardState.provenanceClass === 'unknown' ||
+      dashboardState.provenanceClass === 'unavailable');
+  record('Dashboard waits for a settled source-backed or explicit unavailable state without illustrative fallback',
+    dashboardHonest, JSON.stringify(dashboardState));
   await screenshot(cdp, 'workspace-desktop.png');
 
   const navControls = await cdp.evaluate(`Array.from(document.querySelectorAll('button,a')).map(e=>({text:(e.innerText||'').trim(),aria:e.getAttribute('aria-label'),className:typeof e.className==='string'?e.className:''})).filter(x=>/nav-item/.test(x.className)).map(x=>x.text).filter(Boolean)`);
