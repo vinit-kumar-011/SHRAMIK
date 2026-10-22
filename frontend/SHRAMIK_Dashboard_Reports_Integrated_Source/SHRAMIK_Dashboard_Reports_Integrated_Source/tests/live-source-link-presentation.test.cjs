@@ -14,7 +14,9 @@ test('source links shorten long publisher labels but preserve the official title
   assert.match(page, /DGT · CTS-2026 seat matrix/);
   assert.match(page, /title=\{fullName\}/);
   assert.match(page, /aria-label=/);
-  assert.match(page, /href=\{source\.url\}/);
+  assert.match(page, /const url = source\?\.url \|\| fallbackUrl \|\| ''/);
+  assert.match(page, /href=\{url\}/);
+  assert.match(page, /target="_blank" rel="noreferrer"/);
 });
 
 test('long source labels truncate within the table instead of forcing narrow columns into excessive wrapping', () => {
