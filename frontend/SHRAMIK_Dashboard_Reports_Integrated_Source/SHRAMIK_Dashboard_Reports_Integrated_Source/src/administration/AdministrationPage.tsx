@@ -15,9 +15,6 @@ export default function AdministrationPage({ adapter }: { adapter?: Administrati
   const activeAdapter = adapter ?? defaultAdapter;
   const readOnly = activeAdapter.mode !== 'mock';
   const unavailable = activeAdapter.mode === 'unavailable';
-  // An adapter that is configured but fails to respond is also unavailable for
-  // this view; empty arrays after an API error must never read like an empty queue.
-  const serviceUnavailable = unavailable || Boolean(error) || (!snapshot && !loading);
   const [activeTab, setActiveTab] = useState<TabId>('requests');
   const [snapshot, setSnapshot] = useState<AdministrationSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +50,9 @@ export default function AdministrationPage({ adapter }: { adapter?: Administrati
   }, [activeAdapter, retryCount]);
   const roles = snapshot?.roles ?? [];
   const synthetic = activeAdapter.mode === 'mock' || snapshot?.meta.provenance === 'SYNTHETIC_DEMO';
+  // Compute service availability only after React state has been initialized.
+  // A failed configured adapter must never look like a valid empty request queue.
+  const serviceUnavailable = unavailable || Boolean(error) || (!snapshot && !loading);
 
   const filteredRequests = useMemo(() => requests.filter(item =>
     (requestStatus === 'all' || item.status === requestStatus) &&
@@ -95,7 +95,7 @@ export default function AdministrationPage({ adapter }: { adapter?: Administrati
   return <div className="administration-page">
     <header className="administration-heading"><div><p className="administration-eyebrow">WORKSPACE / GOVERNANCE & ACCESS</p><h1>Administration<span>.</span></h1><p>Review access requests, inspect roles and permissions, and maintain an auditable view of workspace activity.</p></div><div className="administration-heading-mark" aria-hidden="true"><UserCog size={35}/><span>ACCESS<br/>CONTROL</span></div></header>
     {snapshot && synthetic && <div className="administration-demo-notice" role="note"><ShieldCheck size={18}/><div><strong>Demonstration workspace · SYNTHETIC_DEMO</strong><p>{snapshot.meta.note} Approve, deny, role and account controls modify only this page's local state. No account, authentication policy, or permission is changed on a server.</p></div></div>}
-    {snapshot && unavailable && <div className="administration-unavailable-notice" role="status"><ShieldCheck size={18}/><div><strong>Live Administration service is not connected</strong><p>{snapshot.meta.note} No real access requests, user records or audit events are shown. Review, approval, role and suspension controls remain disabled until a secured, authenticated server-side Administration API is implemented and configured.</p></div></div>}
+    {serviceUnavailable && <div className="administration-unavailable-notice" role="status"><ShieldCheck size={18}/><div><strong>Live Administration service is unavailable</strong><p>{snapshot?.meta.note ?? error ?? 'No secured Administration API is configured.'} No real access requests, user records or audit events are shown. Review, approval, role and suspension controls remain disabled until a secured, authenticated server-side Administration API is reachable and verified.</p></div></div>}
     {snapshot && !synthetic && !unavailable && <div className="administration-live-notice" role="note"><ShieldCheck size={18}/><div><strong>Administration API response · {snapshot.meta.provenance}</strong><p>{snapshot.meta.sourceLabel ?? 'Source label not supplied'} · {snapshot.meta.note} · {snapshot.meta.updatedAt ?? 'Update timestamp not supplied'}</p></div></div>}
     {error && <div className="administration-error" role="alert"><X size={17}/><div><strong>Administration data unavailable.</strong><p>{error}</p><button type="button" onClick={() => setRetryCount(count => count + 1)}>Retry request</button></div></div>}
     {loading && !snapshot && <div className="administration-loading" role="status"><FileText size={16}/> Loading workspace access data from the selected adapter…</div>}
