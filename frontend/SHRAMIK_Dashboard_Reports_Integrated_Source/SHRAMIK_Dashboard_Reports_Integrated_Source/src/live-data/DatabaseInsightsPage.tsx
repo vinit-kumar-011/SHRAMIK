@@ -1,6 +1,7 @@
 import { Activity, ArrowUpRight, Database, FileCheck2, GraduationCap, Info, MapPin, RefreshCw, ShieldCheck, Users } from 'lucide-react';
 import { Children, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import PersistedAnalyticsPanel from './PersistedAnalyticsPanel';
 
 export type DatabaseModule = 'demand' | 'supply' | 'skill-gaps' | 'forecasts' | 'emerging-skills' | 'scenario-simulator' | 'reports' | 'data-quality';
 
@@ -263,7 +264,7 @@ async function getAllSourceMetrics(): Promise<MetricRow[]> {
 // These analytical output tables are intentionally excluded from the browser-facing
 // public data proxy. Do not probe them from the client: that creates avoidable 400s
 // on every module load, and a failed public read cannot establish whether a table is
-// empty. A future authenticated server endpoint can replace this declared state.
+// empty. Authenticated analytics rows are fetched separately from /api/v1/analytics/*.
 function publicOutputVisibility(): Record<string, TableVisibility> {
   const tableNames = [
     'demand_observations', 'supply_observations', 'forecast_results',
@@ -679,6 +680,8 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       </div>
     </header>
 
+    {(module === 'forecasts' || module === 'emerging-skills') ? <PersistedAnalyticsPanel module={module}/> : null}
+
     {error ? <div className="dbi-inline-warning" role="status"><Info size={16}/>{error}</div> : null}
     {snapshot.warnings.length > 0 ? <div className="dbi-inline-warning"><Info size={16}/>Some reference tables could not be read; displayed values are limited to the sources that loaded successfully.</div> : null}
 
@@ -771,10 +774,10 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
 
     {module === 'forecasts' ? <>
       <div className="dbi-note dbi-note-warn" role="status"><Info size={17}/><div><strong>No validated forecast result is available in this view</strong><p>{forecastInputsRestricted
-        ? 'One or more forecast input/output tables are restricted by the public read policy. “Restricted” means this application cannot inspect that table; it does not prove the underlying table is empty. A server-authorized read of validated outputs is required before a forecast line or early-warning result can be shown.'
+        ? 'One or more forecast input/output tables are restricted by the public read policy. “Restricted” means this application cannot inspect that table; it does not prove the underlying table is empty. Authenticated forecasts and warnings are shown in the results panel above; this checklist describes only direct browser-safe table visibility.'
         : 'We will not manufacture projections from dashboard indicators. Validated forecast results, model-version metadata and an auditable calculation run are required before a forecast line or early-warning result can appear here.'}</p></div></div>
       <div className="dbi-two-col">
-        <section className="dbi-panel"><SectionHead title="Output readiness" note="These checks reflect what the public data reader can currently see."/>
+        <section className="dbi-panel"><SectionHead title="Output readiness" note="These checks describe direct browser-safe table visibility; authenticated rows are shown in the panel above."/>
           <div className="dbi-readiness-list">{[['Demand observations', demandStatus], ['Supply observations', supplyStatus], ['Forecast results', forecastStatus], ['Model versions', modelStatus], ['Early warnings', warningStatus]].map(([label, status]) => <div className="dbi-readiness-item" key={label}><span className="dbi-status-dot" data-status={status === 'Available' ? 'ready' : status === 'Restricted' ? 'restricted' : 'pending'}/><span>{label}</span><strong>{status}</strong></div>)}</div>
         </section>
         <section className="dbi-panel"><SectionHead title="Published historical context" note="PLFS calendar-year 2025 values are reference indicators, not future predictions."/>
@@ -787,7 +790,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
 
     {module === 'emerging-skills' ? <>
       {lowConfidenceSkillCount > 0 ? <div className="dbi-note dbi-note-warn" role="status"><Info size={17}/><div><strong>Signal candidates need mapping review</strong><p>{lowConfidenceSkillCount} of {canonicalSkillCount} canonical skills have LOW-confidence sector mappings{lowConfidenceManualMappingCount > 0 ? ', including ' + lowConfidenceManualMappingCount + ' manually mapped entries' : ''}. Review occupation/sector mappings before interpreting future growth or momentum signals.</p></div></div> : null}
-      <div className="dbi-note dbi-note-warn"><Info size={17}/><div><strong>Signal history is not yet available</strong><p>The skill reference catalogue is live, but this application cannot see published emerging_skill_signals. Growth rates, momentum ranks and confidence scores will appear only when backed by validated historical observations and an approved calculation.</p></div></div>
+      <div className="dbi-note dbi-note-warn"><Info size={17}/><div><strong>Signals require validated historical coverage</strong><p>The authenticated results panel above shows persisted signals for the selected mode. Growth rates, momentum ranks and confidence scores remain unavailable in official mode until they are backed by compatible, validated source-backed histories. Synthetic demo signals are explicitly labelled and are not official findings.</p></div></div>
       <section className="dbi-panel"><SectionHead title="Skills ready for signal tracking" note="Live canonical skills with their mapped sector and mapping confidence."/>
         <DataTable columns={['Skill / role', 'Sector', 'Mapping confidence', 'Published signal']}>
           {snapshot.skills.map(skill => <tr key={skill.id}><td><strong>{skill.name}</strong><small>{skill.code}</small></td><td>{sectorsForSkill(skill)}</td><td><span className={'dbi-confidence dbi-confidence-' + (skill.sector_mapping_confidence || 'unmapped').toLowerCase()}>{skill.sector_mapping_confidence || 'Unmapped'}</span></td><td><span className="dbi-status-pill">Awaiting historical series</span></td></tr>)}
