@@ -160,8 +160,8 @@ async function main() {
     })()`);
     lastObservedState = state;
     const hasLabels = requiredLabelPatterns.every(pattern => pattern.test(state.text));
-    const hasMonth = /(?:January|February|March|April|May|June|July|August|September|October|November|December|जनवरी|फरवरी|मार्च|अप्रैल|मई|जून|जुलाई|अगस्त|सितंबर|सितम्बर|अक्टूबर|अक्तूबर|नवंबर|नवम्बर|दिसंबर|दिसम्बर)\\s*20\\d{2}/i.test(state.text);
-    const hasMonthlyValues = /\\d{1,3}(?:\\.\\d+)?\\s*%/.test(state.text) && hasMonth;
+    const hasMonth = /(?:January|February|March|April|May|June|July|August|September|October|November|December|जनवरी|फरवरी|मार्च|अप्रैल|मई|जून|जुलाई|अगस्त|सितंबर|सितम्बर|अक्टूबर|अक्तूबर|नवंबर|नवम्बर|दिसंबर|दिसम्बर)\s*20\d{2}/i.test(state.text);
+    const hasMonthlyValues = /\d{1,3}(?:\.\d+)?\s*%/.test(state.text) && hasMonth;
     if (state.readyState === 'complete' && state.text.length > 600 && hasLabels && hasMonthlyValues) {
       return state;
     }
