@@ -61,6 +61,8 @@ def test_district_list_uses_contract_envelope_and_pagination():
     assert body["meta"]["request_id"]
     assert response.headers["X-Request-ID"] == body["meta"]["request_id"]
     assert len(db.calls) == 2
+    # Count and record queries must both use the typed nullable state filter.
+    assert all("cast(:state_id as text)" in query.lower() for query, _ in db.calls)
 
 
 def test_skills_include_taxonomy_mapping_metadata():
