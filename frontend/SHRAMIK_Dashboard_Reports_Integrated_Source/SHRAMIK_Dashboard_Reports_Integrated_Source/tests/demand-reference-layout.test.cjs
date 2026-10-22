@@ -47,7 +47,7 @@ test('monthly PLFS CWS is selectable separately from the annual CY2025 benchmark
   assert.match(page, /Monthly CWS published at All India level only/);
   assert.match(page, /PLFS monthly CWS · age 15\+/);
   assert.match(page, /PLFS annual benchmark · CY2025/);
-  assert.match(page, /return 'Calendar year 2025/);
+  assert.match(page, /Calendar year 2025 · PLFS \(annual\)/);
 });
 
 test('period, geography, state, sector, occupation and skill controls are interactive and the region selector syncs to the shared shell', () => {
