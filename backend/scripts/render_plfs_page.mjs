@@ -10,9 +10,9 @@ const sourceUrl = 'https://www.mospi.gov.in/themes/product/69--';
 const host = '127.0.0.1';
 const outputDir = path.resolve(process.argv[2] || '../artifacts/source-refresh');
 const requiredLabelPatterns = [
-  /Labour\\s+Force\\s+Participation\\s+Rate\\s*\\(\\s*LFPR\\s*\\)|श्रम\\s*बल\\s*भागीदारी\\s*दर\\s*\\(\\s*एलएफपीआर\\s*\\)/i,
-  /Worker\\s+Population\\s+Ratio\\s*\\(\\s*WPR\\s*\\)|श्रमिक\\s*जनसंख्या\\s*अनुपात\\s*\\(\\s*डब्ल्यूपीआर\\s*\\)/i,
-  /Unemployment\\s+Rate\\s*\\(\\s*UR\\s*\\)|बेरोजगारी\\s*दर\\s*\\(\\s*यूआर\\s*\\)/i,
+  /Labour\s+Force\s+Participation\s+Rate\s*\(\s*LFPR\s*\)|श्रम\s*बल\s*भागीदारी\s*दर\s*\(\s*एलएफपीआर\s*\)/i,
+  /Worker\s+Population\s+Ratio\s*\(\s*WPR\s*\)|श्रमिक\s*जनसंख्या\s*अनुपात\s*\(\s*डब्ल्यूपीआर\s*\)/i,
+  /Unemployment\s+Rate\s*\(\s*UR\s*\)|बेरोजगारी\s*दर\s*\(\s*यूआर\s*\)/i,
 ];
 let chrome;
 let cdp;
