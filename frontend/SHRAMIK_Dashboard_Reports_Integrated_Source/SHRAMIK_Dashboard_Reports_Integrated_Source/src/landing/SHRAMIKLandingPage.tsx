@@ -81,7 +81,7 @@ export default function SHRAMIKLandingPage() {
   const [publishedRetry, setPublishedRetry] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const preview = previews[previewKey];
+  const preview = showcaseMode ? showcasePreview : previews[previewKey];
   const reducedMotion = useMemo(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
 
   useEffect(() => {
@@ -275,26 +275,30 @@ export default function SHRAMIKLandingPage() {
         </div></section>
 
         <section className={c('sl-section')} id="sl-preview" aria-labelledby="sl-preview-title"><div className={c('sl-wrap')}>
-          <p className={c('sl-eyebrow')}>Inside the workspace</p><h2 className={c('sl-section-title')} id="sl-preview-title">See the labour market from more than one angle.</h2><p className={c('sl-section-intro')}>Explore an illustrative interface showing how demand trends, supply indicators and skill-gap analysis could appear in a connected workspace.</p>
+          <p className={c('sl-eyebrow')}>Inside the workspace</p><h2 className={c('sl-section-title')} id="sl-preview-title">See the labour market from more than one angle.</h2><p className={c('sl-section-intro')}>{showcaseMode
+            ? 'Review the source-backed context and current output-readiness boundary. No unverified trend curves or illustrative statistics are displayed in the official showcase.'
+            : 'Explore an illustrative interface showing how demand trends, supply indicators and skill-gap analysis could appear in a connected workspace.'}</p>
           <div className={[c('sl-preview'),c('sl-reveal')].join(' ')} data-reveal>
-            <div className={c('sl-preview-top')}><i className={c('sl-window-dot')} aria-hidden="true"/><i className={c('sl-window-dot')} aria-hidden="true"/><i className={c('sl-window-dot')} aria-hidden="true"/><span>PLATFORM PREVIEW · ILLUSTRATIVE DATA</span></div>
-            <div className={c('sl-preview-body')} id="sl-preview-panel" role="tabpanel" aria-labelledby={'sl-tab-'+previewKey} tabIndex={0}>
+            <div className={c('sl-preview-top')}><i className={c('sl-window-dot')} aria-hidden="true"/><i className={c('sl-window-dot')} aria-hidden="true"/><i className={c('sl-window-dot')} aria-hidden="true"/><span>{showcaseMode ? 'OFFICIAL SHOWCASE · SOURCE-BACKED ONLY' : 'PLATFORM PREVIEW · ILLUSTRATIVE DATA'}</span></div>
+            <div className={c('sl-preview-body')} id="sl-preview-panel" role="tabpanel" aria-labelledby={showcaseMode ? 'sl-preview-title' : 'sl-tab-'+previewKey} tabIndex={0}>
               <div className={c('sl-preview-chart')}><div className={c('sl-preview-chart-head')}><span>{preview.title}</span><span>{preview.period}</span></div>
-                <svg className={c('sl-chart-svg')} viewBox="0 0 540 190" role="img" aria-label="Illustrative demand and supply trend; no official values" preserveAspectRatio="none"><path className={c('sl-chart-grid')} d="M35 30H520M35 70H520M35 110H520M35 150H520"/><path className={c('sl-chart-forecast')} d="M260 98 L340 72 L420 51 L510 37 L510 150 L260 150Z"/><path className={c('sl-chart-demand')} d={preview.demand}/><path className={c('sl-chart-supply')} d={preview.supply}/></svg>
-                <div className={c('sl-chart-legend')}><span><i className={c('sl-legend-dot')+' '+c('sl-legend-dot--navy')}/>Demand</span><span><i className={c('sl-legend-dot')+' '+c('sl-legend-dot--teal')}/>Supply</span><span><i className={c('sl-legend-dash')}/>Illustrative projection</span></div>
+                <svg className={c('sl-chart-svg')} viewBox="0 0 540 190" role="img" aria-label={showcaseMode ? 'No validated demand or supply series is published; no trend is plotted' : 'Illustrative demand and supply trend; no official values'} preserveAspectRatio="none"><path className={c('sl-chart-grid')} d="M35 30H520M35 70H520M35 110H520M35 150H520"/>{!showcaseMode ? <><path className={c('sl-chart-forecast')} d="M260 98 L340 72 L420 51 L510 37 L510 150 L260 150Z"/><path className={c('sl-chart-demand')} d={preview.demand}/><path className={c('sl-chart-supply')} d={preview.supply}/></> : <text className={c('sl-chart-empty-label')} x="275" y="95" textAnchor="middle">No validated demand/supply trend published</text>}</svg>
+                <div className={c('sl-chart-legend')}>{showcaseMode ? <span>No trend line or forecast is plotted without a validated time series.</span> : <><span><i className={c('sl-legend-dot')+' '+c('sl-legend-dot--navy')}/>Demand</span><span><i className={c('sl-legend-dot')+' '+c('sl-legend-dot--teal')}/>Supply</span><span><i className={c('sl-legend-dash')}/>Illustrative projection</span></>}</div>
               </div>
               <div className={c('sl-preview-metrics')}>{preview.labels.map((label,index)=><article className={c('sl-preview-metric')} key={label}><span>{label}</span><strong>{preview.values[index]}</strong></article>)}</div>
             </div>
-            <div className={c('sl-preview-footer')}><div className={c('sl-tabs')} role="tablist" aria-label="Platform preview views">
+            <div className={c('sl-preview-footer')}>{!showcaseMode ? <div className={c('sl-tabs')} role="tablist" aria-label="Platform preview views">
               {(['overview','gaps','forecasts'] as PreviewKey[]).map((key,index)=><button type="button" role="tab" key={key} id={'sl-tab-'+key} aria-controls="sl-preview-panel" aria-selected={previewKey===key} tabIndex={previewKey===key?0:-1} onClick={()=>setPreviewKey(key)} onKeyDown={(event)=>handleTabKey(event,index)}>{['Overview','Skill gaps','Forecasts'][index]}</button>)}
-            </div><p aria-live="polite">{preview.note}</p></div>
+            </div> : null}<p aria-live="polite">{preview.note}</p></div>
           </div>
         </div></section>
 
         <section className={c('sl-final')} aria-labelledby="sl-final-title"><div className={c('sl-wrap')+' '+c('sl-final-grid')}><div><p className={c('sl-eyebrow')}>SHRAMIK · Labour Market Intelligence System</p><h2 id="sl-final-title">Turn workforce information into informed decisions.</h2><p>Explore a clearer, more connected approach to understanding India's workforce.</p></div><div className={c('sl-final-actions')}><a className={c('sl-btn')+' '+c('sl-btn--primary')} href={resolveLandingHref('/login')}>Sign in to SHRAMIK <span aria-hidden="true">→</span></a><a className={c('sl-btn')+' '+c('sl-btn--secondary')} href="#sl-transparency" onClick={handleAnchorClick}>Read about transparency</a></div></div></section>
       </main>
 
-      <footer className={c('sl-footer')}><div className={c('sl-wrap')}><div className={c('sl-footer-grid')}><div><a className={c('sl-brand')} href="#sl-top" aria-label="Back to SHRAMIK home" onClick={handleAnchorClick}><span className={c('sl-mark')} aria-hidden="true">S</span><span><span className={c('sl-brand-name')}>SHRAMIK</span><span className={c('sl-brand-sub')}>Labour Market Intelligence System</span></span></a><p className={c('sl-footer-description')}>A labour-market intelligence prototype with selected live source-backed indicators and clearly labelled illustrative previews.</p></div><nav aria-label="Footer navigation">{navLinks.map(([label,href])=><a key={href} href={resolveLandingHref(href)} onClick={handleAnchorClick}>{label}</a>)}<a href={resolveLandingHref('/login')}>Sign in</a></nav></div><p className={c('sl-footer-note')}>SHRAMIK is an independent labour-market intelligence prototype and does not claim official government affiliation. The published-indicator cards above are live, source-backed reads; the platform preview uses illustrative values, and analytical outputs remain unavailable until validated results are published.</p></div></footer>
+      <footer className={c('sl-footer')}><div className={c('sl-wrap')}><div className={c('sl-footer-grid')}><div><a className={c('sl-brand')} href="#sl-top" aria-label="Back to SHRAMIK home" onClick={handleAnchorClick}><span className={c('sl-mark')} aria-hidden="true">S</span><span><span className={c('sl-brand-name')}>SHRAMIK</span><span className={c('sl-brand-sub')}>Labour Market Intelligence System</span></span></a><p className={c('sl-footer-description')}>{showcaseMode ? 'A labour-market intelligence prototype with published source-backed indicators and transparent output-readiness states.' : 'A labour-market intelligence prototype with selected live source-backed indicators and clearly labelled illustrative previews.'}</p></div><nav aria-label="Footer navigation">{navLinks.map(([label,href])=><a key={href} href={resolveLandingHref(href)} onClick={handleAnchorClick}>{label}</a>)}<a href={resolveLandingHref('/login')}>Sign in</a></nav></div><p className={c('sl-footer-note')}>{showcaseMode
+        ? 'SHRAMIK is an independent labour-market intelligence prototype and does not claim official government affiliation. The published-indicator cards above are live, source-backed reads. The platform preview shows no synthetic trend values in official showcase mode; analytical outputs remain unavailable until validated results are published.'
+        : 'SHRAMIK is an independent labour-market intelligence prototype and does not claim official government affiliation. The published-indicator cards above are live, source-backed reads; the platform preview uses illustrative values, and analytical outputs remain unavailable until validated results are published.'}</p></div></footer>
     </div>
   );
 }
