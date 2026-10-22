@@ -356,16 +356,14 @@ try {
     { path: '/data-quality', label: 'Data Quality' },
   ];
   for (const module of officialOnlyModules) {
+    const moduleResponseCheckpoint = networkResponses.length;
+    const moduleFailureCheckpoint = networkFailures.length;
     await navigate(cdp, origin + module.path);
     if (['/forecasts', '/emerging-skills'].includes(module.path)) {
       await waitFor(() => cdp.evaluate(`!!document.querySelector('.pai-mode-label select')`), `${module.label} official analysis controls`);
     } else {
       await waitFor(() => cdp.evaluate(`!!document.querySelector('.dbi-shell') && !document.querySelector('.dbi-loading')`), `${module.label} official/source-backed view`);
     }
-    await waitFor(
-      () => cdp.evaluate(`(document.querySelector('.dbi-source-count strong')?.innerText || '').trim() === '22'`),
-      `${module.label} source-backed registry count`,
-    );
     const state = await cdp.evaluate(`(() => {
       const buttons = Array.from(document.querySelectorAll('button'));
       const options = Array.from(document.querySelectorAll('select option'));
@@ -395,8 +393,15 @@ try {
           jobDemandUnavailableNotice: /Job-demand series is not published/i.test(document.body?.innerText || ''),
           dataSourceHeading: (document.querySelector('.dbi-demand-panel')?.innerText || '').slice(0, 140),
         } : null,
+        referenceWarnings: Array.from(document.querySelectorAll('.dbi-inline-warning'))
+          .map(element => (element.innerText || '').trim()).filter(Boolean).join(' | ').slice(0, 500),
+        sourceCountVisible: !!document.querySelector('.dbi-source-count strong'),
       };
     })()`);
+    state.sourceRegistryResponses = networkResponses.slice(moduleResponseCheckpoint)
+      .filter(item => item.url.includes('/api/shramik-data?table=data_sources'));
+    state.sourceRegistryFailures = networkFailures.slice(moduleFailureCheckpoint)
+      .filter(item => item.url.includes('/api/shramik-data?table=data_sources'));
     const officialOnly = state.path === module.path && state.liveShell && state.registeredSourceCount === '22' && !state.previewButton &&
       !state.previewBanner && !state.demoModeOption && !state.illustrativeOccupationOptions && !state.syntheticNotice;
     record(`${module.label} production view exposes only source-backed/showcase controls`, officialOnly, JSON.stringify(state));
