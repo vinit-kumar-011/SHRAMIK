@@ -266,6 +266,31 @@ try {
       !landingShowcaseState.illustrativeTabs,
     JSON.stringify(landingShowcaseState),
   );
+  // Full-page CDP screenshots do not scroll the document. Trigger the landing page's
+  // IntersectionObserver reveal states first so lower sections are not captured at opacity: 0.
+  const landingRevealCount = await cdp.evaluate(`document.querySelectorAll('[data-reveal]').length`);
+  for (let index = 0; index < landingRevealCount; index += 1) {
+    await cdp.evaluate(`(() => {
+      const elements = document.querySelectorAll('[data-reveal]');
+      elements[${index}]?.scrollIntoView({ behavior: 'auto', block: 'center' });
+      return true;
+    })()`);
+    await delay(70);
+  }
+  await cdp.evaluate(`window.scrollTo({ top: 0, behavior: 'auto' })`);
+  await delay(400);
+  const landingRevealState = await cdp.evaluate(`(() => {
+    const elements = Array.from(document.querySelectorAll('[data-reveal]'));
+    return {
+      total: elements.length,
+      hidden: elements.filter((element) => getComputedStyle(element).opacity === '0').length,
+    };
+  })()`);
+  record(
+    'Landing full-page screenshot reveals below-the-fold sections',
+    landingRevealState.total > 0 && landingRevealState.hidden === 0,
+    JSON.stringify(landingRevealState),
+  );
   await screenshot(cdp, 'landing-desktop.png');
 
   const loginNav = await clickByText(cdp, 'sign in');
