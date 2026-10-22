@@ -52,6 +52,8 @@ test('unavailable adapter respects cancellation', async () => {
 test('default Administration never picks fake fixtures unless demo mode is explicit', () => {
   const factory = fs.readFileSync(path.join(src, 'adapter.ts'), 'utf8');
   assert.match(factory, /VITE_SHRAMIK_USE_DEMO_DATA === 'true'/);
+  assert.match(factory, /if \(showcaseMode\) return new UnavailableAdministrationDataAdapter\(\)/,
+    'production showcase must not probe an unverified client-configured administration endpoint');
   assert.match(factory, /new UnavailableAdministrationDataAdapter\(\)/);
   assert.match(factory, /configuredBase\?\.trim\(\)\s*\?\s*new RestAdministrationDataAdapter/);
 });
