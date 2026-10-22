@@ -74,7 +74,7 @@ test('Supabase dashboard adapter uses live published views and does not synthesi
   assert.equal(data.trend.length, 0);
   assert.equal(data.kpis.length, 4, 'the national overview must present a deliberate four-card snapshot');
   assert.ok(data.kpis.some(item => item.id === 'eshram-registration-count' && item.value === 317831749));
-  assert.ok(data.kpis.some(item => item.id === 'cts-provisional-seat-capacity-by-trade-state' && item.value === 973058));
+  assert.ok(data.kpis.some(item => item.id === 'cts-provisional-seat-capacity-by-trade-state' && item.title === 'CTS seat capacity' && item.value === 973058));
   assert.ok(data.kpis.some(item => item.id === 'cts-iti-count' && item.value === 15012));
   assert.ok(data.kpis.some(item => item.id === 'cws-ur'
     && item.title === 'Unemployment rate (CWS)'
