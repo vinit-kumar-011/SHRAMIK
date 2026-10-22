@@ -349,3 +349,15 @@ A further official-source comparison found a scope/date reconciliation item for 
 
 Proceed next with an approved backend release plan, not a frontend base-URL toggle. The stable API alias remains health-only/analytics-404, while a separate protected deployment exposes the route schema but has not yet had its authenticated database queries verified. Separately, verify whether the GitHub Actions secret `SHRAMIK_DATABASE_URL` exists using repository settings and then run the PLFS refresh in check-only mode before any controlled write. The active weekly schedule must only be relied upon once its workflow is on the default branch and a server-side database credential is confirmed. Neither step should be represented as complete on the basis of a local or protected deployment test.
 
+
+
+### Official demand-source access audit — 22 October 2026
+
+The latest accessible DGE Employment Exchange Statistics publication found in the official [DGE publication index](https://www.dge.gov.in/dge-publications-reports-) is **Employment Exchange Statistics 2023**, released 6 March 2023. Its reported annual national series runs through **2022**; "2023" is the report/publication label, not a 2023 reference-year value. It remains useful for historical employment-exchange registrations, placements, vacancy notifications and live-register context, but it cannot be presented as current market vacancies. The index does not currently list a 2024/2025 Employment Exchange Statistics report. [Published report and time-series table](https://www.dge.gov.in/sites/default/files/2024-05/Employment_Exchange_2023.pdf).
+
+The official [DGE Bulletin on Job Opportunities](https://www.dge.gov.in/bulletin-on-job-opportunities) compiles vacancy/opportunity evidence from employment exchanges, UPSC/SSC/state commissions, recruiting agencies, newspapers and departmental reports. DGE explicitly cautions that private-sector opportunities are only partially covered and the compilation does not reflect total employment opportunities. Older bulletin issues can be used as historical context only, with the issue/reference period shown.
+
+The official [eSankhyiki PLFS catalogue](https://esankhyiki.mospi.gov.in/catalogue-main/catalogue?page=0&product=PLFS) is the release-discovery source for monthly national CWS measures and includes release dates and period metadata. The existing MoSPI page-capture adapter should continue to parse only the explicitly published monthly all-India CWS indicators; it must not reinterpret UR/LFPR/WPR as vacancies or as total workforce supply.
+
+**Implication:** near-term scheduled ingestion should safely automate MoSPI PLFS release discovery, DGT release/snapshot monitoring, and existing public-source metadata. For current district/occupation/skill demand, retain the NCS consent gate and seek an authorized data-sharing route with DGE/NCS or other job sources whose terms permit collection and redistribution. Do not claim full live demand automation until that access is secured and actually tested.
+
