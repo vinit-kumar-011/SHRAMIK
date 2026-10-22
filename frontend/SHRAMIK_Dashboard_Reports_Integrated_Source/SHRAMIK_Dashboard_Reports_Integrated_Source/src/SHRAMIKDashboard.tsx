@@ -880,7 +880,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
         <section className="summary-grid" aria-label="Skills, sectors and occupation summaries">
           <SummaryPanel
             title={isLiveSupabase ? 'Skill catalogue' : 'Emerging Skills'}
-            subtitle={isLiveSupabase ? 'Canonical skill references from Supabase. No validated emerging-skill signals are published yet.' : 'Skills with rising demand signals'}
+            subtitle={isLiveSupabase ? 'Canonical skills are shown with mapping-review status; no validated emerging-skill signals are published yet.' : 'Skills with rising demand signals'}
             kind="skills" rows={dashboard?.emergingSkills ?? []}
             onOpenSection={(section) => void openSection(section)}
             onOpenRow={(row, section) => void openRow(row, section)}/>
