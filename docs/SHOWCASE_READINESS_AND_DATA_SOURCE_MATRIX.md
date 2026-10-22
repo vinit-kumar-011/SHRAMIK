@@ -99,13 +99,9 @@ Do not re-theme the unified app by copying an entire old standalone page impleme
 
 ### A. Demand-side current feed — National Career Service (candidate, not yet approved for automated ingestion)
 
-Official NCS pages expose job search by state, district, sector, functional area and functional role, and its latest-update table exposes fields such as organisation, position, posting date, vacancy count, type and advertisement link:
+The official [NCS latest-updates page](https://www.ncs.gov.in/latest-update) renders a “Classified Jobs” table with organisation, position, posting date, vacancy count, type and advertisement link. On the page checked for this review, it reported 145 listed rows with 10 entries per page and a page-level “Last updated: 28-09-26” footer. The [NCS job search](https://www.ncs.gov.in/jobs-in-operations-and-support) provides user-facing search and classification filters.
 
-- [NCS latest updates / classified jobs](https://www.ncs.gov.in/latest-update)
-- [NCS job search](https://www.ncs.gov.in/jobs-in-operations-and-support)
-- [NCS portal](https://www.ncs.gov.in/)
-
-This makes NCS a strong candidate for current vacancy context and for building a source-backed time series by taking dated snapshots. It does **not** establish that a public bulk API/export exists or that every listing contains stable NCO, district and sector codes. Before building the adapter, verify public-feed accessibility, applicable terms/robots policy, pagination/completeness, deduplication and stable record identifiers. Label its coverage as **vacancies posted/listed on NCS**, not all vacancies in India.
+This makes NCS a strong **candidate** for vacancy-posting context, but it is not an approved automated source yet: the page-level freshness footer is older than the review date, and this inspection did **not** establish a permitted stable public bulk API/export, guaranteed pagination completeness, persistent posting IDs, expiry/closure semantics, or NCO-compatible codes. Before an automated adapter is enabled, confirm the authorised retrieval method and terms, then test deduplication, pagination completeness, stable IDs, and withdrawal/expiry handling. Until then, treat the page as an auditable source lead—not an automated feed. If integrated later, label coverage **vacancies listed on NCS**, not all vacancies in India.
 
 Keep the existing DGE 2022 vacancy-notified dataset as an official historical aggregate signal. It does not provide enough years to produce a multi-year forecast by itself.
 
