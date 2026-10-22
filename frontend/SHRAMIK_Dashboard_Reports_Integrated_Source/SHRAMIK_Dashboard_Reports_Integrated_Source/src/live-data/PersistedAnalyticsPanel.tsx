@@ -96,6 +96,10 @@ const showcaseMode = env?.MODE === 'production' || env?.VITE_SHRAMIK_SHOWCASE_MO
 const configuredBase = (env?.VITE_SHRAMIK_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
 // In Vite dev/preview, use the same-origin proxy to avoid browser CORS preflights.
 const API_BASE = env?.DEV ? '' : configuredBase.replace(/\/api\/v1(?:\/forecasts)?$/i, '');
+const missingApiConfiguration = !env?.DEV && !configuredBase;
+const analyticsErrorHelp = missingApiConfiguration
+  ? 'The API service URL is not configured for this build. After the backend analytics/reference routes are deployed and verified, set VITE_SHRAMIK_API_BASE_URL to the approved API origin. No synthetic results will be shown.'
+  : 'Check that the backend is running, the browser session is valid, and the configured API origin exposes the required analytics routes.';
 
 function formatNumber(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
@@ -223,7 +227,7 @@ export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsM
       <small>Source-backed, non-synthetic input rows only. Synthetic demo rows are excluded from these counts; published outputs above are filtered by the selected analysis mode.</small>
     </div> : null}
 
-    {error ? <div className="pai-error" role="alert"><AlertTriangle size={17} /><div><strong>Could not load analytics</strong><p>{error}</p><small>Check that the backend is running, the browser session is valid, and the local /api/v1 proxy targets port 8000.</small></div></div> : null}
+    {error ? <div className="pai-error" role="alert"><AlertTriangle size={17} /><div><strong>{missingApiConfiguration ? 'Analytics unavailable in this build' : 'Could not load analytics'}</strong><p>{error}</p><small>{analyticsErrorHelp}</small></div></div> : null}
     {loading ? <div className="pai-loading" role="status"><RefreshCw size={17} className="pai-spin" /> Loading persisted analytics…</div> : null}
 
     {!loading && !error && data ? <>
