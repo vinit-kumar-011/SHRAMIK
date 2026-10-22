@@ -326,3 +326,13 @@ No Vercel deployment was made for this checkpoint.
 - DGT's [provisional CTS 2026 seat matrix](https://www.dgt.gov.in/en/node/4675) is a source-backed, release-oriented capacity input; it is a dated source snapshot, not real-time job demand.
 - Therefore, do not advertise current total labour demand, a district-by-skill shortage, emerging-skill momentum or an official forecast until the source, right to use it, granularity, compatible history, and methodology are all verified. Continue showing the valid source-backed context currently stored and keep unsupported analytical results unavailable.
 
+
+
+### Additional DGT ITI-count reconciliation identified — 22 October 2026
+
+A further official-source comparison found a scope/date reconciliation item for the Dashboard's ITI count:
+
+- The currently stored state/UT series sums to **15,012 ITIs**, from Rajya Sabha Unstarred Question 2674, answered 18 December 2024; its annexure explicitly labels the state/UT CTS figure as at **31 October 2024** and defines it as government plus private ITIs. [Primary parliamentary source](https://sansad.in/getFile/annex/266/AU2674_eCvo0s.pdf?source=pqars).
+- The official [DGT Craftsmen Training Scheme page](https://dgt.gov.in/en/CTS), last updated **10 August 2026**, currently says CTS courses are being offered through **14,643 ITIs** (3,331 government and 11,312 private).
+- These figures differ by 369 and may reflect a changed active-network definition or updated ITI coverage. The later DGT page gives a newer published number but does not identify a precise statistical reference date in the displayed text. Do **not** silently overwrite the 2024 State/UT rows or claim the two figures reconcile. Keep the 15,012 series explicitly dated to 31 October 2024 while the source contract is reviewed; before using 14,643 as the live national card, add a source-backed retrieval record with its definition and page update date and disclose that it is not directly comparable until reconciled.
+
