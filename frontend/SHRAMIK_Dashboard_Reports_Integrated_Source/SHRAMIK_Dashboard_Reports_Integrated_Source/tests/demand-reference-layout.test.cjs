@@ -43,7 +43,7 @@ test('Latest PLFS cards prefer the newest national monthly CWS release without r
 test('monthly PLFS CWS is selectable separately from the annual CY2025 benchmark', () => {
   assert.match(page, /value="MONTHLY_CWS"/);
   assert.match(page, /Monthly PLFS CWS/);
-  assert.match(page, /periodFilter === 'MONTHLY_CWS' \? latestMonthlyCwsRate/);
+  assert.match(page, /periodFilter === 'MONTHLY_CWS'\s*\?\s*latestMonthlyCwsRate/);
   assert.match(page, /Monthly CWS published at All India level only/);
   assert.match(page, /PLFS monthly CWS · age 15\+/);
   assert.match(page, /PLFS annual benchmark · CY2025/);
