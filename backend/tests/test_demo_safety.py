@@ -35,7 +35,7 @@ def test_remote_demo_write_requires_both_explicit_opt_ins() -> None:
     with pytest.raises(RuntimeError, match="require both"):
         validate_demo_database_target(url, allow_remote_flag=True, allow_remote_env=False)
 
-    with pytest.raises(RuntimeError, match="requires both"):
+    with pytest.raises(RuntimeError, match="require both"):
         validate_demo_database_target(url, allow_remote_flag=False, allow_remote_env=True)
 
     validate_demo_database_target(
