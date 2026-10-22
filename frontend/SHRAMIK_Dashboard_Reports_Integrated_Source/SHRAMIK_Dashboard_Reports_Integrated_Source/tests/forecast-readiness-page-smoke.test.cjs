@@ -17,6 +17,8 @@ test('Production Forecasts/Emerging Skills reports missing API configuration ins
   assert.match(panel, /if \(!env\?\.DEV && !configuredBase\)/);
   assert.match(panel, /The authenticated analytics API is not configured for this production build/);
   assert.match(panel, /this page will not fall back to synthetic results/);
+  assert.match(panel, /The API service URL is not configured for this build/);
+  assert.doesNotMatch(panel, /local \/api\/v1 proxy targets port 8000/);
 });
 
 test('Forecast page does not create a projection from context indicators', () => {
