@@ -86,8 +86,15 @@ test('module factories have unavailable defaults and production-safe demo guards
   for (const [file, apiEnv, unavailableClass] of checks) {
     const source = fs.readFileSync(path.join(root, file), 'utf8');
     assert.ok(source.includes("const showcaseMode = env?.MODE === 'production' || env?.VITE_SHRAMIK_SHOWCASE_MODE === 'true'"), file + ' must detect production/showcase mode');
-    assert.ok(source.includes("if (!showcaseMode && env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true'"), file + ' must ignore demo flag in production');
-    assert.ok(source.includes(apiEnv), file + ' must allow configuration of a real API');
+    if (file === 'src/administration/adapter.ts') {
+      assert.ok(source.includes('if (showcaseMode) return new UnavailableAdministrationDataAdapter()'),
+        'Administration must fail closed in production until its secured server-side API is verified');
+      assert.ok(source.includes("if (env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true') return mockAdministrationDataAdapter"),
+        'the local demo remains an explicit development-only choice');
+    } else {
+      assert.ok(source.includes("if (!showcaseMode && env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true'"), file + ' must ignore demo flag in production');
+    }
+    assert.ok(source.includes(apiEnv), file + ' must allow configuration of a real API outside the showcase guard');
     assert.ok(source.includes('new ' + unavailableClass + '()'), file + ' must fail closed when unconfigured');
   }
 });
