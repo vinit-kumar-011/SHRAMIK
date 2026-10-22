@@ -398,12 +398,14 @@ try {
     await screenshot(cdp, `showcase-${module.path.slice(1)}.png`);
   }
 
-  // Exercise the default local assumptions-only planner without sending credentials or any non-read HTTP requests.
+  // Production showcase mode has no local assumptions-only baseline. Wait for the guarded
+  // official state instead of expecting demo defaults or a selectable placeholder skill.
   await navigate(cdp, origin + '/scenario-simulator');
-  await waitFor(() => cdp.evaluate(`(() => { const body=document.body?.innerText||''; return !!document.querySelector('.ss-page') && !!document.querySelector('#ss-seats') && /Local assumptions-only mode/.test(body) && !!document.querySelector('.ss-entity-row.is-selected') && (document.querySelector('.ss-baseline code')?.innerText||'').includes('LOCAL-PLANNING-NO-VALIDATED-BASELINE'); })()`), 'default local planning adapter and baseline marker', 15000);
-  const plannerBefore = await cdp.evaluate(`({seats:document.querySelector('#ss-seats')?.value,lag:document.querySelector('#ss-lag')?.value,baseline:document.querySelector('.ss-baseline code')?.innerText,notice:(document.querySelector('.ss-alert.is-warn')?.innerText||'').slice(0,300)})`);
-  record('Scenario Simulator defaults to clearly labelled assumptions-only planning', Boolean(plannerBefore.seats) && Boolean(plannerBefore.lag) && /LOCAL-PLANNING-NO-VALIDATED-BASELINE/.test(plannerBefore.baseline) && /does not produce official workforce demand/i.test(plannerBefore.notice), JSON.stringify(plannerBefore));
-  await screenshot(cdp, 'scenario-planner-desktop.png');
+  await waitFor(() => cdp.evaluate(`(() => {
+    const body = document.body?.innerText || '';
+    return !!document.querySelector('.ss-page') &&
+      body.includes('Official showcase mode — approved source-backed baseline required.');
+  })()`), 'official showcase simulator guard and unavailable baseline');
   const plannerShowcase = await cdp.evaluate(`(() => {
     const body = document.body?.innerText || '';
     const run = Array.from(document.querySelectorAll('button')).find(button => (button.innerText||'').trim() === 'Approved source-backed baseline required');
