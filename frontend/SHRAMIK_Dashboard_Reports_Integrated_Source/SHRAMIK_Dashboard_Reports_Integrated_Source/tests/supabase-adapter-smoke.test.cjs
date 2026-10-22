@@ -72,22 +72,16 @@ test('Supabase dashboard adapter uses live published views and does not synthesi
   const data = await adapter.getDashboard({ regionCode: 'IN', periodYears: 5 });
   assert.equal(data.meta.provenance, 'source-backed');
   assert.equal(data.trend.length, 0);
+  assert.equal(data.kpis.length, 4, 'the national overview must present a deliberate four-card snapshot');
   assert.ok(data.kpis.some(item => item.id === 'eshram-registration-count' && item.value === 317831749));
-  assert.ok(data.kpis.some(item => item.id === 'ur' && item.value === 3.1));
-  assert.ok(data.kpis.some(item => item.id === 'lfpr' && item.value === 44.9));
-  assert.ok(data.kpis.some(item => item.id === 'wpr' && item.value === 43.5));
-  assert.ok(data.kpis.some(item => item.id === 'cws-lfpr'
-    && item.title === 'Labour force participation (CWS)'
-    && item.subtitle === 'September 2026 · monthly CWS, age 15+'
-    && item.value === 55.5));
-  assert.ok(data.kpis.some(item => item.id === 'cws-wpr'
-    && item.title === 'Worker population ratio (CWS)'
-    && item.subtitle === 'September 2026 · monthly CWS, age 15+'
-    && item.value === 52.7));
+  assert.ok(data.kpis.some(item => item.id === 'cts-provisional-seat-capacity-by-trade-state' && item.value === 973058));
+  assert.ok(data.kpis.some(item => item.id === 'cts-iti-count' && item.value === 15012));
   assert.ok(data.kpis.some(item => item.id === 'cws-ur'
     && item.title === 'Unemployment rate (CWS)'
     && item.subtitle === 'September 2026 · monthly CWS, age 15+'
     && item.value === 5.0));
+  assert.ok(!data.kpis.some(item => ['ur','lfpr','wpr','cws-lfpr','cws-wpr'].includes(item.id)),
+    'annual and monthly PLFS rates must not be duplicated in the Dashboard overview');
   assert.ok(data.kpis.every(item => item.deltaPct === null));
   assert.ok(calls.some(call => call.url.includes('/rest/v1/sh_public_dashboard_kpis')));
   assert.ok(calls.every(call => call.init.headers.get('apikey') === 'test-public-key'));
