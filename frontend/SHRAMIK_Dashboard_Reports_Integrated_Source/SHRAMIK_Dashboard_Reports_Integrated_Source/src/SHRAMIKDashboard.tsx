@@ -817,7 +817,7 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
            : activePage === 'administration' ? (demoMode || previewingModule
                ? <AdministrationPage adapter={mockAdministrationDataAdapter} />
                : !demoMode && !runtimeEnv?.VITE_ADMINISTRATION_API_BASE_URL?.trim()
-                 ? <LiveModuleNotice title="Administration" eyebrow="SHRAMIK / GOVERNANCE & ACCESS" explanation="Access-request submissions are stored as pending, but this public client cannot read the queue, approve requests or grant roles. A server-authorized review/provisioning API is not configured." requiredSetting="VITE_ADMINISTRATION_API_BASE_URL" neededOutput="Deploy an authenticated admin API that checks server-side administrator authorization, records review decisions, provisions accounts through Supabase Auth and writes audit events." onPreviewDemo={() => setDemoPreviewPage('administration')}/>
+                 ? <LiveModuleNotice title="Administration" eyebrow="SHRAMIK / GOVERNANCE & ACCESS" explanation="Access-request submissions are stored as pending, but this public client cannot read the queue, approve requests or grant roles. A server-authorized review/provisioning API is not configured." requiredSetting="VITE_ADMINISTRATION_API_BASE_URL" neededOutput="Deploy an authenticated admin API that checks server-side administrator authorization, records review decisions, provisions accounts through Supabase Auth and writes audit events." onPreviewDemo={showcaseMode ? undefined : () => setDemoPreviewPage('administration')}/>
                  : <AdministrationPage adapter={administrationAdapter} />)
           : activePage === 'dashboard' ? <>
         <section className="hero-band" aria-labelledby="page-title">
