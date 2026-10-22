@@ -223,7 +223,7 @@ function plfsCardPeriodLabel(row: MetricRow | undefined): string {
       const month = Number(match[2]);
       const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
       if (month >= 1 && month <= 12) {
-        return \`\${months[month - 1]} \${match[1]} · monthly CWS · persons aged 15+\`;
+        return months[month - 1] + ' ' + match[1] + ' · monthly CWS · persons aged 15+';
       }
     }
   }
