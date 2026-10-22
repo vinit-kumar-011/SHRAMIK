@@ -254,6 +254,31 @@ The current public registry inventory has **22 registered sources**. The authori
 4. **Other source refreshes:** NCS’s “Over 17.68 lakh” portal-vacancy figure is a dated July 2026 snapshot and not an all-India census. It still needs a permitted, stable retrieval approach before an unattended updater is trusted. ITI/training-centre/seat capacity, e-Shram, PLFS annual and taxonomy updates need their own source-specific release handlers; registering a source alone is not an automated connector.
 5. **Visual sign-off:** automated responsive/interaction QA has passed, but the human visual lock against every supplied reference board and a final SIH walkthrough are still separate release gates. The references govern layout only—not metric values or data claims.
 
+## Latest implementation checkpoint — 22 October 2026
+
+### Verified candidate build
+
+- **Branch:** `fix/backend-api-route-integration`
+- **Commit:** `adcd49927fb45e4f45eac62c5d30f24afc433f83`
+- **CI:** [frontend run 39795743705](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39795743705) — **success**
+- **Verification:** TypeScript type-check passed; **214 frontend tests passed, 0 failed**; live Supabase KPI checks passed; production build and static-entry checks passed; route smoke tests and Chromium interaction/responsive QA passed.
+- **Visual refinements included in this tested commit:** Demand hero heading is sized to fit the reference at desktop widths where available; programme trend axis labels use one stable unit per chart rather than switching between `K` and `L` notation partway down the axis. Both have regression checks.
+- **Official-only behaviour verified:** the production view exposes no synthetic preview or demo selector; the Dashboard and Demand consume the source-backed KPI view; Forecasts/Emerging Skills show a configuration notice when the protected API origin is missing; Scenario Simulator refuses to run without a compatible, approved `SOURCE_BACKED` baseline; QA produced no non-read-only network requests and no uncaught JavaScript exceptions.
+
+### Source-backed showcase values verified
+
+The live public KPI view returns seven distinct items: e-Shram registrations **31.8 crore** (snapshot 14 July 2026), provisional CTS capacity **973,058 seats** (academic session 2026; source snapshot 8 July 2026), ITIs **15,012** (source snapshot 31 October 2024), September 2026 monthly PLFS CWS UR **5.0%**, LFPR **55.5%**, WPR **52.7%** (persons aged 15+), and the separate CY2025 annual usual-status unemployment benchmark **3.1%**. Monthly and annual PLFS definitions remain separate. The Demand page's source evidence also exposes the NCS portal statement **“Over 17.68 lakh active vacancies” as of 15 July 2026**, scoped to the NCS portal only and presented as a lower bound, not an exact all-India vacancy count.
+
+### Remaining release blockers — not hidden
+
+1. **Protected analytics API hosting:** Forecasts and Emerging Skills require the FastAPI analytics routes from the integration branch plus a configured, approved `VITE_SHRAMIK_API_BASE_URL`. The currently inspected hosted backend deployment exposes only `/api/health`; its analytics routes are not deployed. Do not point the frontend to localhost and do not deploy until the user approves the candidate build and backend configuration.
+2. **Official analytical outputs:** the live database still has zero active official forecasts, warnings and emerging-skill signals. That is correct because compatible validated multi-year District × Skill demand/supply histories are not available. The 2022 DGE vacancies-notified observations and current NCS snapshot are state/national aggregate context, not a substitute.
+3. **Scheduled refresh activation:** the September 2026 PLFS CWS values are stored and the source capture/parser check is successful, but unattended writes are not yet proven. The scheduled workflow must be merged into the repository default branch and the server-side GitHub Actions secret `SHRAMIK_DATABASE_URL` must be configured before the weekly job can persist future releases.
+4. **Visual lock sign-off:** automated layout, route and responsive QA passed; a human reference-by-reference review of every page is still required. Source text/layout boards are design references only and must not be treated as data.
+5. **Other source adapters:** NCS has an official dated active-vacancy snapshot but no verified authorized bulk feed yet. DGT/ITI, programme training and taxonomy updates need their own source-specific release handlers; a registered source alone is not an automated connector.
+
+No Vercel deployment was made for this checkpoint.
+
 ## 8. Acceptance gates before SIH showcase
 
 - [ ] All pages have passed reference-by-reference visual review; no design reference values have been copied as live data.
