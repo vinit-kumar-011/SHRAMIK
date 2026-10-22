@@ -11,7 +11,8 @@ import { RestReportsAdapter } from './restAdapter';
  */
 export function createReportsAdapter(): ReportsDataAdapter {
   const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
-  if (env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true') return new DemoReportsAdapter();
+  const showcaseMode = env?.MODE === 'production' || env?.VITE_SHRAMIK_SHOWCASE_MODE === 'true';
+  if (!showcaseMode && env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true') return new DemoReportsAdapter();
   const baseUrl = env?.VITE_SHRAMIK_API_BASE_URL?.trim();
   const dataMode = env?.VITE_SHRAMIK_DATA_MODE?.trim().toLowerCase();
   // Keep Reports on published Supabase indicators unless REST mode is explicitly opted in.
