@@ -146,6 +146,7 @@ async function main() {
   await cdp.send('Network.enable');
   await cdp.send('Page.navigate', { url: sourceUrl });
 
+  let lastObservedState = null;
   const page = await waitFor(async () => {
     const state = await cdp.evaluate(`(() => {
       const text = document.body?.innerText || '';
@@ -157,6 +158,7 @@ async function main() {
         url: location.href
       };
     })()`);
+    lastObservedState = state;
     const hasLabels = requiredLabelPatterns.every(pattern => pattern.test(state.text));
     const hasMonth = /(?:January|February|March|April|May|June|July|August|September|October|November|December|जनवरी|फरवरी|मार्च|अप्रैल|मई|जून|जुलाई|अगस्त|सितंबर|सितम्बर|अक्टूबर|अक्तूबर|नवंबर|नवम्बर|दिसंबर|दिसम्बर)\\s*20\\d{2}/i.test(state.text);
     const hasMonthlyValues = /\\d{1,3}(?:\\.\\d+)?\\s*%/.test(state.text) && hasMonth;
@@ -164,7 +166,20 @@ async function main() {
       return state;
     }
     return false;
-  }, 'rendered LFPR/WPR/UR cards on official MoSPI page');
+  }, 'rendered LFPR/WPR/UR cards on official MoSPI page', 45000).catch(error => {
+    console.error('MO SPI PAGE DIAGNOSTIC', JSON.stringify({
+      title: lastObservedState?.title || '',
+      url: lastObservedState?.url || '',
+      readyState: lastObservedState?.readyState || '',
+      visibleTextCharacters: lastObservedState?.text?.length || 0,
+      visibleTextSample: (lastObservedState?.text || '').slice(0, 2000),
+      expectedLabelsFound: requiredLabelPatterns.map(pattern => ({
+        pattern: String(pattern),
+        found: pattern.test(lastObservedState?.text || ''),
+      })),
+    }, null, 2));
+    throw error;
+  });
 
   const htmlPath = path.join(outputDir, 'plfs-page-rendered.html');
   const textPath = path.join(outputDir, 'plfs-page-visible-text.txt');
