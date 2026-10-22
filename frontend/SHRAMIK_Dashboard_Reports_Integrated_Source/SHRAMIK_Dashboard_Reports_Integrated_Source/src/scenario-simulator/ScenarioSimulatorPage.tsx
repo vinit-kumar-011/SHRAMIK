@@ -28,7 +28,9 @@ const fmt = (value: number | null | undefined, unit?: string) => {
   if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(value);
 };
-const apiBase = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SCENARIO_SIMULATOR_API_BASE_URL ?? "";
+const scenarioEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+const apiBase = scenarioEnv?.VITE_SCENARIO_SIMULATOR_API_BASE_URL ?? "";
+const showcaseMode = scenarioEnv?.MODE === 'production' || scenarioEnv?.VITE_SHRAMIK_SHOWCASE_MODE === 'true';
 
 export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, boundaryGeoJsonUrl = `${import.meta.env.BASE_URL}assets/india-states.geojson` }: ScenarioSimulatorPageProps) {
   const adapter = useMemo(() => dataAdapter ?? new RestScenarioSimulatorAdapter(apiBase), [dataAdapter]);
@@ -114,6 +116,9 @@ export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, b
   }, [adapter, entityType, selectedEntity, draft.geographyId, draft.sectorId]);
 
   const selectedBaseline = baselines.find(item => item.baselineForecastRunId === baselineId) ?? null;
+  const showcaseBlocksLocalPlanning = Boolean(
+    showcaseMode && (!selectedBaseline || selectedBaseline.baselineForecastRunId === "LOCAL-PLANNING-NO-VALIDATED-BASELINE"),
+  );
   const validate = useCallback(() => {
     if (!selectedEntity) return "Select an entity from the available results.";
     if (selectedEntity.available === false) return selectedEntity.unavailableReason ?? "This entity is not available for simulation.";
@@ -184,6 +189,7 @@ export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, b
   return <div className="ss-page">
     <header className="ss-hero"><div><div className="ss-breadcrumb">Home <span>›</span> Scenario Simulator</div><p className="ss-kicker">POLICY PLANNING WORKSPACE</p><h1>SCENARIO SIMULATOR</h1><p className="ss-intro">Explore a server-backed scenario when available, or calculate intervention-only planning counts using editable assumptions.</p><p className="ss-subintro">Without a validated baseline, the local fallback does not estimate labour demand, total workforce supply, skill gaps, or employment outcomes.</p></div><div className="ss-hero-art" aria-hidden="true"><span>PEOPLE<br/>· SKILLS<br/>· OPPORTUNITIES</span><b>SIMULATE<br/>PLAN<br/>BRIDGE GAPS</b></div></header>
     {options?.baselines.some(item => item.baselineForecastRunId === "LOCAL-PLANNING-NO-VALIDATED-BASELINE") && <div className="ss-alert is-warn" role="note"><strong>Local assumptions-only mode.</strong> This planner calculates illustrative seat cohorts, completions and potential transitions from editable assumptions. It does not produce official workforce demand, supply, shortages, forecasts, or job counts.</div>}
+    {showcaseBlocksLocalPlanning && <div className="ss-alert is-warn" role="status"><strong>Official showcase mode — verified baseline required.</strong> No source-backed scenario baseline is available for the current selection, so local illustrative results are disabled. SHRAMIK will not display assumption-generated outcomes as official findings.</div>}
     <section className="ss-scope" aria-label="Current scenario scope"><Scope label="Skill / Occupation" value={selectedEntity?.label ?? "— Not selected —"}/><Scope label="Geography" value={options?.geographies.find(g => g.id === draft.geographyId)?.label ?? draft.geographyId}/><Scope label="Baseline reference" value={selectedBaseline?.label ?? "No compatible baseline"}/><Scope label="Evaluation year" value={String(draft.evaluationYear)}/><Scope label="Run status" value={status === "idle" ? "Idle — configure and run" : status.replaceAll("_", " ").toLowerCase()}/></section>
     {!options && <div className={`ss-alert ${statusMessage ? "is-error" : ""}`} role="status">{statusMessage || "Loading simulator options…"}</div>}
     <div className="ss-workspace">
@@ -199,7 +205,7 @@ export function ScenarioSimulatorPage({ dataAdapter, onNavigate, initialScope, b
         <details className="ss-advanced" open={options?.baselines.some(item => item.baselineForecastRunId === "LOCAL-PLANNING-NO-VALIDATED-BASELINE")}><summary>Assumptions &amp; advanced parameters</summary>{options?.supportedAdvancedParameters.length ? options.supportedAdvancedParameters.map(param => <AdvancedField key={param.key} param={param} value={advancedParameters[param.key]} onChange={value => { setAdvancedParameters(current => ({ ...current, [param.key]: value })); setDraftStale(Boolean(runMeta)); }}/>) : <p>No advanced assumptions are enabled by the current model contract. Unsupported completion, certification and workforce-entry controls are intentionally omitted.</p>}</details>
       </div>
       {validationMessage && <div className="ss-alert is-error" role="alert">{validationMessage}</div>}{statusMessage && <div className={`ss-alert ${status === "failed" ? "is-error" : status === "succeeded" ? "is-ok" : "is-info"}`} role="status" aria-live="polite">{busy && <span className="ss-spinner"/>}{statusMessage}</div>}
-      <button className="ss-button ss-primary" type="button" disabled={busy || !options} onClick={runSimulation}>{busy ? "Working…" : "▶ Run Simulation"}</button><div className="ss-actions"><button className="ss-button" type="button" disabled={busy} onClick={() => { setDraft({ seats: options?.additionalAnnualSeats.minimum ?? 0, lagYears: 0, startYear: options?.startYears[0] ?? 2026, evaluationYear: options?.evaluationYears[0] ?? 2030, geographyId: options?.geographies[0]?.id ?? "INDIA", sectorId: "" }); setAdvancedParameters({}); setValidationMessage(""); setDraftStale(Boolean(runMeta)); }}>Reset draft</button></div>
+      <button className="ss-button ss-primary" type="button" disabled={busy || !options || showcaseBlocksLocalPlanning} onClick={runSimulation}>{busy ? "Working…" : showcaseBlocksLocalPlanning ? "Verified baseline required" : "▶ Run Simulation"}</button><div className="ss-actions"><button className="ss-button" type="button" disabled={busy} onClick={() => { setDraft({ seats: options?.additionalAnnualSeats.minimum ?? 0, lagYears: 0, startYear: options?.startYears[0] ?? 2026, evaluationYear: options?.evaluationYears[0] ?? 2030, geographyId: options?.geographies[0]?.id ?? "INDIA", sectorId: "" }); setAdvancedParameters({}); setValidationMessage(""); setDraftStale(Boolean(runMeta)); }}>Reset draft</button></div>
       </section>
       <section className="ss-card ss-outcomes"><div className="ss-outcome-head"><PanelTitle step="3" title={`Key Outcomes (${draft.evaluationYear})`}/>{results && <span className="ss-badge">{results.run.provenance}</span>}</div>{draftStale && <div className="ss-alert is-warn">Modified — inputs changed; rerun to update results. The displayed result belongs to the previous run.</div>}
         <div className="ss-tabs" role="tablist" aria-label="Simulation results views">{VIEWS.map(view => <button key={view.id} type="button" role="tab" aria-selected={activeView === view.id} onClick={() => loadView(view.id)}>{view.label}</button>)}</div>
