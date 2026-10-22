@@ -12,6 +12,13 @@ test('Forecast page distinguishes a restricted output table from an empty table'
   assert.match(source, /Authenticated persisted results for the selected analysis mode are shown in the panel above/);
 });
 
+test('Production Forecasts/Emerging Skills reports missing API configuration instead of calling a nonexistent same-origin route', () => {
+  const panel = fs.readFileSync(path.resolve(__dirname, '../src/live-data/PersistedAnalyticsPanel.tsx'), 'utf8');
+  assert.match(panel, /if \(!env\?\.DEV && !configuredBase\)/);
+  assert.match(panel, /The authenticated analytics API is not configured for this production build/);
+  assert.match(panel, /this page will not fall back to synthetic results/);
+});
+
 test('Forecast page does not create a projection from context indicators', () => {
   assert.match(source, /SHRAMIK will not manufacture projections from dashboard indicators/);
   assert.match(source, /Context data, not future projections/);
