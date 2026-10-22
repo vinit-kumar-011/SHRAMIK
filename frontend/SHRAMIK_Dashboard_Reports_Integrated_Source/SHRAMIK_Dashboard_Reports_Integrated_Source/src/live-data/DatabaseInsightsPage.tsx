@@ -174,9 +174,41 @@ function selectedStateId(snapshot: Snapshot, code: string): string | null {
   if (!code || code === 'IN') return null;
   return snapshot.states.find(state => state.code === code || state.id === code || state.id === 'IN-' + code)?.id || (code.startsWith('IN-') ? code : 'IN-' + code);
 }
+const REQUIRED_MONTHLY_CWS_CODES = ['CWS_UR', 'CWS_LFPR', 'CWS_WPR'];
+
+function isEligibleMonthlyCwsRow(row: MetricRow): boolean {
+  const d = row.dimension_values || {};
+  return REQUIRED_MONTHLY_CWS_CODES.includes(row.metric_code)
+    && /^MONTHLY_20\d{2}-\d{2}$/.test(row.reference_period)
+    && row.observation_grain === 'NATIONAL'
+    && !row.state_id
+    && row.unit === 'percent'
+    && row.provenance_state === 'SOURCE_BACKED'
+    && row.is_synthetic === false
+    && d.sex === 'person'
+    && d.area === 'combined'
+    && d.age_domain === '15_years_and_above'
+    && d.survey_basis === 'current_weekly_status'
+    && d.frequency === 'monthly';
+}
+
+function latestCompleteMonthlyCwsPeriod(snapshot: Snapshot): string | undefined {
+  const metricsByPeriod = new Map<string, Set<string>>();
+  for (const row of snapshot.metrics) {
+    if (!isEligibleMonthlyCwsRow(row)) continue;
+    if (!metricsByPeriod.has(row.reference_period)) metricsByPeriod.set(row.reference_period, new Set<string>());
+    metricsByPeriod.get(row.reference_period)?.add(row.metric_code);
+  }
+  return [...metricsByPeriod.entries()]
+    .filter(([, metrics]) => REQUIRED_MONTHLY_CWS_CODES.every(code => metrics.has(code)))
+    .map(([period]) => period)
+    .sort()
+    .at(-1);
+}
+
 function latestMonthlyCwsRate(snapshot: Snapshot, code: string, regionCode: string): MetricRow | undefined {
-  // The monthly CWS source currently publishes only all-India rates. Never apply
-  // this national value to a selected State/UT; retain the compatible CY2025 row there.
+  // Monthly CWS values are published nationally. Never apply them to a selected
+  // State/UT or mix monthly rates from different release periods.
   if (regionCode !== 'IN') return undefined;
   const monthlyCode: Record<string, string> = {
     UR: 'CWS_UR',
@@ -184,26 +216,14 @@ function latestMonthlyCwsRate(snapshot: Snapshot, code: string, regionCode: stri
     WPR: 'CWS_WPR',
   };
   const targetCode = monthlyCode[code];
-  if (!targetCode) return undefined;
-  return snapshot.metrics
-    .filter(row => {
-      const d = row.dimension_values || {};
-      return row.metric_code === targetCode
-        && /^MONTHLY_20\d{2}-\d{2}$/.test(row.reference_period)
-        && row.observation_grain === 'NATIONAL'
-        && !row.state_id
-        && row.unit === 'percent'
-        && row.provenance_state === 'SOURCE_BACKED'
-        && row.is_synthetic === false
-        && d.sex === 'person'
-        && d.area === 'combined'
-        && d.age_domain === '15_years_and_above'
-        && d.survey_basis === 'current_weekly_status'
-        && d.frequency === 'monthly';
-    })
-    .sort((a, b) => b.reference_period.localeCompare(a.reference_period))[0];
+  const releasePeriod = latestCompleteMonthlyCwsPeriod(snapshot);
+  if (!targetCode || !releasePeriod) return undefined;
+  return snapshot.metrics.find(row =>
+    row.metric_code === targetCode
+    && row.reference_period === releasePeriod
+    && isEligibleMonthlyCwsRow(row)
+  );
 }
-
 function canonicalRate(
   snapshot: Snapshot,
   code: string,
@@ -527,24 +547,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     {onPreviewDemo && !showcaseMode ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
   </section>;
 
-  const monthlyCwsPeriods = snapshot.metrics
-    .filter(row =>
-      ['CWS_UR', 'CWS_LFPR', 'CWS_WPR'].includes(row.metric_code)
-      && /^MONTHLY_20\d{2}-\d{2}$/.test(row.reference_period)
-      && row.observation_grain === 'NATIONAL'
-      && !row.state_id
-      && row.unit === 'percent'
-      && row.provenance_state === 'SOURCE_BACKED'
-      && row.is_synthetic === false
-      && row.dimension_values?.sex === 'person'
-      && row.dimension_values?.area === 'combined'
-      && row.dimension_values?.age_domain === '15_years_and_above'
-      && row.dimension_values?.survey_basis === 'current_weekly_status'
-      && row.dimension_values?.frequency === 'monthly'
-    )
-    .map(row => row.reference_period)
-    .sort();
-  const latestMonthlyCwsPeriod = monthlyCwsPeriods.at(-1);
+  const latestMonthlyCwsPeriod = latestCompleteMonthlyCwsPeriod(snapshot);
   const rates = ['UR', 'LFPR', 'WPR'].map(code => {
     const item = periodFilter === 'MONTHLY_CWS'
       ? latestMonthlyCwsRate(snapshot, code, regionCode)
