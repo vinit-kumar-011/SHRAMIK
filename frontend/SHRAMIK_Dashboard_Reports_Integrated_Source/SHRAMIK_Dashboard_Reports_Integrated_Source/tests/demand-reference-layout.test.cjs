@@ -30,7 +30,7 @@ test('period, geography, state, sector, occupation and skill controls are intera
   assert.match(page, /onRegionChange\?\.\('IN'\)/);
   assert.match(page, /value=\{regionCode\} onChange=\{event => onRegionChange\?\./);
   assert.match(page, /value=\{sectorFilter\} onChange=/);
-  assert.match(page, /value=\{occupationScope\} onChange=/);
+  assert.match(page, /value=\{showcaseMode \? 'LIVE' : occupationScope\} onChange=/);
   assert.match(page, /value=\{skillFilter\} onChange=/);
   assert.match(page, /value=\{regionSort\} onChange=/);
   assert.match(shell, /module="demand" regionCode=\{region\} onRegionChange=\{handleRegionChange\}/);
