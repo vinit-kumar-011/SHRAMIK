@@ -218,8 +218,14 @@ def analytics_status(
 ) -> dict:
     """Report source-input and output counts for operational diagnostics."""
     counts = {
-        "demand_observations": int(db.execute(text("SELECT count(*) FROM demand_observations")).scalar_one() or 0),
-        "supply_observations": int(db.execute(text("SELECT count(*) FROM supply_observations")).scalar_one() or 0),
+        "demand_observations": int(db.execute(text("""
+            SELECT count(*) FROM demand_observations
+            WHERE provenance_state = 'SOURCE_BACKED' AND is_synthetic = FALSE
+        """)).scalar_one() or 0),
+        "supply_observations": int(db.execute(text("""
+            SELECT count(*) FROM supply_observations
+            WHERE provenance_state = 'SOURCE_BACKED' AND is_synthetic = FALSE
+        """)).scalar_one() or 0),
         "active_official_source_backed_forecasts": int(db.execute(text("""
             SELECT count(*) FROM forecast_results
             WHERE is_active = TRUE AND analysis_mode = 'OFFICIAL'
