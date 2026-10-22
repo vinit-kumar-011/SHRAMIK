@@ -27,10 +27,23 @@ test('module previews explicitly pin fixture adapters instead of silently substi
   assert.match(shell, /dataAdapter=\{demoEmergingSkillsDataAdapter\}/);
   assert.match(shell, /adapter=\{mockDataQualityDataAdapter\}/);
   assert.match(shell, /adapter=\{mockAdministrationDataAdapter\}/);
-  assert.match(shell, /previewingModule = !demoMode && demoPreviewPage === activePage/);
+  assert.match(shell, /previewingModule = !showcaseMode && !demoMode && demoPreviewPage === activePage/);
   assert.match(forecastAdapter, /adapterOverride\?: ForecastsDataAdapter/);
   assert.match(forecastPage, /dataAdapter\?: ReturnType<typeof createForecastsDataAdapter>/);
 });
+
+test('production builds enforce the official-only showcase experience', () => {
+  const persistedPanel = read('src/live-data/PersistedAnalyticsPanel.tsx');
+  const scenario = read('src/scenario-simulator/ScenarioSimulatorPage.tsx');
+  assert.match(shell, /runtimeEnv\?\.MODE === 'production' \|\| runtimeEnv\?\.VITE_SHRAMIK_SHOWCASE_MODE === 'true'/);
+  assert.match(shell, /const demoMode = !showcaseMode && runtimeEnv\?\.VITE_SHRAMIK_USE_DEMO_DATA === 'true'/);
+  assert.match(liveModules, /onPreviewDemo && !showcaseMode/);
+  assert.match(liveModules, /!showcaseMode \? <><option value="EXAMPLES">Illustrative role examples/);
+  assert.match(persistedPanel, /!showcaseMode \? <option value="DEMO">Demo · synthetic/);
+  assert.match(scenario, /disabled=\{busy \|\| !options \|\| showcaseBlocksLocalPlanning\}/);
+  assert.match(scenario, /Official showcase mode — verified baseline required/);
+});
+
 test('administration preview explains fictional decisions cannot grant real access', () => {
   assert.match(liveNotice, /Open a clearly labelled synthetic preview/);
   assert.match(liveNotice, /does not approve real requests, create accounts or change permissions/);
