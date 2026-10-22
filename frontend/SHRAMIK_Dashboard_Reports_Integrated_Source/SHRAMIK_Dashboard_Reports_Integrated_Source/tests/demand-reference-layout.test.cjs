@@ -25,6 +25,21 @@ test('demand metrics are not fabricated when the canonical demand table has no r
   assert.doesNotMatch(page, /28\.4 Million/);
 });
 
+test('Latest PLFS cards prefer the newest national monthly CWS release without relabelling the annual benchmark', () => {
+  assert.match(page, /function latestMonthlyCwsRate/);
+  assert.match(page, /UR: 'CWS_UR'/);
+  assert.match(page, /LFPR: 'CWS_LFPR'/);
+  assert.match(page, /WPR: 'CWS_WPR'/);
+  assert.match(page, /row\.provenance_state === 'SOURCE_BACKED'/);
+  assert.match(page, /row\.is_synthetic === false/);
+  assert.match(page, /d\.age_domain === '15_years_and_above'/);
+  assert.match(page, /d\.survey_basis === 'current_weekly_status'/);
+  assert.match(page, /canonicalRate\(snapshot, code, regionCode, periodFilter === 'LATEST'\)/);
+  assert.match(page, /monthly CWS · persons aged 15\+/);
+  assert.match(page, /Persons aged 15\+ · PLFS CY2025/);
+  assert.match(page, /if \(regionCode !== 'IN'\) return undefined/);
+});
+
 test('period, geography, state, sector, occupation and skill controls are interactive and the region selector syncs to the shared shell', () => {
   assert.match(page, /value=\{periodFilter\} onChange=\{event => setPeriodFilter/);
   assert.match(page, /onRegionChange\?\.\('IN'\)/);
