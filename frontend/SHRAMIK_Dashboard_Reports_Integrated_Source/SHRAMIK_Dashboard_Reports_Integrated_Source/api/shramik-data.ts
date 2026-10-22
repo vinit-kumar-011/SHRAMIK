@@ -42,7 +42,7 @@ const TABLES: Record<string, TableRule> = {
   skills: {
     columns: new Set([
       'id', 'code', 'name', 'sector_id', 'sector_mapping_method',
-      'sector_mapping_confidence', 'description',
+      'sector_mapping_confidence', 'description', 'is_active',
     ]),
     filters: new Set(['select', 'is_active', 'order', 'limit', 'offset']),
   },
