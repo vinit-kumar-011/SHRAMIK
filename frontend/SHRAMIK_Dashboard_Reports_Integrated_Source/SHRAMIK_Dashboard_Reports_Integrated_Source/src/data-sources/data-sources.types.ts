@@ -34,6 +34,8 @@ export interface DataSourceRecord {
   geographicCoverage: CoverageArea[];
   reportingPeriods: ReportingPeriod[];
   sourceReleaseDate?: string | null;
+  /** When the registry row was last accessed; this is not proof of a source retrieval. */
+  registryMetadataAccessedAt?: string | null;
   lastSuccessfulRetrievalAt?: string | null;
   lastValidatedAt?: string | null;
   lifecycleStatus: SourceLifecycleStatus;
@@ -84,6 +86,8 @@ export interface SourceSummary {
   active: number;
   needsAttention: number;
   notConfigured: number;
+  /** Sources explicitly marked UNKNOWN because the public registry lacks health evidence. */
+  unknownStatus?: number;
 }
 export interface PagedResult<T> {
   items: T[];
