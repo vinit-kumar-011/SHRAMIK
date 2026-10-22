@@ -168,13 +168,66 @@ function selectedStateId(snapshot: Snapshot, code: string): string | null {
   if (!code || code === 'IN') return null;
   return snapshot.states.find(state => state.code === code || state.id === code || state.id === 'IN-' + code)?.id || (code.startsWith('IN-') ? code : 'IN-' + code);
 }
-function canonicalRate(snapshot: Snapshot, code: string, regionCode: string): MetricRow | undefined {
+function latestMonthlyCwsRate(snapshot: Snapshot, code: string, regionCode: string): MetricRow | undefined {
+  // The monthly CWS source currently publishes only all-India rates. Never apply
+  // this national value to a selected State/UT; retain the compatible CY2025 row there.
+  if (regionCode !== 'IN') return undefined;
+  const monthlyCode: Record<string, string> = {
+    UR: 'CWS_UR',
+    LFPR: 'CWS_LFPR',
+    WPR: 'CWS_WPR',
+  };
+  const targetCode = monthlyCode[code];
+  if (!targetCode) return undefined;
+  return snapshot.metrics
+    .filter(row => {
+      const d = row.dimension_values || {};
+      return row.metric_code === targetCode
+        && /^MONTHLY_20\d{2}-\d{2}$/.test(row.reference_period)
+        && row.observation_grain === 'NATIONAL'
+        && !row.state_id
+        && row.unit === 'percent'
+        && row.provenance_state === 'SOURCE_BACKED'
+        && row.is_synthetic === false
+        && d.sex === 'person'
+        && d.area === 'combined'
+        && d.age_domain === '15_years_and_above'
+        && d.survey_basis === 'current_weekly_status'
+        && d.frequency === 'monthly';
+    })
+    .sort((a, b) => b.reference_period.localeCompare(a.reference_period))[0];
+}
+
+function canonicalRate(
+  snapshot: Snapshot,
+  code: string,
+  regionCode: string,
+  preferLatestMonthly = false,
+): MetricRow | undefined {
+  if (preferLatestMonthly) {
+    const monthly = latestMonthlyCwsRate(snapshot, code, regionCode);
+    if (monthly) return monthly;
+  }
   const rows = snapshot.metrics.filter(row => row.metric_code === code && row.reference_period === 'CY2025' && isCanonicalPersonRate(row));
   if (regionCode !== 'IN') {
     const regional = rows.find(row => row.state_id === selectedStateId(snapshot, regionCode));
     if (regional) return regional;
   }
   return rows.find(row => !row.state_id || row.observation_grain === 'NATIONAL');
+}
+
+function plfsCardPeriodLabel(row: MetricRow | undefined): string {
+  if (row?.reference_period.startsWith('MONTHLY_')) {
+    const match = /^MONTHLY_(\d{4})-(\d{2})$/.exec(row.reference_period);
+    if (match) {
+      const month = Number(match[2]);
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      if (month >= 1 && month <= 12) {
+        return \`\${months[month - 1]} \${match[1]} · monthly CWS · persons aged 15+\`;
+      }
+    }
+  }
+  return 'Persons aged 15+ · PLFS CY2025';
 }
 function mostRecentRows(snapshot: Snapshot, code: string, regionCode = 'IN'): MetricRow[] {
   let rows = snapshot.metrics.filter(row => row.metric_code === code);
@@ -469,7 +522,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   </section>;
 
   const rates = ['UR', 'LFPR', 'WPR'].map(code => {
-    const item = canonicalRate(snapshot, code, regionCode);
+    const item = canonicalRate(snapshot, code, regionCode, periodFilter === 'LATEST');
     return { code, label: metricLabel(code), row: item };
   });
   const registrationRows = mostRecentRows(snapshot, 'ESHRAM_REGISTRATION_COUNT', regionCode);
@@ -594,9 +647,9 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       <div className="dbi-demand-filter-status" role="status"><Info size={14}/><span>{periodNote}. Region selection updates the national/state context; sector and skill selections filter the canonical skill catalogue. These filters cannot create job-demand estimates where no demand observations exist.</span></div>
 
       <section className="dbi-demand-kpis" aria-label="Published labour-market indicators">
-        <article className="dbi-demand-kpi dbi-demand-kpi-blue"><span className="dbi-demand-kpi-icon"><Activity size={23}/></span><div><small>Unemployment Rate</small><strong>{rateValue('UR')}</strong><span>{showPlfs ? 'Persons aged 15+ · PLFS CY2025' : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
-        <article className="dbi-demand-kpi dbi-demand-kpi-orange"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>Labour Force Participation</small><strong>{rateValue('LFPR')}</strong><span>{showPlfs ? 'Persons aged 15+ · PLFS CY2025' : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
-        <article className="dbi-demand-kpi dbi-demand-kpi-teal"><span className="dbi-demand-kpi-icon"><GraduationCap size={23}/></span><div><small>Worker Population Ratio</small><strong>{rateValue('WPR')}</strong><span>{showPlfs ? 'Persons aged 15+ · PLFS CY2025' : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
+        <article className="dbi-demand-kpi dbi-demand-kpi-blue"><span className="dbi-demand-kpi-icon"><Activity size={23}/></span><div><small>Unemployment Rate</small><strong>{rateValue('UR')}</strong><span>{showPlfs ? plfsCardPeriodLabel(rates.find(item => item.code === 'UR')?.row) : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
+        <article className="dbi-demand-kpi dbi-demand-kpi-orange"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>Labour Force Participation</small><strong>{rateValue('LFPR')}</strong><span>{showPlfs ? plfsCardPeriodLabel(rates.find(item => item.code === 'UR')?.row) : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
+        <article className="dbi-demand-kpi dbi-demand-kpi-teal"><span className="dbi-demand-kpi-icon"><GraduationCap size={23}/></span><div><small>Worker Population Ratio</small><strong>{rateValue('WPR')}</strong><span>{showPlfs ? plfsCardPeriodLabel(rates.find(item => item.code === 'UR')?.row) : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
         <article className="dbi-demand-kpi dbi-demand-kpi-yellow"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>e-Shram Registrations</small><strong>{showRegistrations && registration ? numberFormat(numeric(registration.value_numeric), true) : '—'}</strong><span>{showRegistrations && registration ? `${periodLabel(registration.reference_period)} · registrations, not job demand` : 'Select the e-Shram snapshot to view this measure'}</span></div></article>
       </section>
 
