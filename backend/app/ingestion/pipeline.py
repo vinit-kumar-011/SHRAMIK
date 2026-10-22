@@ -259,7 +259,8 @@ def _persist_warning(conn, *, forecast_id: str, output: dict[str, Any]) -> bool:
 def run_pipeline(*, mode: str, demand_signal_type: str | None = None,
                  supply_signal_type: str | None = None, demand_source_id: str | None = None,
                  supply_source_id: str | None = None, min_history: int = MIN_HISTORY,
-                 warning_threshold: float = 0.20) -> dict[str, Any]:
+                 warning_threshold: float = 0.20,
+                 confirm_compatible_signals: bool = False) -> dict[str, Any]:
     if mode not in {"OFFICIAL", "DEMO"}:
         raise ValueError("mode must be OFFICIAL or DEMO.")
     if mode == "DEMO":
@@ -269,6 +270,12 @@ def run_pipeline(*, mode: str, demand_signal_type: str | None = None,
         raise ValueError(
             "OFFICIAL mode requires explicit --demand-signal-type and --supply-signal-type "
             "so unrelated measures are never combined accidentally."
+        )
+    elif not confirm_compatible_signals:
+        raise ValueError(
+            "OFFICIAL mode requires --confirm-compatible-signals after verifying unit, "
+            "flow/stock semantics, period basis, geography and occupation/skill scope. "
+            "Do not approve vacancies versus training completions as a direct labour-shortage gap."
         )
 
     engine = get_engine()
@@ -310,15 +317,35 @@ def run_pipeline(*, mode: str, demand_signal_type: str | None = None,
             trained_through = max(output["trained_through_period"] for output in outputs)
             model_version_id = _ensure_model_version(conn, trained_through)
             for output in outputs:
-                # A newer model run can replace an older active row without violating the partial index.
+                # Only the newest one-step forecast is active for each mode/series.
+                # Keep historical rows for traceability, but don't present stale target years as current.
+                conn.execute(text("""
+                    UPDATE public.early_warnings SET is_active = FALSE
+                    WHERE forecast_result_id IN (
+                        SELECT id FROM public.forecast_results
+                        WHERE analysis_mode = :mode AND district_id = :district_id
+                          AND skill_id = :skill_id
+                    )
+                """), {
+                    "mode": mode, "district_id": output["district_id"],
+                    "skill_id": output["skill_id"],
+                })
                 conn.execute(text("""
                     UPDATE public.forecast_results SET is_active = FALSE
                     WHERE analysis_mode = :mode AND district_id = :district_id
-                      AND skill_id = :skill_id AND period_type = 'YEAR'
-                      AND period_year = :period_year AND is_active = TRUE
+                      AND skill_id = :skill_id AND is_active = TRUE
                 """), {
                     "mode": mode, "district_id": output["district_id"],
-                    "skill_id": output["skill_id"], "period_year": output["period_year"],
+                    "skill_id": output["skill_id"],
+                })
+                conn.execute(text("""
+                    UPDATE public.emerging_skill_signals SET is_active = FALSE
+                    WHERE analysis_mode = :mode AND district_id = :district_id
+                      AND skill_id = :skill_id AND contract_version = :contract_version
+                      AND is_active = TRUE
+                """), {
+                    "mode": mode, "district_id": output["district_id"],
+                    "skill_id": output["skill_id"], "contract_version": CONTRACT_VERSION,
                 })
                 forecast_id = _persist_forecast(conn, output, model_version_id)
                 if _persist_warning(conn, forecast_id=forecast_id, output=output):
@@ -353,12 +380,18 @@ def main() -> None:
     parser.add_argument("--supply-source-id")
     parser.add_argument("--min-history", type=int, default=MIN_HISTORY)
     parser.add_argument("--warning-threshold", type=float, default=0.20)
+    parser.add_argument(
+        "--confirm-compatible-signals",
+        action="store_true",
+        help="Required in OFFICIAL mode only after reviewing the semantic compatibility of the selected signals.",
+    )
     args = parser.parse_args()
     summary = run_pipeline(
         mode=args.mode, demand_signal_type=args.demand_signal_type,
         supply_signal_type=args.supply_signal_type, demand_source_id=args.demand_source_id,
         supply_source_id=args.supply_source_id, min_history=args.min_history,
         warning_threshold=args.warning_threshold,
+        confirm_compatible_signals=args.confirm_compatible_signals,
     )
     print(json.dumps(summary, indent=2, default=str))
 
