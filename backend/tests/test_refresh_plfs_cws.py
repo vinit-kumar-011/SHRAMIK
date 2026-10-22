@@ -97,6 +97,22 @@ def test_extracts_hindi_rendering_of_the_official_cards() -> None:
     assert result["metrics"] == {"CWS_LFPR": 55.5, "CWS_WPR": 52.7, "CWS_UR": 5.0}
 
 
+def test_extracts_hindi_key_findings_acronyms_for_national_cws() -> None:
+    page = """
+    <!doctype html><html><body>
+      <p>देश में 15 वर्ष और उससे अधिक आयु के व्यक्तियों के लिए सीडब्ल्यूएस में
+      एलएफपीआर (%) सितंबर 2026 में 55.5% था।</p>
+      <p>देश में 15 वर्ष और उससे अधिक आयु के व्यक्तियों के लिए सीडब्ल्यूएस में
+      डब्ल्यूपीआर (%) सितंबर 2026 में 52.7% था।</p>
+      <p>देश में 15 वर्ष और उससे अधिक आयु के व्यक्तियों के लिए सीडब्ल्यूएस में
+      यूआर (%) सितंबर 2026 में 5.0% था।</p>
+    </body></html>
+    """
+    result = parse_monthly_cws(page)
+    assert result["reference_period"] == "MONTHLY_2026-09"
+    assert result["metrics"] == {"CWS_LFPR": 55.5, "CWS_WPR": 52.7, "CWS_UR": 5.0}
+
+
 def test_rejects_future_or_invalid_published_rates() -> None:
     with pytest.raises(ValueError, match="percentage value|outside"):
         parse_monthly_cws(fixture_page(lfpr="105.5"))
