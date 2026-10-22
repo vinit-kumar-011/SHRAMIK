@@ -47,6 +47,9 @@ test('monthly PLFS CWS is selectable separately from the annual CY2025 benchmark
   assert.match(page, /Monthly CWS published at All India level only/);
   assert.match(page, /PLFS monthly CWS · age 15\+/);
   assert.match(page, /PLFS annual benchmark · CY2025/);
+  assert.ok(page.includes("const monthlyCwsTableMode = periodFilter === 'MONTHLY_CWS'"), 'the PLFS table title mode must account for monthly selections');
+  assert.ok(page.includes("rates.some(({ row }) => row?.reference_period.startsWith('MONTHLY_') === true)"), 'Latest per source must detect monthly rows actually selected');
+  assert.ok(page.includes("title={monthlyCwsTableMode ? 'PLFS monthly CWS · age 15+' : 'PLFS 2025 benchmarks · age 15+'"), 'the evidence table must label the selected row period, not only the filter value');
   assert.match(page, /Calendar year 2025 · PLFS \(annual\)/);
 });
 
