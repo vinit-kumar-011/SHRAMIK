@@ -9,10 +9,10 @@ import { setTimeout as delay } from 'node:timers/promises';
 const sourceUrl = 'https://www.mospi.gov.in/themes/product/69--';
 const host = '127.0.0.1';
 const outputDir = path.resolve(process.argv[2] || '../artifacts/source-refresh');
-const requiredLabels = [
-  'Labour Force Participation Rate (LFPR)',
-  'Worker Population Ratio (WPR)',
-  'Unemployment Rate (UR)',
+const requiredLabelPatterns = [
+  /Labour\\s+Force\\s+Participation\\s+Rate\\s*\\(\\s*LFPR\\s*\\)|श्रम\\s*बल\\s*भागीदारी\\s*दर\\s*\\(\\s*एलएफपीआर\\s*\\)/i,
+  /Worker\\s+Population\\s+Ratio\\s*\\(\\s*WPR\\s*\\)|श्रमिक\\s*जनसंख्या\\s*अनुपात\\s*\\(\\s*डब्ल्यूपीआर\\s*\\)/i,
+  /Unemployment\\s+Rate\\s*\\(\\s*UR\\s*\\)|बेरोजगारी\\s*दर\\s*\\(\\s*यूआर\\s*\\)/i,
 ];
 let chrome;
 let cdp;
@@ -157,10 +157,10 @@ async function main() {
         url: location.href
       };
     })()`);
-    const hasLabels = requiredLabels.every(label => state.text.includes(label));
-    const hasMonth = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+20\\d{2}/i.test(state.text);
+    const hasLabels = requiredLabelPatterns.every(pattern => pattern.test(state.text));
+    const hasMonth = /(?:January|February|March|April|May|June|July|August|September|October|November|December|जनवरी|फरवरी|मार्च|अप्रैल|मई|जून|जुलाई|अगस्त|सितंबर|सितम्बर|अक्टूबर|अक्तूबर|नवंबर|नवम्बर|दिसंबर|दिसम्बर)\\s*20\\d{2}/i.test(state.text);
     const hasMonthlyValues = /\\d{1,3}(?:\\.\\d+)?\\s*%/.test(state.text) && hasMonth;
-    if (state.readyState === 'complete' && state.text.length > 1200 && hasLabels && hasMonthlyValues) {
+    if (state.readyState === 'complete' && state.text.length > 600 && hasLabels && hasMonthlyValues) {
       return state;
     }
     return false;
