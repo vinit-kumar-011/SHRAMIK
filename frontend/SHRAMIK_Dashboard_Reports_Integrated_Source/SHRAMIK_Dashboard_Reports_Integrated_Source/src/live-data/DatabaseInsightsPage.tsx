@@ -49,8 +49,10 @@ type Snapshot = {
 };
 
 const LIMIT = 1000;
+const buildEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+const showcaseMode = buildEnv?.MODE === 'production' || buildEnv?.VITE_SHRAMIK_SHOWCASE_MODE === 'true';
 const scenarioApiConfigured = Boolean(
-  (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SCENARIO_SIMULATOR_API_BASE_URL?.trim(),
+  buildEnv?.VITE_SCENARIO_SIMULATOR_API_BASE_URL?.trim(),
 );
 const reportsApiConfigured = Boolean(
   (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.VITE_SHRAMIK_API_BASE_URL?.trim(),
@@ -457,13 +459,13 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
   if (error && !snapshot) return <section className={module === 'demand' ? 'dbi-shell dbi-demand-reference' : 'dbi-shell'}>
     <div className="dbi-hero"><div><div className="dbi-eyebrow">{page.eyebrow}</div><h1>{page.title}</h1><p>{page.subtitle}</p></div></div>
     <div className="dbi-error" role="alert"><Info size={18}/><div><strong>Live database read failed.</strong><p>{error}</p><button type="button" onClick={() => void refresh()}>Retry database connection</button></div></div>
-    {onPreviewDemo ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
+    {onPreviewDemo && !showcaseMode ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
   </section>;
 
   if (!snapshot) return <section className={module === 'demand' ? 'dbi-shell dbi-demand-reference' : 'dbi-shell'}>
     <div className="dbi-hero"><div><div className="dbi-eyebrow">{page.eyebrow}</div><h1>{page.title}</h1><p>{page.subtitle}</p></div></div>
     <div className="dbi-loading"><RefreshCw size={18} className="dbi-spin"/> Reading live source-backed data from Supabase…</div>
-    {onPreviewDemo ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
+    {onPreviewDemo && !showcaseMode ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
   </section>;
 
   const rates = ['UR', 'LFPR', 'WPR'].map(code => {
@@ -585,7 +587,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
         <label className="dbi-demand-filter"><span>Geography</span><select value={regionCode === 'IN' ? 'national' : 'state'} onChange={event => { if (event.target.value === 'national') onRegionChange?.('IN'); else if (regionCode === 'IN') onRegionChange?.(snapshot.states.find(state => state.code === 'OD')?.code || snapshot.states[0]?.code || 'IN'); }}><option value="national">All India</option><option value="state">State / UT</option></select></label>
         <label className="dbi-demand-filter"><span>State / UT</span><select value={regionCode} onChange={event => onRegionChange?.(event.target.value)}><option value="IN">All States</option>{snapshot.states.slice().sort((a, b) => a.name.localeCompare(b.name)).map(state => <option key={state.id} value={state.code}>{state.name}</option>)}</select></label>
         <label className="dbi-demand-filter"><span>Sector</span><select value={sectorFilter} onChange={event => { setSectorFilter(event.target.value); setSkillFilter('ALL'); }}><option value="ALL">All Sectors</option>{snapshot.sectors.slice().sort((a, b) => a.name.localeCompare(b.name)).map(sector => <option key={sector.id} value={sector.id}>{sector.name}</option>)}</select></label>
-        <label className="dbi-demand-filter"><span>Occupation (NCO)</span><select value={occupationScope} onChange={event => { setOccupationScope(event.target.value); if (event.target.value === 'DEMO') onPreviewDemo?.(); }}><option value="LIVE">Live ranking · unavailable</option><option value="EXAMPLES">Illustrative role examples</option><option value="DEMO">Open illustrative demo…</option></select></label>
+        <label className="dbi-demand-filter"><span>Occupation (NCO)</span><select value={showcaseMode ? 'LIVE' : occupationScope} onChange={event => { if (showcaseMode) return; setOccupationScope(event.target.value); if (event.target.value === 'DEMO') onPreviewDemo?.(); }}><option value="LIVE">Live ranking · unavailable</option>{!showcaseMode ? <><option value="EXAMPLES">Illustrative role examples</option><option value="DEMO">Open illustrative demo…</option></> : null}</select></label>
         <label className="dbi-demand-filter"><span>Skill</span><select value={skillFilter} onChange={event => setSkillFilter(event.target.value)}><option value="ALL">All Skills</option>{snapshot.skills.filter(skill => sectorFilter === 'ALL' || skill.sector_id === sectorFilter).slice().sort((a, b) => a.name.localeCompare(b.name)).map(skill => <option key={skill.id} value={skill.id}>{skill.name}</option>)}</select></label>
         <button className="dbi-demand-refresh" type="button" disabled={refreshing} onClick={() => void refresh()}><RefreshCw size={14} className={refreshing ? 'dbi-spin' : ''}/>{refreshing ? 'Refreshing' : 'Refresh data'}</button>
       </section>
@@ -639,8 +641,8 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       </div>
 
       <div className="dbi-demand-bottom">
-        <section className="dbi-demand-panel dbi-demand-ranking"><div className="dbi-demand-panel-head"><div><h2>{occupationScope === 'EXAMPLES' ? 'Occupation Explorer' : 'Top Occupations by Demand'}</h2><p>{occupationScope === 'EXAMPLES' ? 'Illustrative NCO-style role examples · not ranked by demand' : 'NCO-2015 taxonomy is staged; demand ranking requires validated occupation-linked observations'}</p></div><span className="dbi-demand-tag dbi-demand-tag-warn">No demand rows</span></div>
-          {occupationScope === 'EXAMPLES' ? <div className="dbi-demand-occupation-examples"><div className="dbi-demand-demo-note"><Info size={14}/> Illustrative role examples only. These are not a ranked list and have no live demand values.</div>{illustrativeOccupations.map((occupation, index) => <div className="dbi-demand-occupation-row" key={occupation}><span>{index + 1}</span><strong>{occupation}</strong><em>Illustrative</em></div>)}</div> : <div className="dbi-demand-empty-ranking"><span className="dbi-demand-empty-icon"><FileCheck2 size={22}/></span><strong>Occupation rankings are not published</strong><p>The database has 3,451 current NCO-2015 occupation records in a protected staging table, but the public reader cannot browse that catalogue. More importantly, there are no demand-observation rows to rank occupations by job demand.</p><button type="button" onClick={() => setOccupationScope('EXAMPLES')}>Show illustrative role examples <ArrowUpRight size={13}/></button></div>}
+        <section className="dbi-demand-panel dbi-demand-ranking"><div className="dbi-demand-panel-head"><div><h2>{!showcaseMode && occupationScope === 'EXAMPLES' ? 'Occupation Explorer' : 'Top Occupations by Demand'}</h2><p>{!showcaseMode && occupationScope === 'EXAMPLES' ? 'Illustrative NCO-style role examples · not ranked by demand' : 'NCO-2015 taxonomy is staged; demand ranking requires validated occupation-linked observations'}</p></div><span className="dbi-demand-tag dbi-demand-tag-warn">No demand rows</span></div>
+          {!showcaseMode && occupationScope === 'EXAMPLES' ? <div className="dbi-demand-occupation-examples"><div className="dbi-demand-demo-note"><Info size={14}/> Illustrative role examples only. These are not a ranked list and have no live demand values.</div>{illustrativeOccupations.map((occupation, index) => <div className="dbi-demand-occupation-row" key={occupation}><span>{index + 1}</span><strong>{occupation}</strong><em>Illustrative</em></div>)}</div> : <div className="dbi-demand-empty-ranking"><span className="dbi-demand-empty-icon"><FileCheck2 size={22}/></span><strong>Occupation rankings are not published</strong><p>The database has 3,451 current NCO-2015 occupation records in a protected staging table, but the public reader cannot browse that catalogue. More importantly, there are no demand-observation rows to rank occupations by job demand.</p>{!showcaseMode ? <button type="button" onClick={() => setOccupationScope('EXAMPLES')}>Show illustrative role examples <ArrowUpRight size={13}/></button> : <p>Occupation rankings remain unavailable until verified occupation-linked demand observations are published.</p>}</div>}
         </section>
         <section className="dbi-demand-panel dbi-demand-ranking"><div className="dbi-demand-panel-head"><div><h2>Skills Explorer</h2><p>Canonical skills available in the database · no demand ranking published</p></div><span className="dbi-demand-tag">{visibleSkills.length} skills</span></div>
           {visibleSkills.length ? <div className="dbi-demand-skill-list">{visibleSkills.map((skill, index) => <div className="dbi-demand-skill-row" key={skill.id}><span>{index + 1}</span><div><strong>{skill.name}</strong><small>{sectorsForSkill(skill)}</small></div><em data-confidence={(skill.sector_mapping_confidence || 'LOW').toUpperCase()}>{(skill.sector_mapping_confidence || 'LOW').toUpperCase()} mapping</em></div>)}</div> : <div className="dbi-demand-empty-ranking"><strong>No canonical skills match this filter</strong><p>Choose another sector or skill to reset the catalogue filter.</p><button type="button" onClick={() => { setSectorFilter('ALL'); setSkillFilter('ALL'); }}>Reset catalogue filters</button></div>}
@@ -676,7 +678,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       <div className="dbi-hero-actions">
         <div className="dbi-source-count"><span>Registered sources</span><strong>{numberFormat(sourceCount)}</strong><small>{numberFormat(geographyCount)} states / UTs</small></div>
         <button className="dbi-refresh" type="button" onClick={() => void refresh()} disabled={refreshing}><RefreshCw size={15} className={refreshing ? 'dbi-spin' : ''}/>{refreshing ? 'Refreshing' : 'Refresh data'}</button>
-        {onPreviewDemo ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
+        {onPreviewDemo && !showcaseMode ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
       </div>
     </header>
 
