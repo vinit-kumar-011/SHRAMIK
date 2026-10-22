@@ -61,11 +61,18 @@ export default defineConfig(({ mode }) => {
   const dataHandler = createPublicSupabaseDataHandler(env);
   const segments = (env.VITE_BASE_PATH ?? '').split('/').filter(Boolean);
   const base = segments.length ? `/${segments.join('/')}/` : '/';
+  const analyticsProxyTarget = env.VITE_SHRAMIK_API_PROXY_TARGET || 'http://127.0.0.1:8000';
   return {
     base,
     plugins: [react(), shramikLocalDataProxy(dataHandler)],
-    server: { host: '0.0.0.0' },
-    preview: { host: '0.0.0.0' },
+    server: {
+      host: '0.0.0.0',
+      proxy: { '/api/v1': { target: analyticsProxyTarget, changeOrigin: true } },
+    },
+    preview: {
+      host: '0.0.0.0',
+      proxy: { '/api/v1': { target: analyticsProxyTarget, changeOrigin: true } },
+    },
     build: {
       rollupOptions: {
         output: {
