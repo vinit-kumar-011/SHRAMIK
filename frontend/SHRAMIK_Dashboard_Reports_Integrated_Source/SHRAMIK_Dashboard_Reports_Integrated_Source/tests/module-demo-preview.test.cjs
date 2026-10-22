@@ -41,7 +41,9 @@ test('production builds enforce the official-only showcase experience', () => {
   assert.match(liveModules, /!showcaseMode \? <><option value="EXAMPLES">Illustrative role examples/);
   assert.match(persistedPanel, /!showcaseMode \? <option value="DEMO">Demo · synthetic/);
   assert.match(scenario, /disabled=\{busy \|\| !options \|\| showcaseBlocksLocalPlanning\}/);
-  assert.match(scenario, /Official showcase mode — verified baseline required/);
+  assert.match(scenario, /selectedBaseline.provenance !== "SOURCE_BACKED"/);
+  assert.match(scenario, /selectedBaseline.qualityStatus !== "APPROVED"/);
+  assert.match(scenario, /Official showcase mode — approved source-backed baseline required/);
 });
 
 test('administration preview explains fictional decisions cannot grant real access', () => {
