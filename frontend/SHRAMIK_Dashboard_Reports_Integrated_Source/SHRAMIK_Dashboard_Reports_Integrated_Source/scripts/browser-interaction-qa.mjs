@@ -332,6 +332,7 @@ try {
           labourForceParticipation: cardValue('Labour Force Participation'),
           workerPopulationRatio: cardValue('Worker Population Ratio'),
           unemploymentPeriod: cardPeriod('Unemployment Rate'),
+          jobDemandUnavailableNotice: /Job-demand series is not published/i.test(document.body?.innerText || ''),
           dataSourceHeading: (document.querySelector('.dbi-demand-panel')?.innerText || '').slice(0, 140),
         } : null,
       };
@@ -349,7 +350,7 @@ try {
         /September 2026 · monthly CWS · persons aged 15\+/i.test(plfs.unemploymentPeriod || '');
       record(
         'Demand page displays the verified September 2026 national PLFS CWS context without relabelling it as demand',
-        monthlyCardsCorrect && /Job-demand series is not published/i.test(document.body?.innerText || ''),
+        monthlyCardsCorrect && plfs.jobDemandUnavailableNotice === true,
         JSON.stringify(plfs),
       );
     }
