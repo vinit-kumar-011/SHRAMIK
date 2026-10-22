@@ -63,7 +63,7 @@ function metaFor(source: SourceMeta, provenance: DataMeta['provenance'] = 'sourc
 function titleForCode(code: string): string {
   const titles: Record<string, string> = {
     ESHRAM_REGISTRATION_COUNT: 'e-Shram registrations',
-    CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE: 'Provisional CTS seat capacity',
+    CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE: 'CTS seat capacity',
     CTS_ITI_COUNT: 'Industrial Training Institutes',
     UR: 'Unemployment rate (PLFS 2025)',
     LFPR: 'Labour force participation rate (PLFS 2025)',
