@@ -322,7 +322,7 @@ try {
       return {
         path: location.pathname,
         liveShell: !!document.querySelector('.dbi-shell'),
-        previewButton: buttons.some(button => (button.innerText || '').trim() === 'Open synthetic demo preview'),
+        previewButton: buttons.some(button => ['Open synthetic demo preview', 'Open illustrative demo'].includes((button.innerText || '').trim())),
         previewBanner: !!document.querySelector('.module-preview-banner'),
         demoModeOption: options.some(option => option.value === 'DEMO' || /demo · synthetic/i.test(option.innerText)),
         illustrativeOccupationOptions: !!occupation && Array.from(occupation.options).some(option => ['EXAMPLES', 'DEMO'].includes(option.value)),
