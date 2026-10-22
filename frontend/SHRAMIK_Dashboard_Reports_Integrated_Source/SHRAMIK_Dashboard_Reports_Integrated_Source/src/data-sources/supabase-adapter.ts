@@ -98,23 +98,44 @@ export class SupabaseDataSourcesAdapter implements DataSourcesDataAdapter {
     const url = sameOriginProxy
       ? '/api/shramik-data?' + new URLSearchParams({ table: 'data_sources', ...values })
       : this.baseUrl.replace(/\/+$/, '') + '/rest/v1/data_sources?' + new URLSearchParams(values);
-    let response: Response;
-    try {
-      response = await this.fetcher(url, {
-        method: 'GET',
-        headers: sameOriginProxy ? new Headers({ Accept: 'application/json' }) : this.headers(null),
-      });
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') throw error;
-      return fail('Cannot reach the live SHRAMIK source registry. Check network access and the Supabase project URL.', 'NETWORK_ERROR');
+    const init: RequestInit = {
+      method: 'GET',
+      headers: sameOriginProxy ? new Headers({ Accept: 'application/json' }) : this.headers(null),
+    };
+    // A transient proxy/upstream failure should not turn an otherwise readable
+    // registry into a blank page. Retry once only for network, 429 or 5xx errors;
+    // permanent permission/schema errors remain fail-closed.
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      let response: Response;
+      try {
+        response = await this.fetcher(url, init);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') throw error;
+        if (attempt === 0) {
+          await new Promise(resolve => setTimeout(resolve, 250));
+          continue;
+        }
+        return fail('Cannot reach the live SHRAMIK source registry. Check network access and the Supabase project URL.', 'NETWORK_ERROR');
+      }
+      const payload = await response.json().catch(() => null) as unknown;
+      if (!response.ok) {
+        const body = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
+        const message = typeof body.message === 'string'
+          ? body.message
+          : typeof body.error === 'string'
+            ? body.error
+            : 'Source registry request failed (' + response.status + ').';
+        const transient = response.status === 429 || response.status >= 500;
+        if (attempt === 0 && transient) {
+          await new Promise(resolve => setTimeout(resolve, 250));
+          continue;
+        }
+        return fail(message, transient ? 'SERVER_ERROR' : 'ACCESS_DENIED');
+      }
+      if (!Array.isArray(payload)) return fail('Supabase returned an invalid source registry response.', 'INVALID_RESPONSE');
+      return payload as RegistryRow[];
     }
-    const payload = await response.json().catch(() => null) as unknown;
-    if (!response.ok) {
-      const body = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
-      return fail(typeof body.message === 'string' ? body.message : 'Source registry request failed (' + response.status + ').', response.status >= 500 ? 'SERVER_ERROR' : 'ACCESS_DENIED');
-    }
-    if (!Array.isArray(payload)) return fail('Supabase returned an invalid source registry response.', 'INVALID_RESPONSE');
-    return payload as RegistryRow[];
+    return fail('The source registry could not be loaded after a retry.', 'SERVER_ERROR');
   }
 
   async listSources(query: SourceListQuery): Promise<PagedResult<DataSourceRecord>> {
