@@ -474,7 +474,7 @@ def main() -> int:
         from app.core.config import get_settings
 
         if not get_settings().database_url:
-            print("ERROR: --apply requires DATABASE_URL (configure the GitHub secret SHR​​AMIK_DATABASE_URL).", file=sys.stderr)
+            print("ERROR: --apply requires DATABASE_URL (configure the GitHub secret SHRAMIK_DATABASE_URL).", file=sys.stderr)
             return 2
     try:
         report = run(apply=args.apply, output_dir=args.output_dir)
