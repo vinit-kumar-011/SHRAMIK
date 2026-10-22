@@ -11,7 +11,7 @@ from app.api.routes.analytics import router  # noqa: F401 - ensures route module
 
 analytics_routes = import_module("app.api.routes.analytics")
 from app.core.auth import require_supabase_user
-from app.core.config import Settings
+from app.core.config import get_settings
 from app.db.session import get_db
 from app.main import app
 
@@ -151,25 +151,31 @@ def test_official_endpoint_excludes_demo_and_keeps_source_provenance(client: Tes
     assert [item["id"] for item in demo_response.json()["data"]["items"]] == ["demo"]
 
 
-@pytest.mark.parametrize("environment,showcase_mode", [("production", False), ("development", True)])
+@pytest.mark.parametrize(
+    "environment,showcase_mode",
+    [("production", "false"), ("development", "true")],
+)
 def test_demo_analytics_mode_is_blocked_in_showcase_environment(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch, environment: str, showcase_mode: bool
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    environment: str,
+    showcase_mode: str,
 ) -> None:
     authenticate()
-    monkeypatch.setattr(
-        analytics_routes,
-        "get_settings",
-        lambda: Settings(environment=environment, showcase_mode=showcase_mode),
-    )
-    for endpoint in ("forecasts", "early-warnings", "emerging-skills"):
-        response = client.get(f"/api/v1/analytics/{endpoint}?analysis_mode=DEMO")
-        assert response.status_code == 403
-        assert "disabled for the official showcase" in str(response.json())
+    monkeypatch.setenv("ENVIRONMENT", environment)
+    monkeypatch.setenv("SHRAMIK_SHOWCASE_MODE", showcase_mode)
+    get_settings.cache_clear()
+    try:
+        for endpoint in ("forecasts", "early-warnings", "emerging-skills"):
+            response = client.get(f"/api/v1/analytics/{endpoint}?analysis_mode=DEMO")
+            assert response.status_code == 403
+            assert "disabled for the official showcase" in str(response.json())
 
-    # The same configured API remains available for the source-backed official mode.
-    response = client.get("/api/v1/analytics/forecasts?analysis_mode=OFFICIAL")
-    assert response.status_code == 200
-
+        # The same configured API remains available for the source-backed official mode.
+        response = client.get("/api/v1/analytics/forecasts?analysis_mode=OFFICIAL")
+        assert response.status_code == 200
+    finally:
+        get_settings.cache_clear()
 
 def test_bad_year_range_returns_a_client_error(client: TestClient) -> None:
     authenticate()
