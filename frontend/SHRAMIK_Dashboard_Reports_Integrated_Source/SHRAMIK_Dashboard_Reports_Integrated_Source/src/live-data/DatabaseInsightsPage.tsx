@@ -841,7 +841,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
         <KpiCard label="Provisional CTS seat capacity" value={visibleStateSeats.length ? numberFormat(seatTotal, true) : '—'} note={visibleStateSeats.length ? (regionCode === 'IN' ? 'Academic session 2026 · seats, not completions' : 'Selected region · academic session 2026') : 'No published seat-capacity value for this region'} icon="training"/>
         <KpiCard label="CTS ITIs" value={itiRows.length ? numberFormat(itiTotal, true) : '—'} note={itiRows.length ? periodLabel(itiRows[0].reference_period) + ' · ' + itiCoverage : 'No published institute count for this region'} icon="database"/>
         <KpiCard label="Apprentices engaged" value={apprenticeRows.length ? numberFormat(apprenticeTotal, true) : '—'} note={apprenticeRows[0] ? periodLabel(apprenticeRows[0].reference_period) + ' · ' + apprenticeCoverage : 'No published apprenticeship value for this region'} icon="people"/>
-        <KpiCard label="Training / apprenticeship metrics" value={numberFormat(centreValues.reduce((sum, row) => sum + (row.rows.length ? 1 : 0), 0))} note="PMKVY centres, JSS centres and NAPS establishments" icon="activity"/>
+        <KpiCard label="Published training-centre measures" value={numberFormat(centreValues.reduce((sum, row) => sum + (row.rows.length ? 1 : 0), 0))} note="3 measures: PMKVY centres, JSS centres and NAPS establishments" icon="activity"/>
       </> : null}
       {module === 'skill-gaps' ? <>
         <KpiCard label="Canonical sectors" value={numberFormat(sectorCount)} note="Reference catalogue from Supabase" icon="database"/>
