@@ -128,4 +128,23 @@ test('default same-origin registry reader retries a transient gateway failure on
   assert.equal(page.items[0].name, 'PLFS Annual Report');
 });
 
+
+test('default same-origin registry reader invokes fetch with the platform receiver', async () => {
+  let receiver;
+  const adapter = new SupabaseDataSourcesAdapter(undefined, async function(input, init) {
+    receiver = this;
+    assert.ok(String(input).startsWith('/api/shramik-data?'));
+    assert.equal(init.method, 'GET');
+    return new Response(JSON.stringify(registryRows), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    });
+  });
+
+  await adapter.listSources({
+    query: '', status: 'ALL', type: 'ALL', agency: 'ALL', page: 1, pageSize: 8,
+  });
+
+  assert.equal(receiver, globalThis);
+});
+
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
