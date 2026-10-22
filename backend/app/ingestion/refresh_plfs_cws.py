@@ -30,9 +30,21 @@ PARSER_VERSION = "mospi-plfs-cws-html-v1"
 TRANSFORMATION_VERSION = "plfs-monthly-cws-normalizer-v1"
 USER_AGENT = "SHRAMIK-SourceRefresh/1.0 (official statistical release monitoring)"
 METRICS: dict[str, re.Pattern[str]] = {
-    "CWS_LFPR": re.compile(r"Labour\s+Force\s+Participation\s+Rate\s*\(\s*LFPR\s*\)", re.I),
-    "CWS_WPR": re.compile(r"Worker\s+Population\s+Ratio\s*\(\s*WPR\s*\)", re.I),
-    "CWS_UR": re.compile(r"Unemployment\s+Rate\s*\(\s*UR\s*\)", re.I),
+    "CWS_LFPR": re.compile(
+        r"(?:Labour\s+Force\s+Participation\s+Rate\s*\(\s*LFPR\s*\)"
+        r"|श्रम\s*बल\s*भागीदारी\s*दर\s*\(\s*एलएफपीआर\s*\))",
+        re.I,
+    ),
+    "CWS_WPR": re.compile(
+        r"(?:Worker\s+Population\s+Ratio\s*\(\s*WPR\s*\)"
+        r"|श्रमिक\s*जनसंख्या\s*अनुपात\s*\(\s*डब्ल्यू?पीआर\s*\))",
+        re.I,
+    ),
+    "CWS_UR": re.compile(
+        r"(?:Unemployment\s+Rate\s*\(\s*UR\s*\)"
+        r"|बेरोजगारी\s*दर\s*\(\s*यूआर\s*\))",
+        re.I,
+    ),
 }
 MONTHS = {
     "january": 1, "february": 2, "march": 3, "april": 4,
@@ -40,14 +52,21 @@ MONTHS = {
     "september": 9, "october": 10, "november": 11, "december": 12,
     "jan": 1, "feb": 2, "mar": 3, "apr": 4, "jun": 6, "jul": 7,
     "aug": 8, "sep": 9, "sept": 9, "oct": 10, "nov": 11, "dec": 12,
+    "जनवरी": 1, "फरवरी": 2, "मार्च": 3, "अप्रैल": 4, "मई": 5, "जून": 6,
+    "जुलाई": 7, "अगस्त": 8, "सितंबर": 9, "सितम्बर": 9, "अक्टूबर": 10,
+    "अक्तूबर": 10, "नवंबर": 11, "नवम्बर": 11, "दिसंबर": 12, "दिसम्बर": 12,
 }
 MONTH_PATTERN = re.compile(
-    r"\b(" + "|".join(sorted(MONTHS, key=len, reverse=True)) +
-    r")\.?\s+(20\d{2})\b",
+    r"(" + "|".join(sorted(MONTHS, key=len, reverse=True)) +
+    r")\.?\s*(20\d{2})\b",
     re.I,
 )
 PERCENT_PATTERN = re.compile(r"(?<![\w.])(\d{1,3}(?:\.\d+)?)\s*%")
-AGE_PATTERN = re.compile(r"15\s+years?\s+(?:and\s+above|or\s+above|and\s+over)", re.I)
+AGE_PATTERN = re.compile(
+    r"(?:15\s+years?\s+(?:and\s+above|or\s+above|and\s+over)"
+    r"|15\s*वर्ष\s*(?:और\s*उससे\s*अधिक|से\s*अधिक))",
+    re.I,
+)
 
 
 class _VisibleText(HTMLParser):
@@ -95,7 +114,7 @@ def _period_near_label(text_value: str, label_start: int, label_end: int) -> tup
     month_name, year_text = chosen.group(1).lower().rstrip("."), chosen.group(2)
     month_number = MONTHS[month_name]
     year = int(year_text)
-    return year, month_number, f"{chosen.group(1).title()} {year}"
+    return year, month_number, f"{calendar.month_name[month_number]} {year}"
 
 
 def _published_value_near_label(text_value: str, label_start: int, label_end: int) -> float:
@@ -134,9 +153,9 @@ def parse_monthly_cws(html: str) -> dict[str, Any]:
             context = body[context_start:context_end]
             if not AGE_PATTERN.search(context):
                 continue
-            if not re.search(r"current\s+weekly\s+status|\bCWS\b", context, re.I):
+            if not re.search(r"current\s+weekly\s+status|\bCWS\b|सीडब्ल्यूएस", context, re.I):
                 continue
-            if not re.search(r"all[ -]India|all India|India", context, re.I):
+            if not re.search(r"all[ -]India|India|देश\s+में|भारत|अखिल\s+भारतीय", context, re.I):
                 continue
 
             try:
