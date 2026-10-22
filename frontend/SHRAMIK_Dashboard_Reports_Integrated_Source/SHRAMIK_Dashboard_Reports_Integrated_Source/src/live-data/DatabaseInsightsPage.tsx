@@ -632,7 +632,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
           <div><small>Total Estimated Demand</small><strong>Not published</strong><span>No validated estimate published from the current demand data</span></div>
         </div>
         <div className="dbi-demand-hero-art" aria-hidden="true"><img src="/assets/industrial-skyline.png" alt=""/><div>DATA<br/>INSIGHTS<br/>PLANNING<br/>OPPORTUNITIES</div></div>
-        {onPreviewDemo ? <button className="dbi-demand-demo-launch" type="button" onClick={onPreviewDemo}>Open illustrative demo <ArrowUpRight size={14}/></button> : null}
+        {onPreviewDemo && !showcaseMode ? <button className="dbi-demand-demo-launch" type="button" onClick={onPreviewDemo}>Open illustrative demo <ArrowUpRight size={14}/></button> : null}
       </header>
 
       <section className="dbi-demand-filters" aria-label="Demand insights filters">
