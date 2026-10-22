@@ -24,7 +24,7 @@ type StateRow = { id: string; name: string; code: string };
 type DistrictRow = { id: string; state_id: string; name: string };
 type SectorRow = { id: string; code: string; name: string; description: string | null };
 type SkillRow = { id: string; code: string; name: string; sector_id: string; sector_mapping_method: string; sector_mapping_confidence: string; description: string | null };
-type SourceRow = { id: string; name: string; publisher: string; source_type: string; url: string | null; publication_date: string | null; accessed_at: string | null; coverage_start: number | null; coverage_end: number | null; notes: string | null };
+type SourceRow = { id: string; name: string; publisher: string; source_type: string; url: string | null; publication_date: string | null; accessed_at: string | null; coverage_start: number | null; coverage_end: number | null };
 type TableVisibility = { state: 'HAS_ROWS' | 'NO_PUBLIC_ROWS' | 'RESTRICTED'; sampleRows: number };
 type GeoPosition = [number, number];
 type GeoRing = GeoPosition[];
@@ -364,7 +364,7 @@ async function loadSnapshot(): Promise<Snapshot> {
     ['districts', getRows<DistrictRow>('districts', { select: 'id,state_id,name', order: 'name.asc', limit: '1000' })],
     ['sectors', getRows<SectorRow>('sectors', { select: 'id,code,name,description', order: 'name.asc', limit: '1000' })],
     ['skills', getRows<SkillRow>('skills', { select: 'id,code,name,sector_id,sector_mapping_method,sector_mapping_confidence,description', order: 'name.asc', limit: '1000' })],
-    ['sources', getRows<SourceRow>('data_sources', { select: 'id,name,publisher,source_type,url,publication_date,accessed_at,coverage_start,coverage_end,notes', order: 'name.asc', limit: '1000' })],
+    ['sources', getRows<SourceRow>('data_sources', { select: 'id,name,publisher,source_type,url,publication_date,accessed_at,coverage_start,coverage_end', order: 'name.asc', limit: '1000' })],
   ] as const;
   const referenceResults = await Promise.all(names.map(async ([name, promise]) => {
     try { return { name, rows: await promise, error: '' }; }
