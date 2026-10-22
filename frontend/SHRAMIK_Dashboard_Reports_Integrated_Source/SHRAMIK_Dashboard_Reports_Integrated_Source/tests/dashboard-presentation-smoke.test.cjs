@@ -10,9 +10,20 @@ const styles = fs.readFileSync(path.join(appRoot, 'src/shramik-dashboard.css'), 
 test('source-backed KPI cards do not render a fabricated flat sparkline when history is absent', () => {
   assert.match(dashboard, /item\.trend\.length\s*>=\s*2/);
   assert.match(dashboard, /No trend series/);
+  assert.match(dashboard, /kpi-spark-empty sr-only/);
   assert.match(dashboard, /item\.title\.length > 20 \? ' kpi-title-multiline' : ''/);
   assert.match(dashboard, /title=\{item\.title\}/);
   assert.match(styles, /\.kpi-spark-empty\s*\{/);
+});
+
+
+test('Dashboard overview suppresses duplicate annual PLFS measures when monthly CWS unemployment is available', () => {
+  const adapter = fs.readFileSync(path.join(appRoot, 'src/api/supabase-adapter.ts'), 'utf8');
+  assert.match(adapter, /const preferredCodes = \[/);
+  assert.match(adapter, /rows\.some\(row => row\.metric_code === 'CWS_UR'\) \? 'CWS_UR' : 'UR'/);
+  assert.match(adapter, /metric_code: 'eq\.UR'/);
+  assert.match(adapter, /if \(query\.regionCode === 'IN' && cards\.some\(card => card\.id === 'cws-ur'\)\) continue/);
+  assert.match(adapter, /'CWS_UR'/);
 });
 
 test('live KPI categories use semantic icons and stable tones rather than card position', () => {
