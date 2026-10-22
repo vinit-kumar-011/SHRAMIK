@@ -98,8 +98,8 @@ const configuredBase = (env?.VITE_SHRAMIK_API_BASE_URL ?? '').trim().replace(/\/
 const API_BASE = env?.DEV ? '' : configuredBase.replace(/\/api\/v1(?:\/forecasts)?$/i, '');
 const missingApiConfiguration = !env?.DEV && !configuredBase;
 const analyticsErrorHelp = missingApiConfiguration
-  ? 'The API service URL is not configured for this build. After the backend analytics/reference routes are deployed and verified, set VITE_SHRAMIK_API_BASE_URL to the approved API origin. No synthetic results will be shown.'
-  : 'Check that the backend is running, the browser session is valid, and the configured API origin exposes the required analytics routes.';
+  ? 'After the backend is deployed with the required analytics/reference routes and CORS is configured, set VITE_SHRAMIK_API_BASE_URL to that approved API origin. No synthetic results are shown.'
+  : 'Check the authenticated session and confirm the configured API origin exposes the required analytics routes.';
 
 function formatNumber(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
@@ -150,7 +150,7 @@ export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsM
       try {
         if (!env?.DEV && !configuredBase) {
           throw new Error(
-            'The authenticated analytics API is not configured for this production build. Set VITE_SHRAMIK_API_BASE_URL to the approved SHRAMIK FastAPI service URL. Official analytics remain unavailable until that service is connected; this page will not fall back to synthetic results.',
+            'No approved FastAPI origin is configured for this production build.',
           );
         }
         const session = await restoreAuthSession();

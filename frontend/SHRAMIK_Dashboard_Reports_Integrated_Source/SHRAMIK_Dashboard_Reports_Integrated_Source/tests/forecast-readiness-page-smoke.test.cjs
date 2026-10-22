@@ -15,9 +15,9 @@ test('Forecast page distinguishes a restricted output table from an empty table'
 test('Production Forecasts/Emerging Skills reports missing API configuration instead of calling a nonexistent same-origin route', () => {
   const panel = fs.readFileSync(path.resolve(__dirname, '../src/live-data/PersistedAnalyticsPanel.tsx'), 'utf8');
   assert.match(panel, /if \(!env\?\.DEV && !configuredBase\)/);
-  assert.match(panel, /The authenticated analytics API is not configured for this production build/);
-  assert.match(panel, /this page will not fall back to synthetic results/);
-  assert.match(panel, /The API service URL is not configured for this build/);
+  assert.match(panel, /No approved FastAPI origin is configured for this production build/);
+  assert.match(panel, /Official analytics remain unavailable/);
+  assert.match(panel, /After the backend is deployed with the required analytics\/reference routes and CORS is configured/);
   assert.doesNotMatch(panel, /local \/api\/v1 proxy targets port 8000/);
 });
 

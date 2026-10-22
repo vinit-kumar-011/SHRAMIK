@@ -2,7 +2,7 @@
 
 **Reviewed:** 22 October 2026  
 **Working branch:** `fix/backend-api-route-integration`  
-**Status:** Execution plan and evidence audit; page-by-page visual sign-off is still required.  
+**Status:** Official-only UI hardening is implemented and CI-verified; page-by-page human visual sign-off is still required.  
 **Release constraint:** Do not deploy to Vercel until the user approves the visual review and all source/refresh gates pass.
 
 ## 1. Decision on the proposed plan
@@ -17,6 +17,9 @@ The four stages are sound, with one adjustment: the visual lock and source audit
 **AI is not required on every page.** Reference-data pages need APIs; cards need queries; counts need SQL; gaps need compatible quantities; forecasts need validated histories and model evaluation. AI can assist with occupation/skill crosswalk suggestions and evidence-grounded explanations, but it cannot create missing observations, approve low-confidence mappings autonomously, or replace the forecasting pipeline.
 
 ## 2. Showcase safety gate already implemented
+
+**Latest verified candidate (22 October 2026):** [Frontend CI run 39772344882](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39772344882), branch commit `40db003f8b75b2f8699eb46cc0bb8eec7862c312`, passed type-check, **202 frontend tests (0 failed)**, live Supabase published-KPI smoke (7 cards including September 2026 monthly CWS and separate annual CY2025 rates), production build, static-entry/route checks and **29 Chromium interaction/responsive checks (0 failed)**. The latest Scenario Simulator screenshot verifies that no placeholder skill, local baseline, seat count, lag or advanced assumption fields are shown; execution remains disabled without a compatible, approved `SOURCE_BACKED` baseline. The Dashboard screenshot settles on source-backed Supabase data and labels provenance rather than defaulting to illustrative values. This remains CI/preview verification only—not a deployed release.
+
 
 **Latest verified production candidate:** [Frontend CI run 39766185602](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39766185602), commit `a7f97d08ed706c230a389b83ceb78173e3398705`, passed **198 frontend tests (0 failures)**, type-check, live Supabase published-KPI reads (7 cards), production build, route smoke tests, and Chromium interaction/responsive QA. Chromium explicitly verified the production landing preview has zero illustrative demand/supply/forecast path elements, hides the mock-preview tabs, and displays “OFFICIAL SHOWCASE · SOURCE-BACKED ONLY.” It also confirmed the Demand page renders the source-backed September 2026 all-India PLFS CWS rates (UR 5.0%, LFPR 55.5%, WPR 52.7%) with the period “September 2026 · monthly CWS · persons aged 15+” while retaining “Job-demand series is not published.” The official-only module checks passed; QA issued no non-read-only requests and saw no uncaught browser exceptions. This was a CI build/preview only; no Vercel deployment occurred.
 

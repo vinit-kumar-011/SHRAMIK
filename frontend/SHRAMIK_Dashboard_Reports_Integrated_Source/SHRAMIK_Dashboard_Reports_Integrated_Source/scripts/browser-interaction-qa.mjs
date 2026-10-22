@@ -359,7 +359,7 @@ try {
         demoModeOption: options.some(option => option.value === 'DEMO' || /demo · synthetic/i.test(option.innerText)),
         illustrativeOccupationOptions: !!occupation && Array.from(occupation.options).some(option => ['EXAMPLES', 'DEMO'].includes(option.value)),
         syntheticNotice: !!document.querySelector('.pai-notice-demo'),
-        analyticsApiConfigurationNotice: (document.body?.innerText || '').includes('The authenticated analytics API is not configured for this production build'),
+        analyticsApiConfigurationNotice: (document.body?.innerText || '').includes('No approved FastAPI origin is configured for this production build'),
         analyticsHttp500Notice: (document.body?.innerText || '').includes('Analytics API returned HTTP 500'),
         monthlyPlfsContext: location.pathname === '/demand' ? {
           unemployment: cardValue('Unemployment Rate'),
