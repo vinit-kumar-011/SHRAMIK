@@ -67,6 +67,15 @@ test('source registry reads live metadata and never promotes a registered URL to
   assert.equal(page.items[0].provenance, 'SOURCE_BACKED');
   assert.equal(page.items[0].lifecycleStatus, 'UNKNOWN');
   assert.equal(page.items[0].freshnessStatus, 'UNKNOWN');
+  assert.equal(page.items[0].lastSuccessfulRetrievalAt, null, 'registry accessed_at must not be mislabelled as a successful retrieval');
+  assert.equal(page.items[0].registryMetadataAccessedAt, '2026-10-12T00:00:00Z');
+  assert.deepEqual(page.summary, {
+    total: 2,
+    active: 0,
+    needsAttention: 0,
+    notConfigured: 1,
+    unknownStatus: 1,
+  }, 'unknown source-health records must be counted separately from known attention states');
   assert.equal(page.items[0].capabilities.edit, false);
   assert.equal(page.items[1].lifecycleStatus, 'NOT_CONFIGURED');
   assert.equal(adapter.capabilities.createSource, false);
@@ -75,6 +84,17 @@ test('source registry reads live metadata and never promotes a registered URL to
   assert.equal(requested.pathname, '/rest/v1/data_sources');
   assert.ok(requested.searchParams.get('select').includes('publication_date'));
   assert.ok(!requested.searchParams.get('select').includes('notes'), 'only columns granted to browser roles are requested');
+});
+
+
+test('Data Sources UI distinguishes unknown health from confirmed failure and registry access from retrieval', () => {
+  const page = fs.readFileSync(path.resolve(__dirname, '../src/data-sources/DataSourcesPage.tsx'), 'utf8');
+  assert.match(page, /label="Status unknown" value=\{summary\.unknownStatus\}/);
+  assert.match(page, /No health evidence available in this view|Health evidence not available in this view/);
+  assert.match(page, /lastSuccessfulRetrievalAt/);
+  assert.match(page, /registryMetadataAccessedAt/);
+  assert.match(page, /not a retrieval/);
+  assert.doesNotMatch(page, /Manage and monitor the datasets used in SHRAMIK/);
 });
 
 test('missing retrieval and field-map grants produce explicit empty results, not mock activity', async () => {
