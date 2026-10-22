@@ -108,14 +108,20 @@ export class SupabaseDataSourcesAdapter implements DataSourcesDataAdapter {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       let response: Response;
       try {
-        response = await this.fetcher(url, init);
+        // Use the platform global as the receiver for native fetch. Some browser
+        // implementations reject calling Window.fetch with the adapter as "this".
+        response = await Reflect.apply(this.fetcher, globalThis, [url, init]);
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') throw error;
         if (attempt === 0) {
           await new Promise(resolve => setTimeout(resolve, 250));
           continue;
         }
-        return fail('Cannot reach the live SHRAMIK source registry. Check network access and the Supabase project URL.', 'NETWORK_ERROR');
+        const cause = error instanceof Error ? error.name : 'UnknownNetworkError';
+        return fail(
+          'Cannot reach the live SHRAMIK source registry. Check network access and the Supabase project URL. (' + cause + ')',
+          'NETWORK_ERROR',
+        );
       }
       const payload = await response.json().catch(() => null) as unknown;
       if (!response.ok) {
