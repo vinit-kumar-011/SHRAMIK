@@ -1,4 +1,3 @@
-import { ForecastsApiError } from './restAdapter';
 import type {
   AlertDetailResponse, EarlyWarning, ForecastFilterOptions, ForecastFilters, ForecastRequestOptions,
   ForecastSeriesResponse, ForecastsDataAdapter, MetricValue, ModelPerformanceResponse, RiskCell,
@@ -17,10 +16,8 @@ export class UnavailableForecastsAdapter implements ForecastsDataAdapter {
     if (options?.signal?.aborted) {
       return Promise.reject(new DOMException('Aborted', 'AbortError'));
     }
-    return Promise.reject(new ForecastsApiError(
+    return Promise.reject(new Error(
       'Forecasts API is not configured. No validated official forecast, warning, scenario or model-evaluation result is available. Configure VITE_SHRAMIK_API_BASE_URL after deploying the approved service.',
-      503,
-      'SERVICE_UNAVAILABLE',
     ));
   }
 
