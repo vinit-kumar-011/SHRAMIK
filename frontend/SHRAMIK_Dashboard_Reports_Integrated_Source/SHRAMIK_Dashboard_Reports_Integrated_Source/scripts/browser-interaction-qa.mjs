@@ -377,7 +377,12 @@ try {
       return {
         path: location.pathname,
         liveShell: !!document.querySelector('.dbi-shell'),
-        registeredSourceCount: (document.querySelector('.dbi-source-count strong')?.innerText || '').trim(),
+        registeredSourceCount: (
+          document.querySelector('.dbi-source-count strong')?.innerText ||
+          Array.from(document.querySelectorAll('.dbi-demand-meta span'))
+            .find(element => /registered sources/i.test(element.innerText || ''))?.innerText.match(/[\\d,]+/)?.[0] ||
+          ''
+        ).trim(),
         previewButton: buttons.some(button => ['Open synthetic demo preview', 'Open illustrative demo'].includes((button.innerText || '').trim())),
         previewBanner: !!document.querySelector('.module-preview-banner'),
         demoModeOption: options.some(option => option.value === 'DEMO' || /demo · synthetic/i.test(option.innerText)),
@@ -395,7 +400,10 @@ try {
         } : null,
         referenceWarnings: Array.from(document.querySelectorAll('.dbi-inline-warning'))
           .map(element => (element.innerText || '').trim()).filter(Boolean).join(' | ').slice(0, 500),
-        sourceCountVisible: !!document.querySelector('.dbi-source-count strong'),
+        sourceCountVisible: Boolean(
+          document.querySelector('.dbi-source-count strong') ||
+          Array.from(document.querySelectorAll('.dbi-demand-meta span')).some(element => /registered sources/i.test(element.innerText || ''))
+        ),
       };
     })()`);
     state.sourceRegistryResponses = networkResponses.slice(moduleResponseCheckpoint)
