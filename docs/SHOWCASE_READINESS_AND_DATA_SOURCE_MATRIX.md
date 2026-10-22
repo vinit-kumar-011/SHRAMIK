@@ -330,12 +330,12 @@ No Vercel deployment was made for this checkpoint.
 
 ### Additional DGT ITI-count reconciliation identified — 22 October 2026
 
-A further official-source comparison found a scope/date reconciliation item for the Dashboard's ITI count:
+A further official-source comparison found three different official ITI-related counts with different or unclear scope/date metadata:
 
-- The currently stored state/UT series sums to **15,012 ITIs**, from Rajya Sabha Unstarred Question 2674, answered 18 December 2024; its annexure explicitly labels the state/UT CTS figure as at **31 October 2024** and defines it as government plus private ITIs. [Primary parliamentary source](https://sansad.in/getFile/annex/266/AU2674_eCvo0s.pdf?source=pqars).
-- The official [DGT Craftsmen Training Scheme page](https://dgt.gov.in/en/CTS), last updated **10 August 2026**, currently says CTS courses are being offered through **14,643 ITIs** (3,331 government and 11,312 private).
-- These figures differ by 369 and may reflect a changed active-network definition or updated ITI coverage. The later DGT page gives a newer published number but does not identify a precise statistical reference date in the displayed text. Do **not** silently overwrite the 2024 State/UT rows or claim the two figures reconcile. Keep the 15,012 series explicitly dated to 31 October 2024 while the source contract is reviewed; before using 14,643 as the live national card, add a source-backed retrieval record with its definition and page update date and disclose that it is not directly comparable until reconciled.
-
+- The currently stored state/UT series sums to **15,012 ITIs**, from Rajya Sabha Unstarred Question 2674, answered 18 December 2024. Its annexure labels the state/UT CTS figures as at **31 October 2024** and defines CTS as total ITIs including government and private. [Primary parliamentary source](https://sansad.in/getFile/annex/266/AU2674_eCvo0s.pdf?source=pqars).
+- The official [DGT Craftsmen Training Scheme page](https://dgt.gov.in/en/CTS), last updated **10 August 2026**, says CTS courses are offered through a network of **14,643 ITIs** (3,331 government and 11,312 private).
+- The current [DGT homepage](https://www.dgt.gov.in/en) also renders an **“ITI”** counter of **13,888**, but its visible label does not supply a definition, reference date or reconciliation against the CTS-network figure.
+- The two CTS-labelled counts differ by 369; the homepage counter differs by more. They may reflect different inclusion criteria, active networks, affiliation state or coverage, but the pages do not prove which explanation is correct. Do **not** silently overwrite the 2024 State/UT observations or label any one of these totals as the definitive current ITI inventory. Keep the existing 15,012 state series explicitly dated to 31 October 2024 while an owner reconciles the definitions. A new national metric needs a saved source snapshot/retrieval record, definition, publication/update date and a visible note that it is not directly comparable until reconciled.
 
 
 ### Landing screenshot and full-page visual QA — 22 October 2026, 15:06 UTC
