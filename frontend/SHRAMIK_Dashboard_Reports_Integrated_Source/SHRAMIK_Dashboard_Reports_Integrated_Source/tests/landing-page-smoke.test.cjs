@@ -25,3 +25,13 @@ test('landing page links use the canonical route helper and respect configured b
   assert.match(landing, /href=\{resolveLandingHref\('\/dashboard'\)\}/);
   assert.doesNotMatch(landing, /href="\/(?:dashboard|login)"/);
 });
+
+test('official showcase landing preview never draws illustrative demand/supply/forecast curves', () => {
+  assert.ok(landing.includes("const showcaseMode = runtimeEnv?.MODE === 'production' || runtimeEnv?.VITE_SHRAMIK_SHOWCASE_MODE === 'true'"));
+  assert.ok(landing.includes("const preview = showcaseMode ? showcasePreview : previews[previewKey]"));
+  assert.ok(landing.includes("OFFICIAL SHOWCASE · SOURCE-BACKED ONLY"));
+  assert.ok(landing.includes("No validated demand/supply trend published"));
+  assert.ok(landing.includes("{!showcaseMode ? <><path className={c('sl-chart-forecast')}"));
+  assert.ok(landing.includes("{!showcaseMode ? <div className={c('sl-tabs')}"));
+  assert.ok(landing.includes("values: ['Not published', 'Not published', 'Not calculated']"));
+});
