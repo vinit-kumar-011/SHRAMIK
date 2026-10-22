@@ -698,7 +698,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
           <div className="dbi-demand-breadcrumb"><span>Home</span><span aria-hidden="true">›</span><strong>Demand Insights</strong></div>
           <h1>Demand Insights</h1>
           <p>Explore labour-market evidence across India. Published workforce indicators are shown alongside a clear status for validated job-demand analytics.</p>
-          <div className="dbi-demand-meta"><span><ShieldCheck size={13}/> Source-backed, non-synthetic records</span><span><Database size={13}/>{numberFormat(totalMetrics)} metric rows loaded</span><span>Checked {new Date(snapshot.loadedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>
+          <div className="dbi-demand-meta"><span><ShieldCheck size={13}/> Source-backed, non-synthetic records</span><span><Database size={13}/>{numberFormat(totalMetrics)} metric rows loaded</span><span><Database size={13}/>{numberFormat(sourceCount)} registered sources</span><span>Checked {new Date(snapshot.loadedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>
         </div>
         <div className="dbi-demand-callout" title={demandTableNote}>
           <span className="dbi-demand-callout-icon"><Activity size={25}/></span>
