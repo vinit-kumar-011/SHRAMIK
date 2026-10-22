@@ -32,17 +32,17 @@ USER_AGENT = "SHRAMIK-SourceRefresh/1.0 (official statistical release monitoring
 METRICS: dict[str, re.Pattern[str]] = {
     "CWS_LFPR": re.compile(
         r"(?:Labour\s+Force\s+Participation\s+Rate\s*\(\s*LFPR\s*\)"
-        r"|श्रम\s*बल\s*भागीदारी\s*दर\s*\(\s*एलएफपीआर\s*\))",
+        r"|श्रम\s*बल\s*भागीदारी\s*दर\s*\(\s*एलएफपीआर\s*\)|(?<!\w)एलएफपीआर(?!\w))",
         re.I,
     ),
     "CWS_WPR": re.compile(
         r"(?:Worker\s+Population\s+Ratio\s*\(\s*WPR\s*\)"
-        r"|श्रमिक\s*जनसंख्या\s*अनुपात\s*\(\s*डब्ल्यूपीआर\s*\))",
+        r"|श्रमिक\s*जनसंख्या\s*अनुपात\s*\(\s*डब्ल्यूपीआर\s*\)|(?<!\w)डब्ल्यूपीआर(?!\w))",
         re.I,
     ),
     "CWS_UR": re.compile(
         r"(?:Unemployment\s+Rate\s*\(\s*UR\s*\)"
-        r"|बेरोजगारी\s*दर\s*\(\s*यूआर\s*\))",
+        r"|बेरोजगारी\s*दर\s*\(\s*यूआर\s*\)|(?<!\w)यूआर(?!\w))",
         re.I,
     ),
 }
