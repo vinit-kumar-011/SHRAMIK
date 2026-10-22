@@ -44,7 +44,7 @@ test('NCS portal active vacancies are displayed only as a dated national lower-b
   assert.match(source, /Published indicator.*Reported value.*As of.*Coverage.*Source/);
   assert.match(source, /textValue\(ncsVacancySnapshot\.dimension_values\?\.display_value\) \|\| 'See source publication'/);
   assert.match(source, /not an exact count/);
-  assert.match(source, /not used to calculate the "Total Estimated Demand" KPI/);
+  assert.match(source, /not used to calculate the .Total Estimated Demand. KPI/);
   assert.match(source, /row\.is_synthetic === false/);
 });
 
