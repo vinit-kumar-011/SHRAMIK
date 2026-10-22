@@ -46,10 +46,10 @@ test('production builds enforce the official-only showcase experience', () => {
   assert.match(scenario, /selectedBaseline.provenance !== "SOURCE_BACKED"/);
   assert.match(scenario, /selectedBaseline.qualityStatus !== "APPROVED"/);
   assert.match(scenario, /Official showcase mode — approved source-backed baseline required/);
-  assert.match(apiAdapter, /const showcaseMode = env\\?\\.MODE === 'production' \\|\\| env\\?\\.VITE_SHRAMIK_SHOWCASE_MODE === 'true'/);
-  assert.match(apiAdapter, /if \\(!showcaseMode && env\\?\\.VITE_SHRAMIK_USE_DEMO_DATA === 'true'\\) return new MockLabourMarketDataAdapter\\(\\)/);
-  assert.match(reportsAdapter, /if \\(!showcaseMode && env\\?\\.VITE_SHRAMIK_USE_DEMO_DATA === 'true'\\) return new DemoReportsAdapter\\(\\)/);
-  assert.match(shell, /onPreviewDemo=\\{showcaseMode \\? undefined : \\(\\) => setDemoPreviewPage\\('administration'\\)\\}/);
+  assert.ok(apiAdapter.includes("const showcaseMode = env?.MODE === 'production' || env?.VITE_SHRAMIK_SHOWCASE_MODE === 'true'"));
+  assert.ok(apiAdapter.includes("if (!showcaseMode && env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true') return new MockLabourMarketDataAdapter();"));
+  assert.ok(reportsAdapter.includes("if (!showcaseMode && env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true') return new DemoReportsAdapter();"));
+  assert.ok(shell.includes("onPreviewDemo={showcaseMode ? undefined : () => setDemoPreviewPage('administration')}"));
 });
 test('administration preview explains fictional decisions cannot grant real access', () => {
   assert.match(liveNotice, /Open a clearly labelled synthetic preview/);
