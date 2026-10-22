@@ -21,6 +21,7 @@ function summary(items: DataSourceRecord[]) {
     active: items.filter(s => s.lifecycleStatus === 'ACTIVE').length,
     needsAttention: items.filter(s => ['PENDING_VALIDATION', 'STALE', 'FAILED'].includes(s.lifecycleStatus)).length,
     notConfigured: items.filter(s => s.lifecycleStatus === 'NOT_CONFIGURED').length,
+    unknownStatus: items.filter(s => s.lifecycleStatus === 'UNKNOWN').length,
   };
 }
 function paged<T>(items: T[], page = 1, pageSize = 8): PagedResult<T> {
