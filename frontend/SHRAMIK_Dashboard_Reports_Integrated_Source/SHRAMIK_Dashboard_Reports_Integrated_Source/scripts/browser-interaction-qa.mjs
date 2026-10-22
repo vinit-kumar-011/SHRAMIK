@@ -362,6 +362,10 @@ try {
     } else {
       await waitFor(() => cdp.evaluate(`!!document.querySelector('.dbi-shell') && !document.querySelector('.dbi-loading')`), `${module.label} official/source-backed view`);
     }
+    await waitFor(
+      () => cdp.evaluate(`(document.querySelector('.dbi-source-count strong')?.innerText || '').trim() === '22'`),
+      `${module.label} source-backed registry count`,
+    );
     const state = await cdp.evaluate(`(() => {
       const buttons = Array.from(document.querySelectorAll('button'));
       const options = Array.from(document.querySelectorAll('select option'));
@@ -375,6 +379,7 @@ try {
       return {
         path: location.pathname,
         liveShell: !!document.querySelector('.dbi-shell'),
+        registeredSourceCount: (document.querySelector('.dbi-source-count strong')?.innerText || '').trim(),
         previewButton: buttons.some(button => ['Open synthetic demo preview', 'Open illustrative demo'].includes((button.innerText || '').trim())),
         previewBanner: !!document.querySelector('.module-preview-banner'),
         demoModeOption: options.some(option => option.value === 'DEMO' || /demo · synthetic/i.test(option.innerText)),
@@ -392,7 +397,7 @@ try {
         } : null,
       };
     })()`);
-    const officialOnly = state.path === module.path && state.liveShell && !state.previewButton &&
+    const officialOnly = state.path === module.path && state.liveShell && state.registeredSourceCount === '22' && !state.previewButton &&
       !state.previewBanner && !state.demoModeOption && !state.illustrativeOccupationOptions && !state.syntheticNotice;
     record(`${module.label} production view exposes only source-backed/showcase controls`, officialOnly, JSON.stringify(state));
     if (['/forecasts', '/emerging-skills'].includes(module.path)) {
