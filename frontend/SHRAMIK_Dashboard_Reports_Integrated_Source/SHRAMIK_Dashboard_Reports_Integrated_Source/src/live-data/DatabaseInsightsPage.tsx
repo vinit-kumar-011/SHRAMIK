@@ -129,6 +129,12 @@ function metricLabel(code: string): string {
   return labels[code] || code.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
 function periodLabel(value: string): string {
+  const monthly = /^MONTHLY_(\d{4})-(\d{2})$/.exec(value);
+  if (monthly) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const month = Number(monthly[2]);
+    if (month >= 1 && month <= 12) return `${months[month - 1]} ${monthly[1]}`;
+  }
   return value
     .replace('AS_OF_', 'As of ')
     .replace('ACADEMIC_SESSION_', 'Academic session ')
@@ -521,8 +527,28 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     {onPreviewDemo && !showcaseMode ? <button className="dbi-refresh dbi-demo-preview" type="button" onClick={onPreviewDemo}>Open synthetic demo preview</button> : null}
   </section>;
 
+  const monthlyCwsPeriods = snapshot.metrics
+    .filter(row =>
+      ['CWS_UR', 'CWS_LFPR', 'CWS_WPR'].includes(row.metric_code)
+      && /^MONTHLY_20\d{2}-\d{2}$/.test(row.reference_period)
+      && row.observation_grain === 'NATIONAL'
+      && !row.state_id
+      && row.unit === 'percent'
+      && row.provenance_state === 'SOURCE_BACKED'
+      && row.is_synthetic === false
+      && row.dimension_values?.sex === 'person'
+      && row.dimension_values?.area === 'combined'
+      && row.dimension_values?.age_domain === '15_years_and_above'
+      && row.dimension_values?.survey_basis === 'current_weekly_status'
+      && row.dimension_values?.frequency === 'monthly'
+    )
+    .map(row => row.reference_period)
+    .sort();
+  const latestMonthlyCwsPeriod = monthlyCwsPeriods.at(-1);
   const rates = ['UR', 'LFPR', 'WPR'].map(code => {
-    const item = canonicalRate(snapshot, code, regionCode, periodFilter === 'LATEST');
+    const item = periodFilter === 'MONTHLY_CWS'
+      ? latestMonthlyCwsRate(snapshot, code, regionCode)
+      : canonicalRate(snapshot, code, regionCode, periodFilter === 'LATEST');
     return { code, label: metricLabel(code), row: item };
   });
   const registrationRows = mostRecentRows(snapshot, 'ESHRAM_REGISTRATION_COUNT', regionCode);
@@ -582,7 +608,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       : 'A skill gap is shown only when compatible demand and supply observations are available through the validated analytical contract.';
 
   if (module === 'demand') {
-    const showPlfs = periodFilter === 'LATEST' || periodFilter === 'CY2025';
+    const showPlfs = periodFilter === 'LATEST' || periodFilter === 'CY2025' || periodFilter === 'MONTHLY_CWS';
     const showRegistrations = periodFilter === 'LATEST' || periodFilter === 'ESHRAM';
     const showNaps = periodFilter === 'LATEST' || periodFilter.startsWith('FY');
     const rateValue = (code: string) => {
@@ -614,7 +640,15 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
     }).join(' ');
     const currentStateName = regionCode === 'IN' ? 'All India' : (snapshot.states.find(state => state.code === regionCode || state.id === selectedId)?.name || regionCode);
     const maxRegistration = Math.max(1, ...stateRegTotals.map(row => row.value));
-    const periodNote = periodFilter === 'LATEST' ? 'Latest available record from each source' : periodFilter === 'CY2025' ? 'PLFS benchmark period · CY2025' : periodFilter === 'ESHRAM' ? 'e-Shram snapshot · 14 July 2026' : `Apprenticeship context · ${periodFilter}`;
+    const periodNote = periodFilter === 'LATEST'
+      ? 'Latest available record from each source'
+      : periodFilter === 'CY2025'
+        ? 'PLFS annual benchmark · CY2025'
+        : periodFilter === 'MONTHLY_CWS'
+          ? (latestMonthlyCwsPeriod ? `MoSPI PLFS monthly CWS · ${periodLabel(latestMonthlyCwsPeriod)}` : 'No validated monthly PLFS CWS release is available')
+          : periodFilter === 'ESHRAM'
+            ? 'e-Shram snapshot · 14 July 2026'
+            : `Apprenticeship context · ${periodFilter}`;
     const illustrativeOccupations = [
       'Retail Salespersons', 'Construction Labourers', 'Software Developers',
       'Drivers and Mobile Plant Operators', 'Teaching Professionals',
@@ -636,7 +670,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       </header>
 
       <section className="dbi-demand-filters" aria-label="Demand insights filters">
-        <label className="dbi-demand-filter"><span>Time Period</span><select value={periodFilter} onChange={event => setPeriodFilter(event.target.value)}><option value="LATEST">Latest per source</option><option value="CY2025">Calendar year 2025 · PLFS</option><option value="ESHRAM">14 July 2026 · e-Shram</option><option value="FY2023-24">FY 2023–24 · NAPS</option><option value="FY2024-25">FY 2024–25 · NAPS</option><option value="FY2025-26">FY 2025–26 · NAPS</option></select></label>
+        <label className="dbi-demand-filter"><span>Time Period</span><select value={periodFilter} onChange={event => setPeriodFilter(event.target.value)}><option value="LATEST">Latest per source</option><option value="MONTHLY_CWS" disabled={!latestMonthlyCwsPeriod}>{latestMonthlyCwsPeriod ? `Monthly PLFS CWS · ${periodLabel(latestMonthlyCwsPeriod)} · All India` : 'Monthly PLFS CWS · unavailable'}</option><option value="CY2025">Calendar year 2025 · PLFS (annual)</option><option value="ESHRAM">14 July 2026 · e-Shram</option><option value="FY2023-24">FY 2023–24 · NAPS</option><option value="FY2024-25">FY 2024–25 · NAPS</option><option value="FY2025-26">FY 2025–26 · NAPS</option></select></label>
         <label className="dbi-demand-filter"><span>Geography</span><select value={regionCode === 'IN' ? 'national' : 'state'} onChange={event => { if (event.target.value === 'national') onRegionChange?.('IN'); else if (regionCode === 'IN') onRegionChange?.(snapshot.states.find(state => state.code === 'OD')?.code || snapshot.states[0]?.code || 'IN'); }}><option value="national">All India</option><option value="state">State / UT</option></select></label>
         <label className="dbi-demand-filter"><span>State / UT</span><select value={regionCode} onChange={event => onRegionChange?.(event.target.value)}><option value="IN">All States</option>{snapshot.states.slice().sort((a, b) => a.name.localeCompare(b.name)).map(state => <option key={state.id} value={state.code}>{state.name}</option>)}</select></label>
         <label className="dbi-demand-filter"><span>Sector</span><select value={sectorFilter} onChange={event => { setSectorFilter(event.target.value); setSkillFilter('ALL'); }}><option value="ALL">All Sectors</option>{snapshot.sectors.slice().sort((a, b) => a.name.localeCompare(b.name)).map(sector => <option key={sector.id} value={sector.id}>{sector.name}</option>)}</select></label>
@@ -647,9 +681,15 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       <div className="dbi-demand-filter-status" role="status"><Info size={14}/><span>{periodNote}. Region selection updates the national/state context; sector and skill selections filter the canonical skill catalogue. These filters cannot create job-demand estimates where no demand observations exist.</span></div>
 
       <section className="dbi-demand-kpis" aria-label="Published labour-market indicators">
-        <article className="dbi-demand-kpi dbi-demand-kpi-blue"><span className="dbi-demand-kpi-icon"><Activity size={23}/></span><div><small>Unemployment Rate</small><strong>{rateValue('UR')}</strong><span>{showPlfs ? plfsCardPeriodLabel(rates.find(item => item.code === 'UR')?.row) : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
-        <article className="dbi-demand-kpi dbi-demand-kpi-orange"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>Labour Force Participation</small><strong>{rateValue('LFPR')}</strong><span>{showPlfs ? plfsCardPeriodLabel(rates.find(item => item.code === 'UR')?.row) : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
-        <article className="dbi-demand-kpi dbi-demand-kpi-teal"><span className="dbi-demand-kpi-icon"><GraduationCap size={23}/></span><div><small>Worker Population Ratio</small><strong>{rateValue('WPR')}</strong><span>{showPlfs ? plfsCardPeriodLabel(rates.find(item => item.code === 'UR')?.row) : 'Select Calendar year 2025 to view PLFS'}</span></div></article>
+        <article className="dbi-demand-kpi dbi-demand-kpi-blue"><span className="dbi-demand-kpi-icon"><Activity size={23}/></span><div><small>Unemployment Rate</small><strong>{rateValue('UR')}</strong><span>{periodFilter === 'MONTHLY_CWS' && regionCode !== 'IN'
+          ? 'Monthly CWS published at All India level only'
+          : showPlfs ? plfsCardPeriodLabel(rates.find(item => item.code === 'UR')?.row) : 'Select a PLFS period to view this measure'}</span></div></article>
+        <article className="dbi-demand-kpi dbi-demand-kpi-orange"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>Labour Force Participation</small><strong>{rateValue('LFPR')}</strong><span>{periodFilter === 'MONTHLY_CWS' && regionCode !== 'IN'
+          ? 'Monthly CWS published at All India level only'
+          : showPlfs ? plfsCardPeriodLabel(rates.find(item => item.code === 'UR')?.row) : 'Select a PLFS period to view this measure'}</span></div></article>
+        <article className="dbi-demand-kpi dbi-demand-kpi-teal"><span className="dbi-demand-kpi-icon"><GraduationCap size={23}/></span><div><small>Worker Population Ratio</small><strong>{rateValue('WPR')}</strong><span>{periodFilter === 'MONTHLY_CWS' && regionCode !== 'IN'
+          ? 'Monthly CWS published at All India level only'
+          : showPlfs ? plfsCardPeriodLabel(rates.find(item => item.code === 'UR')?.row) : 'Select a PLFS period to view this measure'}</span></div></article>
         <article className="dbi-demand-kpi dbi-demand-kpi-yellow"><span className="dbi-demand-kpi-icon"><Users size={23}/></span><div><small>e-Shram Registrations</small><strong>{showRegistrations && registration ? numberFormat(numeric(registration.value_numeric), true) : '—'}</strong><span>{showRegistrations && registration ? `${periodLabel(registration.reference_period)} · registrations, not job demand` : 'Select the e-Shram snapshot to view this measure'}</span></div></article>
       </section>
 
@@ -708,7 +748,11 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       </div>
 
       <details className="dbi-demand-evidence"><summary>Published source evidence and definitions</summary><div className="dbi-demand-evidence-grid">
-        <section className="dbi-demand-panel"><SectionHead title="PLFS 2025 benchmarks · age 15+" note="Published annual rates for persons aged 15+, combined rural/urban. A selected-region value is shown only when published for this exact age/sex/area slice; otherwise the row is explicitly labelled India (national)."/><DataTable columns={['Indicator', 'Published value', 'Period', 'Geography', 'Source']}>
+        <section className="dbi-demand-panel"><SectionHead
+          title={periodFilter === 'MONTHLY_CWS' ? 'PLFS monthly CWS · age 15+' : 'PLFS 2025 benchmarks · age 15+'}
+          note={periodFilter === 'MONTHLY_CWS'
+            ? 'Published monthly Current Weekly Status rates for persons aged 15+, combined rural/urban, all India. They are separate from annual CY2025 usual-status benchmarks; monthly values are not inferred for a selected State/UT.'
+            : 'Published annual rates for persons aged 15+, combined rural/urban. A selected-region value is shown only when published for this exact age/sex/area slice; otherwise the row is explicitly labelled India (national).'}/><DataTable columns={['Indicator', 'Published value', 'Period', 'Geography', 'Source']}>
           {rates.map(({ code, label, row }) => row ? <tr key={code}><td><strong>{label}</strong><small>{code}</small></td><td className="dbi-number">{numberFormat(numeric(row.value_numeric))}{row.unit === 'percent' ? '%' : ' ' + row.unit}</td><td>{periodLabel(row.reference_period)}</td><td>{row.state_id ? stateLabel(snapshot, row) : 'India (national)'}</td><td><SourceLink source={sourceFor(snapshot, row.source_id) || employmentSource}/></td></tr> : null)}
           {rates.every(item => !item.row) ? <tr><td colSpan={5} className="dbi-empty-cell">No canonical person-level PLFS slice is published for this region.</td></tr> : null}
         </DataTable></section>
