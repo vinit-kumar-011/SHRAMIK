@@ -3,7 +3,7 @@ from __future__ import annotations
 from app.ingestion.analytics import build_analytics_outputs
 
 
-def rows(years, values, *, kind, unit="persons", semantics="STOCK", source_id=None):
+def rows(years, values, *, kind, value_field=None, unit="persons", semantics="STOCK", source_id=None):
     result = []
     for year, value in zip(years, values):
         row = {
@@ -16,7 +16,8 @@ def rows(years, values, *, kind, unit="persons", semantics="STOCK", source_id=No
             "source_id": source_id,
             "is_synthetic": kind == "DEMO",
         }
-        row["demand_quantity" if kind == "demand" else "supply_quantity"] = value
+        field = value_field or ("demand_quantity" if kind == "demand" else "supply_quantity")
+        row[field] = value
         result.append(row)
     return result
 
@@ -85,8 +86,8 @@ def test_non_contiguous_history_is_flagged_and_reduces_confidence() -> None:
 
 
 def test_synthetic_outputs_are_labelled_and_evidence_coverage_is_zero() -> None:
-    demand = rows([2021, 2022, 2023, 2024, 2025], [100, 110, 125, 145, 175], kind="DEMO")
-    supply = rows([2021, 2022, 2023, 2024, 2025], [90, 100, 105, 110, 115], kind="DEMO")
+    demand = rows([2021, 2022, 2023, 2024, 2025], [100, 110, 125, 145, 175], kind="DEMO", value_field="demand_quantity")
+    supply = rows([2021, 2022, 2023, 2024, 2025], [90, 100, 105, 110, 115], kind="DEMO", value_field="supply_quantity")
 
     outputs, _ = build_analytics_outputs(demand, supply, analysis_mode="DEMO")
 
