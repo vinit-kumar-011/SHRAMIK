@@ -376,3 +376,17 @@ A direct read-only query against the connected Supabase project returned:
 | Synthetic source-metric observations | 0 |
 
 These are current inventory counts, not market indicators. The 182 supply rows include training/capacity and programme context with different semantics and reference periods; they must not be summed into a total number of available workers or compared directly against vacancy flows. This recheck was read-only: it performed no database writes.
+
+### Backend alias root cause confirmed — 22 October 2026, 15:31 UTC
+
+The mismatch is not an API route typo in the analytics branch. The stable alias mapping currently points to a production deployment built from the frontend branch:
+
+- **Current stable alias target:** `dpl_5nzaWCEbY4R7vmVpG9g3o8sPoFss`, built from `feature/frontend-unified-app` at `8a20745c5b87939aedf0a860382dd4af943434e1`. That branch's `backend/app/api/router.py` imports and registers only `health_router`, so its live OpenAPI lists only `/api/health`.
+- **Candidate analytics deployment:** `dpl_FSqATjFkXDotnGeLyyCh35HDhg2Q`, built from `feature/backend-analytics-read-api` at `0da74de5d34c8888ef9949268c28e8245d022d55`. Its live OpenAPI lists `/api/health` plus the forecasts, early-warnings, emerging-skills and status endpoints. The analytics router in that branch is registered under `/api/v1/analytics`.
+- The deployed candidate runtime commit and current backend PR head `652016e4e97529ba46d060e21a2930caa3fcab2d` differ by two commits, both confined to `.github/workflows/backend-analytics-api.yml`; the runtime files are identical.
+- Direct stable-host checks are reproducible: `/openapi.json` = HTTP 200 with health only; `/api/v1/analytics/status` = HTTP 404. The stable alias currently maps to `dpl_5nza...`, not the candidate deployment.
+- The Vercel backend Production environment has keys `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `CORS_ALLOWED_ORIGINS` and `ENVIRONMENT`. Values remain secret and are not copied into docs.
+- Read-only queries using the complete column lists and joins in all three official analytics read routes were accepted by the live database and returned empty result sets. Separate counts also show 0 active official SOURCE_BACKED forecasts, warnings and emerging-skill signals, so the correct HTTP response after a route works should be an honest empty state.
+- Deployment Protection still prevents this verification path from making an authenticated HTTP request to the candidate deployment; a valid application access token is not available to the checker. A live successful authenticated read is therefore **not verified**.
+
+**Release decision:** do not swap the stable alias yet and do not deploy. Run one controlled authenticated smoke check against the candidate for Supabase token validation, CORS from the React origin, status counts and all three empty official-mode reads. Once that passes, assign/promote the stable alias to the tested analytics deployment and immediately retest the stable domain. Then prevent the backend project from being released from `feature/frontend-unified-app`; its route tree is intentionally health-only. Keep frontend `VITE_SHRAMIK_API_BASE_URL` unset until the stable-host smoke checks pass.
