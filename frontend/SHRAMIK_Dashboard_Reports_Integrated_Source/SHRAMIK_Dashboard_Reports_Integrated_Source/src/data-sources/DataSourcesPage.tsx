@@ -140,18 +140,19 @@ export function DataSourcesPage({adapter}:DataSourcesPageProps) {
 
   return <section className="data-sources-page" aria-labelledby={headingId}>
     <div className="page-heading-row">
-      <div className="page-title-block"><div className="breadcrumbs"><span>Home</span><span aria-hidden="true">›</span><span aria-current="page">Data Sources</span></div><p className="eyebrow">DATA OPERATIONS / SOURCE REGISTRY</p><h1 id={headingId}>Data Sources<span className="title-period">.</span></h1><p className="page-intro">Manage and monitor the datasets used in SHRAMIK. Track integration status, freshness, coverage and field-mapping quality.</p></div>
+      <div className="page-title-block"><div className="breadcrumbs"><span>Home</span><span aria-hidden="true">›</span><span aria-current="page">Data Sources</span></div><p className="eyebrow">DATA OPERATIONS / SOURCE REGISTRY</p><h1 id={headingId}>Data Sources<span className="title-period">.</span></h1><p className="page-intro">Browse the registered sources behind SHRAMIK’s published indicators. Retrieval health, freshness and validation are shown only when an authorized backend reports them; unknown means not verified.</p></div>
       {adapter.capabilities?.createSource && <button className="button button-primary add-source" onClick={()=>{setShowCreate(true);setCreateState('idle');setCreateError('');}}><span aria-hidden="true">＋</span> Add New Source</button>}
     </div>
 
     {data?.provenance==='SYNTHETIC_DEMO' && <DemoNotice />}
-    {data && data.provenance!=='SYNTHETIC_DEMO' && <div className="connection-note" role="note"><span className="connection-dot" aria-hidden="true"/><div><strong>Registry response received</strong><span>Source status, freshness and provenance are shown as returned by the SHRAMIK API. No upstream connector is called directly from this browser.</span></div><button className="button button-tertiary button-small" onClick={refresh}>Refresh <span aria-hidden="true">↻</span></button></div>}
+    {data && data.provenance!=='SYNTHETIC_DEMO' && <div className="connection-note" role="note"><span className="connection-dot connection-dot-neutral" aria-hidden="true"/><div><strong>Live registry metadata received</strong><span>These records confirm that a source is registered—not that its upstream feed was retrieved or validated. Unknown lifecycle/freshness is not a healthy status; this public read path does not expose retrieval and validation history.</span></div><button className="button button-tertiary button-small" onClick={refresh}>Refresh <span aria-hidden="true">↻</span></button></div>}
 
     <section className="summary-grid" aria-label="Source summary">
-      <MetricCard icon="▤" label="Total sources" value={summary.total} note="In current filtered scope" variant="navy" />
-      <MetricCard icon="✓" label="Active" value={summary.active} note="Lifecycle status: Active" variant="teal" />
-      <MetricCard icon="!" label="Needs attention" value={summary.needsAttention} note="Pending validation · stale · failed" variant="orange" />
-      <div className="summary-side-note"><span className="summary-side-label">Not configured</span><strong>{summary.notConfigured==null?'—':number(summary.notConfigured)}</strong><span>Tracked separately from attention count</span></div>
+      <MetricCard icon="▤" label="Total sources" value={summary.total} note="Registered in current filtered scope" variant="navy" />
+      <MetricCard icon="✓" label="Verified active" value={summary.active} note="Explicit ACTIVE lifecycle only" variant="teal" />
+      <MetricCard icon="!" label="Needs attention" value={summary.needsAttention} note="Known pending · stale · failed" variant="orange" />
+      <MetricCard icon="?" label="Status unknown" value={summary.unknownStatus} note="Health evidence not available in this view" variant="navy" />
+      <div className="summary-side-note"><span className="summary-side-label">Not configured</span><strong>{summary.notConfigured==null?'—':number(summary.notConfigured)}</strong><span>No source URL / connector configured</span></div>
     </section>
 
     <section className="registry-panel" aria-label="Source registry">
@@ -178,7 +179,7 @@ export function DataSourcesPage({adapter}:DataSourcesPageProps) {
           <td data-label="Agency / owner">{source.agencyOwner||'Not reported'}</td>
           <td data-label="Coverage">{source.geographicCoverage.length?source.geographicCoverage.map(x=>x.label).join(', '):'Not reported'}</td>
           <td data-label="Reporting period">{source.reportingPeriods.length?source.reportingPeriods.map(x=>x.label).join(', '):'Not reported'}</td>
-          <td data-label="Last successful retrieval"><strong className="date-value">{dateOnly(source.lastSuccessfulRetrievalAt)}</strong><span className="cell-subtext">{source.lastValidatedAt?`Validated ${dateOnly(source.lastValidatedAt)}`:'Validation time not reported'}</span></td>
+          <td data-label="Last successful retrieval"><strong className="date-value">{dateOnly(source.lastSuccessfulRetrievalAt)}</strong><span className="cell-subtext">{source.lastValidatedAt?`Validated ${dateOnly(source.lastValidatedAt)}`:source.registryMetadataAccessedAt?`Registry metadata accessed ${dateOnly(source.registryMetadataAccessedAt)} · not a retrieval`:'Successful retrieval not reported'}</span></td>
           <td data-label="Lifecycle / freshness"><div className="status-stack"><StatusBadge value={source.lifecycleStatus}/><span className="freshness-label">Freshness <StatusBadge value={source.freshnessStatus} kind="freshness"/></span></div></td>
           <td data-label="Actions"><div className="row-actions"><button className="button button-secondary button-small" onClick={e=>openDetails(source.id,e.currentTarget)}>View<span className="sr-only"> {source.name}</span></button><div className="more-wrap"><button className="more-button" aria-label={`More actions for ${source.name}`} aria-haspopup="menu" aria-expanded={menuSource===source.id} onClick={()=>setMenuSource(current=>current===source.id?null:source.id)}>•••</button>{menuSource===source.id&&<div className="row-menu" role="menu"><button role="menuitem" onClick={e=>openDetails(source.id,e.currentTarget)}>View details</button><button role="menuitem" onClick={()=>copyId(source.id)}>Copy source ID</button>{source.capabilities.retryIngestion&&adapter.requestIngestion&&<button role="menuitem" onClick={()=>void retryIngestion(source)}>Request ingestion run</button>}</div>}</div></div></td>
         </tr>)}</tbody></table></div>
@@ -233,7 +234,7 @@ function SourceOverview({source:s,onNotify}:{source:DataSourceRecord;onNotify:(m
   const fields:[string,ReactNode][]=[
     ['Agency / owner',s.agencyOwner||'Not reported'],['Purpose',s.purpose||'Not reported'],['Source type',sourceTypeLabel(s.type)],['Access method',s.accessMethod||'Not reported'],
     ['Reporting period',s.reportingPeriods.length?s.reportingPeriods.map(p=>p.label).join(', '):'Not reported'],['Source release / publication',dateOnly(s.sourceReleaseDate)],
-    ['Last successful retrieval',dateOnly(s.lastSuccessfulRetrievalAt)],['Last validated',dateOnly(s.lastValidatedAt)],
+    ['Last successful retrieval',dateOnly(s.lastSuccessfulRetrievalAt)],['Registry metadata accessed',dateOnly(s.registryMetadataAccessedAt)],['Last validated',dateOnly(s.lastValidatedAt)],
     ['Geographic scope',s.geographicCoverage.length?s.geographicCoverage.map(g=>`${g.label} (${human(g.level)})`).join('; '):'Not reported'],
   ];
   return <div className="overview-content"><SectionHeading title="Key information" detail="Publication, retrieval and validation are separate events."/><dl className="detail-grid">{fields.map(([k,v])=><div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}<div><dt>Lifecycle status</dt><dd><StatusBadge value={s.lifecycleStatus}/></dd></div><div><dt>Freshness assessment</dt><dd><StatusBadge value={s.freshnessStatus} kind="freshness"/><span className="field-help">Based on the source's update policy, when supplied by the backend.</span></dd></div></dl>
