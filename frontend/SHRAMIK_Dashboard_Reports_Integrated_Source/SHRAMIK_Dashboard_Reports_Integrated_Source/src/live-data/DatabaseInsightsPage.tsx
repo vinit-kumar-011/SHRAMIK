@@ -413,12 +413,16 @@ function sourceDisplayName(source: SourceRow): string {
   if (/Employment Exchange Statistics 2023/i.test(name)) return 'DGE · Exchange Statistics 2023';
   return name.length > 34 ? name.slice(0, 31).trimEnd() + '…' : name;
 }
-function SourceLink({ source }: { source?: SourceRow }) {
-  if (!source) return <span className="dbi-source-plain">Source registered; title unavailable</span>;
-  const fullName = source.name || 'Source registered; URL not available';
-  const displayName = sourceDisplayName(source);
-  if (!source.url) return <span className="dbi-source-plain" title={fullName}>{displayName}</span>;
-  return <a className="dbi-source-link" href={source.url} target="_blank" rel="noreferrer" title={fullName} aria-label={`Open source: ${fullName}`}><span>{displayName}</span><ArrowUpRight size={13} aria-hidden="true"/></a>;
+function SourceLink({ source, fallbackUrl, fallbackLabel }: {
+  source?: SourceRow;
+  fallbackUrl?: string | null;
+  fallbackLabel?: string;
+}) {
+  const url = source?.url || fallbackUrl || '';
+  const fullName = source?.name || fallbackLabel || 'Source registered; URL not available';
+  const displayName = source ? sourceDisplayName(source) : (fallbackLabel || 'Official source release');
+  if (!url) return <span className="dbi-source-plain" title={fullName}>{displayName}</span>;
+  return <a className="dbi-source-link" href={url} target="_blank" rel="noreferrer" title={fullName} aria-label={`Open source: ${fullName}`}><span>{displayName}</span><ArrowUpRight size={13} aria-hidden="true"/></a>;
 }
 function DataTable({ columns, children, empty = 'No matching source-backed rows are available.' }: { columns: string[]; children: ReactNode; empty?: string }) {
   const rows = Children.toArray(children);
@@ -800,7 +804,11 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
             <td className="dbi-number">{textValue(ncsVacancySnapshot.dimension_values?.display_value) || 'See source publication'}</td>
             <td>{ncsVacancySnapshot.as_of_date ? new Date(ncsVacancySnapshot.as_of_date + 'T00:00:00Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : periodLabel(ncsVacancySnapshot.reference_period)}</td>
             <td>India · NCS portal only</td>
-            <td><SourceLink source={sourceFor(snapshot, ncsVacancySnapshot.source_id)}/></td>
+            <td><SourceLink
+              source={sourceFor(snapshot, ncsVacancySnapshot.source_id)}
+              fallbackUrl={textValue(ncsVacancySnapshot.dimension_values?.source_url)}
+              fallbackLabel="PIB · NCS portal vacancy release"
+            /></td>
           </tr> : <tr><td colSpan={5} className="dbi-empty-cell">No source-backed NCS portal snapshot is published in the connected database.</td></tr>}
         </DataTable><p className="dbi-muted">The publication says “over 17.68 lakh”; this lower-bound figure is not an exact count and is not used to calculate the “Total Estimated Demand” KPI or official skill-gap forecasts.</p></section>
       </div><div className="dbi-note"><Info size={17}/><div><strong>Interpretation boundary</strong><p>{demandTableNote} Published PLFS and registration context is kept separate from validated job-demand analytics.</p></div></div></details>
