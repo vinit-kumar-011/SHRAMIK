@@ -99,6 +99,8 @@ test('production defaults to the Supabase adapter unless REST mode is explicitly
   assert.match(contracts, /readonly mode: 'mock' \| 'rest' \| 'supabase'/);
   assert.match(supabase, /readonly mode = 'supabase' as const/);
   assert.match(supabase, /this\.fetcher = fetcher\.bind\(globalThis\)/, 'native fetch must retain the browser global receiver');
+  assert.match(supabase, /PLFS CY2025 · usual status · all ages/,
+    'dashboard annual PLFS cards must state that they are all-ages usual-status rates, distinct from the 15+ demand/forecast context');
   assert.match(supabase, /function trainingProgrammeTrend/, 'live dashboard trend must come from source-backed programme observations');
   assert.match(supabase, /emergingSkills: skillCatalogueRows/);
   assert.match(supabase, /sectorGaps: sectorCatalogueRows/);
