@@ -49,7 +49,7 @@ const TABLES: Record<string, TableRule> = {
   data_sources: {
     columns: new Set([
       'id', 'name', 'publisher', 'source_type', 'url', 'publication_date',
-      'accessed_at', 'coverage_start', 'coverage_end', 'notes',
+      'accessed_at', 'coverage_start', 'coverage_end',
     ]),
     filters: new Set(['select', 'order', 'limit', 'offset']),
   },
