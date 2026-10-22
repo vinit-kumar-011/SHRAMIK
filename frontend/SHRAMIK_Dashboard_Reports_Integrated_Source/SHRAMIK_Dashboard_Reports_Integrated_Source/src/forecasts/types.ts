@@ -157,7 +157,7 @@ export interface ScenarioComparisonResponse {
 }
 export interface ForecastRequestOptions { signal?: AbortSignal; entityType?: RiskCell['entityType'] }
 export interface ForecastsDataAdapter {
-  readonly mode: 'mock' | 'rest';
+  readonly mode: 'mock' | 'rest' | 'unavailable';
   getFilterOptions(options?: ForecastRequestOptions): Promise<ForecastFilterOptions>;
   getOverview(filters: ForecastFilters, options?: ForecastRequestOptions): Promise<{ kpis: MetricValue[]; meta: DataMeta }>;
   getSeries(filters: ForecastFilters, viewBy: ForecastSeriesResponse['viewBy'], options?: ForecastRequestOptions): Promise<ForecastSeriesResponse>;
