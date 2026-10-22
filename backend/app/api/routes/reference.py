@@ -57,13 +57,12 @@ def list_districts(
         )
         rows = db.execute(
             text(
-                """
+                f"""
                 SELECT d.id AS district_id, d.name, d.state_id,
                        s.code AS state_code, d.lgd_district_code
                 FROM public.districts AS d
                 JOIN public.states AS s ON s.id = d.state_id
-                WHERE (:active_only = false OR d.is_active = true)
-                  AND (:state_id IS NULL OR d.state_id = :state_id)
+                WHERE {where_sql}
                 ORDER BY lower(s.name), lower(d.name), d.id
                 LIMIT :limit OFFSET :offset
                 """
