@@ -60,7 +60,17 @@ test('Administration UI disables all mutations unless it is the explicit demo ad
   const page = fs.readFileSync(path.join(src, 'AdministrationPage.tsx'), 'utf8');
   assert.match(page, /const readOnly = activeAdapter\.mode !== 'mock'/);
   assert.match(page, /const unavailable = activeAdapter\.mode === 'unavailable'/);
-  assert.match(page, /Live Administration service is not connected/);
+  assert.match(page, /Live Administration service is unavailable/);
+  assert.match(page, /serviceUnavailable && <div className="administration-unavailable-notice"/);
+  const stateInitialization = Math.max(
+    page.indexOf("const [snapshot, setSnapshot]"),
+    page.indexOf("const [loading, setLoading]"),
+    page.indexOf("const [error, setError]"),
+  );
+  assert.ok(stateInitialization >= 0);
+  assert.ok(page.indexOf("const serviceUnavailable =") > stateInitialization,
+    'serviceUnavailable must be computed after its React state dependencies to avoid a temporal-dead-zone render error');
+
   assert.match(page, /disabled=\{readOnly \|\| selectedRequest\.status !== 'pending'\}/);
 });
 
