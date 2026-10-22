@@ -394,6 +394,51 @@ try {
         monthlyCardsCorrect && plfs.jobDemandUnavailableNotice === true,
         JSON.stringify(plfs),
       );
+      await screenshot(cdp, 'showcase-demand.png');
+
+      // Open the source evidence accordion and verify the official NCS portal snapshot
+      // is rendered from the database with its bound wording/date/source—not from mock text.
+      await cdp.evaluate(`(() => {
+        const details = document.querySelector('.dbi-demand-evidence');
+        const summary = details?.querySelector('summary');
+        if (!details || !summary) return false;
+        if (!details.open) summary.click();
+        return true;
+      })()`);
+      await waitFor(() => cdp.evaluate(`(() => {
+        const details = document.querySelector('.dbi-demand-evidence');
+        const text = details?.innerText || '';
+        return !!details?.open
+          && text.includes('NCS portal active-vacancy snapshot')
+          && text.includes('Over 17.68 lakh')
+          && text.includes('15 Jul 2026')
+          && text.includes('NCS portal only');
+      })()`), 'source-backed NCS portal snapshot in Demand evidence');
+      const ncsEvidence = await cdp.evaluate(`(() => {
+        const details = document.querySelector('.dbi-demand-evidence');
+        const text = details?.innerText || '';
+        const ncsSource = Array.from(details?.querySelectorAll('a') || [])
+          .map(anchor => anchor.href)
+          .find(href => href.includes('PRID=2147927'));
+        return {
+          open: !!details?.open,
+          lowerBoundLabel: text.includes('Over 17.68 lakh'),
+          asOfDate: text.includes('15 Jul 2026'),
+          portalOnlyScope: text.includes('NCS portal only'),
+          notExact: text.includes('not an exact count'),
+          sourceUrl: ncsSource || '',
+          totalDemandExcluded: text.includes('not used to calculate the “Total Estimated Demand” KPI'),
+        };
+      })()`);
+      record(
+        'Demand source evidence shows the dated NCS portal lower bound and its source limitations',
+        ncsEvidence.open && ncsEvidence.lowerBoundLabel && ncsEvidence.asOfDate
+          && ncsEvidence.portalOnlyScope && ncsEvidence.notExact
+          && ncsEvidence.sourceUrl.includes('PRID=2147927') && ncsEvidence.totalDemandExcluded,
+        JSON.stringify(ncsEvidence),
+      );
+      await screenshot(cdp, 'showcase-demand-evidence-expanded.png');
+      continue;
     }
     await screenshot(cdp, `showcase-${module.path.slice(1)}.png`);
   }
