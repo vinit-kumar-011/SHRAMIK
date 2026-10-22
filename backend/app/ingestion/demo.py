@@ -7,14 +7,18 @@ Run from the backend directory with:
 
 from __future__ import annotations
 
+import argparse
 import json
+import os
 import random
 import uuid
 from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import text
+from urllib.parse import urlsplit
 
+from app.core.config import get_settings
 from app.ingestion.db import get_engine
 
 GENERATOR_NAME = "shramik_demo_pilot"
@@ -149,7 +153,54 @@ def _existing_value(conn, table: str, signal_column: str, signal: str,
            "skill_id": skill_id, "year": year, "signal": signal}).scalar()
 
 
-def seed_demo() -> dict[str, Any]:
+LOCAL_DATABASE_HOSTS = {"localhost", "127.0.0.1", "::1"}
+ALLOW_REMOTE_SYNTHETIC_ENV = "SHRAMIK_ALLOW_SYNTHETIC_REMOTE_DB"
+
+
+def validate_demo_database_target(
+    database_url: str | None,
+    *,
+    allow_remote_flag: bool = False,
+    allow_remote_env: bool = False,
+) -> None:
+    """Refuse synthetic writes to an unknown/remote DB unless doubly opted in.
+
+    A developer can use a local throwaway Postgres instance by default. Writing
+    synthetic rows to a remote database requires both an explicit CLI flag and an
+    explicit environment variable, so a routine CLI invocation cannot repopulate
+    the shared Supabase project used by the official SIH showcase.
+    """
+    if not database_url or not database_url.strip():
+        raise RuntimeError("DATABASE_URL is not configured; no demo rows were written.")
+
+    try:
+        parsed = urlsplit(database_url.strip())
+        hostname = (parsed.hostname or "").lower()
+    except ValueError as exc:
+        raise RuntimeError("DATABASE_URL could not be parsed; refusing to write synthetic data.") from exc
+
+    if hostname in LOCAL_DATABASE_HOSTS:
+        return
+
+    if allow_remote_flag and allow_remote_env:
+        return
+
+    raise RuntimeError(
+        "Refusing to write SYNTHETIC_DEMO rows to a remote database. The official SIH "
+        "showcase must use source-backed records only. For a local pilot, point DATABASE_URL "
+        "to localhost. Remote synthetic writes require both --allow-synthetic-remote-db and "
+        f"{ALLOW_REMOTE_SYNTHETIC_ENV}=true; do not enable this for the shared/showcase database."
+    )
+
+
+def seed_demo(*, allow_remote_db: bool = False) -> dict[str, Any]:
+    settings = get_settings()
+    allow_remote_env = os.getenv(ALLOW_REMOTE_SYNTHETIC_ENV, "").strip().lower() == "true"
+    validate_demo_database_target(
+        settings.database_url,
+        allow_remote_flag=allow_remote_db,
+        allow_remote_env=allow_remote_env,
+    )
     engine = get_engine()
     inserted_demand = inserted_supply = unchanged = 0
     try:
@@ -283,7 +334,17 @@ def seed_demo() -> dict[str, Any]:
 
 
 def main() -> None:
-    print(json.dumps(seed_demo(), indent=2, default=str))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--allow-synthetic-remote-db",
+        action="store_true",
+        help=(
+            "Explicit override for a remote database; also requires "
+            f"{ALLOW_REMOTE_SYNTHETIC_ENV}=true. Never use on the SIH showcase database."
+        ),
+    )
+    args = parser.parse_args()
+    print(json.dumps(seed_demo(allow_remote_db=args.allow_synthetic_remote_db), indent=2, default=str))
 
 
 if __name__ == "__main__":
