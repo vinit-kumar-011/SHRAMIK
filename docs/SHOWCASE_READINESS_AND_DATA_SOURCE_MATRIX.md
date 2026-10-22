@@ -225,6 +225,35 @@ If a source breaks, retain the last successful snapshot but show its original as
 
 The ingestion implementation may use a scheduled worker (for example, a GitHub Actions scheduled workflow running the versioned Python adapters) with narrowly scoped Supabase credentials. Keep service-role secrets server-side, outside `VITE_*` variables and source control. Do not run ingestion in a client browser.
 
+## Current implementation status (22 October 2026, 14:02 UTC)
+
+### Verified on the latest branch commit
+
+Branch head: `dd5fa37301862003e1733d3925ee89fc3b6eb853`.
+
+- [Frontend CI](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39791874851) succeeded on that exact commit: **210 tests passed, 0 failed**, type-check passed, live Supabase public-KPI reads passed, production bundle/static entries built, 17 production-preview route checks passed, and Chromium interaction/responsive QA passed. This is CI verification; no deployment took place.
+- The QA environment confirmed the Demand and Supply modules read the source-backed Supabase allow-list, display the monthly September 2026 PLFS CWS rates with their period/definition, hide all synthetic preview controls in production, and do not publish job demand where no validated demand series exists.
+- The latest source refresh [CI run 39790210861](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39790210861) succeeded in **DRY_RUN** mode and validated the same three MoSPI PLFS monthly CWS values already in Supabase. That run did not write to Supabase because `DATABASE_URL` was empty. The separate backend CI run [39790210834](https://github.com/vinit-kumar-011/SHRAMIK/actions/runs/39790210834) passed **70 backend tests**.
+
+### Source registry truthfulness correction
+
+The Data Sources adapter only has browser permission to read registered metadata; it cannot query protected retrieval/validation history through the public reader. The page has been corrected accordingly:
+
+- `data_sources.accessed_at` is now displayed as **registry metadata accessed**, not “last successful retrieval.” The actual successful-retrieval and last-validated fields remain “Not reported” unless the authorized backend supplies them.
+- A distinct **Status unknown** summary counts explicit `UNKNOWN` lifecycle records. This is separate from “Needs attention,” which only counts known pending-validation/stale/failed states.
+- The introductory copy now says the page is a registry of sources and explains that unknown health is not verified health. The registry response indicator is neutral, not green.
+- The new adapter regression test checks that registry access time cannot be promoted to successful retrieval and that `UNKNOWN` rows are summarized separately.
+
+The current public registry inventory has **22 registered sources**. The authoritative source registry adapter currently classifies **21 as unknown** and **1 as not configured**, with zero explicitly active and zero explicitly known pending/stale/failed. Those zero values do **not** mean there are no risks: most source connector health and freshness are simply not exposed to this browser path. In the Data Sources view, a source should only become “Active” after a real authorized retrieval/validation record is available.
+
+### Remaining SIH showcase blockers (not masked by the passing frontend CI)
+
+1. **Protected analytics API origin:** the production bundle does not have `VITE_SHRAMIK_API_BASE_URL` configured. Therefore Forecasts and Emerging Skills correctly show “Analytics unavailable in this build” rather than query localhost or fall back to synthetic results. The FastAPI endpoints were verified locally with authentication, but a reachable, secured backend origin has not been configured for the showcase build. Do not set this variable to `127.0.0.1`; that would refer to the visitor’s own computer. A backend hosting/origin and authentication/CORS configuration is required before these protected views can query the real endpoint in a remote build.
+2. **Official forecast readiness:** the canonical database still has zero validated official forecasts, warnings and emerging-skill signals. That is correct until compatible multi-year district-by-skill source-backed histories exist. Do not activate the seven provisional skill mappings merely to fill the UI.
+3. **Scheduled database refresh activation:** PLFS browser capture/parser and dry-run are successful, but unattended refresh needs the server-side GitHub Actions secret `SHRAMIK_DATABASE_URL` and merge of `.github/workflows/plfs-source-refresh.yml` to the repository default branch. The branch-only workflow does not run on its weekly schedule from this feature branch. The source-backed September 2026 rows are already loaded; no new database write happened in the last dry run.
+4. **Other source refreshes:** NCS’s “Over 17.68 lakh” portal-vacancy figure is a dated July 2026 snapshot and not an all-India census. It still needs a permitted, stable retrieval approach before an unattended updater is trusted. ITI/training-centre/seat capacity, e-Shram, PLFS annual and taxonomy updates need their own source-specific release handlers; registering a source alone is not an automated connector.
+5. **Visual sign-off:** automated responsive/interaction QA has passed, but the human visual lock against every supplied reference board and a final SIH walkthrough are still separate release gates. The references govern layout only—not metric values or data claims.
+
 ## 8. Acceptance gates before SIH showcase
 
 - [ ] All pages have passed reference-by-reference visual review; no design reference values have been copied as live data.
