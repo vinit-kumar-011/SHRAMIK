@@ -95,4 +95,4 @@ Run from this directory:
 pytest
 ```
 
-Tests cover API contracts, ingestion validation, source-metric promotion guardrails, and baseline analytics semantics.
+Tests cover API contracts, ingestion validation, source-metric promotion guardrails, baseline analytics semantics, and the demo generator's refusal to write synthetic rows to remote databases by default.
