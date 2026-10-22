@@ -554,6 +554,8 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       : canonicalRate(snapshot, code, regionCode, periodFilter === 'LATEST');
     return { code, label: metricLabel(code), row: item };
   });
+  const monthlyCwsTableMode = periodFilter === 'MONTHLY_CWS'
+    || rates.some(({ row }) => row?.reference_period.startsWith('MONTHLY_') === true);
   const registrationRows = mostRecentRows(snapshot, 'ESHRAM_REGISTRATION_COUNT', regionCode);
   const registration = registrationRows.find(row => regionCode === 'IN' ? !row.state_id : row.state_id === selectedStateId(snapshot, regionCode))
     || registrationRows.find(row => !row.state_id)
@@ -769,8 +771,8 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
 
       <details className="dbi-demand-evidence"><summary>Published source evidence and definitions</summary><div className="dbi-demand-evidence-grid">
         <section className="dbi-demand-panel"><SectionHead
-          title={periodFilter === 'MONTHLY_CWS' ? 'PLFS monthly CWS · age 15+' : 'PLFS 2025 benchmarks · age 15+'}
-          note={periodFilter === 'MONTHLY_CWS'
+          title={monthlyCwsTableMode ? 'PLFS monthly CWS · age 15+' : 'PLFS 2025 benchmarks · age 15+'}
+          note={monthlyCwsTableMode
             ? 'Published monthly Current Weekly Status rates for persons aged 15+, combined rural/urban, all India. They are separate from annual CY2025 usual-status benchmarks; monthly values are not inferred for a selected State/UT.'
             : 'Published annual rates for persons aged 15+, combined rural/urban. A selected-region value is shown only when published for this exact age/sex/area slice; otherwise the row is explicitly labelled India (national).'}/><DataTable columns={['Indicator', 'Published value', 'Period', 'Geography', 'Source']}>
           {rates.map(({ code, label, row }) => row ? <tr key={code}><td><strong>{label}</strong><small>{code}</small></td><td className="dbi-number">{numberFormat(numeric(row.value_numeric))}{row.unit === 'percent' ? '%' : ' ' + row.unit}</td><td>{periodLabel(row.reference_period)}</td><td>{row.state_id ? stateLabel(snapshot, row) : 'India (national)'}</td><td><SourceLink source={sourceFor(snapshot, row.source_id) || employmentSource}/></td></tr> : null)}
