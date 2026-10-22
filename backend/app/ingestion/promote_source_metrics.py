@@ -199,7 +199,9 @@ def _same_existing(existing: dict[str, Any], candidate: dict[str, Any]) -> bool:
         and (
             str(existing["evidence_item_id"]) if existing.get("evidence_item_id") else None
         ) == candidate["evidence_item_id"]
-        and existing["transformation_note"] == candidate["transformation_note"]
+        # Notes are explanatory metadata. Wording may evolve without changing the
+        # normalized observation; source identity, release, unit, value and retrieval
+        # are checked separately before this comparison.
     )
 
 
