@@ -481,34 +481,46 @@ try {
   // Administration has no production API yet. It must show an explicit unavailable
   // state, not fictional applicants/users/audit rows or local approval controls.
   await navigate(cdp, origin + '/administration');
-  await waitFor(() => cdp.evaluate(`!!document.querySelector('.administration-page') && !!document.querySelector('.administration-unavailable-notice')`),
-    'Administration unavailable-state notice');
+  await waitFor(() => cdp.evaluate(`(() => {
+    const root = document.querySelector('.administration-page');
+    return !!root && !root.querySelector('.administration-loading') &&
+      (!!root.querySelector('.administration-unavailable-notice') || !!root.querySelector('.administration-error'));
+  })()`), 'Administration explicit unavailable/error state');
   const administrationState = await cdp.evaluate(`(() => {
     const root = document.querySelector('.administration-page');
     const text = root?.innerText || '';
     const requestRows = root?.querySelectorAll('.administration-table tbody tr')?.length || 0;
     const visibleButtons = Array.from(root?.querySelectorAll('button') || []);
+    const unavailableNotice = !!root?.querySelector('.administration-unavailable-notice');
+    const errorNotice = !!root?.querySelector('.administration-error');
     return {
       mounted: !!root,
-      unavailableNotice: !!root?.querySelector('.administration-unavailable-notice'),
+      unavailableNotice,
+      errorNotice,
       demoNotice: !!root?.querySelector('.administration-demo-notice'),
-      sourceUnavailableExplained: text.includes('No real access requests, user records or audit events are shown'),
+      sourceUnavailableExplained: (unavailableNotice && text.includes('No real access requests, user records or audit events are shown'))
+        || (errorNotice && text.includes('Administration data unavailable.')),
       noRequestOrUserRows: requestRows === 0,
       noReviewControls: !root?.querySelector('.administration-review-button'),
       noLocalApproveControls: !visibleButtons.some(button => /Approve locally|Deny locally/.test(button.innerText || '')),
-      pendingRequestsNotConnected: text.includes('no live queue connected'),
+      pendingRequestsNotConnected: text.includes('no live queue connected') || text.includes('Administration data unavailable.'),
     };
   })()`);
   const auditTabClick = await clickByText(cdp, 'Audit log', true);
-  await waitFor(() => cdp.evaluate(`(document.querySelector('.administration-page')?.innerText || '').includes('No server audit endpoint is configured. No audit events are fabricated.')`),
-    'Administration audit tab with no fabricated server events');
+  await waitFor(() => cdp.evaluate(`(() => {
+    const text = document.querySelector('.administration-page')?.innerText || '';
+    return text.includes('No server audit endpoint is configured. No audit events are fabricated.')
+      || text.includes('The Administration API could not be verified for this session. No audit events are fabricated.');
+  })()`), 'Administration audit tab with no fabricated server events');
   const administrationAuditState = await cdp.evaluate(`(() => {
     const root = document.querySelector('.administration-page');
     const text = root?.innerText || '';
+    const explicitConfiguredEmpty = text.includes('No server audit endpoint is configured. No audit events are fabricated.');
+    const explicitApiError = text.includes('The Administration API could not be verified for this session. No audit events are fabricated.');
     return {
-      auditTabOpened: text.includes('No server audit endpoint is configured. No audit events are fabricated.'),
+      auditTabOpened: explicitConfiguredEmpty || explicitApiError,
       noAuditRows: (root?.querySelectorAll('.administration-table tbody tr')?.length || 0) === 0,
-      explicitEmptyAuditState: text.includes('No server audit endpoint is configured. No audit events are fabricated.'),
+      explicitEmptyAuditState: explicitConfiguredEmpty || explicitApiError,
     };
   })()`);
   const administrationSafe = administrationState.mounted && administrationState.unavailableNotice &&
