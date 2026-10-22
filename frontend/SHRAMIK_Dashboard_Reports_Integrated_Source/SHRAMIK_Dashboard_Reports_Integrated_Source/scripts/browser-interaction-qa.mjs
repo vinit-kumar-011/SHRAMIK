@@ -497,16 +497,28 @@ try {
       noReviewControls: !root?.querySelector('.administration-review-button'),
       noLocalApproveControls: !visibleButtons.some(button => /Approve locally|Deny locally/.test(button.innerText || '')),
       pendingRequestsNotConnected: text.includes('no live queue connected'),
-      auditLedgerNotFabricated: text.includes('No server audit endpoint is configured. No audit events are fabricated.'),
+    };
+  })()`);
+  const auditTabClick = await clickByText(cdp, 'Audit log', true);
+  await waitFor(() => cdp.evaluate(`(document.querySelector('.administration-page')?.innerText || '').includes('No server audit endpoint is configured. No audit events are fabricated.')`),
+    'Administration audit tab with no fabricated server events');
+  const administrationAuditState = await cdp.evaluate(`(() => {
+    const root = document.querySelector('.administration-page');
+    const text = root?.innerText || '';
+    return {
+      auditTabOpened: text.includes('No server audit endpoint is configured. No audit events are fabricated.'),
+      noAuditRows: (root?.querySelectorAll('.administration-table tbody tr')?.length || 0) === 0,
+      explicitEmptyAuditState: text.includes('No server audit endpoint is configured. No audit events are fabricated.'),
     };
   })()`);
   const administrationSafe = administrationState.mounted && administrationState.unavailableNotice &&
     !administrationState.demoNotice && administrationState.sourceUnavailableExplained &&
     administrationState.noRequestOrUserRows && administrationState.noReviewControls &&
     administrationState.noLocalApproveControls && administrationState.pendingRequestsNotConnected &&
-    administrationState.auditLedgerNotFabricated;
+    Boolean(auditTabClick) && administrationAuditState.auditTabOpened &&
+    administrationAuditState.noAuditRows && administrationAuditState.explicitEmptyAuditState;
   record('Administration reports unavailable service and exposes no fictional access records or decisions',
-    administrationSafe, JSON.stringify(administrationState));
+    administrationSafe, JSON.stringify({ ...administrationState, ...administrationAuditState }));
   await screenshot(cdp, 'showcase-administration.png');
 
   // Production showcase mode has no local assumptions-only baseline. Wait for the guarded
