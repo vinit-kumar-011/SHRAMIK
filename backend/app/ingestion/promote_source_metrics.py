@@ -23,7 +23,7 @@ from sqlalchemy.engine import Connection
 from app.ingestion.db import get_engine
 
 PARSER_VERSION = "source-metric-promotion-v1"
-FY_RE = re.compile(r"^FY(?P<start>\\d{4})-(?P<end>\\d{2}|\\d{4})$")
+FY_RE = re.compile(r"^FY(?P<start>\d{4})-(?P<end>\d{2}|\d{4})$")
 
 # Only metrics with a verified annual FLOW interpretation are allowed here.
 APPROVED_METRICS: dict[str, dict[str, str]] = {
