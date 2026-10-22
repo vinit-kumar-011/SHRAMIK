@@ -80,6 +80,7 @@ export function DataSourcesPage({adapter}:DataSourcesPageProps) {
   const [reload,setReload] = useState(0);
   const [data,setData] = useState<PagedResult<DataSourceRecord>|null>(null);
   const [requestState,setRequestState] = useState<'loading'|'ready'|'error'>('loading');
+  const [requestError,setRequestError] = useState('');
   const [selected,setSelected] = useState<string|null>(null);
   const [menuSource,setMenuSource] = useState<string|null>(null);
   const [toast,setToast] = useState<string|null>(null);
@@ -100,9 +101,10 @@ export function DataSourcesPage({adapter}:DataSourcesPageProps) {
   useEffect(()=>{
     let current=true;
     setRequestState('loading');
+    setRequestError('');
     adapter.listSources({query:debouncedQuery,status,type,agency,page,pageSize:8})
       .then(result=>{if(current){setData(result);setRequestState('ready');}})
-      .catch(()=>{if(current)setRequestState('error');});
+      .catch(error=>{if(current){setRequestError(errorMessage(error));setRequestState('error');}});
     return()=>{current=false;};
   },[adapter,debouncedQuery,status,type,agency,page,reload]);
   useEffect(()=>{if(!toast)return;const timer=window.setTimeout(()=>setToast(null),4200);return()=>window.clearTimeout(timer);},[toast]);
@@ -167,7 +169,7 @@ export function DataSourcesPage({adapter}:DataSourcesPageProps) {
         {data?.updatedAt && <span className="updated-at">Registry response: {dateOnly(data.updatedAt)}</span>}
       </div>
       {requestState==='loading' && <div className="loading-area" aria-live="polite" aria-busy="true"><div className="spinner"/><span>Loading source registry…</span><div className="skeleton-rows"><i/><i/><i/><i/></div></div>}
-      {requestState==='error' && <div className="empty-state error-state" role="alert"><span className="empty-icon">!</span><h3>Source registry unavailable</h3><p>The list could not be loaded. Your current filters have been preserved.</p><button className="button button-primary" onClick={refresh}>Try again</button></div>}
+      {requestState==='error' && <div className="empty-state error-state" role="alert"><span className="empty-icon">!</span><h3>Source registry unavailable</h3><p>The list could not be loaded. Your current filters have been preserved.</p>{requestError && <p className="error-detail">{requestError}</p>}<button className="button button-primary" onClick={refresh}>Try again</button></div>}
       {requestState==='ready' && rows.length===0 && <div className="empty-state"><span className="empty-icon">⌕</span><h3>{filtered?'No matching sources':'No sources registered'}</h3><p>{filtered?'Try a different search or reset the filters.':'There are no accessible source records in this registry yet.'}</p>{filtered&&<button className="button button-secondary" onClick={reset}>Reset filters</button>}</div>}
       {requestState==='ready' && rows.length>0 && <>
         <div className="table-scroll"><table className="source-table"><thead><tr><th scope="col">Source</th><th scope="col">Type</th><th scope="col">Agency / owner</th><th scope="col">Coverage</th><th scope="col">Reporting period</th><th scope="col">Last successful retrieval</th><th scope="col">Lifecycle / freshness</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead><tbody>{rows.map(source=><tr key={source.id}>
