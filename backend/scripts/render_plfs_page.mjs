@@ -215,6 +215,17 @@ try {
   process.exitCode = 1;
 } finally {
   cdp?.close();
-  if (chrome && chrome.exitCode === null) chrome.kill('SIGTERM');
-  if (profile) await rm(profile, { recursive: true, force: true });
+  if (chrome && chrome.exitCode === null) {
+    const exited = new Promise(resolve => chrome.once('exit', resolve));
+    chrome.kill('SIGTERM');
+    await Promise.race([exited, delay(3000)]);
+    if (chrome.exitCode === null) {
+      const killed = new Promise(resolve => chrome.once('exit', resolve));
+      chrome.kill('SIGKILL');
+      await Promise.race([killed, delay(1500)]);
+    }
+  }
+  if (profile) {
+    await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 }).catch(() => {});
+  }
 }
