@@ -111,6 +111,10 @@ Keep the existing DGE 2022 vacancy-notified dataset as an official historical ag
 
 ### B. PLFS labour-market context
 
+**Latest official release check (22 October 2026):** MoSPI's PLFS product page reports September 2026 all-India Current Weekly Status (CWS) rates for persons aged 15 years and above: LFPR **55.5%**, WPR **52.7%**, and UR **5.0%**. The monthly PLFS September bulletin was announced on 15 October 2026. These are monthly CWS rates, **not** the annual CY2025 usual-status values currently stored/displayed by the annual metric cards; keep their definitions and periods separate. Sources: [MoSPI PLFS product page](https://www.mospi.gov.in/themes/product/69--) and [MoSPI September 2026 bulletin announcement](https://www.mospi.gov.in/download-reports?main_cat=NzI2%26cat%3DAll).
+
+**Automation implemented:** `backend/app/ingestion/refresh_plfs_cws.py` fetches the official product page, captures its raw HTML hash, validates all three cards for matching month/year, value range, all-India coverage, age 15+ and CWS basis, then supports an idempotent source-backed upsert to `source_metric_observations`. Parser/layout drift, mixed periods or missing labels fail closed. `.github/workflows/plfs-source-refresh.yml` runs backend tests and a check-only scrape on code pushes; its weekly scheduled run applies the refresh with the GitHub Actions secret `SHRAMIK_DATABASE_URL`. Workflow-dispatch is check-only unless `apply=true`. The first live source-parser CI execution is being validated; database writes should not be assumed complete until a successful `--apply` run is visible in Actions and the database.
+
 - [Official PLFS 2025 annual report](https://mospi.gov.in/uploads/publications_reports/publications_reports1780040415321_0624fb13-fb47-40bc-b470-7c7e9635c3ef_PLFS_2025_F_REV_29052026.pdf)
 - [MoSPI eSankhyiki PLFS catalogue](https://esankhyiki.mospi.gov.in/catalogue-main/catalogue?page=0&product=PLFS)
 
