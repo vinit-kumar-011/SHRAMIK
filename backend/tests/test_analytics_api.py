@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from importlib import import_module
 
 import pytest
 from fastapi.testclient import TestClient
@@ -7,6 +8,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api.routes.analytics import router  # noqa: F401 - ensures route module imports in tests
+
+analytics_routes = import_module("app.api.routes.analytics")
 from app.core.auth import require_supabase_user
 from app.core.config import Settings
 from app.db.session import get_db
@@ -154,7 +157,8 @@ def test_demo_analytics_mode_is_blocked_in_showcase_environment(
 ) -> None:
     authenticate()
     monkeypatch.setattr(
-        "app.api.routes.analytics.get_settings",
+        analytics_routes,
+        "get_settings",
         lambda: Settings(environment=environment, showcase_mode=showcase_mode),
     )
     for endpoint in ("forecasts", "early-warnings", "emerging-skills"):
