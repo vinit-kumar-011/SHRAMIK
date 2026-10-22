@@ -786,21 +786,21 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
          <ModuleErrorBoundary key={activePage} moduleName={getRouteLabel(activePage)} onReturnDashboard={() => handleNavigate({ label: 'Dashboard', section: 'dashboard' })}>
         {activePage === 'skill-gaps' ? (demoMode || previewingModule
                ? <SkillGapAnalysisPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} onOpenDetail={handleGapDetail} onDetailError={handleGapDetailError} adapter={skillGapDemoAdapter}/>
-               : <DatabaseInsightsPage module="skill-gaps" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('skill-gaps')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+               : <DatabaseInsightsPage module="skill-gaps" regionCode={region} onPreviewDemo={showcaseMode ? undefined : () => setDemoPreviewPage('skill-gaps')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
            : activePage === 'forecasts' ? (demoMode || previewingModule
                ? <ForecastsPage globalRegionCode={region} onGlobalRegionChange={handleGapRegionChange} dataAdapter={forecastDemoAdapter}/>
-               : <DatabaseInsightsPage module="forecasts" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('forecasts')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+               : <DatabaseInsightsPage module="forecasts" regionCode={region} onPreviewDemo={showcaseMode ? undefined : () => setDemoPreviewPage('forecasts')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
            : activePage === 'reports' ? <ReportsPage />
            : activePage === 'demand' ? (demoMode || previewingModule
                ? <DemandInsightsPage dataAdapter={undefined} embedded onNavigate={(path: string, label?: string) => {
                    const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
                    if (target !== 'not-found') handleNavigate({ section: target, label: label || getRouteLabel(target) });
                  }}/>
-               : <DatabaseInsightsPage module="demand" regionCode={region} onRegionChange={handleRegionChange} onPreviewDemo={() => setDemoPreviewPage('demand')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+               : <DatabaseInsightsPage module="demand" regionCode={region} onRegionChange={handleRegionChange} onPreviewDemo={showcaseMode ? undefined : () => setDemoPreviewPage('demand')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
            : activePage === 'emerging-skills' ? (demoMode
                ? <EmergingSkillsPage dataAdapter={emergingSkillsAdapter} />
                : previewingModule ? <EmergingSkillsPage dataAdapter={demoEmergingSkillsDataAdapter} />
-               : <DatabaseInsightsPage module="emerging-skills" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('emerging-skills')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+               : <DatabaseInsightsPage module="emerging-skills" regionCode={region} onPreviewDemo={showcaseMode ? undefined : () => setDemoPreviewPage('emerging-skills')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
            : activePage === 'scenario-simulator' ? <ScenarioSimulatorPage dataAdapter={scenarioDataAdapter} initialScope={undefined} onNavigate={(path: string) => {
                const target = getRouteFromLocation({ pathname: path, search: '', hash: '' });
                if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) });
@@ -809,11 +809,11 @@ function SHRAMIKWorkspace({ onNavigate, dataAdapter, authSession, onAuthSessionC
            : activePage === 'supply' ? (demoMode
                ? <SupplyInsightsPage adapter={supplyAdapter} />
                : previewingModule ? <SupplyInsightsPage adapter={mockSupplyInsightsDataAdapter} />
-               : <DatabaseInsightsPage module="supply" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('supply')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+               : <DatabaseInsightsPage module="supply" regionCode={region} onPreviewDemo={showcaseMode ? undefined : () => setDemoPreviewPage('supply')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
            : activePage === 'data-quality' ? (demoMode
                ? <DataQualityPage adapter={dataQualityAdapter} />
                : previewingModule ? <DataQualityPage adapter={mockDataQualityDataAdapter} />
-               : <DatabaseInsightsPage module="data-quality" regionCode={region} onPreviewDemo={() => setDemoPreviewPage('data-quality')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
+               : <DatabaseInsightsPage module="data-quality" regionCode={region} onPreviewDemo={showcaseMode ? undefined : () => setDemoPreviewPage('data-quality')} onNavigate={(route: string) => { const target = getRouteFromLocation({ pathname: '/' + route.replace(/^\//, ''), search: '', hash: '' }); if (target !== 'not-found') handleNavigate({ section: target, label: getRouteLabel(target) }); }}/>)
            : activePage === 'administration' ? (demoMode || previewingModule
                ? <AdministrationPage adapter={mockAdministrationDataAdapter} />
                : !demoMode && !runtimeEnv?.VITE_ADMINISTRATION_API_BASE_URL?.trim()
