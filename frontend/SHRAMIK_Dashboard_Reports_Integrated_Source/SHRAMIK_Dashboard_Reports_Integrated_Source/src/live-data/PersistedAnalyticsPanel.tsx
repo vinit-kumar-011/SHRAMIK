@@ -87,6 +87,7 @@ type PanelData = {
   forecasts: ItemsEnvelope<ForecastRow>;
   warnings: ItemsEnvelope<WarningRow>;
   emergingSkills: ItemsEnvelope<EmergingSkillRow>;
+  skills: SkillsEnvelope;
   loadedAt: string;
 };
 
@@ -243,7 +244,7 @@ export default function PersistedAnalyticsPanel({ module }: { module: AnalyticsM
           <div className="pai-section-heading"><div><h3>Early warnings</h3><p>Warnings are persisted only when the configured baseline rule is crossed.</p></div></div>
           {warningRows.length ? <div className="pai-table-wrap"><table className="pai-table">
             <thead><tr><th>Period</th><th>District</th><th>Skill ID</th><th>Warning</th><th>Severity</th><th>Provenance</th></tr></thead>
-            <tbody>{warningRows.map(row => <tr key={row.id}><td>{row.detected_period}</td><td>{row.district_id}</td><td><code>{row.skill_id}</code></td><td>{row.warning_type}</td><td><span className={'pai-severity pai-severity-' + row.severity.toLowerCase()}>{row.severity}</span></td><td>{row.provenance_state || mode}</td></tr>)}</tbody>
+            <tbody>{warningRows.map(row => <tr key={row.id}><td>{row.detected_period}</td><td>{row.district_id}</td><td><strong>{skillName(row.skill_id)}</strong><small><code>{row.skill_id}</code></small></td><td>{row.warning_type}</td><td><span className={'pai-severity pai-severity-' + row.severity.toLowerCase()}>{row.severity}</span></td><td>{row.provenance_state || mode}</td></tr>)}</tbody>
           </table></div> : <div className="pai-empty"><AlertTriangle size={18} /><div><strong>No warnings in {mode} mode</strong><p>Warnings are not invented when no validated forecast crosses the configured risk threshold.</p></div></div>}
         </section>
       </> : <section className="pai-results">
