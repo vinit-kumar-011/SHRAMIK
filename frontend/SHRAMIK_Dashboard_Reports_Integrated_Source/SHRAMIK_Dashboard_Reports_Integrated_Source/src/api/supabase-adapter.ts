@@ -91,8 +91,8 @@ function subtitleForCode(code: string, unit: string, referencePeriod: string): s
     return 'Monthly CWS · persons aged 15+';
   }
   if (['UR', 'LFPR', 'WPR'].includes(code)) {
-    const period = referencePeriod === 'CY2025' ? 'PLFS CY2025 · usual status' : 'Published annual benchmark';
-    return `${period} · all ages`;
+    if (referencePeriod === 'CY2025') return 'PLFS CY2025 · usual status · all ages';
+    return `Published annual benchmark · ${referencePeriod} · all ages`;
   }
   return unit;
 }
@@ -131,7 +131,7 @@ function catalogueDashboardRows(rows: CatalogueRow[], kind: 'skill' | 'sector'):
   return rows.slice(0, 5).map((row, index) => {
     const notes = kind === 'skill'
       ? row.is_active === false
-        ? 'Canonical skill reference is inactive pending review of its occupation/sector mapping. Do not treat it as approved for skill-gap or emerging-skill analysis.'
+        ? 'Canonical skill reference is inactive pending review of its occupation/sector mapping. No validated emerging-skill signal is published for this item; do not treat it as approved for skill-gap or emerging-skill analysis.'
         : 'Canonical skill reference only. No validated emerging-skill signal is published for this item.'
       : 'Canonical sector reference only. No comparable demand/supply pair is available to calculate a sector gap.';
     return {
