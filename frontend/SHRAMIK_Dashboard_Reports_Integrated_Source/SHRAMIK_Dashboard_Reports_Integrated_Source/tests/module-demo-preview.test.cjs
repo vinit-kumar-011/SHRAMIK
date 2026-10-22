@@ -40,6 +40,7 @@ test('production builds enforce the official-only showcase experience', () => {
   assert.match(shell, /runtimeEnv\?\.MODE === 'production' \|\| runtimeEnv\?\.VITE_SHRAMIK_SHOWCASE_MODE === 'true'/);
   assert.match(shell, /const demoMode = !showcaseMode && runtimeEnv\?\.VITE_SHRAMIK_USE_DEMO_DATA === 'true'/);
   assert.match(liveModules, /onPreviewDemo && !showcaseMode/);
+  assert.match(liveModules, /onPreviewDemo && !showcaseMode \\? <button className="dbi-demand-demo-launch"/);
   assert.match(liveModules, /!showcaseMode \? <><option value="EXAMPLES">Illustrative role examples/);
   assert.match(persistedPanel, /!showcaseMode \? <option value="DEMO">Demo · synthetic/);
   assert.match(scenario, /disabled=\{busy \|\| !options \|\| showcaseBlocksLocalPlanning\}/);
