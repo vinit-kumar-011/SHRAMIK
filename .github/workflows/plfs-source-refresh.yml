@@ -67,7 +67,7 @@ jobs:
 
           if [[ "$SHOULD_APPLY" == "true" ]]; then
             if [[ -z "${DATABASE_URL:-}" ]]; then
-              echo "::error::Scheduled/approved database refresh requires the GitHub Actions secret SHR​​AMIK_DATABASE_URL."
+              echo "::error::Scheduled/approved database refresh requires the GitHub Actions secret SHRAMIK_DATABASE_URL."
               exit 2
             fi
             python -m app.ingestion.refresh_plfs_cws --apply --output-dir ../artifacts/source-refresh
