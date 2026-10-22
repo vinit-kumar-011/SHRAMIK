@@ -298,22 +298,20 @@ try {
     const previewState = await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),label:(document.querySelector('.module-preview-banner')?.innerText||'').slice(0,220),liveNotice:!!document.querySelector('.dbi-shell'),bodyHasModule:document.body.innerText.toLowerCase().includes(${JSON.stringify(module.label.toLowerCase())})})`);
     record(`${module.label} preview is opt-in and explicitly labelled synthetic`, liveBefore.path === module.path && liveBefore.notice && !liveBefore.preview && Boolean(previewClick) && previewState.banner && previewState.label.includes('SYNTHETIC_DEMO') && previewState.bodyHasModule, JSON.stringify({liveBefore,previewState}));
     await screenshot(cdp, `preview-${module.path.slice(1)}.png`);
+    if (module.path === '/demand') {
+      // Exercise the route-change exit while the preview is already open. Keeping
+      // this in the same interaction avoids a second direct navigation race and
+      // still verifies that changing modules clears the synthetic preview state.
+      const routeChange = await cdp.evaluate(`(() => { const e=Array.from(document.querySelectorAll('button.nav-item')).find(button=>(button.innerText||'').trim().toLowerCase()==='supply'); if(!e)return null; e.click(); return (e.innerText||'').trim(); })()`);
+      await waitFor(() => cdp.evaluate(`location.pathname === '/supply' && !document.querySelector('.module-preview-banner') && !!document.querySelector('.dbi-shell')`), 'preview cleared after in-app navigation');
+      const routeState = await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),liveNotice:!!document.querySelector('.dbi-shell')})`);
+      record('Changing modules exits the previous module preview', routeChange === 'Supply' && routeState.path === '/supply' && !routeState.banner && routeState.liveNotice, JSON.stringify({clicked:routeChange,...routeState}));
+      continue;
+    }
     const returnClick = await clickByText(cdp, 'Return to live view', true);
     await waitFor(() => cdp.evaluate(`!document.querySelector('.module-preview-banner') && !!document.querySelector('.dbi-shell')`), `${module.label} return to live view`);
     record(`${module.label} preview exits back to source-backed readiness`, Boolean(returnClick) && await cdp.evaluate(`!document.querySelector('.module-preview-banner') && !!document.querySelector('.dbi-shell')`), module.path);
   }
-
-  // The preview must also be cleared on in-app navigation, not just its explicit exit action.
-  await navigate(cdp, origin + '/demand');
-  await waitFor(() => cdp.evaluate(
-    `!!document.querySelector('.dbi-shell') && Array.from(document.querySelectorAll('button')).some(button => (button.innerText||'').trim() === 'Open synthetic demo preview')`,
-  ), 'Demand preview control before route-change test');
-  const routePreviewClick = await clickByText(cdp, 'Open synthetic demo preview', true);
-  if (!routePreviewClick) throw new Error('Demand synthetic preview control was not found for route-change test.');
-  await waitFor(() => cdp.evaluate(`!!document.querySelector('.module-preview-banner')`), 'Demand synthetic preview before route-change test');
-  const routeChange = await cdp.evaluate(`(() => { const e=Array.from(document.querySelectorAll('button.nav-item')).find(button=>(button.innerText||'').trim().toLowerCase()==='supply'); if(!e)return null; e.click(); return (e.innerText||'').trim(); })()`);
-  await waitFor(() => cdp.evaluate(`location.pathname === '/supply' && !document.querySelector('.module-preview-banner') && !!document.querySelector('.dbi-shell')`), 'preview cleared after in-app navigation');
-  record('Changing modules exits the previous module preview', routeChange === 'Supply', JSON.stringify(await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),liveNotice:!!document.querySelector('.dbi-shell')})`)));
 
   // Exercise the default local assumptions-only planner without sending credentials or any non-read HTTP requests.
   await navigate(cdp, origin + '/scenario-simulator');
