@@ -173,7 +173,7 @@ async function main() {
           parent = parent.parentElement;
           depth += 1;
         }
-        return labels ? `${bestContext} ${labels}`.trim() : '';
+        return labels ? (bestContext + ' ' + labels).trim() : '';
       }).filter(Boolean);
       const text = [bodyText, ...localContext].filter(Boolean).join('\\n');
       return {
