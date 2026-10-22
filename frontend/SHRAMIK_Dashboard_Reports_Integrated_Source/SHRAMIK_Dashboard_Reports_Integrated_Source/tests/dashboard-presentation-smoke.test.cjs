@@ -9,7 +9,9 @@ const styles = fs.readFileSync(path.join(appRoot, 'src/shramik-dashboard.css'), 
 
 test('source-backed KPI cards do not render a fabricated flat sparkline when history is absent', () => {
   assert.match(dashboard, /item\.trend\.length\s*>=\s*2/);
-  assert.match(dashboard, /History unavailable/);
+  assert.match(dashboard, /No trend series/);
+  assert.match(dashboard, /item\.title\.length > 24 \? ' kpi-title-multiline' : ''/);
+  assert.match(dashboard, /title=\{item\.title\}/);
   assert.match(styles, /\.kpi-spark-empty\s*\{/);
 });
 
