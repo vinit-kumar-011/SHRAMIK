@@ -32,7 +32,7 @@ def test_demo_generator_blocks_remote_database_by_default(url: str) -> None:
 def test_remote_demo_write_requires_both_explicit_opt_ins() -> None:
     url = "postgresql://user:password@db.example.supabase.co:5432/postgres"
 
-    with pytest.raises(RuntimeError, match="requires both"):
+    with pytest.raises(RuntimeError, match="require both"):
         validate_demo_database_target(url, allow_remote_flag=True, allow_remote_env=False)
 
     with pytest.raises(RuntimeError, match="requires both"):
