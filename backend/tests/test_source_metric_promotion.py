@@ -5,6 +5,7 @@ from decimal import Decimal
 import pytest
 
 from app.ingestion.promote_source_metrics import (
+    _same_existing,
     fiscal_year_ending_year,
     normalize_metric_row,
 )
@@ -86,3 +87,19 @@ def test_promotes_apprentice_engagement_with_its_own_unit_and_signal() -> None:
 def test_rejects_unapproved_or_ambiguous_metric_rows(overrides, message) -> None:
     with pytest.raises(ValueError, match=message):
         normalize_metric_row(metric_row(**overrides))
+
+def test_existing_promotion_is_idempotent_when_note_wording_changes() -> None:
+    candidate = normalize_metric_row(metric_row())
+    existing = {
+        "supply_quantity": candidate["supply_quantity"],
+        "quantity_unit": candidate["quantity_unit"],
+        "quantity_semantics": "FLOW",
+        "retrieval_id": candidate["retrieval_id"],
+        "evidence_item_id": candidate["evidence_item_id"],
+        "transformation_note": "Earlier explanatory wording for this same source row.",
+    }
+
+    # The durable identity/value/retrieval fields match; prose edits must not
+    # make a repeat promotion look like conflicting source data.
+    assert _same_existing(existing, candidate)
+
