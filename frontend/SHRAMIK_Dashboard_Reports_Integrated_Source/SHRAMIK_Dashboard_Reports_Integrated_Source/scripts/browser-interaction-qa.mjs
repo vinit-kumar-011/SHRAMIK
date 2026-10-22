@@ -447,34 +447,37 @@ try {
   await navigate(cdp, origin + '/data-sources');
   await waitFor(() => cdp.evaluate(`(() => {
     const root = document.querySelector('.data-sources-page');
-    const text = document.body?.innerText || '';
-    return !!root && (
-      !!root.querySelector('.connection-note') ||
-      !!root.querySelector('.error-state') ||
-      text.includes('No sources registered')
-    );
-  })()`), 'Data Sources registry response or explicit unavailable state');
+    return !!root?.querySelector('.connection-note') &&
+      !!root.querySelector('.source-table tbody tr');
+  })()`), 'Source-backed Data Sources registry with at least one row');
   const dataSourcesState = await cdp.evaluate(`(() => {
     const root = document.querySelector('.data-sources-page');
     const text = root?.innerText || '';
     const rows = Array.from(root?.querySelectorAll('.source-table tbody tr') || []);
     const lifecycleUnknown = rows.filter(row => row.querySelector('.status-stack')?.innerText.includes('Unknown')).length;
+    const provenanceTags = Array.from(root?.querySelectorAll('.provenance') || []).map(el => (el.innerText || '').trim());
+    const registrySummary = root?.querySelector('.registry-panel .section-heading p:last-child')?.innerText || '';
     return {
       mounted: !!root,
       registryResponse: !!root?.querySelector('.connection-note'),
       explicitError: !!root?.querySelector('.error-state'),
       syntheticNotice: !!root?.querySelector('.demo-notice'),
-      provenanceTags: Array.from(root?.querySelectorAll('.provenance') || []).map(el => (el.innerText || '').trim()),
+      provenanceTags,
+      sourceBackedOnly: provenanceTags.length > 0 && provenanceTags.every(tag => tag === 'Source-backed'),
       rowCount: rows.length,
+      registrySummary,
       unknownLifecycleOrFreshnessRows: lifecycleUnknown,
       overstatesFreshness: /All sources are up to date|Every source is healthy|Live feed connected/i.test(text),
       hasSourceRegisterTitle: /Registered sources/i.test(text),
+      internalColumnsNotRendered: !/created_at|internal notes/i.test(text),
     };
   })()`);
-  const dataSourcesSafe = dataSourcesState.mounted && !dataSourcesState.syntheticNotice &&
+  const dataSourcesSafe = dataSourcesState.mounted && dataSourcesState.registryResponse &&
+    !dataSourcesState.explicitError && !dataSourcesState.syntheticNotice &&
+    dataSourcesState.sourceBackedOnly && dataSourcesState.rowCount > 0 &&
     !dataSourcesState.overstatesFreshness && dataSourcesState.hasSourceRegisterTitle &&
-    (dataSourcesState.registryResponse || dataSourcesState.explicitError);
-  record('Data Sources shows registry state without synthetic runs or unsupported freshness claims',
+    dataSourcesState.internalColumnsNotRendered;
+  record('Data Sources loads source-backed registry rows with restricted columns and no fake freshness',
     dataSourcesSafe, JSON.stringify(dataSourcesState));
   await screenshot(cdp, 'showcase-data-sources.png');
 
