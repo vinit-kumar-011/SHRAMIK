@@ -1,0 +1,2 @@
+# Keep canonical source CSVs byte-stable across Windows and Unix checkouts.
+data/processed/*.csv text eol=lf
