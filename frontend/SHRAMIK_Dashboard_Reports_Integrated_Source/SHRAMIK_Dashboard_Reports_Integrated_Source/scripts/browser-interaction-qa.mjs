@@ -287,7 +287,11 @@ try {
   ];
   for (const module of officialOnlyModules) {
     await navigate(cdp, origin + module.path);
-    await waitFor(() => cdp.evaluate(`!!document.querySelector('.dbi-shell')`), `${module.label} official/source-backed view`);
+    if (['/forecasts', '/emerging-skills'].includes(module.path)) {
+      await waitFor(() => cdp.evaluate(`!!document.querySelector('.pai-mode-label select')`), `${module.label} official analysis controls`);
+    } else {
+      await waitFor(() => cdp.evaluate(`!!document.querySelector('.dbi-shell') && !document.querySelector('.dbi-loading')`), `${module.label} official/source-backed view`);
+    }
     const state = await cdp.evaluate(`(() => {
       const buttons = Array.from(document.querySelectorAll('button'));
       const options = Array.from(document.querySelectorAll('select option'));
@@ -316,10 +320,10 @@ try {
   await screenshot(cdp, 'scenario-planner-desktop.png');
   const plannerShowcase = await cdp.evaluate(`(() => {
     const body = document.body?.innerText || '';
-    const run = Array.from(document.querySelectorAll('button')).find(button => /Run Simulation|Verified baseline required/.test((button.innerText||'').trim()));
+    const run = Array.from(document.querySelectorAll('button')).find(button => /Run Simulation|Approved source-backed baseline required/.test((button.innerText||'').trim()));
     return {
       localBaseline: (document.querySelector('.ss-baseline code')?.innerText || '').includes('LOCAL-PLANNING-NO-VALIDATED-BASELINE'),
-      officialGuard: body.includes('Official showcase mode — verified baseline required.'),
+      officialGuard: body.includes('Official showcase mode — approved source-backed baseline required.'),
       runDisabled: !!run && run.disabled,
       runLabel: (run?.innerText || '').trim(),
       syntheticOutput: !!document.querySelector('.ss-card.ss-outcomes .ss-badge')
@@ -328,7 +332,7 @@ try {
   })()`);
   record('Scenario Simulator blocks local illustrative runs until a verified baseline exists',
     plannerShowcase.localBaseline && plannerShowcase.officialGuard && plannerShowcase.runDisabled &&
-    /Verified baseline required/.test(plannerShowcase.runLabel) && !plannerShowcase.syntheticOutput,
+    /Approved source-backed baseline required/.test(plannerShowcase.runLabel) && !plannerShowcase.syntheticOutput,
     JSON.stringify(plannerShowcase));
   await screenshot(cdp, 'scenario-planner-showcase.png');
 
