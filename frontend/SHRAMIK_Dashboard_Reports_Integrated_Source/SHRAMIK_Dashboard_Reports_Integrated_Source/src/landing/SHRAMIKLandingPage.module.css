@@ -109,6 +109,8 @@
     .root .sl-chart-demand { fill:none; stroke:var(--sl-navy); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
     .root .sl-chart-supply { fill:none; stroke:var(--sl-teal); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:6 5; }
     .root .sl-chart-forecast { fill:rgba(242,211,79,.22); stroke:none; }
+    .root .sl-chart-empty-label { fill:var(--sl-ink-muted); font-size:12px; font-weight:700; }
+    .root .sl-preview-showcase-note { color:var(--sl-ink-muted); font-size:12px; line-height:1.55; }
     .root .sl-preview-metrics { display:grid; gap:10px; align-content:start; }
     .root .sl-preview-metric { padding:14px; border:1px solid var(--sl-border-muted); border-radius:9px; background:var(--sl-surface); }
     .root .sl-preview-metric span { display:block; color:var(--sl-ink-muted); font-size:12px; }
