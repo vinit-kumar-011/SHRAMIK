@@ -48,6 +48,9 @@ jobs:
       - name: Verify live Supabase published KPI reads
         run: npm run test:live-data
       - name: Build production application
+        # Intentionally simulate a stale Vercel demo flag. Production guards must win over this flag.
+        env:
+          VITE_SHRAMIK_USE_DEMO_DATA: "true"
         run: npm run build
       - name: Verify generated static entry points
         run: |
