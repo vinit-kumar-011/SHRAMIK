@@ -49,7 +49,7 @@ MONTH_PATTERN = re.compile(
     r")\.?\s+(20\d{2})\b",
     re.I,
 )
-PERCENT_PATTERN = re.compile(r"(?<![\w.])(\d{1,2}(?:\.\d+)?)\s*%")
+PERCENT_PATTERN = re.compile(r"(?<![\w.])(\d{1,3}(?:\.\d+)?)\s*%")
 AGE_PATTERN = re.compile(r"15\s+years?\s+(?:and\s+above|or\s+above|and\s+over)", re.I)
 
 
@@ -102,8 +102,10 @@ def _period_near_label(text_value: str, label_start: int, label_end: int) -> tup
 
 
 def _published_value_near_label(text_value: str, label_start: int, label_end: int) -> float:
-    window_start = max(0, label_start - 220)
-    window_end = min(len(text_value), label_end + 180)
+    # The value is expected immediately before or after its card label. Keep this
+    # window narrow to avoid accidentally borrowing the adjacent card's percentage.
+    window_start = max(0, label_start - 110)
+    window_end = min(len(text_value), label_end + 110)
     window = text_value[window_start:window_end]
     candidates = list(PERCENT_PATTERN.finditer(window))
     if not candidates:
