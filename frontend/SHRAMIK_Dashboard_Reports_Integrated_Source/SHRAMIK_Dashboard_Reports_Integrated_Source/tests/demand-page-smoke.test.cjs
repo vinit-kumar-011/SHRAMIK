@@ -33,7 +33,7 @@ test('latest national PLFS cards prefer only source-backed monthly CWS values wh
   assert.match(source, /d\.survey_basis === 'current_weekly_status'/);
   assert.match(source, /d\.frequency === 'monthly'/);
   assert.match(source, /periodFilter === 'MONTHLY_CWS'\s*\?\s*latestMonthlyCwsRate/);
-  assert.match(source, /canonicalRate\\(snapshot, code, regionCode, periodFilter === 'LATEST'\\)/);
+  assert.match(source, /canonicalRate\(snapshot, code, regionCode, periodFilter === 'LATEST'\)/);
 });
 
 test('monthly PLFS display period remains distinct from annual CY2025', () => {
