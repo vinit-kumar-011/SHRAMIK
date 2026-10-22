@@ -45,6 +45,33 @@ def fixture_page(
     """
 
 
+def hindi_fixture_page() -> str:
+    return """
+    <!doctype html><html><body>
+      <main>
+        <section class="metric">
+          <strong>55.5%</strong>
+          <h2>श्रम बल भागीदारी दर (एलएफपीआर)</h2>
+          <p>15 वर्ष और उससे अधिक आयु वाले व्यक्ति (सीडब्ल्यूएस), देश में</p>
+          <span>सितम्बर 2026</span>
+        </section>
+        <section class="metric">
+          <strong>52.7%</strong>
+          <h2>श्रमिक जनसंख्या अनुपात (डब्ल्यूपीआर)</h2>
+          <p>15 वर्ष और उससे अधिक आयु के व्यक्ति (सीडब्ल्यूएस), देश में</p>
+          <span>सितम्बर 2026</span>
+        </section>
+        <section class="metric">
+          <strong>5.0%</strong>
+          <h2>बेरोजगारी दर (यूआर)</h2>
+          <p>15 वर्ष और उससे अधिक आयु वाले व्यक्ति (सीडब्ल्यूएस), देश में</p>
+          <span>सितम्बर 2026</span>
+        </section>
+      </main>
+    </body></html>
+    """
+
+
 def test_extracts_three_official_national_cws_rates_from_one_month() -> None:
     result = parse_monthly_cws(fixture_page())
 
@@ -61,6 +88,13 @@ def test_extracts_three_official_national_cws_rates_from_one_month() -> None:
         "CWS_WPR": 52.7,
         "CWS_UR": 5.0,
     }
+
+
+def test_extracts_hindi_rendering_of_the_official_cards() -> None:
+    result = parse_monthly_cws(hindi_fixture_page())
+    assert result["reference_period"] == "MONTHLY_2026-09"
+    assert result["month_label"] == "September 2026"
+    assert result["metrics"] == {"CWS_LFPR": 55.5, "CWS_WPR": 52.7, "CWS_UR": 5.0}
 
 
 def test_rejects_future_or_invalid_published_rates() -> None:
