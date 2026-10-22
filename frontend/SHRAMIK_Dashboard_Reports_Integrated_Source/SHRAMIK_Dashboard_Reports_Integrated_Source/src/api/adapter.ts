@@ -11,7 +11,8 @@ export function createLabourMarketDataAdapter(): LabourMarketDataAdapter {
   const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
   const baseUrl = env?.VITE_SHRAMIK_API_BASE_URL?.trim();
   const dataMode = env?.VITE_SHRAMIK_DATA_MODE?.trim().toLowerCase();
-  if (env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true') return new MockLabourMarketDataAdapter();
+  const showcaseMode = env?.MODE === 'production' || env?.VITE_SHRAMIK_SHOWCASE_MODE === 'true';
+  if (!showcaseMode && env?.VITE_SHRAMIK_USE_DEMO_DATA === 'true') return new MockLabourMarketDataAdapter();
   // A configured URL must not silently switch production to an API that may not be deployed.
   // Supabase-backed public reads (through /api/shramik-data) are the default.
   if (dataMode === 'rest' && baseUrl) {
