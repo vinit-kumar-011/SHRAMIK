@@ -144,9 +144,11 @@ def parse_monthly_cws(html: str) -> dict[str, Any]:
 
             try:
                 year, month, month_label = _period_near_label(body, label_match.start(), label_match.end())
-                value = _published_value_near_label(body, label_match.start(), label_match.end())
             except ValueError:
                 continue
+            # A metric card with a valid context and period but an invalid/out-of-range
+            # percentage is a hard failure. Never skip it and borrow a later card's value.
+            value = _published_value_near_label(body, label_match.start(), label_match.end())
             selected = {
                 "metric_code": metric_code,
                 "value": value,
