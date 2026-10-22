@@ -255,7 +255,18 @@ def promote(*, apply: bool = False) -> dict[str, Any]:
                 ),
             }
             if apply and inserts:
-                conn.execute(INSERT_SQL, inserts)
+                insert_parameters = [
+                    {
+                        key: row[key]
+                        for key in (
+                            "state_id", "period_year", "supply_quantity", "quantity_unit",
+                            "supply_signal_type", "source_id", "source_release", "source_date",
+                            "retrieval_id", "evidence_item_id", "transformation_note",
+                        )
+                    }
+                    for row in inserts
+                ]
+                conn.execute(INSERT_SQL, insert_parameters)
                 summary["rows_inserted"] = len(inserts)
                 summary["writes_performed"] = True
             else:
