@@ -140,3 +140,41 @@ def test_ignores_script_values_not_presented_as_visible_page_content() -> None:
     result = parse_monthly_cws(page)
     assert result["reference_period"] == "MONTHLY_2026-09"
     assert result["metrics"]["CWS_LFPR"] == 55.5
+
+
+def test_parses_actual_hindi_mospi_product_page_wording() -> None:
+    # MoSPI's page is currently rendered in Hindi on the automated browser runner.
+    # Keep the labels, age domain, CWS basis, month, and percentages in the source's wording.
+    page = """
+    <!doctype html><html><body><main>
+      <section><strong>55.5%</strong>
+        <h2>श्रम बल भागीदारी दर (एलएफपीआर)</h2>
+        <p>15 वर्ष और उससे अधिक आयु वाले व्यक्ति (सीडब्ल्यूएस)</p><span>सितम्बर 2026</span>
+      </section>
+      <section><strong>52.7%</strong>
+        <h2>श्रमिक जनसंख्या अनुपात (डब्ल्यूपीआर)</h2>
+        <p>15 वर्ष और उससे अधिक आयु के व्यक्ति (सीडब्ल्यूएस)</p><span>सितम्बर 2026</span>
+      </section>
+      <section><strong>5.0%</strong>
+        <h2>बेरोजगारी दर (यूआर)</h2>
+        <p>15 वर्ष और उससे अधिक आयु वाले व्यक्ति (सीडब्ल्यूएस)</p><span>सितम्बर 2026</span>
+      </section>
+      <section>
+        <p>देश में 15 वर्ष और उससे अधिक आयु के व्यक्तियों के लिए सीडब्ल्यूएस में
+        एलएफपीआर (%) सितंबर 2026 में 55.5% था।</p>
+        <p>देश में 15 वर्ष और उससे अधिक आयु के व्यक्तियों के लिए सीडब्ल्यूएस में
+        डब्ल्यूपीआर (%) सितंबर 2026 में 52.7% था।</p>
+        <p>देश में 15 वर्ष और उससे अधिक आयु के व्यक्तियों के लिए सीडब्ल्यूएस में
+        यूआर (%) सितंबर 2026 में 5.0% था।</p>
+      </section>
+    </main></body></html>
+    """
+    result = parse_monthly_cws(page)
+
+    assert result["reference_period"] == "MONTHLY_2026-09"
+    assert result["month_label"] == "September 2026"
+    assert result["metrics"] == {
+        "CWS_LFPR": 55.5,
+        "CWS_WPR": 52.7,
+        "CWS_UR": 5.0,
+    }
