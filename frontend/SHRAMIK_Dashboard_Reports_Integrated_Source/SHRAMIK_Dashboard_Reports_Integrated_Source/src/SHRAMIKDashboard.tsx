@@ -171,7 +171,7 @@ function KpiCard({ item, index, onOpen }: { item: MetricCardData; index: number;
     </div>
     <div className="kpi-spark">{item.trend.length >= 2
       ? <Sparkline values={item.trend} tone={tone} id={item.id} />
-      : <span className="kpi-spark-empty" aria-label="No historical trend series is published for this metric">No trend series</span>}</div>
+      : <span className="kpi-spark-empty sr-only" aria-label="No historical trend series is published for this metric">No trend series</span>}</div>
     <span className="card-open"><ChevronRight size={15}/></span>
   </button>;
 }
