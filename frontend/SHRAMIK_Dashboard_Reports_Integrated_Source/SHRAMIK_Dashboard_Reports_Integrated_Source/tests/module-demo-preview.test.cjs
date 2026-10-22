@@ -45,6 +45,9 @@ test('production builds enforce the official-only showcase experience', () => {
   assert.match(persistedPanel, /!showcaseMode \? <option value="DEMO">Demo · synthetic/);
   assert.match(scenario, /disabled=\{busy \|\| !options \|\| showcaseBlocksLocalPlanning\}/);
   assert.match(scenario, /selectedBaseline.provenance !== "SOURCE_BACKED"/);
+  assert.match(scenario, /showcaseBlocksLocalPlanning \? <section className="ss-card ss-entity"/);
+  assert.match(scenario, /Seat counts, training lag and conversion assumptions are hidden/);
+  assert.match(scenario, /Awaiting approved scope/);
   assert.match(scenario, /selectedBaseline.qualityStatus !== "APPROVED"/);
   assert.match(scenario, /Official showcase mode — approved source-backed baseline required/);
   assert.ok(apiAdapter.includes("const showcaseMode = env?.MODE === 'production' || env?.VITE_SHRAMIK_SHOWCASE_MODE === 'true'"));

@@ -406,9 +406,10 @@ try {
   await screenshot(cdp, 'scenario-planner-desktop.png');
   const plannerShowcase = await cdp.evaluate(`(() => {
     const body = document.body?.innerText || '';
-    const run = Array.from(document.querySelectorAll('button')).find(button => /Run Simulation|Approved source-backed baseline required/.test((button.innerText||'').trim()));
+    const run = Array.from(document.querySelectorAll('button')).find(button => (button.innerText||'').trim() === 'Approved source-backed baseline required');
     return {
-      localBaseline: (document.querySelector('.ss-baseline code')?.innerText || '').includes('LOCAL-PLANNING-NO-VALIDATED-BASELINE'),
+      noFallbackScope: !body.includes('User-defined skill group') && !body.includes('LOCAL-PLANNING-NO-VALIDATED-BASELINE'),
+      noAssumptionInputs: !document.querySelector('#ss-seats') && !document.querySelector('#ss-lag') && !document.querySelector('.ss-advanced'),
       officialGuard: body.includes('Official showcase mode — approved source-backed baseline required.'),
       runDisabled: !!run && run.disabled,
       runLabel: (run?.innerText || '').trim(),
@@ -416,10 +417,10 @@ try {
         && /SYNTHETIC_DEMO/.test(document.querySelector('.ss-card.ss-outcomes .ss-badge')?.innerText || ''),
     };
   })()`);
-  record('Scenario Simulator blocks local illustrative runs until a verified baseline exists',
-    plannerShowcase.localBaseline && plannerShowcase.officialGuard && plannerShowcase.runDisabled &&
-    /Approved source-backed baseline required/.test(plannerShowcase.runLabel) && !plannerShowcase.syntheticOutput,
-    JSON.stringify(plannerShowcase));
+  record('Scenario Simulator hides placeholder scopes and default assumptions in official showcase mode',
+    plannerShowcase.noFallbackScope && plannerShowcase.noAssumptionInputs && plannerShowcase.officialGuard &&
+    plannerShowcase.runDisabled && /Approved source-backed baseline required/.test(plannerShowcase.runLabel) &&
+    !plannerShowcase.syntheticOutput, JSON.stringify(plannerShowcase));
   await screenshot(cdp, 'scenario-planner-showcase.png');
 
   await setViewport(cdp, 390, 844);
