@@ -403,9 +403,22 @@ function Provenance({ label = 'SOURCE_BACKED' }: { label?: string }) {
 function SectionHead({ title, note }: { title: string; note?: string }) {
   return <div className="dbi-section-head"><div><h2>{title}</h2>{note ? <p>{note}</p> : null}</div></div>;
 }
+function sourceDisplayName(source: SourceRow): string {
+  const name = source.name.trim();
+  if (/MSDE Skill India Mission State\/UT training centre context/i.test(name)) return 'MSDE / PIB training metrics';
+  if (/Rajya Sabha Unstarred Question 2674/i.test(name)) return 'Rajya Sabha · Q.2674';
+  if (/DGT CTS-2026 provisional dynamic seat matrix/i.test(name)) return 'DGT · CTS-2026 seat matrix';
+  if (/e-Shram registrations by State\/UT/i.test(name)) return 'PIB · e-Shram registrations';
+  if (/PLFS monthly CWS all-India dashboard/i.test(name)) return 'MoSPI · PLFS monthly CWS';
+  if (/Employment Exchange Statistics 2023/i.test(name)) return 'DGE · Exchange Statistics 2023';
+  return name.length > 34 ? name.slice(0, 31).trimEnd() + '…' : name;
+}
 function SourceLink({ source }: { source?: SourceRow }) {
-  if (!source?.url) return <span className="dbi-source-plain">{source?.name || 'Source registered; URL not available'}</span>;
-  return <a className="dbi-source-link" href={source.url} target="_blank" rel="noreferrer">{source.name}<ArrowUpRight size={13}/></a>;
+  if (!source) return <span className="dbi-source-plain">Source registered; title unavailable</span>;
+  const fullName = source.name || 'Source registered; URL not available';
+  const displayName = sourceDisplayName(source);
+  if (!source.url) return <span className="dbi-source-plain" title={fullName}>{displayName}</span>;
+  return <a className="dbi-source-link" href={source.url} target="_blank" rel="noreferrer" title={fullName} aria-label={`Open source: ${fullName}`}><span>{displayName}</span><ArrowUpRight size={13} aria-hidden="true"/></a>;
 }
 function DataTable({ columns, children, empty = 'No matching source-backed rows are available.' }: { columns: string[]; children: ReactNode; empty?: string }) {
   const rows = Children.toArray(children);
