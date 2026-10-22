@@ -12,11 +12,25 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.auth import require_supabase_user
+from app.core.config import get_settings
 from app.core.request_id import get_or_create_request_id
 from app.db.session import get_db
 
 router = APIRouter()
 AnalysisMode = Literal["OFFICIAL", "DEMO"]
+
+
+def _assert_analysis_mode_allowed(analysis_mode: AnalysisMode) -> None:
+    """Make sure a client cannot opt into synthetic records in the official showcase."""
+    if analysis_mode != "DEMO":
+        return
+    settings = get_settings()
+    production_environment = settings.environment.strip().lower() in {"production", "prod"}
+    if settings.showcase_mode or production_environment:
+        raise HTTPException(
+            status_code=403,
+            detail="Demo analysis mode is disabled for the official showcase.",
+        )
 
 
 def _filters(
@@ -86,6 +100,7 @@ def list_forecasts(
     db: Session = Depends(get_db),
 ) -> dict:
     """List active persisted forecast records. Does not run the model or infer missing results."""
+    _assert_analysis_mode_allowed(analysis_mode)
     clauses, params = _filters(
         analysis_mode=analysis_mode,
         district_id=district_id,
@@ -133,6 +148,7 @@ def list_early_warnings(
     db: Session = Depends(get_db),
 ) -> dict:
     """List active warnings attached to active forecast results only."""
+    _assert_analysis_mode_allowed(analysis_mode)
     clauses, params = _filters(
         analysis_mode=analysis_mode,
         district_id=district_id,
@@ -179,6 +195,7 @@ def list_emerging_skills(
     db: Session = Depends(get_db),
 ) -> dict:
     """List active, persisted emerging-skill signals without manufacturing rankings."""
+    _assert_analysis_mode_allowed(analysis_mode)
     clauses, params = _filters(
         analysis_mode=analysis_mode,
         district_id=district_id,
