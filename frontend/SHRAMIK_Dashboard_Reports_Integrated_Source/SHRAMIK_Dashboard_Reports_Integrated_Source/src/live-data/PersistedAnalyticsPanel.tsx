@@ -93,7 +93,8 @@ type PanelData = {
 
 const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
 const configuredBase = (env?.VITE_SHRAMIK_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
-const API_BASE = configuredBase.replace(/\/api\/v1(?:\/forecasts)?$/i, '');
+// In Vite dev/preview, use the same-origin proxy to avoid browser CORS preflights.
+const API_BASE = env?.DEV ? '' : configuredBase.replace(/\/api\/v1(?:\/forecasts)?$/i, '');
 
 function formatNumber(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
