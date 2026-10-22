@@ -478,58 +478,89 @@ try {
     dataSourcesSafe, JSON.stringify(dataSourcesState));
   await screenshot(cdp, 'showcase-data-sources.png');
 
-  // Administration has no production API yet. It must show an explicit unavailable
-  // state, not fictional applicants/users/audit rows or local approval controls.
+  // Administration has no public production API yet. In production the intended
+  // route is a source-backed unavailability notice, not the internal admin workbench,
+  // fictional applicants, or local approval controls.
   await navigate(cdp, origin + '/administration');
   await waitFor(() => cdp.evaluate(`(() => {
+    const liveNotice = document.querySelector('.live-module-notice');
     const root = document.querySelector('.administration-page');
-    return !!root && !root.querySelector('.administration-loading') &&
-      (!!root.querySelector('.administration-unavailable-notice') || !!root.querySelector('.administration-error'));
-  })()`), 'Administration explicit unavailable/error state');
+    return !!liveNotice || (!!root && !root.querySelector('.administration-loading') &&
+      (!!root.querySelector('.administration-unavailable-notice') || !!root.querySelector('.administration-error')));
+  })()`), 'Administration official-mode unavailable state');
   const administrationState = await cdp.evaluate(`(() => {
+    const live = document.querySelector('.live-module-notice');
     const root = document.querySelector('.administration-page');
-    const text = root?.innerText || '';
+    const page = root || live;
+    const text = page?.innerText || '';
+    const buttons = Array.from(page?.querySelectorAll('button') || []);
+    const isNoticeOnly = !!live && !root;
     const requestRows = root?.querySelectorAll('.administration-table tbody tr')?.length || 0;
-    const visibleButtons = Array.from(root?.querySelectorAll('button') || []);
-    const unavailableNotice = !!root?.querySelector('.administration-unavailable-notice');
+    const unavailableNotice = isNoticeOnly || !!root?.querySelector('.administration-unavailable-notice');
     const errorNotice = !!root?.querySelector('.administration-error');
     return {
-      mounted: !!root,
+      mounted: !!page,
+      noticeOnly: isNoticeOnly,
       unavailableNotice,
       errorNotice,
       demoNotice: !!root?.querySelector('.administration-demo-notice'),
-      sourceUnavailableExplained: (unavailableNotice && text.includes('No real access requests, user records or audit events are shown'))
-        || (errorNotice && text.includes('Administration data unavailable.')),
+      previewEntryPoint: buttons.some(button => /synthetic Administration preview|Approve locally|Deny locally/i.test(button.innerText || '')),
+      sourceUnavailableExplained: isNoticeOnly
+        ? text.includes('A server-authorized review/provisioning API is not configured')
+          && text.includes('No fabricated outputs')
+        : (unavailableNotice && text.includes('No real access requests, user records or audit events are shown'))
+          || (errorNotice && text.includes('Administration data unavailable.')),
       noRequestOrUserRows: requestRows === 0,
       noReviewControls: !root?.querySelector('.administration-review-button'),
-      noLocalApproveControls: !visibleButtons.some(button => /Approve locally|Deny locally/.test(button.innerText || '')),
-      pendingRequestsNotConnected: text.includes('no live queue connected') || text.includes('Administration data unavailable.'),
+      noLocalApproveControls: !buttons.some(button => /Approve locally|Deny locally/.test(button.innerText || '')),
+      pendingRequestsNotConnected: isNoticeOnly
+        ? text.includes('cannot read the queue, approve requests or grant roles')
+        : text.includes('no live queue connected') || text.includes('Administration data unavailable.'),
     };
   })()`);
-  const auditTabClick = await clickByText(cdp, 'Audit log', true);
-  await waitFor(() => cdp.evaluate(`(() => {
-    const text = document.querySelector('.administration-page')?.innerText || '';
-    return text.includes('No server audit endpoint is configured. No audit events are fabricated.')
-      || text.includes('The Administration API could not be verified for this session. No audit events are fabricated.');
-  })()`), 'Administration audit tab with no fabricated server events');
-  const administrationAuditState = await cdp.evaluate(`(() => {
-    const root = document.querySelector('.administration-page');
-    const text = root?.innerText || '';
-    const explicitConfiguredEmpty = text.includes('No server audit endpoint is configured. No audit events are fabricated.');
-    const explicitApiError = text.includes('The Administration API could not be verified for this session. No audit events are fabricated.');
-    return {
-      auditTabOpened: explicitConfiguredEmpty || explicitApiError,
-      noAuditRows: (root?.querySelectorAll('.administration-table tbody tr')?.length || 0) === 0,
-      explicitEmptyAuditState: explicitConfiguredEmpty || explicitApiError,
-    };
-  })()`);
+  let administrationAuditState;
+  let auditTabClick = null;
+  if (administrationState.noticeOnly) {
+    // The production status route deliberately has no audit table/control until
+    // a server-authorized Administration API is deployed.
+    administrationAuditState = await cdp.evaluate(`(() => {
+      const root = document.querySelector('.live-module-notice');
+      const text = root?.innerText || '';
+      return {
+        auditTabOpened: !Array.from(root?.querySelectorAll('button') || []).some(button => /Audit log/i.test(button.innerText || '')),
+        noAuditRows: !root?.querySelector('.administration-table'),
+        explicitEmptyAuditState: text.includes('No fabricated outputs') &&
+          text.includes('server-authorized review/provisioning API is not configured'),
+      };
+    })()`);
+  } else {
+    auditTabClick = await clickByText(cdp, 'Audit log', true);
+    await waitFor(() => cdp.evaluate(`(() => {
+      const text = document.querySelector('.administration-page')?.innerText || '';
+      return text.includes('No server audit endpoint is configured. No audit events are fabricated.')
+        || text.includes('The Administration API could not be verified for this session. No audit events are fabricated.');
+    })()`), 'Administration audit tab with no fabricated server events');
+    administrationAuditState = await cdp.evaluate(`(() => {
+      const root = document.querySelector('.administration-page');
+      const text = root?.innerText || '';
+      const explicitConfiguredEmpty = text.includes('No server audit endpoint is configured. No audit events are fabricated.');
+      const explicitApiError = text.includes('The Administration API could not be verified for this session. No audit events are fabricated.');
+      return {
+        auditTabOpened: explicitConfiguredEmpty || explicitApiError,
+        noAuditRows: (root?.querySelectorAll('.administration-table tbody tr')?.length || 0) === 0,
+        explicitEmptyAuditState: explicitConfiguredEmpty || explicitApiError,
+      };
+    })()`);
+  }
   const administrationSafe = administrationState.mounted && administrationState.unavailableNotice &&
-    !administrationState.demoNotice && administrationState.sourceUnavailableExplained &&
+    !administrationState.demoNotice && !administrationState.previewEntryPoint &&
+    administrationState.sourceUnavailableExplained &&
     administrationState.noRequestOrUserRows && administrationState.noReviewControls &&
     administrationState.noLocalApproveControls && administrationState.pendingRequestsNotConnected &&
-    Boolean(auditTabClick) && administrationAuditState.auditTabOpened &&
-    administrationAuditState.noAuditRows && administrationAuditState.explicitEmptyAuditState;
-  record('Administration reports unavailable service and exposes no fictional access records or decisions',
+    (administrationState.noticeOnly || Boolean(auditTabClick)) &&
+    administrationAuditState.auditTabOpened && administrationAuditState.noAuditRows &&
+    administrationAuditState.explicitEmptyAuditState;
+  record('Administration uses an honest official-mode unavailable state without synthetic access data',
     administrationSafe, JSON.stringify({ ...administrationState, ...administrationAuditState }));
   await screenshot(cdp, 'showcase-administration.png');
 
