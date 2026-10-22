@@ -13,7 +13,8 @@
   padding: clamp(16px, 2.2vw, 30px);
   color: var(--dbi-ink);
   font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: var(--dbi-canvas);
+  /* Let the shared fixed dotted canvas show through; module pages must not repaint the app background. */
+  background: transparent;
 }
 .dbi-shell * { box-sizing: border-box; }
 .dbi-shell button, .dbi-shell input { font: inherit; }
@@ -28,9 +29,8 @@
   padding: clamp(22px, 3vw, 34px);
   border: 1px solid var(--dbi-ink);
   border-radius: 9px;
-  background:
-    radial-gradient(circle at 96% 18%, rgba(242,211,79,.45) 0, rgba(242,211,79,.45) 2px, transparent 3px) 0 0 / 20px 20px,
-    var(--dbi-surface);
+  /* Keep hero panels on the shared surface; dotted texture belongs to the fixed app canvas. */
+  background: var(--dbi-surface);
   box-shadow: 5px 5px 0 rgba(23,23,23,.12);
 }
 .dbi-hero-copy { position: relative; z-index: 1; max-width: 890px; }
