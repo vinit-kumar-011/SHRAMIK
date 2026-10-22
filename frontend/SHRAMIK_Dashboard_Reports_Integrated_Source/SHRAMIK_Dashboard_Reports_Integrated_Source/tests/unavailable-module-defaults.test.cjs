@@ -31,6 +31,8 @@ function compileAndLoad(relativePath) {
 const { UnavailableEmergingSkillsDataAdapter } = compileAndLoad('src/emerging-skills/unavailableAdapter.ts');
 const { UnavailableSupplyInsightsDataAdapter } = compileAndLoad('src/supply/unavailableAdapter.ts');
 const { UnavailableDataQualityDataAdapter } = compileAndLoad('src/data-quality/unavailableAdapter.ts');
+const { UnavailableForecastsAdapter } = compileAndLoad('src/forecasts/unavailableAdapter.ts');
+const { UnavailableSkillGapDataAdapter } = compileAndLoad('src/skill-gaps/unavailableAdapter.ts');
 
 test('Emerging Skills is unavailable by default instead of serving mock signals', async () => {
   const adapter = new UnavailableEmergingSkillsDataAdapter();
@@ -56,15 +58,35 @@ test('Data Quality is unavailable by default instead of inventing runs and issue
   await assert.rejects(adapter.getSnapshot(controller.signal), /Aborted/);
 });
 
-test('three module factories require explicit demo opt-in and have unavailable defaults', () => {
+test('Forecasts is unavailable by default instead of presenting mock forecasts', async () => {
+  const adapter = new UnavailableForecastsAdapter();
+  assert.equal(adapter.mode, 'unavailable');
+  await assert.rejects(adapter.getFilterOptions(), /No validated official forecast/);
+  const controller = new AbortController(); controller.abort();
+  await assert.rejects(adapter.getFilterOptions({ signal: controller.signal }), /Aborted/);
+});
+
+test('Skill Gap Analysis is unavailable by default instead of presenting mock shortages', async () => {
+  const adapter = new UnavailableSkillGapDataAdapter();
+  assert.equal(adapter.mode, 'unavailable');
+  await assert.rejects(adapter.getFilterOptions(), /No validated official district-by-skill shortage estimate/);
+  const controller = new AbortController(); controller.abort();
+  await assert.rejects(adapter.getOverview({}, controller.signal), /Aborted/);
+});
+
+test('module factories have unavailable defaults and production-safe demo guards', () => {
   const checks = [
+    ['src/administration/adapter.ts', 'VITE_ADMINISTRATION_API_BASE_URL', 'UnavailableAdministrationDataAdapter'],
+    ['src/data-quality/adapter.ts', 'VITE_DATA_QUALITY_API_BASE_URL', 'UnavailableDataQualityDataAdapter'],
     ['src/emerging-skills/adapter.ts', 'VITE_EMERGING_SKILLS_API_BASE_URL', 'UnavailableEmergingSkillsDataAdapter'],
     ['src/supply/adapter.ts', 'VITE_SUPPLY_API_BASE_URL', 'UnavailableSupplyInsightsDataAdapter'],
-    ['src/data-quality/adapter.ts', 'VITE_DATA_QUALITY_API_BASE_URL', 'UnavailableDataQualityDataAdapter'],
+    ['src/forecasts/adapter.ts', 'VITE_SHRAMIK_API_BASE_URL', 'UnavailableForecastsAdapter'],
+    ['src/skill-gaps/adapter.ts', 'VITE_SHRAMIK_API_BASE_URL', 'UnavailableSkillGapDataAdapter'],
   ];
   for (const [file, apiEnv, unavailableClass] of checks) {
     const source = fs.readFileSync(path.join(root, file), 'utf8');
-    assert.match(source, /VITE_SHRAMIK_USE_DEMO_DATA === 'true'/, file + ' must require explicit demo opt-in');
+    assert.match(source, /const showcaseMode = env\\?\\.MODE === 'production' \\|\\| env\\?\\.VITE_SHRAMIK_SHOWCASE_MODE === 'true'/, file + ' must detect production/showcase mode');
+    assert.match(source, /if \\(!showcaseMode && env\\?\\.VITE_SHRAMIK_USE_DEMO_DATA === 'true'/, file + ' must ignore demo flag in production');
     assert.ok(source.includes(apiEnv), file + ' must allow configuration of a real API');
     assert.ok(source.includes('new ' + unavailableClass + '()'), file + ' must fail closed when unconfigured');
   }
