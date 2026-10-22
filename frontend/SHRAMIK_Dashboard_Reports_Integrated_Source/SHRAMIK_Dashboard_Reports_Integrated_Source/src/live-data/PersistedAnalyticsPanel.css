@@ -35,7 +35,7 @@
 .pai-table th{padding:9px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;background:#eeeadf;color:#514f47;border-bottom:1px solid #ddd7c7}
 .pai-table td{padding:10px;border-bottom:1px solid #eee9dd;vertical-align:top}
 .pai-table tbody tr:last-child td{border-bottom:0}
-.pai-table code{font-size:10px;color:#174d80}
+.pai-table code{font-size:10px;color:#174d80}.pai-table td small{display:block;margin-top:2px;font-size:9px;color:#777164}
 .pai-status,.pai-severity{display:inline-flex;align-items:center;padding:4px 6px;border:1px solid #d2cbbb;border-radius:6px;font-size:9px;font-weight:800;letter-spacing:.035em}
 .pai-severity-high{background:#ffe5df;border-color:#d99a8e;color:#8e2417}
 .pai-severity-medium{background:#fff2cf;border-color:#ddc16b;color:#6f5200}
