@@ -276,8 +276,8 @@ try {
   record('Workspace navigation opens the live-mode Reports builder', Boolean(reportsNav) && pageInfo.path === '/reports' && pageInfo.hasReportBuilder, JSON.stringify({clicked:reportsNav,page:pageInfo}));
   await screenshot(cdp, 'reports-desktop.png');
 
-  // Confirm each opt-in fixture preview has an unmistakable warning and can return to live/source-backed mode.
-  const previewModules = [
+  // Production builds are official-only: the public UI must not offer synthetic preview entry points.
+  const officialOnlyModules = [
     { path: '/demand', label: 'Demand' },
     { path: '/supply', label: 'Supply' },
     { path: '/skill-gaps', label: 'Skill Gaps' },
@@ -285,32 +285,27 @@ try {
     { path: '/emerging-skills', label: 'Emerging Skills' },
     { path: '/data-quality', label: 'Data Quality' },
   ];
-  for (const module of previewModules) {
+  for (const module of officialOnlyModules) {
     await navigate(cdp, origin + module.path);
-    await waitFor(() => cdp.evaluate(
-      `!!document.querySelector('.dbi-shell') && Array.from(document.querySelectorAll('button')).some(button => (button.innerText||'').trim() === 'Open synthetic demo preview')`,
-    ), `${module.label} source-backed readiness view`);
-    const liveBefore = await cdp.evaluate(`({path:location.pathname,notice:!!document.querySelector('.dbi-shell'),preview:!!document.querySelector('.module-preview-banner')})`);
-    const previewClick = await clickByText(cdp, 'Open synthetic demo preview', true);
-    await waitFor(() => cdp.evaluate(
-      `(() => { const banner=document.querySelector('.module-preview-banner'); return !!banner && /SYNTHETIC_DEMO/.test(banner.innerText) && /Illustrative preview — not live labour-market findings/.test(banner.innerText); })()`,
-    ), `${module.label} synthetic preview banner`);
-    const previewState = await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),label:(document.querySelector('.module-preview-banner')?.innerText||'').slice(0,220),liveNotice:!!document.querySelector('.dbi-shell'),bodyHasModule:document.body.innerText.toLowerCase().includes(${JSON.stringify(module.label.toLowerCase())})})`);
-    record(`${module.label} preview is opt-in and explicitly labelled synthetic`, liveBefore.path === module.path && liveBefore.notice && !liveBefore.preview && Boolean(previewClick) && previewState.banner && previewState.label.includes('SYNTHETIC_DEMO') && previewState.bodyHasModule, JSON.stringify({liveBefore,previewState}));
-    await screenshot(cdp, `preview-${module.path.slice(1)}.png`);
-    if (module.path === '/demand') {
-      // Exercise the route-change exit while the preview is already open. Keeping
-      // this in the same interaction avoids a second direct navigation race and
-      // still verifies that changing modules clears the synthetic preview state.
-      const routeChange = await cdp.evaluate(`(() => { const e=Array.from(document.querySelectorAll('button.nav-item')).find(button=>(button.innerText||'').trim().toLowerCase()==='supply'); if(!e)return null; e.click(); return (e.innerText||'').trim(); })()`);
-      await waitFor(() => cdp.evaluate(`location.pathname === '/supply' && !document.querySelector('.module-preview-banner') && !!document.querySelector('.dbi-shell')`), 'preview cleared after in-app navigation');
-      const routeState = await cdp.evaluate(`({path:location.pathname,banner:!!document.querySelector('.module-preview-banner'),liveNotice:!!document.querySelector('.dbi-shell')})`);
-      record('Changing modules exits the previous module preview', routeChange === 'Supply' && routeState.path === '/supply' && !routeState.banner && routeState.liveNotice, JSON.stringify({clicked:routeChange,...routeState}));
-      continue;
-    }
-    const returnClick = await clickByText(cdp, 'Return to live view', true);
-    await waitFor(() => cdp.evaluate(`!document.querySelector('.module-preview-banner') && !!document.querySelector('.dbi-shell')`), `${module.label} return to live view`);
-    record(`${module.label} preview exits back to source-backed readiness`, Boolean(returnClick) && await cdp.evaluate(`!document.querySelector('.module-preview-banner') && !!document.querySelector('.dbi-shell')`), module.path);
+    await waitFor(() => cdp.evaluate(`!!document.querySelector('.dbi-shell')`), `${module.label} official/source-backed view`);
+    const state = await cdp.evaluate(`(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const options = Array.from(document.querySelectorAll('select option'));
+      const occupation = Array.from(document.querySelectorAll('select')).find(select => select.closest('label')?.innerText.includes('Occupation (NCO)'));
+      return {
+        path: location.pathname,
+        liveShell: !!document.querySelector('.dbi-shell'),
+        previewButton: buttons.some(button => (button.innerText || '').trim() === 'Open synthetic demo preview'),
+        previewBanner: !!document.querySelector('.module-preview-banner'),
+        demoModeOption: options.some(option => option.value === 'DEMO' || /demo · synthetic/i.test(option.innerText)),
+        illustrativeOccupationOptions: !!occupation && Array.from(occupation.options).some(option => ['EXAMPLES', 'DEMO'].includes(option.value)),
+        syntheticNotice: !!document.querySelector('.pai-notice-demo'),
+      };
+    })()`);
+    const officialOnly = state.path === module.path && state.liveShell && !state.previewButton &&
+      !state.previewBanner && !state.demoModeOption && !state.illustrativeOccupationOptions && !state.syntheticNotice;
+    record(`${module.label} production view exposes only source-backed/showcase controls`, officialOnly, JSON.stringify(state));
+    await screenshot(cdp, `showcase-${module.path.slice(1)}.png`);
   }
 
   // Exercise the default local assumptions-only planner without sending credentials or any non-read HTTP requests.
@@ -319,11 +314,23 @@ try {
   const plannerBefore = await cdp.evaluate(`({seats:document.querySelector('#ss-seats')?.value,lag:document.querySelector('#ss-lag')?.value,baseline:document.querySelector('.ss-baseline code')?.innerText,notice:(document.querySelector('.ss-alert.is-warn')?.innerText||'').slice(0,300)})`);
   record('Scenario Simulator defaults to clearly labelled assumptions-only planning', Boolean(plannerBefore.seats) && Boolean(plannerBefore.lag) && /LOCAL-PLANNING-NO-VALIDATED-BASELINE/.test(plannerBefore.baseline) && /does not produce official workforce demand/i.test(plannerBefore.notice), JSON.stringify(plannerBefore));
   await screenshot(cdp, 'scenario-planner-desktop.png');
-  const runClick = await clickByText(cdp, 'Run Simulation');
-  await waitFor(() => cdp.evaluate(`(document.body?.innerText||'').includes('ILLUSTRATIVE / ASSUMPTION-ONLY OUTPUT') && (document.body?.innerText||'').includes('SYNTHETIC_DEMO')`), 'local planning results with synthetic provenance', 15000);
-  const plannerResult = await cdp.evaluate(`(() => { const text=(document.body?.innerText||'').toLowerCase(); const cards=Array.from(document.querySelectorAll('.ss-kpi')); const demand=cards.find(card=>/projected labour demand/i.test(card.querySelector('span')?.innerText||'')); return {provenance:text.includes('synthetic_demo'),warning:text.includes('illustrative / assumption-only output'),seatMetric:text.includes('illustrative seat opportunities (cumulative)'),completionMetric:text.includes('illustrative training completions'),transitionMetric:text.includes('potential post-training transitions (not jobs)'),demandNotAvailable:!!demand && /not available/i.test(demand.querySelector('strong')?.innerText||''),calibratedClaim:text.includes('not a calibrated forecast')}; })()`);
-  record('Scenario Simulator shows assumption outputs while withholding unvalidated demand and job claims', Boolean(runClick) && plannerResult.provenance && plannerResult.warning && plannerResult.seatMetric && plannerResult.completionMetric && plannerResult.transitionMetric && plannerResult.demandNotAvailable && plannerResult.calibratedClaim, JSON.stringify(plannerResult));
-  await screenshot(cdp, 'scenario-planner-results.png');
+  const plannerShowcase = await cdp.evaluate(`(() => {
+    const body = document.body?.innerText || '';
+    const run = Array.from(document.querySelectorAll('button')).find(button => /Run Simulation|Verified baseline required/.test((button.innerText||'').trim()));
+    return {
+      localBaseline: (document.querySelector('.ss-baseline code')?.innerText || '').includes('LOCAL-PLANNING-NO-VALIDATED-BASELINE'),
+      officialGuard: body.includes('Official showcase mode — verified baseline required.'),
+      runDisabled: !!run && run.disabled,
+      runLabel: (run?.innerText || '').trim(),
+      syntheticOutput: !!document.querySelector('.ss-card.ss-outcomes .ss-badge')
+        && /SYNTHETIC_DEMO/.test(document.querySelector('.ss-card.ss-outcomes .ss-badge')?.innerText || ''),
+    };
+  })()`);
+  record('Scenario Simulator blocks local illustrative runs until a verified baseline exists',
+    plannerShowcase.localBaseline && plannerShowcase.officialGuard && plannerShowcase.runDisabled &&
+    /Verified baseline required/.test(plannerShowcase.runLabel) && !plannerShowcase.syntheticOutput,
+    JSON.stringify(plannerShowcase));
+  await screenshot(cdp, 'scenario-planner-showcase.png');
 
   await setViewport(cdp, 390, 844);
   await navigate(cdp, origin + '/dashboard');
