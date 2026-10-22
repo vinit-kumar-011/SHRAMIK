@@ -39,6 +39,12 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 
 Never commit secrets.
 
+## Official SIH showcase mode
+
+Set `SHRAMIK_SHOWCASE_MODE=true` and `ENVIRONMENT=production` in the backend's server-side environment before the official showcase. The API rejects `analysis_mode=DEMO` for forecasts, warnings and emerging-skill results with HTTP 403. This is enforced server-side; hiding a frontend selector alone is not considered a data-safety boundary. Synthetic rows may remain in the database for development regression tests, but the official showcase API cannot return them via the DEMO mode routes.
+
+Copy `backend/.env.example` as a local reference only. Set real credentials in the host's secret/environment settings; do not commit `.env` or place service-role credentials in any `VITE_*` variable. Verify the flag by requesting the official route (expected to work) and the DEMO route (expected HTTP 403) after configuration.
+
 ## Ingestion and analytics
 
 The canonical CSV loader validates source-backed demand or supply observations and is **dry-run by default**. Run it from this directory with the source metadata and normalized CSV columns documented in `data/SOURCE_REGISTER.md`:
