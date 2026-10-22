@@ -443,6 +443,72 @@ try {
     await screenshot(cdp, `showcase-${module.path.slice(1)}.png`);
   }
 
+  // Data Sources must expose only the registry response and its actual status metadata.
+  await navigate(cdp, origin + '/data-sources');
+  await waitFor(() => cdp.evaluate(`(() => {
+    const root = document.querySelector('.data-sources-page');
+    const text = document.body?.innerText || '';
+    return !!root && (
+      !!root.querySelector('.connection-note') ||
+      !!root.querySelector('.error-state') ||
+      text.includes('No sources registered')
+    );
+  })()`), 'Data Sources registry response or explicit unavailable state');
+  const dataSourcesState = await cdp.evaluate(`(() => {
+    const root = document.querySelector('.data-sources-page');
+    const text = root?.innerText || '';
+    const rows = Array.from(root?.querySelectorAll('.source-table tbody tr') || []);
+    const lifecycleUnknown = rows.filter(row => row.querySelector('.status-stack')?.innerText.includes('Unknown')).length;
+    return {
+      mounted: !!root,
+      registryResponse: !!root?.querySelector('.connection-note'),
+      explicitError: !!root?.querySelector('.error-state'),
+      syntheticNotice: !!root?.querySelector('.demo-notice'),
+      provenanceTags: Array.from(root?.querySelectorAll('.provenance') || []).map(el => (el.innerText || '').trim()),
+      rowCount: rows.length,
+      unknownLifecycleOrFreshnessRows: lifecycleUnknown,
+      overstatesFreshness: /All sources are up to date|Every source is healthy|Live feed connected/i.test(text),
+      hasSourceRegisterTitle: /Registered sources/i.test(text),
+    };
+  })()`);
+  const dataSourcesSafe = dataSourcesState.mounted && !dataSourcesState.syntheticNotice &&
+    !dataSourcesState.overstatesFreshness && dataSourcesState.hasSourceRegisterTitle &&
+    (dataSourcesState.registryResponse || dataSourcesState.explicitError);
+  record('Data Sources shows registry state without synthetic runs or unsupported freshness claims',
+    dataSourcesSafe, JSON.stringify(dataSourcesState));
+  await screenshot(cdp, 'showcase-data-sources.png');
+
+  // Administration has no production API yet. It must show an explicit unavailable
+  // state, not fictional applicants/users/audit rows or local approval controls.
+  await navigate(cdp, origin + '/administration');
+  await waitFor(() => cdp.evaluate(`!!document.querySelector('.administration-page') && !!document.querySelector('.administration-unavailable-notice')`),
+    'Administration unavailable-state notice');
+  const administrationState = await cdp.evaluate(`(() => {
+    const root = document.querySelector('.administration-page');
+    const text = root?.innerText || '';
+    const requestRows = root?.querySelectorAll('.administration-table tbody tr')?.length || 0;
+    const visibleButtons = Array.from(root?.querySelectorAll('button') || []);
+    return {
+      mounted: !!root,
+      unavailableNotice: !!root?.querySelector('.administration-unavailable-notice'),
+      demoNotice: !!root?.querySelector('.administration-demo-notice'),
+      sourceUnavailableExplained: text.includes('No real access requests, user records or audit events are shown'),
+      noRequestOrUserRows: requestRows === 0,
+      noReviewControls: !root?.querySelector('.administration-review-button'),
+      noLocalApproveControls: !visibleButtons.some(button => /Approve locally|Deny locally/.test(button.innerText || '')),
+      pendingRequestsNotConnected: text.includes('no live queue connected'),
+      auditLedgerNotFabricated: text.includes('No server audit endpoint is configured. No audit events are fabricated.'),
+    };
+  })()`);
+  const administrationSafe = administrationState.mounted && administrationState.unavailableNotice &&
+    !administrationState.demoNotice && administrationState.sourceUnavailableExplained &&
+    administrationState.noRequestOrUserRows && administrationState.noReviewControls &&
+    administrationState.noLocalApproveControls && administrationState.pendingRequestsNotConnected &&
+    administrationState.auditLedgerNotFabricated;
+  record('Administration reports unavailable service and exposes no fictional access records or decisions',
+    administrationSafe, JSON.stringify(administrationState));
+  await screenshot(cdp, 'showcase-administration.png');
+
   // Production showcase mode has no local assumptions-only baseline. Wait for the guarded
   // official state instead of expecting demo defaults or a selectable placeholder skill.
   await navigate(cdp, origin + '/scenario-simulator');
