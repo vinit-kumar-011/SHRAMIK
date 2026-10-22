@@ -457,6 +457,7 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
     filters.state_id = regionCode === 'IN' ? 'is.null' : 'eq.' + (this.stateIdByCode.get(regionCode) || 'IN-' + regionCode);
     const rows = await this.rows<PublishedRateRow>('source_metric_observations', filters, signal);
     return rows.filter(row =>
+      row.metric_code === 'UR' &&
       row.provenance_state === 'SOURCE_BACKED' && row.is_synthetic === false &&
       row.dimension_values?.sex === 'person' &&
       row.dimension_values?.area === 'combined' &&
