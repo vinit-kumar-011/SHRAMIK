@@ -102,4 +102,30 @@ test('registry network failures are visible', async () => {
   );
 });
 
+
+test('default same-origin registry reader retries a transient gateway failure once', async () => {
+  const calls = [];
+  const adapter = new SupabaseDataSourcesAdapter(undefined, async (input, init) => {
+    calls.push({ url: String(input), init });
+    if (calls.length === 1) {
+      return new Response(JSON.stringify({ error: 'temporary gateway failure' }), {
+        status: 503, headers: { 'content-type': 'application/json' },
+      });
+    }
+    return new Response(JSON.stringify(registryRows), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    });
+  });
+
+  const page = await adapter.listSources({
+    query: '', status: 'ALL', type: 'ALL', agency: 'ALL', page: 1, pageSize: 8,
+  });
+
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every(call => call.url.startsWith('/api/shramik-data?')));
+  assert.equal(page.provenance, 'SOURCE_BACKED');
+  assert.equal(page.total, 2);
+  assert.equal(page.items[0].name, 'PLFS Annual Report');
+});
+
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
