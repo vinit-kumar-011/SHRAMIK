@@ -18,9 +18,6 @@ from datetime import date, datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
-
 from sqlalchemy import text
 
 from app.ingestion.db import get_engine
@@ -195,32 +192,6 @@ def parse_monthly_cws(html: str) -> dict[str, Any]:
     }
 
 
-def retrieve_page(timeout_seconds: int = 30) -> tuple[bytes, str]:
-    request = Request(
-        SOURCE_URL,
-        headers={
-            "User-Agent": USER_AGENT,
-            "Accept": "text/html,application/xhtml+xml",
-        },
-        method="GET",
-    )
-    try:
-        with urlopen(request, timeout=timeout_seconds) as response:
-            status = getattr(response, "status", 200)
-            content_type = response.headers.get("Content-Type", "")
-            raw = response.read()
-    except (HTTPError, URLError, TimeoutError) as exc:
-        raise RuntimeError(f"Could not retrieve the official MoSPI PLFS page: {exc}") from exc
-
-    if status != 200:
-        raise RuntimeError(f"MoSPI source returned HTTP {status}; refusing to ingest.")
-    if b"<html" not in raw[:8192].lower() and b"<!doctype html" not in raw[:8192].lower():
-        raise RuntimeError(f"MoSPI source did not return HTML (Content-Type: {content_type!r}).")
-    if len(raw) < 1000:
-        raise RuntimeError("MoSPI page response is unexpectedly small; refusing to ingest.")
-    return raw, content_type
-
-
 def _get_or_create_source(conn: Any, year: int) -> str:
     row = conn.execute(
         text("""
@@ -302,9 +273,10 @@ def _get_or_create_retrieval(conn: Any, source_id: str, digest: str, snapshot_pa
             "parser_version": PARSER_VERSION,
             "transform_version": TRANSFORMATION_VERSION,
             "notes": (
-                "Hash is for the raw official MoSPI PLFS product-page HTML response, archived "
-                "as a workflow artifact. Values are the published all-India CWS rates for age "
-                "15 years and above, not annual usual-status estimates."
+                "Hash is for the Chromium-rendered DOM snapshot of the official MoSPI PLFS "
+                "product page, archived as a workflow artifact because the raw HTTP response "
+                "is a JavaScript shell. Values are all-India monthly CWS rates for age 15 years "
+                "and above, not annual usual-status estimates."
             ),
         },
     ).scalar_one())
@@ -447,12 +419,17 @@ def persist_release(
         engine.dispose()
 
 
-def run(*, apply: bool, output_dir: Path) -> dict[str, Any]:
+def run(*, apply: bool, output_dir: Path, input_html: Path) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    raw_html, content_type = retrieve_page()
+    if not input_html.is_file():
+        raise FileNotFoundError(
+            f"Rendered MoSPI HTML snapshot not found: {input_html}. "
+            "Run backend/scripts/render_plfs_page.mjs first."
+        )
+    raw_html = input_html.read_bytes()
+    content_type = "text/html; charset=utf-8 (Chromium-rendered DOM)"
     digest = hashlib.sha256(raw_html).hexdigest()
-    snapshot_path = output_dir / f"mospi-plfs-page-{digest[:12]}.html"
-    snapshot_path.write_bytes(raw_html)
+    snapshot_path = input_html.resolve()
     payload = parse_monthly_cws(raw_html.decode("utf-8", errors="replace"))
     report = persist_release(payload, raw_html, snapshot_path, apply=apply)
     report.update({
@@ -471,6 +448,12 @@ def run(*, apply: bool, output_dir: Path) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--apply", action="store_true", help="Persist the validated release to Supabase.")
+    parser.add_argument(
+        "--input-html",
+        type=Path,
+        required=True,
+        help="Chromium-rendered DOM snapshot from backend/scripts/render_plfs_page.mjs.",
+    )
     parser.add_argument("--output-dir", type=Path, default=Path("../artifacts/source-refresh"))
     args = parser.parse_args()
     if args.apply:
@@ -481,7 +464,7 @@ def main() -> int:
             print("ERROR: --apply requires DATABASE_URL (configure the GitHub secret SHRAMIK_DATABASE_URL).", file=sys.stderr)
             return 2
     try:
-        report = run(apply=args.apply, output_dir=args.output_dir)
+        report = run(apply=args.apply, output_dir=args.output_dir, input_html=args.input_html)
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0
     except Exception as exc:  # surfaced to CI; do not mask parser/schema drift
