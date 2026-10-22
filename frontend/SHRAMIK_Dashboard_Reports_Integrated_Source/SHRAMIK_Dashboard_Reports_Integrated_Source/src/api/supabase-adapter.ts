@@ -75,9 +75,9 @@ function subtitleForCode(code: string, unit: string): string {
   if (code === 'ESHRAM_REGISTRATION_COUNT') return 'Cumulative portal registrations · not available labour supply';
   if (code === 'CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE') return 'Provisional training capacity · not trained workers';
   if (code === 'CTS_ITI_COUNT') return 'Registered institute count · source coverage applies';
-  if (code === 'UR') return 'Published annual benchmark · persons, all ages';
-  if (code === 'LFPR') return 'Published annual benchmark · persons, all ages';
-  if (code === 'WPR') return 'Published annual benchmark · persons, all ages';
+  if (code === 'UR') return 'PLFS CY2025 · usual status · all ages';
+  if (code === 'LFPR') return 'PLFS CY2025 · usual status · all ages';
+  if (code === 'WPR') return 'PLFS CY2025 · usual status · all ages';
   return unit;
 }
 function kpiFrom(row: KpiRow | PublishedRateRow, meta: SourceMeta, code?: string): MetricCardData {
