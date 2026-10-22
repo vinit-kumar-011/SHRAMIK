@@ -50,6 +50,9 @@ test('Supabase dashboard adapter uses live published views and does not synthesi
       { metric_code: 'CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE', title: 'Provisional CTS seat capacity', value_numeric: 973058, unit: 'seats', reference_period: 'Academic session 2026', source_label: 'DGT source', source_url: null, as_of_date: '2026-07-08', interpretation_note: 'Provisional capacity, not labour supply.' },
       { metric_code: 'CTS_ITI_COUNT', title: 'Industrial Training Institutes', value_numeric: 15012, unit: 'ITIs', reference_period: 'Snapshot', source_label: 'Parliament source', source_url: null, as_of_date: null, interpretation_note: null },
       { metric_code: 'UR', title: 'Unemployment rate (PLFS 2025)', value_numeric: 3.1, unit: '%', reference_period: 'CY2025', source_label: 'PLFS source', source_url: null, as_of_date: '2026-10-14', interpretation_note: 'Published benchmark.' },
+      { metric_code: 'CWS_LFPR', title: 'Labour force participation rate (monthly PLFS CWS, age 15+)', value_numeric: 55.5, unit: '%', reference_period: 'September 2026 · monthly CWS, age 15+', source_label: 'MoSPI PLFS source', source_url: 'https://www.mospi.gov.in/themes/product/69--', as_of_date: null, interpretation_note: 'Monthly CWS context.' },
+      { metric_code: 'CWS_WPR', title: 'Worker population ratio (monthly PLFS CWS, age 15+)', value_numeric: 52.7, unit: '%', reference_period: 'September 2026 · monthly CWS, age 15+', source_label: 'MoSPI PLFS source', source_url: 'https://www.mospi.gov.in/themes/product/69--', as_of_date: null, interpretation_note: 'Monthly CWS context.' },
+      { metric_code: 'CWS_UR', title: 'Unemployment rate (monthly PLFS CWS, age 15+)', value_numeric: 5.0, unit: '%', reference_period: 'September 2026 · monthly CWS, age 15+', source_label: 'MoSPI PLFS source', source_url: 'https://www.mospi.gov.in/themes/product/69--', as_of_date: null, interpretation_note: 'Monthly CWS context.' },
     ]);
     if (url.includes('/source_metric_observations?')) return response([
       { metric_code: 'LFPR', value_numeric: 44.9, unit: 'percent', reference_period: 'CY2025', dimension_values: { sex: 'person', area: 'combined', age_domain: 'all_ages', source_url: 'https://example.gov.in/plfs' }, provenance_state: 'SOURCE_BACKED', is_synthetic: false },
@@ -73,6 +76,18 @@ test('Supabase dashboard adapter uses live published views and does not synthesi
   assert.ok(data.kpis.some(item => item.id === 'ur' && item.value === 3.1));
   assert.ok(data.kpis.some(item => item.id === 'lfpr' && item.value === 44.9));
   assert.ok(data.kpis.some(item => item.id === 'wpr' && item.value === 43.5));
+  assert.ok(data.kpis.some(item => item.id === 'cws-lfpr'
+    && item.title === 'Labour force participation (CWS)'
+    && item.subtitle === 'September 2026 · monthly CWS, age 15+'
+    && item.value === 55.5));
+  assert.ok(data.kpis.some(item => item.id === 'cws-wpr'
+    && item.title === 'Worker population ratio (CWS)'
+    && item.subtitle === 'September 2026 · monthly CWS, age 15+'
+    && item.value === 52.7));
+  assert.ok(data.kpis.some(item => item.id === 'cws-ur'
+    && item.title === 'Unemployment rate (CWS)'
+    && item.subtitle === 'September 2026 · monthly CWS, age 15+'
+    && item.value === 5.0));
   assert.ok(data.kpis.every(item => item.deltaPct === null));
   assert.ok(calls.some(call => call.url.includes('/rest/v1/sh_public_dashboard_kpis')));
   assert.ok(calls.every(call => call.init.headers.get('apikey') === 'test-public-key'));
