@@ -197,9 +197,14 @@ function ChartPanel({ data, periodYears, onPeriodChange, onOpenDetail }: {
   const yFor = (value: number) => 163 - (value / yMax) * 158;
   const demandPts = points.map((point, i) => `${xFor(i, points.length)},${yFor(point.demand)}`).join(' ');
   const supplyPts = points.map((point, i) => `${xFor(i, points.length)},${yFor(point.supply)}`).join(' ');
-  const axisLabel = (value: number) => programmeMode
-    ? new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
-    : String(value);
+  const axisLabel = (value: number) => {
+    if (!programmeMode || value === 0) return String(value);
+    // Keep every tick in one unit for the entire series. Intl compact notation
+    // switched from K to L mid-axis and made equal-spaced ticks look inconsistent.
+    if (yMax >= 100000) return `${(value / 100000).toFixed(1)}L`;
+    if (yMax >= 1000) return `${Math.round(value / 1000)}K`;
+    return String(value);
+  };
   const firstTitle = programmeMode ? 'NAPS apprentices engaged' : 'Demand';
   const secondTitle = programmeMode ? 'PMKVY trained / oriented' : 'Supply';
   return <section className="panel trend-panel" aria-labelledby="trend-title" aria-busy={!data}>

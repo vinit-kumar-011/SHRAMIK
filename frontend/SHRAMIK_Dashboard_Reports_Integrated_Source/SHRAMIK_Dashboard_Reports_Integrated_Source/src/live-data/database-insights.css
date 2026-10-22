@@ -191,7 +191,7 @@
 .dbi-demand-reference .dbi-demand-hero-copy { min-width: 0; }
 .dbi-demand-reference .dbi-demand-breadcrumb { display:flex;align-items:center;gap:9px;margin:0 0 10px;font-size:11px;color:#555249; }
 .dbi-demand-reference .dbi-demand-breadcrumb strong { color:#181818;font-weight:800; }
-.dbi-demand-reference .dbi-demand-hero h1 { margin:0 0 7px;font-family:'Anton','Bebas Neue','Oswald','Arial Narrow',Impact,sans-serif;font-size:clamp(42px,4.6vw,66px);font-weight:900;line-height:.9;letter-spacing:-.025em;text-transform:uppercase;color:#070707; }
+.dbi-demand-reference .dbi-demand-hero h1 { margin:0 0 7px;font-family:'Anton','Bebas Neue','Oswald','Arial Narrow',Impact,sans-serif;font-size:clamp(42px,4.1vw,56px);font-weight:900;line-height:.9;letter-spacing:-.025em;text-transform:uppercase;color:#070707; }
 .dbi-demand-reference .dbi-demand-hero p { max-width:56em;margin:0;color:#33332e;font-size:12px;line-height:1.45; }
 .dbi-demand-reference .dbi-demand-meta { display:flex;flex-wrap:wrap;gap:6px 13px;margin-top:10px;color:#5a594f;font-size:9px; }
 .dbi-demand-reference .dbi-demand-meta span { display:inline-flex;align-items:center;gap:4px; }

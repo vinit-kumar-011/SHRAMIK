@@ -74,6 +74,11 @@ test('regional context uses the real GeoJSON boundaries and published state regi
   assert.match(page, /Colours show published e-Shram registrations, not job demand/);
 });
 
+
+test('desktop Demand hero uses the reference-sized title so it stays on one line when space allows', () => {
+  assert.match(styles, /\.dbi-demand-reference \.dbi-demand-hero h1[^}]*font-size:clamp\(42px,4\.1vw,56px\)/);
+});
+
 test('the demand reference layout has responsive breakpoints for filters, chart, map and ranking panels', () => {
   assert.match(styles, /\.dbi-demand-reference \.dbi-demand-filters/);
   assert.match(styles, /\.dbi-demand-india-map/);

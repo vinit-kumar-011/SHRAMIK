@@ -34,6 +34,13 @@ test('live KPI categories use semantic icons and stable tones rather than card p
   assert.match(dashboard, /return tones\[item\.key\]\s*\?\?\s*'navy'/);
 });
 
+
+test('training-programme chart keeps one compact unit across all axis ticks', () => {
+  assert.match(dashboard, /if \(yMax >= 100000\) return `\$\{\(value \/ 100000\)\.toFixed\(1\)\}L`/);
+  assert.match(dashboard, /if \(yMax >= 1000\) return `\$\{Math\.round\(value \/ 1000\)\}K`/);
+  assert.match(dashboard, /if \(!programmeMode \|\| value === 0\) return String\(value\)/);
+});
+
 test('regional ranking loading is distinguished from a completed empty result', () => {
   assert.match(dashboard, /busy && !rankings \? <div className="panel-empty" role="status">Loading regional ranking…<\/div>/);
 });
