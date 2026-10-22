@@ -968,7 +968,7 @@ export default function DatabaseInsightsPage({ module, regionCode = 'IN', onNavi
       <section className="dbi-panel"><SectionHead title="Registered source catalogue" note="Reports can cite these source records. A registered source is not, by itself, proof of an up-to-date retrieval or successful validation."/>
         <div className="dbi-table-tools"><label htmlFor="dbi-source-search">Filter sources</label><input id="dbi-source-search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search publisher or dataset"/></div>
         <DataTable columns={['Source', 'Publisher', 'Type', 'Coverage', 'Publication / access', 'Reference']}>
-          {filteredSources.map(source => <tr key={source.id}><td><strong>{source.name}</strong><small>{source.notes || 'Registered source metadata'}</small></td><td>{source.publisher}</td><td><span className="dbi-type-pill">{source.source_type}</span></td><td>{source.coverage_start || '—'} – {source.coverage_end || '—'}</td><td>{source.publication_date || source.accessed_at?.slice(0, 10) || 'Not reported'}</td><td><SourceLink source={source}/></td></tr>)}
+          {filteredSources.map(source => <tr key={source.id}><td><strong>{source.name}</strong><small>Registered source metadata</small></td><td>{source.publisher}</td><td><span className="dbi-type-pill">{source.source_type}</span></td><td>{source.coverage_start || '—'} – {source.coverage_end || '—'}</td><td>{source.publication_date || source.accessed_at?.slice(0, 10) || 'Not reported'}</td><td><SourceLink source={source}/></td></tr>)}
         </DataTable>
       </section>
     </> : null}
