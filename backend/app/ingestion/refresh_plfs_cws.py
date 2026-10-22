@@ -37,7 +37,7 @@ METRICS: dict[str, re.Pattern[str]] = {
     ),
     "CWS_WPR": re.compile(
         r"(?:Worker\s+Population\s+Ratio\s*\(\s*WPR\s*\)"
-        r"|श्रमिक\s*जनसंख्या\s*अनुपात\s*\(\s*डब्ल्यू?पीआर\s*\))",
+        r"|श्रमिक\s*जनसंख्या\s*अनुपात\s*\(\s*डब्ल्यूपीआर\s*\))",
         re.I,
     ),
     "CWS_UR": re.compile(
