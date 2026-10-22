@@ -135,15 +135,30 @@ def _ensure_capabilities(
         groups[(row["observation_grain"], signal, row["quantity_unit"],
                 row["quantity_semantics"])].append(row["period_year"])
     for (grain, signal, unit, semantics), years in groups.items():
-        found = conn.execute(text("""
-            SELECT id FROM public.source_capabilities
+        existing_semantics = conn.execute(text("""
+            SELECT flow_stock_semantics FROM public.source_capabilities
             WHERE source_id = :source_id AND observation_grain = :grain
               AND signal_type = :signal AND unit = :unit
-              AND flow_stock_semantics IS NOT DISTINCT FROM :semantics LIMIT 1
         """), {"source_id": source_id, "grain": grain, "signal": signal,
-               "unit": unit, "semantics": semantics}).scalar()
-        if found:
-            continue
+               "unit": unit}).scalars().all()
+        if existing_semantics:
+            compatible = {
+                "FLOW": {"FLOW", "ANNUAL_FLOW"},
+                "STOCK": {"STOCK", "YEAR_END_STOCK", "AS_OF_SNAPSHOT"},
+                "CAPACITY": {"CAPACITY", "AS_OF_SNAPSHOT"},
+            }.get(semantics, {semantics})
+            normalized_existing = {
+                value.strip().upper() for value in existing_semantics if value is not None
+            }
+            if normalized_existing.intersection(compatible):
+                # An existing source capability may use a more specific label (e.g.
+                # annual_flow) than the canonical observation enum (FLOW). Preserve it
+                # instead of creating a duplicate capability for the same source signal.
+                continue
+            raise ValueError(
+                f"Existing capability semantics {existing_semantics!r} do not match "
+                f"{semantics!r} for {signal!r} ({grain}, {unit}). Reconcile the source contract."
+            )
         conn.execute(text("""
             INSERT INTO public.source_capabilities
                 (source_id, observation_grain, signal_type, unit, flow_stock_semantics,
