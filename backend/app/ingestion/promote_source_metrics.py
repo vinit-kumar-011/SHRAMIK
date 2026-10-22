@@ -130,10 +130,12 @@ def normalize_metric_row(row: dict[str, Any]) -> dict[str, Any]:
     period_year = fiscal_year_ending_year(reference_period)
     note = (
         f"Promoted from source_metric_observations id={row.get('id')}; "
-        f"metric_code={metric_code}; original_reference_period={reference_period}. "
-        f"The table's YEAR period uses fiscal-year ending year {period_year}; the source FY is "
-        "retained here for traceability. State-level training/apprenticeship FLOW only—not "
-        "employed-worker stock, not district/skill demand, and not eligible for direct vacancy-gap comparison."
+        f"metric_code={metric_code}; "
+        f"original_reference_period={reference_period}; "
+        f"period_year={period_year} "
+        "(fiscal-year ending-year convention; original FY retained here and in source_release). "
+        "State-level training/apprenticeship FLOW only, not employed-worker stock. "
+        "Do not compare directly with vacancies or use for DISTRICT_SKILL forecasting."
     )
 
     return {
