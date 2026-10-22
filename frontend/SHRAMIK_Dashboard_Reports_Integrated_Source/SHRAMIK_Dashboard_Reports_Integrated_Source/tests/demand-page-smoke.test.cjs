@@ -36,6 +36,18 @@ test('latest national PLFS cards prefer only source-backed monthly CWS values wh
   assert.ok(source.includes(": canonicalRate(snapshot, code, regionCode, periodFilter === 'LATEST')"), 'latest per source must fall back to the canonical CY2025 benchmark');
 });
 
+test('NCS portal active vacancies are displayed only as a dated national lower-bound context metric', () => {
+  assert.match(source, /NCS_PORTAL_ACTIVE_VACANCIES/);
+  assert.match(source, /d\.coverage_scope === 'NCS portal only'/);
+  assert.match(source, /d\.reported_comparator === 'greater_than'/);
+  assert.match(source, /title="NCS portal active-vacancy snapshot"/);
+  assert.match(source, /Published indicator.*Reported value.*As of.*Coverage.*Source/);
+  assert.match(source, /Over 17\.68 lakh/);
+  assert.match(source, /not an exact count/);
+  assert.match(source, /not used to calculate the "Total Estimated Demand" KPI/);
+  assert.match(source, /row\.is_synthetic === false/);
+});
+
 test('monthly PLFS display period remains distinct from annual CY2025', () => {
   assert.match(source, /function plfsCardPeriodLabel\(row: MetricRow \| undefined\)/);
   assert.match(source, /monthly CWS · persons aged 15\+/);
