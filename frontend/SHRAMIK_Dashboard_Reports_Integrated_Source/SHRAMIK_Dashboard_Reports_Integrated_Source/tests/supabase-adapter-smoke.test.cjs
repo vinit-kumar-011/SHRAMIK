@@ -167,4 +167,39 @@ test('an empty successful published KPI view falls back to source-backed observa
   assert.ok(calls.some(url => url.includes('/source_metric_observations?')));
 });
 
+
+test('dashboard exposes inactive canonical skills as review-only rows instead of an empty catalogue', async () => {
+  const calls = [];
+  const fetcher = async (input) => {
+    const url = String(input);
+    calls.push(url);
+    if (url.includes('/states?')) return response([{ id: 'IN-OD', name: 'Odisha', code: 'OD' }]);
+    if (url.includes('/sh_public_dashboard_kpis?')) return response([]);
+    if (url.includes('/source_metric_observations?')) return response([]);
+    if (url.includes('/skills?')) return response([
+      { id: 'nco2015_7112_0200', code: 'nco2015_7112_0200', name: 'Bricklayerer, Construction', description: null, is_active: false },
+    ]);
+    if (url.includes('/sectors?')) return response([]);
+    return response([]);
+  };
+  const adapter = new SupabaseLabourMarketDataAdapter('https://test.supabase.co', fetcher, () => new Headers({
+    apikey: 'test-public-key',
+    Authorization: 'Bearer test-public-key',
+    Accept: 'application/json',
+  }));
+
+  const dashboard = await adapter.getDashboard({ regionCode: 'IN', periodYears: 5 });
+
+  assert.equal(dashboard.emergingSkills.length, 1);
+  assert.equal(dashboard.emergingSkills[0].name, 'Bricklayerer, Construction');
+  assert.equal(dashboard.emergingSkills[0].formattedValue, 'Review mapping');
+  assert.ok(dashboard.emergingSkills[0].meta.notes.some(note => note.includes('inactive pending review')));
+  assert.ok(dashboard.emergingSkills[0].meta.notes.some(note => note.includes('No validated emerging-skill signal')));
+  const skillRequest = calls.find(url => url.includes('/skills?'));
+  assert.ok(skillRequest, 'the canonical skill catalogue should be queried');
+  const params = new URL(skillRequest).searchParams;
+  assert.equal(params.get('select'), 'id,code,name,description,is_active');
+  assert.equal(params.has('is_active'), false, 'inactive catalogue references remain visible for review without activation');
+});
+
 test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
