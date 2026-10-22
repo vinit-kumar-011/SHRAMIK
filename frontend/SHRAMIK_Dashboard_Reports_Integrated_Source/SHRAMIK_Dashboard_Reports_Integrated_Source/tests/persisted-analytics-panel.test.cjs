@@ -27,7 +27,7 @@ test('official and demo outputs are visibly distinguished', () => {
 
 test('live forecast and emerging skill pages render the authenticated results panel', () => {
   assert.match(livePage, /<PersistedAnalyticsPanel module=\{module\}\/>/);
-  assert.match(livePage, //Authenticated persisted results for the selected analysis mode are shown in the panel above//);
+  assert.match(livePage, /Authenticated persisted results for the selected analysis mode are shown in the panel above/);
 });
 
 test('Vite proxies analytics API requests to the local backend without exposing credentials', () => {
