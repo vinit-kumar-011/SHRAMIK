@@ -133,8 +133,17 @@ def seed_demo() -> dict[str, Any]:
         with engine.begin() as conn:
             state_id, districts = _district_selection(conn)
             skills_rows = conn.execute(
-                text("SELECT id, name, is_active FROM public.skills WHERE id = ANY(:ids) ORDER BY id"),
-                {"ids": list(SKILL_IDS)},
+                text("""
+                    SELECT id, name, is_active
+                    FROM public.skills
+                    WHERE id IN (:skill_1, :skill_2, :skill_3)
+                    ORDER BY id
+                """),
+                {
+                    "skill_1": SKILL_IDS[0],
+                    "skill_2": SKILL_IDS[1],
+                    "skill_3": SKILL_IDS[2],
+                },
             ).mappings().all()
             skills_by_id = {row["id"]: dict(row) for row in skills_rows}
             missing = sorted(set(SKILL_IDS) - set(skills_by_id))
