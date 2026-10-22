@@ -145,10 +145,13 @@ async function setViewport(cdp, width, height) {
 }
 
 async function navigate(cdp, url) {
+  const expectedPath = new URL(url).pathname;
   await cdp.send('Page.navigate', { url });
+  // Require the destination URL as well as the React mount. The root may still
+  // exist on the previous route while Chromium is processing a full navigation.
   await waitFor(() => cdp.evaluate(
-    `document.readyState === 'complete' && !!document.querySelector('#root')?.children.length`,
-  ), `React app at ${url}`);
+    `location.pathname === ${JSON.stringify(expectedPath)} && document.readyState === 'complete' && !!document.querySelector('#root')?.children.length`,
+  ), `React app at ${expectedPath}`);
   await delay(250);
 }
 
