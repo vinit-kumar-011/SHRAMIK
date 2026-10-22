@@ -50,8 +50,8 @@ def client() -> Generator[TestClient, None, None]:
             is_active BOOLEAN, calculated_at TEXT, created_at TEXT
         )
         """,
-        "CREATE TABLE demand_observations (id TEXT)",
-        "CREATE TABLE supply_observations (id TEXT)",
+        "CREATE TABLE demand_observations (id TEXT, provenance_state TEXT, is_synthetic BOOLEAN)",
+        "CREATE TABLE supply_observations (id TEXT, provenance_state TEXT, is_synthetic BOOLEAN)",
     ]
     with engine.begin() as connection:
         for ddl in tables:
@@ -164,6 +164,32 @@ def test_status_reports_empty_pipeline_outputs(client: TestClient) -> None:
     assert body["data"]["published_outputs"]["active_official_source_backed_forecasts"] == 0
     assert body["data"]["published_outputs"]["active_official_source_backed_warnings"] == 0
 
+
+
+def test_status_source_input_counts_exclude_synthetic_demo_rows(client: TestClient) -> None:
+    authenticate()
+    db = app.state.test_session_factory()
+    try:
+        db.execute(text("""
+            INSERT INTO demand_observations (id, provenance_state, is_synthetic)
+            VALUES ('official-demand', 'SOURCE_BACKED', FALSE),
+                   ('demo-demand', 'SYNTHETIC_DEMO', TRUE)
+        """))
+        db.execute(text("""
+            INSERT INTO supply_observations (id, provenance_state, is_synthetic)
+            VALUES ('official-supply', 'SOURCE_BACKED', FALSE),
+                   ('demo-supply', 'SYNTHETIC_DEMO', TRUE)
+        """))
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/v1/analytics/status")
+    assert response.status_code == 200
+    assert response.json()["data"]["source_inputs"] == {
+        "demand_observations": 1,
+        "supply_observations": 1,
+    }
 
 def test_official_early_warnings_require_an_active_official_forecast(client: TestClient) -> None:
     authenticate()
