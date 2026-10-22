@@ -206,7 +206,7 @@ export interface RankedSkillsQuery {
 }
 
 export interface SkillGapDataAdapter {
-  readonly mode: 'mock' | 'rest';
+  readonly mode: 'mock' | 'rest' | 'unavailable';
   getFilterOptions(signal?: AbortSignal): Promise<GapFilterOptions>;
   getOverview(filters: GapFilters, signal?: AbortSignal): Promise<GapOverview>;
   getGapLandscape(filters: GapFilters, signal?: AbortSignal): Promise<GapLandscape>;
