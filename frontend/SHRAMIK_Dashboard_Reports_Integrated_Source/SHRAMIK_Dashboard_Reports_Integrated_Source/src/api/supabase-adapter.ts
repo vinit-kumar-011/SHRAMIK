@@ -291,7 +291,7 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
    */
   private async getDashboardMetricRows(signal?: AbortSignal): Promise<SourceMetricRow[]> {
     const all: SourceMetricRow[] = [];
-    const metricCodes = 'in.(ESHRAM_REGISTRATION_COUNT,CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE,CTS_ITI_COUNT,UR,LFPR,WPR)';
+    const metricCodes = 'in.(ESHRAM_REGISTRATION_COUNT,CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE,CTS_ITI_COUNT,CWS_UR,UR)';
     for (let offset = 0; offset < 10000; offset += 1000) {
       const page = await this.rows<SourceMetricRow>('source_metric_observations', {
         select: 'id,metric_code,value_numeric,unit,state_id,reference_period,as_of_date,dimension_values,provenance_state,is_synthetic',
@@ -365,18 +365,37 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
       if (card) cards.push(card);
     }
 
-    for (const code of ['UR', 'LFPR', 'WPR']) {
-      const candidates = rows.filter(row => row.metric_code === code && row.reference_period === 'CY2025'
-        && row.dimension_values?.sex === 'person'
-        && row.dimension_values?.area === 'combined'
-        && row.dimension_values?.age_domain === 'all_ages');
-      const regional = regionCode === 'IN' ? candidates.filter(row => !row.state_id) : candidates.filter(row => row.state_id === stateId);
-      const chosen = regional[0] ? [regional[0]] : [];
-      if (!chosen.length) continue;
-      const value = numberValue(chosen[0].value_numeric);
-      const card = directCard(code, value, chosen[0].unit, chosen,
-        'Published PLFS annual benchmark for persons, all ages, combined rural/urban; not a model forecast.');
+    // The national showcase prefers the latest published monthly CWS unemployment rate.
+    // Use the annual CY2025 unemployment benchmark only when the monthly national rate is absent.
+    const isValidMonthlyCwsUr = (row: SourceMetricRow) =>
+      row.metric_code === 'CWS_UR' &&
+      /^MONTHLY_\d{4}-\d{2}$/.test(row.reference_period) &&
+      row.dimension_values?.sex === 'person' &&
+      row.dimension_values?.area === 'combined' &&
+      row.dimension_values?.age_domain === '15_years_and_above' &&
+      row.dimension_values?.survey_basis === 'current_weekly_status';
+    const monthlyCandidates = rows.filter(row => isValidMonthlyCwsUr(row) &&
+      (regionCode === 'IN' ? !row.state_id : row.state_id === stateId));
+    const monthlyRows = latestPeriod(monthlyCandidates);
+    if (regionCode === 'IN' && monthlyRows.length) {
+      const card = directCard('CWS_UR', numberValue(monthlyRows[0].value_numeric),
+        monthlyRows[0].unit, monthlyRows,
+        'Published all-India monthly PLFS CWS unemployment rate for persons aged 15+; context only, not a forecast.');
       if (card) cards.push(card);
+    } else {
+      const annualCandidates = rows.filter(row => row.metric_code === 'UR' &&
+        row.reference_period === 'CY2025' &&
+        row.dimension_values?.sex === 'person' &&
+        row.dimension_values?.area === 'combined' &&
+        row.dimension_values?.age_domain === 'all_ages' &&
+        (regionCode === 'IN' ? !row.state_id : row.state_id === stateId));
+      const annualRows = latestPeriod(annualCandidates);
+      if (annualRows.length) {
+        const card = directCard('UR', numberValue(annualRows[0].value_numeric),
+          annualRows[0].unit, annualRows,
+          'Published PLFS annual benchmark for persons, all ages, combined rural/urban; not a model forecast.');
+        if (card) cards.push(card);
+      }
     }
     return cards;
   }
@@ -430,7 +449,7 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
   private async getPublishedRates(regionCode: string, signal?: AbortSignal): Promise<PublishedRateRow[]> {
     const filters: Record<string, string> = {
       select: 'metric_code,value_numeric,unit,reference_period,dimension_values,provenance_state,is_synthetic',
-      metric_code: 'in.(UR,LFPR,WPR)',
+      metric_code: 'eq.UR',
       reference_period: 'eq.CY2025',
       order: 'metric_code.asc',
       limit: '100',
@@ -471,7 +490,18 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
           select: 'metric_code,title,value_numeric,unit,reference_period,source_label,source_url,as_of_date,interpretation_note,sort_order',
           order: 'sort_order.asc',
         }, query.signal);
-        cards = rows.map(row => kpiFrom(row, sourceForKpi(row)));
+        // Keep the national hero to four unambiguous cards. Monthly CWS UR takes precedence
+        // over the separate annual CY2025 UR benchmark, never alongside it.
+        const preferredCodes = [
+          'ESHRAM_REGISTRATION_COUNT',
+          'CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE',
+          'CTS_ITI_COUNT',
+          rows.some(row => row.metric_code === 'CWS_UR') ? 'CWS_UR' : 'UR',
+        ];
+        cards = preferredCodes.flatMap(code => {
+          const row = rows.find(item => item.metric_code === code);
+          return row ? [kpiFrom(row, sourceForKpi(row))] : [];
+        });
       } else {
         const stateId = this.stateIdByCode.get(query.regionCode) || 'IN-' + query.regionCode;
         const rows = await this.rows<RegionalRow>('sh_public_dashboard_regions', {
@@ -510,6 +540,8 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
       diagnostics.push('Some optional PLFS published benchmarks could not be loaded. The published dashboard indicators remain available; benchmark enrichment can be retried.');
     }
     for (const row of rateRows) {
+      if (row.metric_code !== 'UR') continue;
+      if (query.regionCode === 'IN' && cards.some(card => card.id === 'cws-ur')) continue;
       if (cards.some(card => card.id === metricId(row.metric_code))) continue;
       const sourceUrl = typeof row.dimension_values.source_url === 'string' ? row.dimension_values.source_url : undefined;
       const reviewDate = typeof row.dimension_values.source_value_review_date === 'string' ? row.dimension_values.source_value_review_date : null;
@@ -567,9 +599,8 @@ export class SupabaseLabourMarketDataAdapter implements LabourMarketDataAdapter 
         'eshram-registration-count': 1,
         'cts-provisional-seat-capacity-by-trade-state': 2,
         'cts-iti-count': 3,
+        'cws-ur': 4,
         ur: 4,
-        lfpr: 5,
-        wpr: 6,
       };
       return (order[a.id] || 99) - (order[b.id] || 99);
     });
