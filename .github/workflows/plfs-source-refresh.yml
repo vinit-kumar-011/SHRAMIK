@@ -1,0 +1,86 @@
+name: Refresh official PLFS monthly context
+
+on:
+  schedule:
+    # Weekly release check; MoSPI's public PLFS dashboard is a monthly source.
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Persist the validated official monthly indicators to Supabase"
+        required: false
+        type: boolean
+        default: false
+  push:
+    branches:
+      - fix/backend-api-route-integration
+    paths:
+      - "backend/app/ingestion/refresh_plfs_cws.py"
+      - "backend/tests/test_refresh_plfs_cws.py"
+      - ".github/workflows/plfs-source-refresh.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shramik-plfs-source-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Verify and refresh official monthly PLFS CWS rates
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      DATABASE_URL: ${{ secrets.SHRAMIK_DATABASE_URL }}
+      INPUT_APPLY: ${{ inputs.apply || false }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: python -m pip install -r requirements.txt
+
+      - name: Run backend tests
+        working-directory: backend
+        run: python -m pytest -q
+
+      - name: Fetch, parse and validate the official MoSPI release
+        working-directory: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHOULD_APPLY=false
+          if [[ "$GITHUB_EVENT_NAME" == "schedule" ]]; then
+            SHOULD_APPLY=true
+          elif [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$INPUT_APPLY" == "true" ]]; then
+            SHOULD_APPLY=true
+          fi
+
+          if [[ "$SHOULD_APPLY" == "true" ]]; then
+            if [[ -z "${DATABASE_URL:-}" ]]; then
+              echo "::error::Scheduled/approved database refresh requires the GitHub Actions secret SHR​​AMIK_DATABASE_URL."
+              exit 2
+            fi
+            python -m app.ingestion.refresh_plfs_cws --apply --output-dir ../artifacts/source-refresh
+          else
+            echo "Check-only mode; no database rows will be changed."
+            python -m app.ingestion.refresh_plfs_cws --output-dir ../artifacts/source-refresh
+          fi
+
+      - name: Upload source snapshot and refresh report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shramik-plfs-source-refresh
+          path: artifacts/source-refresh/
+          if-no-files-found: warn
+          retention-days: 14
