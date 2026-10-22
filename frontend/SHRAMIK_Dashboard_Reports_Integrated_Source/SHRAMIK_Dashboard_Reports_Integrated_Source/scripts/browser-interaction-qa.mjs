@@ -313,6 +313,10 @@ try {
       const buttons = Array.from(document.querySelectorAll('button'));
       const options = Array.from(document.querySelectorAll('select option'));
       const occupation = Array.from(document.querySelectorAll('select')).find(select => select.closest('label')?.innerText.includes('Occupation (NCO)'));
+      const demandCards = Array.from(document.querySelectorAll('.dbi-demand-kpi'));
+      const demandCard = label => demandCards.find(card => (card.querySelector('small')?.innerText || '').trim() === label);
+      const cardValue = label => (demandCard(label)?.querySelector('strong')?.innerText || '').trim();
+      const cardPeriod = label => (demandCard(label)?.querySelector('div span')?.innerText || '').trim();
       return {
         path: location.pathname,
         liveShell: !!document.querySelector('.dbi-shell'),
@@ -321,11 +325,32 @@ try {
         demoModeOption: options.some(option => option.value === 'DEMO' || /demo · synthetic/i.test(option.innerText)),
         illustrativeOccupationOptions: !!occupation && Array.from(occupation.options).some(option => ['EXAMPLES', 'DEMO'].includes(option.value)),
         syntheticNotice: !!document.querySelector('.pai-notice-demo'),
+        monthlyPlfsContext: location.pathname === '/demand' ? {
+          unemployment: cardValue('Unemployment Rate'),
+          labourForceParticipation: cardValue('Labour Force Participation'),
+          workerPopulationRatio: cardValue('Worker Population Ratio'),
+          unemploymentPeriod: cardPeriod('Unemployment Rate'),
+          dataSourceHeading: (document.querySelector('.dbi-demand-panel')?.innerText || '').slice(0, 140),
+        } : null,
       };
     })()`);
     const officialOnly = state.path === module.path && state.liveShell && !state.previewButton &&
       !state.previewBanner && !state.demoModeOption && !state.illustrativeOccupationOptions && !state.syntheticNotice;
     record(`${module.label} production view exposes only source-backed/showcase controls`, officialOnly, JSON.stringify(state));
+    if (module.path === '/demand') {
+      const plfs = state.monthlyPlfsContext || {};
+      const asPercent = value => Number(String(value).replace('%', '').replace(/,/g, '').trim());
+      const monthlyCardsCorrect =
+        Math.abs(asPercent(plfs.unemployment) - 5.0) < 0.001 &&
+        Math.abs(asPercent(plfs.labourForceParticipation) - 55.5) < 0.001 &&
+        Math.abs(asPercent(plfs.workerPopulationRatio) - 52.7) < 0.001 &&
+        /September 2026 · monthly CWS · persons aged 15\+/i.test(plfs.unemploymentPeriod || '');
+      record(
+        'Demand page displays the verified September 2026 national PLFS CWS context without relabelling it as demand',
+        monthlyCardsCorrect && /Job-demand series is not published/i.test(document.body?.innerText || ''),
+        JSON.stringify(plfs),
+      );
+    }
     await screenshot(cdp, `showcase-${module.path.slice(1)}.png`);
   }
 
