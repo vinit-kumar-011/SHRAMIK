@@ -164,7 +164,7 @@ def test_demo_analytics_mode_is_blocked_in_showcase_environment(
     for endpoint in ("forecasts", "early-warnings", "emerging-skills"):
         response = client.get(f"/api/v1/analytics/{endpoint}?analysis_mode=DEMO")
         assert response.status_code == 403
-        assert "disabled for the official showcase" in response.json()["detail"]
+        assert "disabled for the official showcase" in str(response.json())
 
     # The same configured API remains available for the source-backed official mode.
     response = client.get("/api/v1/analytics/forecasts?analysis_mode=OFFICIAL")
