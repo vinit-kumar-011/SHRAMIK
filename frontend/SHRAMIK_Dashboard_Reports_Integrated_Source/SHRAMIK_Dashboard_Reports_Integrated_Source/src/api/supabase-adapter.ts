@@ -68,16 +68,32 @@ function titleForCode(code: string): string {
     UR: 'Unemployment rate (PLFS 2025)',
     LFPR: 'Labour force participation rate (PLFS 2025)',
     WPR: 'Worker population ratio (PLFS 2025)',
+    CWS_UR: 'Unemployment rate (CWS)',
+    CWS_LFPR: 'Labour force participation (CWS)',
+    CWS_WPR: 'Worker population ratio (CWS)',
   };
   return titles[code] || code.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
-function subtitleForCode(code: string, unit: string): string {
+function subtitleForCode(code: string, unit: string, referencePeriod: string): string {
   if (code === 'ESHRAM_REGISTRATION_COUNT') return 'Cumulative portal registrations · not available labour supply';
   if (code === 'CTS_PROVISIONAL_SEAT_CAPACITY_BY_TRADE_STATE') return 'Provisional training capacity · not trained workers';
   if (code === 'CTS_ITI_COUNT') return 'Registered institute count · source coverage applies';
-  if (code === 'UR') return 'PLFS CY2025 · usual status · all ages';
-  if (code === 'LFPR') return 'PLFS CY2025 · usual status · all ages';
-  if (code === 'WPR') return 'PLFS CY2025 · usual status · all ages';
+  if (['CWS_UR', 'CWS_LFPR', 'CWS_WPR'].includes(code)) {
+    // Preserve the exact release period from the published KPI view; do not
+    // collapse monthly CWS rates into the separate annual usual-status series.
+    if (/monthly CWS/i.test(referencePeriod)) return referencePeriod;
+    const match = referencePeriod.match(/^MONTHLY_(20\d{2})-(\d{2})$/);
+    if (match) {
+      const month = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1))
+        .toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
+      return `${month} ${match[1]} · monthly CWS · age 15+`;
+    }
+    return 'Monthly CWS · persons aged 15+';
+  }
+  if (['UR', 'LFPR', 'WPR'].includes(code)) {
+    const period = referencePeriod === 'CY2025' ? 'PLFS CY2025 · usual status' : 'Published annual benchmark';
+    return `${period} · all ages`;
+  }
   return unit;
 }
 function kpiFrom(row: KpiRow | PublishedRateRow, meta: SourceMeta, code?: string): MetricCardData {
@@ -89,7 +105,7 @@ function kpiFrom(row: KpiRow | PublishedRateRow, meta: SourceMeta, code?: string
     id: metricId(metricCode),
     key: metricCode === 'UR' ? 'unemployment-rate' : metricCode === 'LFPR' ? 'labour-force-participation' : metricCode === 'WPR' ? 'worker-population-ratio' : metricCode,
     title: titleForCode(metricCode),
-    subtitle: subtitleForCode(metricCode, unit),
+    subtitle: subtitleForCode(metricCode, unit, row.reference_period),
     value,
     formattedValue,
     unit,
