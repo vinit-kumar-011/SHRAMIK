@@ -258,6 +258,10 @@ def analytics_status(
         "meta": {
             "request_id": get_or_create_request_id(request),
             "result_state": "AVAILABLE" if counts["active_official_source_backed_forecasts"] else "NO_VALIDATED_RESULTS",
-            "note": "This endpoint counts persisted outputs only; it does not start an analytics run.",
+            "note": (
+                "Source-input counts include SOURCE_BACKED, non-synthetic observations only. "
+                "Published-output counts include active official source-backed results only. "
+                "This endpoint does not start an analytics run."
+            ),
         },
     }
