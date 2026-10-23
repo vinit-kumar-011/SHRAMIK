@@ -49,3 +49,16 @@ The generic adapter calls the official OGD resource API (`api.data.gov.in/resour
 5. Check exact fields, code mapping, update date, counts, terms and semantics, then run a bounded `POST /api/v1/ingestion/sync/{source_key}`.
 6. Validate staged records; build source-specific normalisers and the 36-state completeness matrix; only then create canonical observations.
 7. Schedule refreshes only for resources with a verified update cadence and repeatable field contract.
+
+## Resource identifier received from the user
+
+The Data API card for **District Wise Total MSME Registered Enterprises under UDYAM Registration till last date** supplied this URL:
+
+`https://api.data.gov.in/resource/f8cd85a1-f9b8-4ff1-b195-9f75c10eb338?api-key=[REDACTED]&format=xml`
+
+- Resource ID: `f8cd85a1-f9b8-4ff1-b195-9f75c10eb338`
+- Backend setting: `OGD_UDYAM_RESOURCE_ID` (pre-filled in `.env.example`; safe to commit because the resource ID is not a credential).
+- The connector requests `format=json` and validates that the returned payload has a `records` array. The XML URL shown in the portal is therefore not copied verbatim; the same resource is requested as JSON.
+- The shared URL contains an empty `api-key` parameter, so no live fetch was verified from this message. Configure `OGD_API_KEY` only as a backend secret, then run the protected preview endpoint to validate fields and counts.
+- The item labelled “2.” in the message did not include additional field metadata or a second URL. Resource field names, record count and queryable geographic/year fields remain unverified until preview succeeds.
+
