@@ -287,7 +287,22 @@ DASHBOARD_METRIC_FIELDS = (
 
 
 MAX_STATIC_ASSET_BYTES = 5_000_000
-STATIC_ASSET_CANDIDATE_LIMIT = 20
+STATIC_ASSET_CANDIDATE_LIMIT = 40
+DASHBOARD_JS_KEYWORDS = (
+    "NCSReportDashboard",
+    "Jobseeker Registered",
+    "Active Jobseekers",
+    "Active Employers",
+    "Grand Total",
+    "Vacancies",
+    "Vacancy",
+    "apiUrl",
+    "apiUrls",
+    "BASE_URL",
+    "baseUrl",
+    "dashboard-report",
+    "dashboardReport",
+)
 
 
 def extract_static_route_candidates(js_text: str) -> list[dict[str, str]]:
@@ -317,6 +332,26 @@ def extract_static_route_candidates(js_text: str) -> list[dict[str, str]]:
     return candidates
 
 
+def find_dashboard_keyword_contexts(js_text: str) -> list[dict[str, str]]:
+    """Return small context excerpts for dashboard-specific labels/config identifiers."""
+    results: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for keyword in DASHBOARD_JS_KEYWORDS:
+        count = 0
+        for match in re.finditer(re.escape(keyword), js_text, flags=re.I):
+            start = max(0, match.start() - 180)
+            end = min(len(js_text), match.end() + 280)
+            context = re.sub(r"\s+", " ", js_text[start:end]).strip()
+            key = (keyword, context)
+            if key not in seen:
+                results.append({"keyword": keyword, "context": context[:600]})
+                seen.add(key)
+            count += 1
+            if count >= 6:
+                break
+    return results[:100]
+
+
 def probe_dashboard_static_assets(source: dict[str, Any]) -> dict[str, Any]:
     """Fetch first-party JS bundles only; inventory endpoint-like strings, never call them."""
     base_url = str(source.get("final_url") or source.get("requested_url") or "")
@@ -335,6 +370,7 @@ def probe_dashboard_static_assets(source: dict[str, Any]) -> dict[str, Any]:
             "outcome": "",
             "route_candidate_count": 0,
             "route_candidates": [],
+            "dashboard_keyword_contexts": [],
             "error": None,
         }
         try:
@@ -361,6 +397,7 @@ def probe_dashboard_static_assets(source: dict[str, Any]) -> dict[str, Any]:
             routes = extract_static_route_candidates(text)
             record["route_candidate_count"] = len(routes)
             record["route_candidates"] = routes
+            record["dashboard_keyword_contexts"] = find_dashboard_keyword_contexts(text)
             record["outcome"] = "FIRST_PARTY_JS_SCANNED"
         except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
             record["outcome"] = "ASSET_FETCH_FAILED"
