@@ -19,7 +19,7 @@ INSERT INTO public.data_sources
     (id, name, source_type, publisher, url, coverage_start, coverage_end, notes)
 SELECT
     '10000000-0000-4000-8000-000000000013'::uuid,
-    'UDYAM district-wise enterprise registration resource (OGD API)',
+    'UDYAM district-wise TOTAL registered enterprise count (OGD API)',
     'DATASET',
     'Ministry of Micro, Small and Medium Enterprises / OGD India',
     'https://www.data.gov.in/catalog/udyam-registration-msme-registration',
@@ -29,6 +29,33 @@ WHERE NOT EXISTS (
     SELECT 1 FROM public.data_sources WHERE id = '10000000-0000-4000-8000-000000000013'::uuid
 );
 
+INSERT INTO public.data_sources
+    (id, name, source_type, publisher, url, coverage_start, coverage_end, notes)
+SELECT
+    '10000000-0000-4000-8000-000000000016'::uuid,
+    'UDYAM district-wise SERVICES registered enterprise count (OGD API)',
+    'DATASET',
+    'Ministry of Micro, Small and Medium Enterprises / OGD India',
+    'https://www.data.gov.in/resource/district-wise-services-msme-registered-enterprises-under-udyam-registration-till-last-date',
+    NULL, NULL,
+    'Services enterprise-count context. Not vacancies or workforce count. Do not sum this with the total UDYAM dataset.'
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.data_sources WHERE id = '10000000-0000-4000-8000-000000000016'::uuid
+);
+
+INSERT INTO public.data_sources
+    (id, name, source_type, publisher, url, coverage_start, coverage_end, notes)
+SELECT
+    '10000000-0000-4000-8000-000000000017'::uuid,
+    'UDYAM district-wise MANUFACTURING registered enterprise count (OGD API)',
+    'DATASET',
+    'Ministry of Micro, Small and Medium Enterprises / OGD India',
+    'https://ap.data.gov.in/resource/district-level-manufacturing-msme-registered-enterprises-under-udyam-registration-till',
+    NULL, NULL,
+    'Manufacturing enterprise-count context. Not vacancies or workforce count. Do not sum this with the total UDYAM dataset.'
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.data_sources WHERE id = '10000000-0000-4000-8000-000000000017'::uuid
+);
 INSERT INTO public.data_sources
     (id, name, source_type, publisher, url, coverage_start, coverage_end, notes)
 SELECT
