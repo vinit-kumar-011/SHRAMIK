@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     ogd_timeout_seconds: float = Field(default=20.0, ge=1.0, le=60.0)
     ogd_eshram_resource_id: str | None = None
     ogd_udyam_resource_id: str | None = None
+    ogd_udyam_services_resource_id: str | None = None
+    ogd_udyam_manufacturing_resource_id: str | None = None
     ogd_mgnrega_resource_id: str | None = None
     ogd_jss_resource_id: str | None = None
 
