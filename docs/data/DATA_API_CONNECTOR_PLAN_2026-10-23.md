@@ -80,13 +80,12 @@ The connector now has separate keys/settings for UDYAM total, services and manuf
 
 ## Running the six read-only previews locally
 
-The live preview has not been executed from the code-review environment: the backend branch is not deployed, and no OGD API key is available to this environment. Do not paste either the OGD key or ingestion token into a chat, issue, or commit.
+The live preview has not been executed from the code-review environment: the backend branch is not deployed, and no OGD API key is available to this environment. Do not paste either the OGD key or ingestion token into a chat, issue, or commit. The helper reads the ingestion token from `-EnvFile` (or the process environment) and does not print it.
 
 1. In the backend runtime environment file used by `app.core.config.Settings`, set `OGD_API_KEY` and `INGESTION_ADMIN_TOKEN`. The six resource IDs are already filled in the example; keep the API key private and server-side.
 2. Start the FastAPI backend with the configured environment, then from the repository root run:
 
 ```powershell
-$env:INGESTION_ADMIN_TOKEN = '<copy the local token from your backend environment file>'
 .\backend\scripts\preview_ogd_sources.ps1 -BaseUrl 'http://127.0.0.1:8000/api/v1/ingestion' -EnvFile '.env'
 ```
 
