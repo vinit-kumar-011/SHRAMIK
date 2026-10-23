@@ -40,19 +40,10 @@ jobs:
         if: always()
         run: |
           if [ -f artifacts/lgd-reference/manifest.json ]; then
-            python - <<'PY'
-            import json, os
-            with open("artifacts/lgd-reference/manifest.json", encoding="utf-8") as f:
-                m = json.load(f)
-            lines = [
-                f"LGD source date: {m['source_date']}",
-                f"Counts: {m['row_counts']}",
-                f"Acceptance: {m['acceptance_status']}",
-                "Database modified: false",
-            ]
-            with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
-                f.write("\n".join(lines) + "\n")
-            PY
+            echo "LGD source date: $(jq -r '.source_date' artifacts/lgd-reference/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Counts: $(jq -c '.row_counts' artifacts/lgd-reference/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Acceptance: $(jq -r '.acceptance_status' artifacts/lgd-reference/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Database modified: false" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Candidate snapshot was not produced; inspect validation/download logs." >> "$GITHUB_STEP_SUMMARY"
           fi
