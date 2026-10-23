@@ -61,13 +61,45 @@ OGD_SOURCES: dict[str, OGDSource] = {
         source_id="10000000-0000-4000-8000-000000000013",
         resource_id_setting="ogd_udyam_resource_id",
         catalogue_url="https://www.data.gov.in/catalog/udyam-registration-msme-registration",
-        resource_url="https://www.data.gov.in/resource/district-wise-services-msme-registered-enterprises-under-udyam-registration-till-last-date",
+        resource_url="https://ap.data.gov.in/resource/district-wise-total-msme-registered-enterprises-under-udyam-registration-till-last-date",
         observed_grain="DISTRICT_SNAPSHOT",
         measure="District-level registered enterprise counts; confirm the chosen resource's fields and LGD-code field.",
         refresh_hint="Daily/periodic according to the selected OGD resource",
         interpretation=(
             "Enterprise registrations are an economic-activity context signal, not vacancies, "
             "hiring demand, or an employment count."
+        ),
+    ),
+    "udyam_district_services": OGDSource(
+        key="udyam_district_services",
+        name="District-wise services MSME registrations under UDYAM",
+        publisher="Ministry of Micro, Small and Medium Enterprises / OGD India",
+        source_id="10000000-0000-4000-8000-000000000016",
+        resource_id_setting="ogd_udyam_services_resource_id",
+        catalogue_url="https://www.data.gov.in/catalog/udyam-registration-msme-registration",
+        resource_url="https://www.data.gov.in/resource/district-wise-services-msme-registered-enterprises-under-udyam-registration-till-last-date",
+        observed_grain="DISTRICT_SNAPSHOT",
+        measure="District-wise registered services enterprises; field names and resource ID require confirmation.",
+        refresh_hint="Daily/periodic according to the selected OGD resource",
+        interpretation=(
+            "Services-sector enterprise registrations are context, not vacancies or workforce counts. "
+            "Do not add this value to total UDYAM enterprises."
+        ),
+    ),
+    "udyam_district_manufacturing": OGDSource(
+        key="udyam_district_manufacturing",
+        name="District-level manufacturing MSME registrations under UDYAM",
+        publisher="Ministry of Micro, Small and Medium Enterprises / OGD India",
+        source_id="10000000-0000-4000-8000-000000000017",
+        resource_id_setting="ogd_udyam_manufacturing_resource_id",
+        catalogue_url="https://www.data.gov.in/catalog/udyam-registration-msme-registration",
+        resource_url="https://ap.data.gov.in/resource/district-level-manufacturing-msme-registered-enterprises-under-udyam-registration-till",
+        observed_grain="DISTRICT_SNAPSHOT",
+        measure="District-wise registered manufacturing enterprises; field names and resource ID require confirmation.",
+        refresh_hint="Daily/periodic according to the selected OGD resource",
+        interpretation=(
+            "Manufacturing enterprise registrations are sectoral economic context, not vacancies or workforce counts. "
+            "Do not add this value to total UDYAM enterprises."
         ),
     ),
     "mgnrega_district_employment": OGDSource(
