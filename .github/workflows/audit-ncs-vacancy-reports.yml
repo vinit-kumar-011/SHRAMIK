@@ -1,0 +1,49 @@
+name: Audit NCS public vacancy report access
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit_ncs_vacancy_reports.py"
+      - "scripts/test_ncs_vacancy_reports.py"
+      - ".github/workflows/audit-ncs-vacancy-reports.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  probe-public-reports:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run offline HTML parser tests
+        run: python -m unittest scripts.test_ncs_vacancy_reports -v
+
+      - name: Probe public NCS aggregate report endpoints
+        run: python scripts/audit_ncs_vacancy_reports.py --output artifacts/ncs-vacancy-source-audit.json
+
+      - name: Summarize results
+        if: always()
+        run: |
+          if [ -f artifacts/ncs-vacancy-source-audit.json ]; then
+            echo "NCS aggregate-report source probe:" >> "$GITHUB_STEP_SUMMARY"
+            jq -r '.summary | to_entries[] | "- \(.key): \(.value.outcome) (HTTP \(.value.http_status // "n/a"), bytes \(.value.bytes))"' artifacts/ncs-vacancy-source-audit.json >> "$GITHUB_STEP_SUMMARY"
+            echo "Database modified: false" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload source access audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shramik-ncs-source-access-audit
+          path: artifacts/ncs-vacancy-source-audit.json
+          if-no-files-found: warn
+          retention-days: 14
