@@ -5,7 +5,9 @@ from scripts.audit_ncs_vacancy_reports import (
     SOURCES,
     extract_dashboard_datasets,
     extract_static_route_candidates,
+    extract_embedded_dashboard_series,
     find_dashboard_keyword_contexts,
+    _redact_static_text,
 )
 
 
@@ -97,6 +99,77 @@ class NCSHTMLInventoryTests(unittest.TestCase):
         self.assertIn("apiUrl", keywords)
         self.assertIn("NCSReportDashboard", keywords)
         self.assertIn("Vacancies", keywords)
+
+
+    def test_extracts_full_embedded_dashboard_series_only_when_all_totals_reconcile(self):
+        import json
+        columns = [
+            "2015-16", "2016-17", "2017-18", "2018-19", "2019-20", "2020-21",
+            "2021-22", "2022-23", "2023-24", "2024-25", "2025-26", "2026-2027",
+        ]
+        tab_names = ["Jobseeker Registered", "Active Jobseekers", "Vacancies", "Active Employer"]
+        states = [{"state": f"State {i}", "values": [1] * 12, "total": 12} for i in range(36)]
+        states.append({"state": "State Not Specified", "values": [2] * 12, "total": 24})
+        total = {"label": "Grand Total", "values": [38] * 12, "total": 456}
+        tabs = {name: {"rows": states, "grandTotal": total} for name in tab_names}
+        js = (
+            "this.allColumns=" + json.dumps(columns) + ",this.columnBatches=[];"
+            "this.allTabData=" + json.dumps(tabs) + ',this.searchQuery=""'
+        )
+        dashboard = {
+            "final_url": "https://ncs.gov.in/NCSReportDashboard",
+            "visible_text_excerpt": (
+                "NCS Dashboard Report Last Updated on 15th July, 2026 "
+                "Jobseeker Registered 456 Active Jobseekers 456 "
+                "Vacancy Details Vacancies 456 Active Employers 456 Last updated: 28-09-26"
+            ),
+        }
+        result = extract_embedded_dashboard_series(
+            js, dashboard, "2026-10-23T05:00:00+00:00",
+            asset_url="https://ncs.gov.in/main-TEST.js",
+            asset_sha256="a" * 64,
+        )
+        self.assertEqual(result["summary"]["extraction_status"], "PASS_CONTEXT_ONLY_FRESHNESS_REVIEW")
+        self.assertEqual(result["summary"]["state_ut_count"], 36)
+        self.assertEqual(result["summary"]["row_count"], 1824)
+        self.assertTrue(result["summary"]["per_row_totals_valid"])
+        self.assertTrue(result["summary"]["per_period_grand_totals_valid"])
+        self.assertTrue(result["summary"]["headline_totals_match"])
+        self.assertTrue(all(row["freshness_status"] == "CONFLICTING_PAGE_UPDATE_LABELS_REVIEW" for row in result["rows"]))
+        self.assertTrue(any(row["period_status"] == "CURRENT_FISCAL_YEAR_IN_PROGRESS_AS_OF_CAPTURE" for row in result["rows"]))
+
+    def test_embedded_series_rejects_inconsistent_period_total(self):
+        import json
+        columns = [
+            "2015-16", "2016-17", "2017-18", "2018-19", "2019-20", "2020-21",
+            "2021-22", "2022-23", "2023-24", "2024-25", "2025-26", "2026-2027",
+        ]
+        tab_names = ["Jobseeker Registered", "Active Jobseekers", "Vacancies", "Active Employer"]
+        states = [{"state": f"State {i}", "values": [1] * 12, "total": 12} for i in range(36)]
+        states.append({"state": "State Not Specified", "values": [2] * 12, "total": 24})
+        total = {"label": "Grand Total", "values": [38] * 12, "total": 456}
+        total["values"][0] = 999
+        tabs = {name: {"rows": states, "grandTotal": total} for name in tab_names}
+        js = "this.allColumns=" + json.dumps(columns) + ",this.columnBatches=[];this.allTabData=" + json.dumps(tabs) + ',this.searchQuery=""'
+        dashboard = {
+            "final_url": "https://ncs.gov.in/NCSReportDashboard",
+            "visible_text_excerpt": "Jobseeker Registered 456 Active Jobseekers 456 Vacancies 456 Active Employers 456",
+        }
+        result = extract_embedded_dashboard_series(
+            js, dashboard, "2026-10-23T05:00:00+00:00",
+            asset_url="https://ncs.gov.in/main-TEST.js",
+            asset_sha256="a" * 64,
+        )
+        self.assertEqual(result["summary"]["extraction_status"], "REJECTED")
+        self.assertEqual(result["rows"], [])
+        self.assertTrue(any("state rows do not sum to grand total" in error for error in result["summary"]["errors"]))
+
+    def test_static_context_redacts_signed_query_values(self):
+        text = "download https://ncsdocsstorage.blob.core.windows.net/file.pdf?sv=2023&sig=secretvalue plus accessToken=abc123"
+        redacted = _redact_static_text(text)
+        self.assertNotIn("secretvalue", redacted)
+        self.assertNotIn("abc123", redacted)
+        self.assertIn("[QUERY REDACTED]", redacted)
 
 
 if __name__ == "__main__":
