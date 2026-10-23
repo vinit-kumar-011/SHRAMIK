@@ -269,6 +269,163 @@ def validate_snapshot(tables: dict[str, list[dict[str, str]]]) -> list[str]:
     return errors
 
 
+
+DISTRICT_DIFF_FIELDS = (
+    "status",
+    "lgd_district_code",
+    "canonical_district_id",
+    "canonical_district_name",
+    "canonical_state_name",
+    "source_district_name",
+    "source_state_code",
+    "source_state_name",
+    "note",
+)
+
+
+def _normalise_name(value: Any) -> str:
+    """Compare labels conservatively while ignoring case and punctuation only."""
+    text = _clean_text(value).casefold().replace("&", " and ")
+    text = re.sub(r"^\s*the\s+", "", text)
+    return re.sub(r"[^a-z0-9]+", "", text)
+
+
+def compare_district_rosters(
+    source_states: list[dict[str, str]],
+    source_districts: list[dict[str, str]],
+    baseline_rows: list[dict[str, str]],
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Compare the source snapshot with the canonical DB export by LGD district code.
+
+    This is a review-only diff. It never approves a mapping or performs database writes.
+    """
+    source_state_by_code: dict[str, dict[str, str]] = {}
+    source_state_code_by_name: dict[str, str] = {}
+    for row in source_states:
+        code = _clean_code(row.get("code"))
+        name = _clean_text(row.get("name"))
+        key = _normalise_name(name)
+        if not code or not name or not key:
+            raise ValueError("Source states contain a blank code/name.")
+        if code in source_state_by_code:
+            raise ValueError(f"Duplicate source state code {code!r}.")
+        if key in source_state_code_by_name and source_state_code_by_name[key] != code:
+            raise ValueError(f"Ambiguous normalized source state name {name!r}.")
+        source_state_by_code[code] = row
+        source_state_code_by_name[key] = code
+
+    source_by_code: dict[str, dict[str, str]] = {}
+    for row in source_districts:
+        code = _clean_code(row.get("code"))
+        if not code:
+            raise ValueError("Source districts contain a blank LGD district code.")
+        if code in source_by_code:
+            raise ValueError(f"Duplicate source LGD district code {code!r}.")
+        source_by_code[code] = row
+
+    baseline_by_code: dict[str, dict[str, str]] = {}
+    baseline_missing_code = 0
+    for row in baseline_rows:
+        code = _clean_code(row.get("lgd_district_code"))
+        if not code:
+            baseline_missing_code += 1
+            continue
+        if code in baseline_by_code:
+            raise ValueError(f"Duplicate baseline LGD district code {code!r}.")
+        baseline_by_code[code] = row
+
+    diff: list[dict[str, str]] = []
+    statuses: dict[str, int] = {}
+    all_codes = set(source_by_code) | set(baseline_by_code)
+
+    def code_sort(code: str) -> tuple[int, Any]:
+        return (0, int(code)) if code.isdigit() else (1, code)
+
+    for code in sorted(all_codes, key=code_sort):
+        source = source_by_code.get(code)
+        baseline = baseline_by_code.get(code)
+        item = {
+            "status": "",
+            "lgd_district_code": code,
+            "canonical_district_id": _clean_text((baseline or {}).get("district_id")),
+            "canonical_district_name": _clean_text((baseline or {}).get("district_name")),
+            "canonical_state_name": _clean_text((baseline or {}).get("state_name")),
+            "source_district_name": _clean_text((source or {}).get("name")),
+            "source_state_code": _clean_code((source or {}).get("state_code")),
+            "source_state_name": "",
+            "note": "",
+        }
+        if source is not None:
+            state = source_state_by_code.get(item["source_state_code"])
+            item["source_state_name"] = _clean_text((state or {}).get("name"))
+            if state is None:
+                item["status"] = "SOURCE_STATE_CODE_UNMAPPED"
+                item["note"] = "Source district refers to a state code absent from the source state roster."
+            elif baseline is None:
+                item["status"] = "NEW_IN_SOURCE"
+                item["note"] = "LGD district code exists in the source snapshot but not in the canonical database export."
+            else:
+                canonical_state_key = _normalise_name(item["canonical_state_name"])
+                expected_state_code = source_state_code_by_name.get(canonical_state_key)
+                if expected_state_code is None:
+                    item["status"] = "CANONICAL_STATE_NAME_UNMAPPED"
+                    item["note"] = "Canonical state name could not be matched conservatively to a source state name."
+                else:
+                    name_changed = (
+                        _normalise_name(item["canonical_district_name"])
+                        != _normalise_name(item["source_district_name"])
+                    )
+                    state_changed = expected_state_code != item["source_state_code"]
+                    if name_changed and state_changed:
+                        item["status"] = "NAME_AND_STATE_CHANGED"
+                        item["note"] = f"District name differs and canonical state resolves to LGD state code {expected_state_code}."
+                    elif name_changed:
+                        item["status"] = "NAME_CHANGED"
+                        item["note"] = "Same LGD district code; source and canonical names differ beyond case/punctuation normalization."
+                    elif state_changed:
+                        item["status"] = "STATE_CHANGED"
+                        item["note"] = f"Source state code is {item['source_state_code']}; canonical state name resolves to {expected_state_code}."
+                    else:
+                        item["status"] = "UNCHANGED"
+                        item["note"] = "LGD code, normalized district name, and state relationship match."
+        elif baseline is not None:
+            item["status"] = "MISSING_FROM_SOURCE"
+            item["note"] = "Canonical LGD district code is absent from the selected source snapshot; review before retirement."
+        else:
+            continue
+
+        statuses[item["status"]] = statuses.get(item["status"], 0) + 1
+        diff.append(item)
+
+    summary = {
+        "baseline_kind": "READ_ONLY_EXPORT_OF_CURRENT_SHRAMIK_CANONICAL_DB",
+        "baseline_rows": len(baseline_rows),
+        "baseline_rows_missing_lgd_code": baseline_missing_code,
+        "source_district_rows": len(source_districts),
+        "source_district_unique_codes": len(source_by_code),
+        "compared_unique_codes": len(all_codes),
+        "status_counts": statuses,
+        "automatic_acceptance": False,
+    }
+    return diff, summary
+
+
+def _read_baseline_csv(path: Path) -> list[dict[str, str]]:
+    if not path.is_file():
+        raise ValueError(f"District baseline CSV does not exist: {path}")
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        required = {
+            "district_id",
+            "lgd_district_code",
+            "district_name",
+            "state_name",
+        }
+        if not reader.fieldnames or not required.issubset(set(reader.fieldnames)):
+            missing = sorted(required - set(reader.fieldnames or []))
+            raise ValueError("District baseline CSV is missing columns: " + ", ".join(missing))
+        return list(reader)
+
 def _write_csv(path: Path, rows: list[dict[str, str]], fields: tuple[str, ...]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -278,7 +435,13 @@ def _write_csv(path: Path, rows: list[dict[str, str]], fields: tuple[str, ...]) 
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def refresh(output_dir: Path, *, sevenzip: str = "7z", now: datetime | None = None) -> dict[str, Any]:
+def refresh(
+    output_dir: Path,
+    *,
+    sevenzip: str = "7z",
+    now: datetime | None = None,
+    baseline_csv: Path | None = None,
+) -> dict[str, Any]:
     req = urllib.request.Request(
         RELEASE_API_URL,
         headers={"User-Agent": "SHRAMIK-LGD-reference-audit/1.0", "Accept": "application/vnd.github+json"},
@@ -306,6 +469,19 @@ def refresh(output_dir: Path, *, sevenzip: str = "7z", now: datetime | None = No
         file_hashes[f"{level}.csv"] = _write_csv(
             output_dir / f"{level}.csv", tables[level], OUTPUT_FIELDS[level]
         )
+
+    reconciliation: dict[str, Any] | None = None
+    if baseline_csv is not None:
+        baseline_rows = _read_baseline_csv(baseline_csv)
+        district_diff, reconciliation = compare_district_rosters(
+            tables["states"], tables["districts"], baseline_rows
+        )
+        file_hashes["districts_diff.csv"] = _write_csv(
+            output_dir / "districts_diff.csv", district_diff, DISTRICT_DIFF_FIELDS
+        )
+        reconciliation["baseline_file"] = str(baseline_csv)
+        reconciliation["diff_rows"] = len(district_diff)
+
     manifest = {
         "source_date": source_date,
         "retrieved_at_utc": (now or datetime.now(timezone.utc)).astimezone(timezone.utc).isoformat(),
@@ -317,6 +493,7 @@ def refresh(output_dir: Path, *, sevenzip: str = "7z", now: datetime | None = No
         "row_counts": {level: len(tables[level]) for level in LEVELS},
         "source_archives": archive_metadata,
         "normalised_csv_sha256": file_hashes,
+        "reconciliation": reconciliation,
         "database_modified": False,
         "notes": [
             "Fetched from a community mirror that attributes the Ministry of Panchayati Raj LGD.",
@@ -337,8 +514,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=Path("artifacts/lgd-reference"))
     parser.add_argument("--sevenzip", default="7z", help="7-Zip executable name/path.")
+    parser.add_argument(
+        "--baseline-csv",
+        type=Path,
+        help="Optional read-only export of the current SHRAMIK districts table for code-level reconciliation.",
+    )
     args = parser.parse_args()
-    manifest = refresh(args.output_dir, sevenzip=args.sevenzip)
+    manifest = refresh(args.output_dir, sevenzip=args.sevenzip, baseline_csv=args.baseline_csv)
     print(json.dumps(manifest, indent=2, ensure_ascii=False))
     return 0
 
