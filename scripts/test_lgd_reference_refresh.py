@@ -6,6 +6,7 @@ from scripts.refresh_lgd_reference import (
     OUTPUT_FIELDS,
     parse_asset_date,
     parse_source_csv,
+    compare_district_rosters,
     select_latest_complete_set,
     validate_snapshot,
 )
@@ -115,6 +116,68 @@ class LGDReferenceRefreshTests(unittest.TestCase):
         })
         self.assertTrue(any("duplicate code" in error for error in errors))
         self.assertTrue(any("unknown state code" in error for error in errors))
+
+
+    def test_district_reconciliation_reports_new_missing_renamed_and_reassigned_codes(self):
+        source_states = [
+            {"code": "1", "name": "Alpha State"},
+            {"code": "2", "name": "Beta State"},
+        ]
+        source_districts = [
+            {"code": "100", "name": "North District", "state_code": "1"},
+            {"code": "200", "name": "New District", "state_code": "1"},
+            {"code": "300", "name": "Renamed District", "state_code": "1"},
+            {"code": "400", "name": "Moved District", "state_code": "2"},
+        ]
+        baseline = [
+            {"district_id": "D100", "lgd_district_code": "100", "district_name": "North District",
+             "state_name": "Alpha State"},
+            {"district_id": "D300", "lgd_district_code": "300", "district_name": "Old District",
+             "state_name": "Alpha State"},
+            {"district_id": "D400", "lgd_district_code": "400", "district_name": "Moved District",
+             "state_name": "Alpha State"},
+            {"district_id": "D500", "lgd_district_code": "500", "district_name": "Removed District",
+             "state_name": "Alpha State"},
+        ]
+        diff, summary = compare_district_rosters(source_states, source_districts, baseline)
+        by_code = {row["lgd_district_code"]: row["status"] for row in diff}
+        self.assertEqual(by_code["100"], "UNCHANGED")
+        self.assertEqual(by_code["200"], "NEW_IN_SOURCE")
+        self.assertEqual(by_code["300"], "NAME_CHANGED")
+        self.assertEqual(by_code["400"], "STATE_CHANGED")
+        self.assertEqual(by_code["500"], "MISSING_FROM_SOURCE")
+        self.assertEqual(summary["status_counts"]["UNCHANGED"], 1)
+        self.assertFalse(summary["automatic_acceptance"])
+
+    def test_district_reconciliation_handles_punctuation_and_leading_the(self):
+        source_states = [
+            {"code": "35", "name": "Andaman And Nicobar Islands"},
+            {"code": "38", "name": "The Dadra And Nagar Haveli And Daman And Diu"},
+        ]
+        source_districts = [
+            {"code": "603", "name": "Nicobars", "state_code": "35"},
+            {"code": "799", "name": "Example District", "state_code": "38"},
+        ]
+        baseline = [
+            {"district_id": "D603", "lgd_district_code": "603", "district_name": "NICOBARS",
+             "state_name": "Andaman & Nicobar Islands"},
+            {"district_id": "D799", "lgd_district_code": "799", "district_name": "Example District",
+             "state_name": "Dadra And Nagar Haveli And Daman And Diu"},
+        ]
+        diff, _ = compare_district_rosters(source_states, source_districts, baseline)
+        self.assertTrue(all(row["status"] == "UNCHANGED" for row in diff))
+
+    def test_district_reconciliation_rejects_duplicate_baseline_codes(self):
+        source_states = [{"code": "1", "name": "Alpha State"}]
+        source_districts = [{"code": "100", "name": "North District", "state_code": "1"}]
+        baseline = [
+            {"district_id": "D100", "lgd_district_code": "100", "district_name": "North District",
+             "state_name": "Alpha State"},
+            {"district_id": "D100-copy", "lgd_district_code": "100", "district_name": "North District",
+             "state_name": "Alpha State"},
+        ]
+        with self.assertRaisesRegex(ValueError, "Duplicate baseline"):
+            compare_district_rosters(source_states, source_districts, baseline)
 
 
 if __name__ == "__main__":
