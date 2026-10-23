@@ -4,6 +4,7 @@ from scripts.audit_ncs_vacancy_reports import (
     HTMLInventoryParser,
     SOURCES,
     extract_dashboard_datasets,
+    extract_static_route_candidates,
 )
 
 
@@ -73,6 +74,19 @@ class NCSHTMLInventoryTests(unittest.TestCase):
         _, _, summary = extract_dashboard_datasets(source, "2026-10-23T00:00:00+00:00")
         self.assertFalse(summary["table_grand_total_matches_jobseeker_registered_headline"])
         self.assertIn("acceptance_note", summary)
+
+
+    def test_static_js_route_inventory_finds_api_and_report_strings(self):
+        js = (
+            'const a="/api/report/vacancies";'
+            'const b="https://api.example.test/v1/aggregate";'
+            'const c="/_layouts/15/ncsp/ViewStaticReport.aspx";'
+        )
+        routes = extract_static_route_candidates(js)
+        values = {item["route"] for item in routes}
+        self.assertIn("/api/report/vacancies", values)
+        self.assertIn("https://api.example.test/v1/aggregate", values)
+        self.assertTrue(any("ViewStaticReport.aspx" in value for value in values))
 
 
 if __name__ == "__main__":
