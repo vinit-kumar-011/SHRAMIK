@@ -630,7 +630,7 @@ DASHBOARD_SERIES_FIELDS = (
 def _redact_static_text(value: str) -> str:
     """Remove signed URL query values and credential-like parameters from audit excerpts."""
     text = re.sub(
-        r"https?://[^\\s\\"'<>]+",
+        r"https?://[^\s\"'<>]+",
         lambda match: (
             urlparse(match.group(0)).scheme + "://" + urlparse(match.group(0)).netloc +
             urlparse(match.group(0)).path +
@@ -639,15 +639,15 @@ def _redact_static_text(value: str) -> str:
         value,
     )
     text = re.sub(
-        r"(?i)\\b(accessToken|refreshToken|authorization|userId|mobileNumber|otp|sig|sv|se|sr|sp|st)=([^&\\"'\\s]+)",
-        r"\\1=[REDACTED]",
+        r"(?i)\b(accessToken|refreshToken|authorization|userId|mobileNumber|otp|sig|sv|se|sr|sp|st)=([^&\"'\s]+)",
+        r"\1=[REDACTED]",
         text,
     )
     return text
 
 
 def _normalise_fiscal_year(label: str) -> tuple[str, int]:
-    match = re.fullmatch(r"(\\d{4})-(\\d{2}|\\d{4})", label.strip())
+    match = re.fullmatch(r"(\d{4})-(\d{2}|\d{4})", label.strip())
     if not match:
         raise ValueError(f"Unrecognized fiscal-year column label: {label!r}")
     start_year = int(match.group(1))
@@ -684,11 +684,11 @@ def extract_embedded_dashboard_series(
         ),
     }
     columns_match = re.search(
-        r"this\\.allColumns=(\\[[^\\]]*\\]),this\\.columnBatches=",
+        r"this\.allColumns=(\[[^\]]*\]),this\.columnBatches=",
         js_text,
     )
     tabs_match = re.search(
-        r"this\\.allTabData=(\\{.*?\\}),this\\.searchQuery=",
+        r"this\.allTabData=(\{.*?\}),this\.searchQuery=",
         js_text,
         flags=re.S,
     )
@@ -726,11 +726,11 @@ def extract_embedded_dashboard_series(
     }
     visible_text = str(dashboard_source.get("visible_text_excerpt") or "")
     page_update_match = re.search(
-        r"Last Updated on\\s+(.{1,50}?)(?=\\s+Jobseeker Details|\\s+Jobseeker Registered|$)",
+        r"Last Updated on\s+(.{1,50}?)(?=\s+Jobseeker Details|\s+Jobseeker Registered|$)",
         visible_text, flags=re.I,
     )
     footer_update_match = re.search(
-        r"Last updated:\\s*(\\d{1,2}-\\d{1,2}-\\d{2,4})",
+        r"Last updated:\s*(\d{1,2}-\d{1,2}-\d{2,4})",
         visible_text, flags=re.I,
     )
     page_update_label = _clean_table_text(page_update_match.group(1)) if page_update_match else ""
