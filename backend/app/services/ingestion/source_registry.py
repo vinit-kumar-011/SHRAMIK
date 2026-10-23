@@ -104,18 +104,18 @@ OGD_SOURCES: dict[str, OGDSource] = {
     ),
     "mgnrega_district_employment": OGDSource(
         key="mgnrega_district_employment",
-        name="District-wise MGNREGA data at a glance",
+        name="District-wise MGNREGA data at a glance (01 Apr–31 Aug 2023)",
         publisher="Ministry of Rural Development / OGD India",
         source_id="10000000-0000-4000-8000-000000000014",
         resource_id_setting="ogd_mgnrega_resource_id",
         catalogue_url="https://www.data.gov.in/catalog/mahatma-gandhi-national-rural-employment-guarantee-act-mgnrega",
         resource_url="https://api.data.gov.in/resource/ee03643a-ee4c-48c2-ac30-9f2ff26ab722",
-        observed_grain="DISTRICT_DAILY_PROGRAMME_SNAPSHOT",
-        measure="MGNREGA scheme-level employment/programme indicators; retain source period and field semantics.",
-        refresh_hint="Daily/periodic according to the selected OGD resource",
+        observed_grain="DISTRICT_SNAPSHOT_2023_08_31",
+        measure="Fixed-period dataset (01 Apr–31 Aug 2023) including job cards, workers, person-days, households worked, average days and wage rates; validate exact API fields before normalisation.",
+        refresh_hint="Historical fixed-period snapshot covering 01 Apr–31 Aug 2023; do not schedule as a live feed.",
         interpretation=(
-            "This is a rural public-works programme signal, not private-sector vacancies or a "
-            "measure of total labour demand."
+            "This is a historical rural public-works programme signal, not private-sector vacancies or a "
+            "measure of total labour demand. Do not interpret the 2023 period as current conditions."
         ),
     ),
     "jss_district_training_snapshot": OGDSource(
