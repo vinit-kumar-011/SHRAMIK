@@ -18,8 +18,8 @@ A read-only audit of the active Supabase project found:
 |---|---|---|---|---|
 | `eshram_district_registrations` | [e-Shram district-wise registrations](https://www.data.gov.in/catalog/demographic-data-unorganised-workers-registered-eshram-portal) | District / daily previous-day snapshot | Registration-stock and demographic context, subject to field verification | Active jobseekers, workers currently available, or total workforce |
 | `udyam_district_enterprises` | [UDYAM total district-wise MSME registrations](https://ap.data.gov.in/resource/district-wise-total-msme-registered-enterprises-under-udyam-registration-till-last-date) | District / latest cumulative snapshot; resource ID supplied: `f8cd85a1-f9b8-4ff1-b195-9f75c10eb338` | Total registered enterprises and district code cross-check | Vacancies or a direct employment count |
-| `udyam_district_services` | [UDYAM services MSME registrations](https://www.data.gov.in/resource/district-wise-services-msme-registered-enterprises-under-udyam-registration-till-last-date) | District snapshot; API UUID still needs to be copied from Data API | Services-sector economic context | Vacancies or a direct employment count; do not add to total |
-| `udyam_district_manufacturing` | [UDYAM manufacturing MSME registrations](https://ap.data.gov.in/resource/district-level-manufacturing-msme-registered-enterprises-under-udyam-registration-till) | District snapshot; API UUID still needs to be copied from Data API | Manufacturing-sector economic context | Vacancies or a direct employment count; do not add to total |
+| `udyam_district_services` | [UDYAM services MSME registrations](https://www.data.gov.in/resource/district-wise-services-msme-registered-enterprises-under-udyam-registration-till-last-date) | District snapshot; resource ID supplied, schema still needs live preview | Services-sector economic context | Vacancies or a direct employment count; do not add to total |
+| `udyam_district_manufacturing` | [UDYAM manufacturing MSME registrations](https://ap.data.gov.in/resource/district-level-manufacturing-msme-registered-enterprises-under-udyam-registration-till) | District snapshot; resource ID supplied, schema still needs live preview | Manufacturing-sector economic context | Vacancies or a direct employment count; do not add to total |
 | `mgnrega_district_employment` | [MGNREGA district-wise data](https://www.data.gov.in/catalog/mahatma-gandhi-national-rural-employment-guarantee-act-mgnrega) | District / daily or period-specific programme data | Public-works programme participation and employment days, as supported by selected fields | Total labour demand or private-sector vacancies |
 | `jss_district_training_snapshot` | [MSDE JSS dataset](https://www.data.gov.in/catalog/msde-jan-shikshan-sansthan) | District / snapshot dated 2022-04-27 in the inspected resource | Historical enrolled/assessed training context | Current training capacity; do not schedule it as a live feed without a newer dataset |
 
@@ -62,17 +62,17 @@ The Data API card for **District Wise Total MSME Registered Enterprises under UD
 - Backend setting: `OGD_UDYAM_RESOURCE_ID` (pre-filled in `.env.example`; safe to commit because the resource ID is not a credential).
 - The connector requests `format=json` and validates that the returned payload has a `records` array. The XML URL shown in the portal is therefore not copied verbatim; the same resource is requested as JSON.
 - The shared URL contains an empty `api-key` parameter, so no live fetch was verified from this message. Configure `OGD_API_KEY` only as a backend secret, then run the protected preview endpoint to validate fields and counts.
-- The item labelled “2.” in the message did not include additional field metadata or a second URL. Resource field names, record count and queryable geographic/year fields remain unverified until preview succeeds.
+- 
 
 
 ## Cross-resource API URL inventory
 
-The official catalogues show Data API options for e-Shram, UDYAM total/services/manufacturing, MGNREGA and JSS. Public catalogue search did not expose the exact resource UUID for every card. The user has now supplied API resource IDs for the remaining five numbered cards. The mapping below follows the order of the user-provided URLs; verify each resource title and schema through a protected live preview before enabling ingestion. The URLs had `format=xml` or a malformed empty API-key query; the connector uses JSON and keeps the API key in backend secrets.
+The official catalogues show Data API options for e-Shram, UDYAM total/services/manufacturing, MGNREGA and JSS. The user supplied the resource IDs below. Their exact title-to-ID match and response schemas still require live preview. The mapping below follows the order of the user-provided URLs; verify each resource title and schema through a protected live preview before enabling ingestion. The URLs had `format=xml` or a malformed empty API-key query; the connector uses JSON and keeps the API key in backend secrets.
 
 The connector now has separate keys/settings for UDYAM total, services and manufacturing. Resource IDs supplied by the user (the numbered URLs after UDYAM total) are:
 - e-Shram: `1d4d1c5a-feea-423b-be4f-c3636fdd1d82` — https://www.data.gov.in/catalog/demographic-data-unorganised-workers-registered-eshram-portal
 - MGNREGA: `ee03643a-ee4c-48c2-ac30-9f2ff26ab722` — https://data.gov.in/catalog/mahatma-gandhi-national-rural-employment-guarantee-act-mgnrega
 - JSS snapshot dated 27-Apr-2022: `6bd63a89-58cc-4a25-971e-7fb1e5f6775f` — https://www.data.gov.in/catalog/msde-jan-shikshan-sansthan
-- UDYAM total: https://ap.data.gov.in/resource/district-wise-total-msme-registered-enterprises-under-udyam-registration-till-last-date
+- UDYAM total: `f8cd85a1-f9b8-4ff1-b195-9f75c10eb338` — https://ap.data.gov.in/resource/district-wise-total-msme-registered-enterprises-under-udyam-registration-till-last-date
 - UDYAM services: `c3dfe7e6-0cfd-4ddb-8f79-9cb3695d9866` — https://www.data.gov.in/resource/district-wise-services-msme-registered-enterprises-under-udyam-registration-till-last-date
 - UDYAM manufacturing: `ae789703-638a-4942-b79e-17868103dec8` — https://ap.data.gov.in/resource/district-level-manufacturing-msme-registered-enterprises-under-udyam-registration-till
