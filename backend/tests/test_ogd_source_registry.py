@@ -48,3 +48,10 @@ def test_udyam_total_services_and_manufacturing_are_separate_resources():
     assert "manufacturing-msme" in manufacturing.resource_url
     assert "Do not add" in services.interpretation
     assert "Do not add" in manufacturing.interpretation
+
+
+def test_mgnrega_resource_is_marked_as_historical_period_snapshot():
+    mgnrega = get_source("mgnrega_district_employment")
+    assert "2023_08_31" in mgnrega.observed_grain
+    assert "do not schedule as a live feed" in mgnrega.refresh_hint.lower()
+    assert "not current conditions" in mgnrega.interpretation.lower()
