@@ -67,12 +67,12 @@ The Data API card for **District Wise Total MSME Registered Enterprises under UD
 
 ## Cross-resource API URL inventory
 
-The official catalogues show Data API options for e-Shram, UDYAM total/services/manufacturing, MGNREGA and JSS. Public catalogue search did not expose the exact resource UUID for every card. The only exact API URL supplied so far is UDYAM total, resource ID `f8cd85a1-f9b8-4ff1-b195-9f75c10eb338`. Do not guess the other IDs: capture each Data API URL from its resource page with `api-key` blank or redacted, then preview the JSON response.
+The official catalogues show Data API options for e-Shram, UDYAM total/services/manufacturing, MGNREGA and JSS. Public catalogue search did not expose the exact resource UUID for every card. The user has now supplied API resource IDs for the remaining five numbered cards. The mapping below follows the order of the user-provided URLs; verify each resource title and schema through a protected live preview before enabling ingestion. The URLs had `format=xml` or a malformed empty API-key query; the connector uses JSON and keeps the API key in backend secrets.
 
-The connector now has separate keys/settings for UDYAM total, services and manufacturing. The remaining official resource pages are:
-- e-Shram: https://www.data.gov.in/catalog/demographic-data-unorganised-workers-registered-eshram-portal
-- MGNREGA: https://data.gov.in/catalog/mahatma-gandhi-national-rural-employment-guarantee-act-mgnrega
-- JSS snapshot dated 27-Apr-2022: https://www.data.gov.in/catalog/msde-jan-shikshan-sansthan
+The connector now has separate keys/settings for UDYAM total, services and manufacturing. Resource IDs supplied by the user (the numbered URLs after UDYAM total) are:
+- e-Shram: `1d4d1c5a-feea-423b-be4f-c3636fdd1d82` — https://www.data.gov.in/catalog/demographic-data-unorganised-workers-registered-eshram-portal
+- MGNREGA: `ee03643a-ee4c-48c2-ac30-9f2ff26ab722` — https://data.gov.in/catalog/mahatma-gandhi-national-rural-employment-guarantee-act-mgnrega
+- JSS snapshot dated 27-Apr-2022: `6bd63a89-58cc-4a25-971e-7fb1e5f6775f` — https://www.data.gov.in/catalog/msde-jan-shikshan-sansthan
 - UDYAM total: https://ap.data.gov.in/resource/district-wise-total-msme-registered-enterprises-under-udyam-registration-till-last-date
-- UDYAM services: https://www.data.gov.in/resource/district-wise-services-msme-registered-enterprises-under-udyam-registration-till-last-date
-- UDYAM manufacturing: https://ap.data.gov.in/resource/district-level-manufacturing-msme-registered-enterprises-under-udyam-registration-till
+- UDYAM services: `c3dfe7e6-0cfd-4ddb-8f79-9cb3695d9866` — https://www.data.gov.in/resource/district-wise-services-msme-registered-enterprises-under-udyam-registration-till-last-date
+- UDYAM manufacturing: `ae789703-638a-4942-b79e-17868103dec8` — https://ap.data.gov.in/resource/district-level-manufacturing-msme-registered-enterprises-under-udyam-registration-till
