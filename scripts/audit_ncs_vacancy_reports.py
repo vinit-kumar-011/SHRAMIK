@@ -27,9 +27,11 @@ BIHAR_REPORT = urljoin(
     "Bihar/Job%20Vacancy%20-%20Bihar%20-%202024-25.html",
 )
 SOURCES = {
-    "bihar_sample_report": BIHAR_REPORT,
-    "statewise_parent_directory": BASE,
-    "official_static_analytics_report": "https://www.ncs.gov.in/_layouts/15/ncsp/ViewStaticReport.aspx",
+    "bihar_sample_report_legacy_url": BIHAR_REPORT,
+    "statewise_parent_directory_legacy_url": BASE,
+    "official_static_analytics_legacy_url": "https://www.ncs.gov.in/_layouts/15/ncsp/ViewStaticReport.aspx",
+    "current_ncs_report_dashboard": "https://ncs.gov.in/NCSReportDashboard",
+    "official_newsletters_page": "https://www.ncs.gov.in/Pages/Newsletters.aspx",
 }
 MAX_RESPONSE_BYTES = 5_000_000
 
@@ -46,12 +48,23 @@ class HTMLInventoryParser(HTMLParser):
         self._current_table: list[list[str]] | None = None
         self.tables: list[list[list[str]]] = []
         self.links: list[dict[str, str]] = []
+        self.script_sources: list[str] = []
+        self.stylesheet_sources: list[str] = []
         self._current_link: dict[str, str] | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attrs_map = dict(attrs)
         if tag.lower() == "title":
             self._in_title = True
+        elif tag.lower() == "script":
+            source = attrs_map.get("src") or ""
+            if source:
+                self.script_sources.append(source)
+        elif tag.lower() == "link":
+            rel = (attrs_map.get("rel") or "").lower()
+            href = attrs_map.get("href") or ""
+            if href and "stylesheet" in rel:
+                self.stylesheet_sources.append(href)
         elif tag.lower() == "a":
             href = attrs_map.get("href") or ""
             if href:
@@ -127,6 +140,9 @@ def fetch_page(url: str, timeout: int = 25) -> dict[str, Any]:
         "table_previews": [],
         "link_count": 0,
         "relevant_links": [],
+        "script_sources": [],
+        "stylesheet_sources": [],
+        "route_redirected_to_root": False,
         "outcome": "",
         "error": None,
     }
@@ -150,6 +166,12 @@ def fetch_page(url: str, timeout: int = 25) -> dict[str, Any]:
         parser = HTMLInventoryParser()
         parser.feed(text)
         result["title"] = re.sub(r"\s+", " ", parser.title).strip()
+        result["route_redirected_to_root"] = (
+            (result["final_url"] or "").rstrip("/") in ("https://ncs.gov.in", "https://www.ncs.gov.in")
+            and url.rstrip("/") not in ("https://ncs.gov.in", "https://www.ncs.gov.in")
+        )
+        result["script_sources"] = parser.script_sources[:40]
+        result["stylesheet_sources"] = parser.stylesheet_sources[:40]
         result["table_count"] = len(parser.tables)
         result["table_previews"] = [
             {
@@ -192,6 +214,9 @@ def audit() -> dict[str, Any]:
                 "http_status": item["http_status"],
                 "bytes": item["bytes"],
                 "table_count": item["table_count"],
+                "final_url": item["final_url"],
+                "redirected_to_root": item["route_redirected_to_root"],
+                "script_count": len(item["script_sources"]),
             }
             for name, item in results.items()
         },
