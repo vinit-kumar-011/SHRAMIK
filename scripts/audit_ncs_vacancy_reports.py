@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 BASE = (
     "https://www.ncs.gov.in/NCS%20Reports/Active%20Job%20Vacancy%20Reports/"
@@ -285,6 +285,95 @@ DASHBOARD_METRIC_FIELDS = (
 )
 
 
+
+MAX_STATIC_ASSET_BYTES = 5_000_000
+STATIC_ASSET_CANDIDATE_LIMIT = 20
+
+
+def extract_static_route_candidates(js_text: str) -> list[dict[str, str]]:
+    """Inventory probable public API route strings from static JS without requesting them."""
+    candidates: list[dict[str, str]] = []
+    seen: set[str] = set()
+    patterns = (
+        r"""(?P<route>https?://[^"'\\s<>\\x60]+)""",
+        r"""(?P<route>/?(?:api|apis|services|dashboard|report|reports|vacancy|jobseeker)[A-Za-z0-9_./?=&%{}:-]*(?:\\.aspx|\\.ashx|\\.asmx|/|\\?)[A-Za-z0-9_./?=&%{}:-]*)""",
+        r"""(?P<route>/[A-Za-z0-9_./-]+\\.(?:aspx|ashx|asmx)(?:\\?[^"'\\s<>\\x60]*)?)""",
+    )
+    for pattern in patterns:
+        for match in re.finditer(pattern, js_text, flags=re.I):
+            route = match.group("route").rstrip("),;")
+            if not route or route in seen:
+                continue
+            low = route.casefold()
+            if not any(token in low for token in ("api", "vacan", "jobseek", "report", "dashboard", ".aspx", ".ashx", ".asmx")):
+                continue
+            seen.add(route)
+            start = max(0, match.start() - 120)
+            end = min(len(js_text), match.end() + 160)
+            context = re.sub(r"\\s+", " ", js_text[start:end]).strip()
+            candidates.append({"route": route[:500], "context": context[:400]})
+            if len(candidates) >= STATIC_ASSET_CANDIDATE_LIMIT:
+                return candidates
+    return candidates
+
+
+def probe_dashboard_static_assets(source: dict[str, Any]) -> dict[str, Any]:
+    """Fetch first-party JS bundles only; inventory endpoint-like strings, never call them."""
+    base_url = str(source.get("final_url") or source.get("requested_url") or "")
+    source_host = urlparse(base_url).hostname
+    records: list[dict[str, Any]] = []
+    for raw_url in source.get("script_sources", []):
+        asset_url = urljoin(base_url, raw_url)
+        parsed = urlparse(asset_url)
+        if parsed.scheme != "https" or parsed.hostname != source_host:
+            continue
+        record: dict[str, Any] = {
+            "asset_url": asset_url,
+            "http_status": None,
+            "bytes": 0,
+            "sha256": None,
+            "outcome": "",
+            "route_candidate_count": 0,
+            "route_candidates": [],
+            "error": None,
+        }
+        try:
+            req = urllib.request.Request(
+                asset_url,
+                headers={"User-Agent": "SHRAMIK-source-audit/1.0 (public JS endpoint inventory)", "Accept": "application/javascript,*/*"},
+            )
+            with urllib.request.urlopen(req, timeout=20) as response:
+                body = response.read(MAX_STATIC_ASSET_BYTES + 1)
+                record["http_status"] = getattr(response, "status", None)
+                final_url = response.geturl()
+                if urlparse(final_url).hostname != source_host:
+                    record["outcome"] = "REJECTED_REDIRECT_TO_OTHER_HOST"
+                    records.append(record)
+                    continue
+            if len(body) > MAX_STATIC_ASSET_BYTES:
+                record["bytes"] = len(body)
+                record["outcome"] = "REJECTED_ASSET_TOO_LARGE"
+                records.append(record)
+                continue
+            record["bytes"] = len(body)
+            record["sha256"] = hashlib.sha256(body).hexdigest()
+            text = body.decode("utf-8", errors="replace")
+            routes = extract_static_route_candidates(text)
+            record["route_candidate_count"] = len(routes)
+            record["route_candidates"] = routes
+            record["outcome"] = "FIRST_PARTY_JS_SCANNED"
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+            record["outcome"] = "ASSET_FETCH_FAILED"
+            record["error"] = str(exc)[:300]
+        records.append(record)
+    return {
+        "scope": "First-party static JS from the public NCS dashboard only; candidate strings are not invoked.",
+        "assets_scanned": len(records),
+        "candidate_routes": sum(r["route_candidate_count"] for r in records),
+        "assets": records,
+        "database_modified": False,
+    }
+
 def _parse_count(value: str) -> int | None:
     cleaned = _clean_table_text(value).replace(",", "")
     if not cleaned or cleaned in ("-", "—", "–", "NA", "N/A"):
@@ -460,6 +549,7 @@ def main() -> int:
     dashboard = report["sources"].get("current_ncs_report_dashboard", {})
     state_rows, metric_rows, extracted_summary = extract_dashboard_datasets(dashboard, observed_at)
     report["extracted_datasets"] = extracted_summary
+    report["static_asset_route_inventory"] = probe_dashboard_static_assets(dashboard)
     output_dir = args.output.parent
     output_hashes = {}
     if state_rows:
