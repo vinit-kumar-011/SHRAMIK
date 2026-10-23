@@ -295,9 +295,9 @@ def extract_static_route_candidates(js_text: str) -> list[dict[str, str]]:
     candidates: list[dict[str, str]] = []
     seen: set[str] = set()
     patterns = (
-        r"""(?P<route>https?://[^"'\\s<>\\x60]+)""",
-        r"""(?P<route>/?(?:api|apis|services|dashboard|report|reports|vacancy|jobseeker)[A-Za-z0-9_./?=&%{}:-]*(?:\\.aspx|\\.ashx|\\.asmx|/|\\?)[A-Za-z0-9_./?=&%{}:-]*)""",
-        r"""(?P<route>/[A-Za-z0-9_./-]+\\.(?:aspx|ashx|asmx)(?:\\?[^"'\\s<>\\x60]*)?)""",
+        r"""(?P<route>https?://[^"'\s<>\x60]+)""",
+        r"""(?P<route>/?(?:api|apis|services|dashboard|report|reports|vacancy|jobseeker)[A-Za-z0-9_./?=&%{}:-]*(?:\.aspx|\.ashx|\.asmx|/|\?)[A-Za-z0-9_./?=&%{}:-]*)""",
+        r"""(?P<route>/[A-Za-z0-9_./-]+\.(?:aspx|ashx|asmx)(?:\?[^"'\s<>\x60]*)?)""",
     )
     for pattern in patterns:
         for match in re.finditer(pattern, js_text, flags=re.I):
@@ -310,7 +310,7 @@ def extract_static_route_candidates(js_text: str) -> list[dict[str, str]]:
             seen.add(route)
             start = max(0, match.start() - 120)
             end = min(len(js_text), match.end() + 160)
-            context = re.sub(r"\\s+", " ", js_text[start:end]).strip()
+            context = re.sub(r"\s+", " ", js_text[start:end]).strip()
             candidates.append({"route": route[:500], "context": context[:400]})
             if len(candidates) >= STATIC_ASSET_CANDIDATE_LIMIT:
                 return candidates
