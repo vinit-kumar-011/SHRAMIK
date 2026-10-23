@@ -44,15 +44,15 @@ $results = foreach ($key in $sourceKeys) {
     $metadata = $sourceCatalog.sources | Where-Object { $_.key -eq $key } | Select-Object -First 1
     if (-not $metadata) {
         [pscustomobject]@{
-            source_key = $key; status = "NOT_REGISTERED"; records = $null
+            source_key = $key; source_name = ""; resource_id = ""; status = "NOT_REGISTERED"; records = $null
             total = $null; fields = ""; message = "Source key missing from backend registry"
         }
         continue
     }
     if (-not $metadata.configured) {
         [pscustomobject]@{
-            source_key = $key; status = "NOT_CONFIGURED"; records = $null
-            total = $null; fields = ""; message = "Set OGD_API_KEY and this source's resource ID in backend environment"
+            source_key = $key; source_name = $metadata.name; resource_id = ""; status = "NOT_CONFIGURED"; records = $null
+            total = $null; fields = ""; message = "Set OGD_API_KEY and this resource ID in backend environment"
         }
         continue
     }
@@ -61,6 +61,8 @@ $results = foreach ($key in $sourceKeys) {
         $response = Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -TimeoutSec 30
         [pscustomobject]@{
             source_key = $key
+            source_name = $response.source_name
+            resource_id = $response.resource_id
             status = "PREVIEW_OK"
             records = $response.received_records
             total = $response.reported_total
@@ -74,6 +76,8 @@ $results = foreach ($key in $sourceKeys) {
         if ([string]::IsNullOrWhiteSpace($message)) { $message = $_.Exception.Message }
         [pscustomobject]@{
             source_key = $key
+            source_name = $metadata.name
+            resource_id = ""
             status = if ($statusCode) { "HTTP_$statusCode" } else { "REQUEST_FAILED" }
             records = $null
             total = $null
