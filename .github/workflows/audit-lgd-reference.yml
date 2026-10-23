@@ -1,0 +1,63 @@
+name: Audit LGD reference refresh
+
+on:
+  pull_request:
+    paths:
+      - "scripts/refresh_lgd_reference.py"
+      - "scripts/test_lgd_reference_refresh.py"
+      - ".github/workflows/audit-lgd-reference.yml"
+      - "docs/data/LGD_REFERENCE_REFRESH.md"
+      - "data/reference/source_audits/current_canonical_district_roster_2026-10-23.csv"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install 7-Zip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full
+
+      - name: Run offline parser and validation tests
+        run: python -m unittest scripts.test_lgd_reference_refresh -v
+
+      - name: Retrieve and validate current LGD reference snapshot
+        run: >-
+          python scripts/refresh_lgd_reference.py
+          --output-dir artifacts/lgd-reference
+          --baseline-csv data/reference/source_audits/current_canonical_district_roster_2026-10-23.csv
+
+      - name: Summarize candidate snapshot
+        if: always()
+        run: |
+          if [ -f artifacts/lgd-reference/manifest.json ]; then
+            echo "LGD source date: $(jq -r '.source_date' artifacts/lgd-reference/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Counts: $(jq -c '.row_counts' artifacts/lgd-reference/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Acceptance: $(jq -r '.acceptance_status' artifacts/lgd-reference/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
+            echo "District reconciliation: $(jq -c '.reconciliation.status_counts // {}' artifacts/lgd-reference/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Database modified: false" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Candidate snapshot was not produced; inspect validation/download logs." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload source snapshot and provenance manifest
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shramik-lgd-reference-candidate
+          path: artifacts/lgd-reference/
+          if-no-files-found: error
+          retention-days: 14

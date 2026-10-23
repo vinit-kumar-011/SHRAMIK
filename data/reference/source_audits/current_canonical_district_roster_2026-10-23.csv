@@ -1,0 +1,785 @@
+district_id,lgd_district_code,district_name,state_id,state_name,state_code,is_active
+IN-LGD-1,1,Anantnag,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-10,10,Poonch,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-100,100,Ganganagar,IN-RJ,Rajasthan,RJ,true
+IN-LGD-101,101,Hanumangarh,IN-RJ,Rajasthan,RJ,true
+IN-LGD-102,102,Jaipur,IN-RJ,Rajasthan,RJ,true
+IN-LGD-103,103,Jaisalmer,IN-RJ,Rajasthan,RJ,true
+IN-LGD-104,104,Jalore,IN-RJ,Rajasthan,RJ,true
+IN-LGD-105,105,Jhalawar,IN-RJ,Rajasthan,RJ,true
+IN-LGD-106,106,Jhunjhunu,IN-RJ,Rajasthan,RJ,true
+IN-LGD-107,107,Jodhpur,IN-RJ,Rajasthan,RJ,true
+IN-LGD-108,108,Karauli,IN-RJ,Rajasthan,RJ,true
+IN-LGD-109,109,Kota,IN-RJ,Rajasthan,RJ,true
+IN-LGD-11,11,Pulwama,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-110,110,Nagaur,IN-RJ,Rajasthan,RJ,true
+IN-LGD-111,111,Pali,IN-RJ,Rajasthan,RJ,true
+IN-LGD-112,112,Rajsamand,IN-RJ,Rajasthan,RJ,true
+IN-LGD-113,113,Sawai Madhopur,IN-RJ,Rajasthan,RJ,true
+IN-LGD-114,114,Sikar,IN-RJ,Rajasthan,RJ,true
+IN-LGD-115,115,Sirohi,IN-RJ,Rajasthan,RJ,true
+IN-LGD-116,116,Tonk,IN-RJ,Rajasthan,RJ,true
+IN-LGD-117,117,Udaipur,IN-RJ,Rajasthan,RJ,true
+IN-LGD-118,118,Agra,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-119,119,Aligarh,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-12,12,Rajouri,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-120,120,Prayagraj,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-121,121,Ambedkar Nagar,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-122,122,Auraiya,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-123,123,Azamgarh,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-124,124,Baghpat,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-125,125,Bahraich,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-126,126,Ballia,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-127,127,Balrampur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-128,128,Banda,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-129,129,Bara Banki,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-13,13,Srinagar,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-130,130,Bareilly,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-131,131,Basti,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-132,132,Bijnor,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-133,133,Budaun,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-134,134,Bulandshahr,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-135,135,Chandauli,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-136,136,Chitrakoot,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-137,137,Deoria,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-138,138,Etah,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-139,139,Etawah,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-14,14,Udhampur,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-140,140,Ayodhya,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-141,141,Farrukhabad,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-142,142,Fatehpur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-143,143,Firozabad,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-144,144,Gautam Buddha Nagar,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-145,145,Ghaziabad,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-146,146,Ghazipur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-147,147,Gonda,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-148,148,Gorakhpur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-149,149,Hamirpur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-15,15,Bilaspur,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-150,150,Hardoi,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-151,151,Jalaun,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-152,152,Jaunpur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-153,153,Jhansi,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-154,154,Amroha,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-155,155,Kannauj,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-156,156,Kanpur Dehat,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-157,157,Kanpur Nagar,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-158,158,Kaushambi,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-159,159,Kheri,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-16,16,Chamba,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-160,160,Kushinagar,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-161,161,Lalitpur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-162,162,Lucknow,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-163,163,Hathras,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-164,164,Mahrajganj,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-165,165,Mahoba,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-166,166,Mainpuri,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-167,167,Mathura,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-168,168,Mau,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-169,169,Meerut,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-17,17,Hamirpur,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-170,170,Mirzapur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-171,171,Moradabad,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-172,172,Muzaffarnagar,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-173,173,Pilibhit,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-174,174,Pratapgarh,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-175,175,Rae Bareli,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-176,176,Rampur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-177,177,Saharanpur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-178,178,Sant Kabir Nagar,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-179,179,Bhadohi,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-18,18,Kangra,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-180,180,Shahjahanpur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-181,181,Shrawasti,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-182,182,Siddharthnagar,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-183,183,Sitapur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-184,184,Sonbhadra,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-185,185,Sultanpur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-186,186,Unnao,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-187,187,Varanasi,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-188,188,Araria,IN-BR,Bihar,BR,true
+IN-LGD-189,189,Aurangabad,IN-BR,Bihar,BR,true
+IN-LGD-19,19,Kinnaur,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-190,190,Banka,IN-BR,Bihar,BR,true
+IN-LGD-191,191,Begusarai,IN-BR,Bihar,BR,true
+IN-LGD-192,192,Bhagalpur,IN-BR,Bihar,BR,true
+IN-LGD-193,193,Bhojpur,IN-BR,Bihar,BR,true
+IN-LGD-194,194,Buxar,IN-BR,Bihar,BR,true
+IN-LGD-195,195,Darbhanga,IN-BR,Bihar,BR,true
+IN-LGD-196,196,Gaya,IN-BR,Bihar,BR,true
+IN-LGD-197,197,Gopalganj,IN-BR,Bihar,BR,true
+IN-LGD-198,198,Jamui,IN-BR,Bihar,BR,true
+IN-LGD-199,199,Jehanabad,IN-BR,Bihar,BR,true
+IN-LGD-2,2,Budgam,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-20,20,Kullu,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-200,200,Kaimur (Bhabua),IN-BR,Bihar,BR,true
+IN-LGD-201,201,Katihar,IN-BR,Bihar,BR,true
+IN-LGD-202,202,Khagaria,IN-BR,Bihar,BR,true
+IN-LGD-203,203,Kishanganj,IN-BR,Bihar,BR,true
+IN-LGD-204,204,Lakhisarai,IN-BR,Bihar,BR,true
+IN-LGD-205,205,Madhepura,IN-BR,Bihar,BR,true
+IN-LGD-206,206,Madhubani,IN-BR,Bihar,BR,true
+IN-LGD-207,207,Munger,IN-BR,Bihar,BR,true
+IN-LGD-208,208,Muzaffarpur,IN-BR,Bihar,BR,true
+IN-LGD-209,209,Nalanda,IN-BR,Bihar,BR,true
+IN-LGD-21,21,Lahaul And Spiti,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-210,210,Nawada,IN-BR,Bihar,BR,true
+IN-LGD-211,211,Pashchim Champaran,IN-BR,Bihar,BR,true
+IN-LGD-212,212,Patna,IN-BR,Bihar,BR,true
+IN-LGD-213,213,Purbi Champaran,IN-BR,Bihar,BR,true
+IN-LGD-214,214,Purnia,IN-BR,Bihar,BR,true
+IN-LGD-215,215,Rohtas,IN-BR,Bihar,BR,true
+IN-LGD-216,216,Saharsa,IN-BR,Bihar,BR,true
+IN-LGD-217,217,Samastipur,IN-BR,Bihar,BR,true
+IN-LGD-218,218,Saran,IN-BR,Bihar,BR,true
+IN-LGD-219,219,Sheikhpura,IN-BR,Bihar,BR,true
+IN-LGD-22,22,Mandi,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-220,220,Sheohar,IN-BR,Bihar,BR,true
+IN-LGD-221,221,Sitamarhi,IN-BR,Bihar,BR,true
+IN-LGD-222,222,Siwan,IN-BR,Bihar,BR,true
+IN-LGD-223,223,Supaul,IN-BR,Bihar,BR,true
+IN-LGD-224,224,Vaishali,IN-BR,Bihar,BR,true
+IN-LGD-225,225,Gangtok,IN-SK,Sikkim,SK,true
+IN-LGD-226,226,Mangan,IN-SK,Sikkim,SK,true
+IN-LGD-227,227,Namchi,IN-SK,Sikkim,SK,true
+IN-LGD-228,228,Gyalshing,IN-SK,Sikkim,SK,true
+IN-LGD-229,229,Changlang,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-23,23,Shimla,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-230,230,Dibang Valley,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-231,231,East Kameng,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-232,232,East Siang,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-233,233,Kurung Kumey,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-234,234,Lohit,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-235,235,Lower Dibang Valley,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-236,236,Lower Subansiri,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-237,237,Papum Pare,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-238,238,Tawang,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-239,239,Tirap,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-24,24,Sirmaur,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-240,240,Upper Siang,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-241,241,Upper Subansiri,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-242,242,West Kameng,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-243,243,West Siang,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-244,244,Dimapur,IN-NL,Nagaland,NL,true
+IN-LGD-245,245,Kohima,IN-NL,Nagaland,NL,true
+IN-LGD-246,246,Mokokchung,IN-NL,Nagaland,NL,true
+IN-LGD-247,247,Mon,IN-NL,Nagaland,NL,true
+IN-LGD-248,248,Phek,IN-NL,Nagaland,NL,true
+IN-LGD-249,249,Tuensang,IN-NL,Nagaland,NL,true
+IN-LGD-25,25,Solan,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-250,250,Wokha,IN-NL,Nagaland,NL,true
+IN-LGD-251,251,Zunheboto,IN-NL,Nagaland,NL,true
+IN-LGD-252,252,Bishnupur,IN-MN,Manipur,MN,true
+IN-LGD-253,253,Chandel,IN-MN,Manipur,MN,true
+IN-LGD-254,254,Churachandpur,IN-MN,Manipur,MN,true
+IN-LGD-255,255,Imphal East,IN-MN,Manipur,MN,true
+IN-LGD-256,256,Imphal West,IN-MN,Manipur,MN,true
+IN-LGD-257,257,Senapati,IN-MN,Manipur,MN,true
+IN-LGD-258,258,Tamenglong,IN-MN,Manipur,MN,true
+IN-LGD-259,259,Thoubal,IN-MN,Manipur,MN,true
+IN-LGD-26,26,Una,IN-HP,Himachal Pradesh,HP,true
+IN-LGD-260,260,Ukhrul,IN-MN,Manipur,MN,true
+IN-LGD-261,261,Aizawl,IN-MZ,Mizoram,MZ,true
+IN-LGD-262,262,Champhai,IN-MZ,Mizoram,MZ,true
+IN-LGD-263,263,Kolasib,IN-MZ,Mizoram,MZ,true
+IN-LGD-264,264,Lawngtlai,IN-MZ,Mizoram,MZ,true
+IN-LGD-265,265,Lunglei,IN-MZ,Mizoram,MZ,true
+IN-LGD-266,266,Mamit,IN-MZ,Mizoram,MZ,true
+IN-LGD-267,267,Siaha,IN-MZ,Mizoram,MZ,true
+IN-LGD-268,268,Serchhip,IN-MZ,Mizoram,MZ,true
+IN-LGD-269,269,Dhalai,IN-TR,Tripura,TR,true
+IN-LGD-27,27,Amritsar,IN-PB,Punjab,PB,true
+IN-LGD-270,270,North Tripura,IN-TR,Tripura,TR,true
+IN-LGD-271,271,South Tripura,IN-TR,Tripura,TR,true
+IN-LGD-272,272,West Tripura,IN-TR,Tripura,TR,true
+IN-LGD-273,273,East Garo Hills,IN-ML,Meghalaya,ML,true
+IN-LGD-274,274,East Khasi Hills,IN-ML,Meghalaya,ML,true
+IN-LGD-275,275,West Jaintia Hills,IN-ML,Meghalaya,ML,true
+IN-LGD-276,276,Ri Bhoi,IN-ML,Meghalaya,ML,true
+IN-LGD-277,277,South Garo Hills,IN-ML,Meghalaya,ML,true
+IN-LGD-278,278,West Garo Hills,IN-ML,Meghalaya,ML,true
+IN-LGD-279,279,West Khasi Hills,IN-ML,Meghalaya,ML,true
+IN-LGD-28,28,Bathinda,IN-PB,Punjab,PB,true
+IN-LGD-280,280,Barpeta,IN-AS,Assam,AS,true
+IN-LGD-281,281,Bongaigaon,IN-AS,Assam,AS,true
+IN-LGD-282,282,Cachar,IN-AS,Assam,AS,true
+IN-LGD-283,283,Darrang,IN-AS,Assam,AS,true
+IN-LGD-284,284,Dhemaji,IN-AS,Assam,AS,true
+IN-LGD-285,285,Dhubri,IN-AS,Assam,AS,true
+IN-LGD-286,286,Dibrugarh,IN-AS,Assam,AS,true
+IN-LGD-287,287,Goalpara,IN-AS,Assam,AS,true
+IN-LGD-288,288,Golaghat,IN-AS,Assam,AS,true
+IN-LGD-289,289,Hailakandi,IN-AS,Assam,AS,true
+IN-LGD-29,29,Faridkot,IN-PB,Punjab,PB,true
+IN-LGD-290,290,Jorhat,IN-AS,Assam,AS,true
+IN-LGD-291,291,Kamrup,IN-AS,Assam,AS,true
+IN-LGD-292,292,Karbi Anglong,IN-AS,Assam,AS,true
+IN-LGD-293,293,Sribhumi,IN-AS,Assam,AS,true
+IN-LGD-294,294,Kokrajhar,IN-AS,Assam,AS,true
+IN-LGD-295,295,Lakhimpur,IN-AS,Assam,AS,true
+IN-LGD-296,296,Marigaon,IN-AS,Assam,AS,true
+IN-LGD-297,297,Nagaon,IN-AS,Assam,AS,true
+IN-LGD-298,298,Nalbari,IN-AS,Assam,AS,true
+IN-LGD-299,299,Dima Hasao,IN-AS,Assam,AS,true
+IN-LGD-3,3,Baramulla,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-30,30,Fatehgarh Sahib,IN-PB,Punjab,PB,true
+IN-LGD-300,300,Sivasagar,IN-AS,Assam,AS,true
+IN-LGD-301,301,Sonitpur,IN-AS,Assam,AS,true
+IN-LGD-302,302,Tinsukia,IN-AS,Assam,AS,true
+IN-LGD-303,303,North 24 Parganas,IN-WB,West Bengal,WB,true
+IN-LGD-304,304,South 24 Parganas,IN-WB,West Bengal,WB,true
+IN-LGD-305,305,Bankura,IN-WB,West Bengal,WB,true
+IN-LGD-306,306,Purba Bardhaman,IN-WB,West Bengal,WB,true
+IN-LGD-307,307,Birbhum,IN-WB,West Bengal,WB,true
+IN-LGD-308,308,Cooch Behar,IN-WB,West Bengal,WB,true
+IN-LGD-309,309,Darjeeling,IN-WB,West Bengal,WB,true
+IN-LGD-31,31,Ferozepur,IN-PB,Punjab,PB,true
+IN-LGD-310,310,Dakshin Dinajpur,IN-WB,West Bengal,WB,true
+IN-LGD-311,311,Uttar Dinajpur,IN-WB,West Bengal,WB,true
+IN-LGD-312,312,Hooghly,IN-WB,West Bengal,WB,true
+IN-LGD-313,313,Howrah,IN-WB,West Bengal,WB,true
+IN-LGD-314,314,Jalpaiguri,IN-WB,West Bengal,WB,true
+IN-LGD-315,315,Kolkata,IN-WB,West Bengal,WB,true
+IN-LGD-316,316,Malda,IN-WB,West Bengal,WB,true
+IN-LGD-317,317,Purba Medinipur,IN-WB,West Bengal,WB,true
+IN-LGD-318,318,Paschim Medinipur,IN-WB,West Bengal,WB,true
+IN-LGD-319,319,Murshidabad,IN-WB,West Bengal,WB,true
+IN-LGD-32,32,Gurdaspur,IN-PB,Punjab,PB,true
+IN-LGD-320,320,Nadia,IN-WB,West Bengal,WB,true
+IN-LGD-321,321,Purulia,IN-WB,West Bengal,WB,true
+IN-LGD-322,322,Bokaro,IN-JH,Jharkhand,JH,true
+IN-LGD-323,323,Chatra,IN-JH,Jharkhand,JH,true
+IN-LGD-324,324,Deoghar,IN-JH,Jharkhand,JH,true
+IN-LGD-325,325,Dhanbad,IN-JH,Jharkhand,JH,true
+IN-LGD-326,326,Dumka,IN-JH,Jharkhand,JH,true
+IN-LGD-327,327,East Singhbum,IN-JH,Jharkhand,JH,true
+IN-LGD-328,328,Garhwa,IN-JH,Jharkhand,JH,true
+IN-LGD-329,329,Giridih,IN-JH,Jharkhand,JH,true
+IN-LGD-33,33,Hoshiarpur,IN-PB,Punjab,PB,true
+IN-LGD-330,330,Godda,IN-JH,Jharkhand,JH,true
+IN-LGD-331,331,Gumla,IN-JH,Jharkhand,JH,true
+IN-LGD-332,332,Hazaribagh,IN-JH,Jharkhand,JH,true
+IN-LGD-333,333,Jamtara,IN-JH,Jharkhand,JH,true
+IN-LGD-334,334,Koderma,IN-JH,Jharkhand,JH,true
+IN-LGD-335,335,Latehar,IN-JH,Jharkhand,JH,true
+IN-LGD-336,336,Lohardaga,IN-JH,Jharkhand,JH,true
+IN-LGD-337,337,Pakur,IN-JH,Jharkhand,JH,true
+IN-LGD-338,338,Palamu,IN-JH,Jharkhand,JH,true
+IN-LGD-339,339,Ranchi,IN-JH,Jharkhand,JH,true
+IN-LGD-34,34,Jalandhar,IN-PB,Punjab,PB,true
+IN-LGD-340,340,Sahebganj,IN-JH,Jharkhand,JH,true
+IN-LGD-341,341,Saraikela Kharsawan,IN-JH,Jharkhand,JH,true
+IN-LGD-342,342,Simdega,IN-JH,Jharkhand,JH,true
+IN-LGD-343,343,West Singhbhum,IN-JH,Jharkhand,JH,true
+IN-LGD-344,344,Anugola,IN-OD,Odisha,OD,true
+IN-LGD-345,345,Balangir,IN-OD,Odisha,OD,true
+IN-LGD-346,346,Baleshwar,IN-OD,Odisha,OD,true
+IN-LGD-347,347,Baragada,IN-OD,Odisha,OD,true
+IN-LGD-348,348,Bhadrak,IN-OD,Odisha,OD,true
+IN-LGD-349,349,Boudh,IN-OD,Odisha,OD,true
+IN-LGD-35,35,Kapurthala,IN-PB,Punjab,PB,true
+IN-LGD-350,350,Kataka,IN-OD,Odisha,OD,true
+IN-LGD-351,351,Debagada,IN-OD,Odisha,OD,true
+IN-LGD-352,352,Dhenkanal,IN-OD,Odisha,OD,true
+IN-LGD-353,353,Gajapati,IN-OD,Odisha,OD,true
+IN-LGD-354,354,Ganjam,IN-OD,Odisha,OD,true
+IN-LGD-355,355,Jagatsinghapur,IN-OD,Odisha,OD,true
+IN-LGD-356,356,Jajpur,IN-OD,Odisha,OD,true
+IN-LGD-357,357,Jharsuguda,IN-OD,Odisha,OD,true
+IN-LGD-358,358,Kalahandi,IN-OD,Odisha,OD,true
+IN-LGD-359,359,Kandhamala,IN-OD,Odisha,OD,true
+IN-LGD-36,36,Ludhiana,IN-PB,Punjab,PB,true
+IN-LGD-360,360,Kendrapada,IN-OD,Odisha,OD,true
+IN-LGD-361,361,Kendujhar,IN-OD,Odisha,OD,true
+IN-LGD-362,362,Khordha,IN-OD,Odisha,OD,true
+IN-LGD-363,363,Koraput,IN-OD,Odisha,OD,true
+IN-LGD-364,364,Malkangiri,IN-OD,Odisha,OD,true
+IN-LGD-365,365,Mayurbhanj,IN-OD,Odisha,OD,true
+IN-LGD-366,366,Nabarangpur,IN-OD,Odisha,OD,true
+IN-LGD-367,367,Nayagada,IN-OD,Odisha,OD,true
+IN-LGD-368,368,Nuapada,IN-OD,Odisha,OD,true
+IN-LGD-369,369,Puri,IN-OD,Odisha,OD,true
+IN-LGD-37,37,Mansa,IN-PB,Punjab,PB,true
+IN-LGD-370,370,Rayagada,IN-OD,Odisha,OD,true
+IN-LGD-371,371,Sambalpur,IN-OD,Odisha,OD,true
+IN-LGD-372,372,Subarnapur,IN-OD,Odisha,OD,true
+IN-LGD-373,373,Sundaragada,IN-OD,Odisha,OD,true
+IN-LGD-374,374,Bastar,IN-CG,Chhattisgarh,CG,true
+IN-LGD-375,375,Bilaspur,IN-CG,Chhattisgarh,CG,true
+IN-LGD-376,376,Dakshin Bastar Dantewada,IN-CG,Chhattisgarh,CG,true
+IN-LGD-377,377,Dhamtari,IN-CG,Chhattisgarh,CG,true
+IN-LGD-378,378,Durg,IN-CG,Chhattisgarh,CG,true
+IN-LGD-379,379,Janjgir-Champa,IN-CG,Chhattisgarh,CG,true
+IN-LGD-38,38,Moga,IN-PB,Punjab,PB,true
+IN-LGD-380,380,Jashpur,IN-CG,Chhattisgarh,CG,true
+IN-LGD-381,381,Uttar Bastar Kanker,IN-CG,Chhattisgarh,CG,true
+IN-LGD-382,382,Kabeerdham,IN-CG,Chhattisgarh,CG,true
+IN-LGD-383,383,Korba,IN-CG,Chhattisgarh,CG,true
+IN-LGD-384,384,Korea,IN-CG,Chhattisgarh,CG,true
+IN-LGD-385,385,Mahasamund,IN-CG,Chhattisgarh,CG,true
+IN-LGD-386,386,Raigarh,IN-CG,Chhattisgarh,CG,true
+IN-LGD-387,387,Raipur,IN-CG,Chhattisgarh,CG,true
+IN-LGD-388,388,Rajnandgaon,IN-CG,Chhattisgarh,CG,true
+IN-LGD-389,389,Surguja,IN-CG,Chhattisgarh,CG,true
+IN-LGD-39,39,Sri Muktsar Sahib,IN-PB,Punjab,PB,true
+IN-LGD-390,390,Anuppur,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-391,391,Ashoknagar,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-392,392,Balaghat,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-393,393,Barwani,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-394,394,Betul,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-395,395,Bhind,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-396,396,Bhopal,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-397,397,Burhanpur,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-398,398,Chhatarpur,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-399,399,Chhindwara,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-4,4,Doda,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-40,40,Shahid Bhagat Singh Nagar,IN-PB,Punjab,PB,true
+IN-LGD-400,400,Damoh,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-401,401,Datia,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-402,402,Dewas,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-403,403,Dhar,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-404,404,Dindori,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-405,405,Khandwa (East Nimar),IN-MP,Madhya Pradesh,MP,true
+IN-LGD-406,406,Guna,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-407,407,Gwalior,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-408,408,Harda,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-409,409,Narmadapuram,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-41,41,Patiala,IN-PB,Punjab,PB,true
+IN-LGD-410,410,Indore,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-411,411,Jabalpur,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-412,412,Jhabua,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-413,413,Katni,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-414,414,Khargone (West Nimar),IN-MP,Madhya Pradesh,MP,true
+IN-LGD-415,415,Mandla,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-416,416,Mandsaur,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-417,417,Morena,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-418,418,Narsimhapur,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-419,419,Neemuch,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-42,42,Rupnagar,IN-PB,Punjab,PB,true
+IN-LGD-420,420,Panna,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-421,421,Raisen,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-422,422,Rajgarh,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-423,423,Ratlam,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-424,424,Rewa,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-425,425,Sagar,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-426,426,Satna,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-427,427,Sehore,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-428,428,Seoni,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-429,429,Shahdol,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-43,43,Sangrur,IN-PB,Punjab,PB,true
+IN-LGD-430,430,Shajapur,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-431,431,Sheopur,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-432,432,Shivpuri,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-433,433,Sidhi,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-434,434,Tikamgarh,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-435,435,Ujjain,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-436,436,Umaria,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-437,437,Vidisha,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-438,438,Ahmedabad,IN-GJ,Gujarat,GJ,true
+IN-LGD-439,439,Amreli,IN-GJ,Gujarat,GJ,true
+IN-LGD-44,44,Chandigarh,IN-CH,Chandigarh,CH,true
+IN-LGD-440,440,Anand,IN-GJ,Gujarat,GJ,true
+IN-LGD-441,441,Banas Kantha,IN-GJ,Gujarat,GJ,true
+IN-LGD-442,442,Bharuch,IN-GJ,Gujarat,GJ,true
+IN-LGD-443,443,Bhavnagar,IN-GJ,Gujarat,GJ,true
+IN-LGD-444,444,Dangs,IN-GJ,Gujarat,GJ,true
+IN-LGD-445,445,Dahod,IN-GJ,Gujarat,GJ,true
+IN-LGD-446,446,Gandhinagar,IN-GJ,Gujarat,GJ,true
+IN-LGD-447,447,Jamnagar,IN-GJ,Gujarat,GJ,true
+IN-LGD-448,448,Junagadh,IN-GJ,Gujarat,GJ,true
+IN-LGD-449,449,Kachchh,IN-GJ,Gujarat,GJ,true
+IN-LGD-45,45,Almora,IN-UK,Uttarakhand,UK,true
+IN-LGD-450,450,Kheda,IN-GJ,Gujarat,GJ,true
+IN-LGD-451,451,Mahesana,IN-GJ,Gujarat,GJ,true
+IN-LGD-452,452,Narmada,IN-GJ,Gujarat,GJ,true
+IN-LGD-453,453,Navsari,IN-GJ,Gujarat,GJ,true
+IN-LGD-454,454,Panch Mahals,IN-GJ,Gujarat,GJ,true
+IN-LGD-455,455,Patan,IN-GJ,Gujarat,GJ,true
+IN-LGD-456,456,Porbandar,IN-GJ,Gujarat,GJ,true
+IN-LGD-457,457,Rajkot,IN-GJ,Gujarat,GJ,true
+IN-LGD-458,458,Sabar Kantha,IN-GJ,Gujarat,GJ,true
+IN-LGD-459,459,Surat,IN-GJ,Gujarat,GJ,true
+IN-LGD-46,46,Bageshwar,IN-UK,Uttarakhand,UK,true
+IN-LGD-460,460,Surendranagar,IN-GJ,Gujarat,GJ,true
+IN-LGD-461,461,Vadodara,IN-GJ,Gujarat,GJ,true
+IN-LGD-462,462,Valsad,IN-GJ,Gujarat,GJ,true
+IN-LGD-463,463,Daman,IN-DNDD,Dadra and Nagar Haveli and Daman and Diu,ND,true
+IN-LGD-464,464,Diu,IN-DNDD,Dadra and Nagar Haveli and Daman and Diu,ND,true
+IN-LGD-465,465,Dadra And Nagar Haveli,IN-DNDD,Dadra and Nagar Haveli and Daman and Diu,ND,true
+IN-LGD-466,466,Ahilyanagar,IN-MH,Maharashtra,MH,true
+IN-LGD-467,467,Akola,IN-MH,Maharashtra,MH,true
+IN-LGD-468,468,Amravati,IN-MH,Maharashtra,MH,true
+IN-LGD-469,469,Chhatrapati Sambhajinagar,IN-MH,Maharashtra,MH,true
+IN-LGD-47,47,Chamoli,IN-UK,Uttarakhand,UK,true
+IN-LGD-470,470,Beed,IN-MH,Maharashtra,MH,true
+IN-LGD-471,471,Bhandara,IN-MH,Maharashtra,MH,true
+IN-LGD-472,472,Buldhana,IN-MH,Maharashtra,MH,true
+IN-LGD-473,473,Chandrapur,IN-MH,Maharashtra,MH,true
+IN-LGD-474,474,Dhule,IN-MH,Maharashtra,MH,true
+IN-LGD-475,475,Gadchiroli,IN-MH,Maharashtra,MH,true
+IN-LGD-476,476,Gondia,IN-MH,Maharashtra,MH,true
+IN-LGD-477,477,Hingoli,IN-MH,Maharashtra,MH,true
+IN-LGD-478,478,Jalgaon,IN-MH,Maharashtra,MH,true
+IN-LGD-479,479,Jalna,IN-MH,Maharashtra,MH,true
+IN-LGD-48,48,Champawat,IN-UK,Uttarakhand,UK,true
+IN-LGD-480,480,Kolhapur,IN-MH,Maharashtra,MH,true
+IN-LGD-481,481,Latur,IN-MH,Maharashtra,MH,true
+IN-LGD-482,482,Mumbai,IN-MH,Maharashtra,MH,true
+IN-LGD-483,483,Mumbai Suburban,IN-MH,Maharashtra,MH,true
+IN-LGD-484,484,Nagpur,IN-MH,Maharashtra,MH,true
+IN-LGD-485,485,Nanded,IN-MH,Maharashtra,MH,true
+IN-LGD-486,486,Nandurbar,IN-MH,Maharashtra,MH,true
+IN-LGD-487,487,Nashik,IN-MH,Maharashtra,MH,true
+IN-LGD-488,488,Dharashiv,IN-MH,Maharashtra,MH,true
+IN-LGD-489,489,Parbhani,IN-MH,Maharashtra,MH,true
+IN-LGD-49,49,Dehradun,IN-UK,Uttarakhand,UK,true
+IN-LGD-490,490,Pune,IN-MH,Maharashtra,MH,true
+IN-LGD-491,491,Raigad,IN-MH,Maharashtra,MH,true
+IN-LGD-492,492,Ratnagiri,IN-MH,Maharashtra,MH,true
+IN-LGD-493,493,Sangli,IN-MH,Maharashtra,MH,true
+IN-LGD-494,494,Satara,IN-MH,Maharashtra,MH,true
+IN-LGD-495,495,Sindhudurg,IN-MH,Maharashtra,MH,true
+IN-LGD-496,496,Solapur,IN-MH,Maharashtra,MH,true
+IN-LGD-497,497,Thane,IN-MH,Maharashtra,MH,true
+IN-LGD-498,498,Wardha,IN-MH,Maharashtra,MH,true
+IN-LGD-499,499,Washim,IN-MH,Maharashtra,MH,true
+IN-LGD-5,5,Jammu,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-50,50,Haridwar,IN-UK,Uttarakhand,UK,true
+IN-LGD-500,500,Yavatmal,IN-MH,Maharashtra,MH,true
+IN-LGD-501,501,Adilabad,IN-TS,Telangana,TS,true
+IN-LGD-502,502,Ananthapuramu,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-503,503,Chittoor,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-504,504,Y.S.R. Kadapa,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-505,505,East Godavari,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-506,506,Guntur,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-507,507,Hyderabad,IN-TS,Telangana,TS,true
+IN-LGD-508,508,Karimnagar,IN-TS,Telangana,TS,true
+IN-LGD-509,509,Khammam,IN-TS,Telangana,TS,true
+IN-LGD-51,51,Nainital,IN-UK,Uttarakhand,UK,true
+IN-LGD-510,510,Krishna,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-511,511,Kurnool,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-512,512,Mahabubnagar,IN-TS,Telangana,TS,true
+IN-LGD-513,513,Medak,IN-TS,Telangana,TS,true
+IN-LGD-514,514,Nalgonda,IN-TS,Telangana,TS,true
+IN-LGD-515,515,Sri Potti Sriramulu Nellore,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-516,516,Nizamabad,IN-TS,Telangana,TS,true
+IN-LGD-517,517,Prakasam,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-518,518,Ranga Reddy,IN-TS,Telangana,TS,true
+IN-LGD-519,519,Srikakulam,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-52,52,Pauri Garhwal,IN-UK,Uttarakhand,UK,true
+IN-LGD-520,520,Visakhapatnam,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-521,521,Vizianagaram,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-522,522,Warangal,IN-TS,Telangana,TS,true
+IN-LGD-523,523,West Godavari,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-524,524,Bagalkote,IN-KA,Karnataka,KA,true
+IN-LGD-525,525,Bengaluru Urban,IN-KA,Karnataka,KA,true
+IN-LGD-526,526,Bengaluru Rural,IN-KA,Karnataka,KA,true
+IN-LGD-527,527,Belagavi,IN-KA,Karnataka,KA,true
+IN-LGD-528,528,Ballari,IN-KA,Karnataka,KA,true
+IN-LGD-529,529,Bidar,IN-KA,Karnataka,KA,true
+IN-LGD-53,53,Pithoragarh,IN-UK,Uttarakhand,UK,true
+IN-LGD-530,530,Vijayapura,IN-KA,Karnataka,KA,true
+IN-LGD-531,531,Chamarajanagar,IN-KA,Karnataka,KA,true
+IN-LGD-532,532,Chikkamagaluru,IN-KA,Karnataka,KA,true
+IN-LGD-533,533,Chitradurga,IN-KA,Karnataka,KA,true
+IN-LGD-534,534,Dakshina Kannada,IN-KA,Karnataka,KA,true
+IN-LGD-535,535,Davanagere,IN-KA,Karnataka,KA,true
+IN-LGD-536,536,Dharwad,IN-KA,Karnataka,KA,true
+IN-LGD-537,537,Gadag,IN-KA,Karnataka,KA,true
+IN-LGD-538,538,Kalaburagi,IN-KA,Karnataka,KA,true
+IN-LGD-539,539,Hassan,IN-KA,Karnataka,KA,true
+IN-LGD-54,54,Rudraprayag,IN-UK,Uttarakhand,UK,true
+IN-LGD-540,540,Haveri,IN-KA,Karnataka,KA,true
+IN-LGD-541,541,Kodagu,IN-KA,Karnataka,KA,true
+IN-LGD-542,542,Kolar,IN-KA,Karnataka,KA,true
+IN-LGD-543,543,Koppal,IN-KA,Karnataka,KA,true
+IN-LGD-544,544,Mandya,IN-KA,Karnataka,KA,true
+IN-LGD-545,545,Mysuru,IN-KA,Karnataka,KA,true
+IN-LGD-546,546,Raichur,IN-KA,Karnataka,KA,true
+IN-LGD-547,547,Shivamogga,IN-KA,Karnataka,KA,true
+IN-LGD-548,548,Tumakuru,IN-KA,Karnataka,KA,true
+IN-LGD-549,549,Udupi,IN-KA,Karnataka,KA,true
+IN-LGD-55,55,Tehri Garhwal,IN-UK,Uttarakhand,UK,true
+IN-LGD-550,550,Uttara Kannada,IN-KA,Karnataka,KA,true
+IN-LGD-551,551,North Goa,IN-GA,Goa,GA,true
+IN-LGD-552,552,South Goa,IN-GA,Goa,GA,true
+IN-LGD-553,553,Lakshadweep District,IN-LD,Lakshadweep,LD,true
+IN-LGD-554,554,Alappuzha,IN-KL,Kerala,KL,true
+IN-LGD-555,555,Ernakulam,IN-KL,Kerala,KL,true
+IN-LGD-556,556,Idukki,IN-KL,Kerala,KL,true
+IN-LGD-557,557,Kannur,IN-KL,Kerala,KL,true
+IN-LGD-558,558,Kasaragod,IN-KL,Kerala,KL,true
+IN-LGD-559,559,Kollam,IN-KL,Kerala,KL,true
+IN-LGD-56,56,Udham Singh Nagar,IN-UK,Uttarakhand,UK,true
+IN-LGD-560,560,Kottayam,IN-KL,Kerala,KL,true
+IN-LGD-561,561,Kozhikode,IN-KL,Kerala,KL,true
+IN-LGD-562,562,Malappuram,IN-KL,Kerala,KL,true
+IN-LGD-563,563,Palakkad,IN-KL,Kerala,KL,true
+IN-LGD-564,564,Pathanamthitta,IN-KL,Kerala,KL,true
+IN-LGD-565,565,Thiruvananthapuram,IN-KL,Kerala,KL,true
+IN-LGD-566,566,Thrissur,IN-KL,Kerala,KL,true
+IN-LGD-567,567,Wayanad,IN-KL,Kerala,KL,true
+IN-LGD-568,568,Chennai,IN-TN,Tamil Nadu,TN,true
+IN-LGD-569,569,Coimbatore,IN-TN,Tamil Nadu,TN,true
+IN-LGD-57,57,Uttarkashi,IN-UK,Uttarakhand,UK,true
+IN-LGD-570,570,Cuddalore,IN-TN,Tamil Nadu,TN,true
+IN-LGD-571,571,Dharmapuri,IN-TN,Tamil Nadu,TN,true
+IN-LGD-572,572,Dindigul,IN-TN,Tamil Nadu,TN,true
+IN-LGD-573,573,Erode,IN-TN,Tamil Nadu,TN,true
+IN-LGD-574,574,Kancheepuram,IN-TN,Tamil Nadu,TN,true
+IN-LGD-575,575,Kanniyakumari,IN-TN,Tamil Nadu,TN,true
+IN-LGD-576,576,Karur,IN-TN,Tamil Nadu,TN,true
+IN-LGD-577,577,Krishnagiri,IN-TN,Tamil Nadu,TN,true
+IN-LGD-578,578,Madurai,IN-TN,Tamil Nadu,TN,true
+IN-LGD-579,579,Nagapattinam,IN-TN,Tamil Nadu,TN,true
+IN-LGD-58,58,Ambala,IN-HR,Haryana,HR,true
+IN-LGD-580,580,Namakkal,IN-TN,Tamil Nadu,TN,true
+IN-LGD-581,581,Perambalur,IN-TN,Tamil Nadu,TN,true
+IN-LGD-582,582,Pudukkottai,IN-TN,Tamil Nadu,TN,true
+IN-LGD-583,583,Ramanathapuram,IN-TN,Tamil Nadu,TN,true
+IN-LGD-584,584,Salem,IN-TN,Tamil Nadu,TN,true
+IN-LGD-585,585,Sivaganga,IN-TN,Tamil Nadu,TN,true
+IN-LGD-586,586,Thanjavur,IN-TN,Tamil Nadu,TN,true
+IN-LGD-587,587,The Nilgiris,IN-TN,Tamil Nadu,TN,true
+IN-LGD-588,588,Theni,IN-TN,Tamil Nadu,TN,true
+IN-LGD-589,589,Thiruvallur,IN-TN,Tamil Nadu,TN,true
+IN-LGD-59,59,Bhiwani,IN-HR,Haryana,HR,true
+IN-LGD-590,590,Thiruvarur,IN-TN,Tamil Nadu,TN,true
+IN-LGD-591,591,Tiruchirappalli,IN-TN,Tamil Nadu,TN,true
+IN-LGD-592,592,Tirunelveli,IN-TN,Tamil Nadu,TN,true
+IN-LGD-593,593,Tiruvannamalai,IN-TN,Tamil Nadu,TN,true
+IN-LGD-594,594,Thoothukkudi,IN-TN,Tamil Nadu,TN,true
+IN-LGD-595,595,Vellore,IN-TN,Tamil Nadu,TN,true
+IN-LGD-596,596,Viluppuram,IN-TN,Tamil Nadu,TN,true
+IN-LGD-597,597,Virudhunagar,IN-TN,Tamil Nadu,TN,true
+IN-LGD-598,598,Karaikal,IN-PY,Puducherry,PY,true
+IN-LGD-6,6,Kargil,IN-LA,Ladakh,LA,true
+IN-LGD-60,60,Faridabad,IN-HR,Haryana,HR,true
+IN-LGD-600,600,Puducherry,IN-PY,Puducherry,PY,true
+IN-LGD-602,602,South Andamans,IN-AN,Andaman and Nicobar Islands,AN,true
+IN-LGD-603,603,Nicobars,IN-AN,Andaman and Nicobar Islands,AN,true
+IN-LGD-604,604,Nuh,IN-HR,Haryana,HR,true
+IN-LGD-605,605,Barnala,IN-PB,Punjab,PB,true
+IN-LGD-606,606,Khunti,IN-JH,Jharkhand,JH,true
+IN-LGD-607,607,Ramgarh,IN-JH,Jharkhand,JH,true
+IN-LGD-608,608,S.A.S Nagar,IN-PB,Punjab,PB,true
+IN-LGD-609,609,Tarn Taran,IN-PB,Punjab,PB,true
+IN-LGD-61,61,Fatehabad,IN-HR,Haryana,HR,true
+IN-LGD-610,610,Ariyalur,IN-TN,Tamil Nadu,TN,true
+IN-LGD-611,611,Arwal,IN-BR,Bihar,BR,true
+IN-LGD-612,612,Chirang,IN-AS,Assam,AS,true
+IN-LGD-613,613,Peren,IN-NL,Nagaland,NL,true
+IN-LGD-614,614,Kiphire,IN-NL,Nagaland,NL,true
+IN-LGD-615,615,Longleng,IN-NL,Nagaland,NL,true
+IN-LGD-616,616,Baksa,IN-AS,Assam,AS,true
+IN-LGD-617,617,Udalguri,IN-AS,Assam,AS,true
+IN-LGD-618,618,Kamrup Metro,IN-AS,Assam,AS,true
+IN-LGD-619,619,Palwal,IN-HR,Haryana,HR,true
+IN-LGD-62,62,Gurugram,IN-HR,Haryana,HR,true
+IN-LGD-620,620,Kishtwar,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-621,621,Ramban,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-622,622,Kulgam,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-623,623,Bandipora,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-624,624,Samba,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-625,625,Shopian,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-626,626,Ganderbal,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-627,627,Reasi,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-628,628,Anjaw,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-629,629,Pratapgarh,IN-RJ,Rajasthan,RJ,true
+IN-LGD-63,63,Hisar,IN-HR,Haryana,HR,true
+IN-LGD-630,630,Chikkaballapura,IN-KA,Karnataka,KA,true
+IN-LGD-631,631,Bengaluru South,IN-KA,Karnataka,KA,true
+IN-LGD-632,632,North And Middle Andaman,IN-AN,Andaman and Nicobar Islands,AN,true
+IN-LGD-633,633,Kasganj,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-634,634,Tiruppur,IN-TN,Tamil Nadu,TN,true
+IN-LGD-635,635,Yadgir,IN-KA,Karnataka,KA,true
+IN-LGD-636,636,Bijapur,IN-CG,Chhattisgarh,CG,true
+IN-LGD-637,637,Narayanpur,IN-CG,Chhattisgarh,CG,true
+IN-LGD-638,638,Singrauli,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-639,639,Alirajpur,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-64,64,Jhajjar,IN-HR,Haryana,HR,true
+IN-LGD-640,640,Amethi,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-641,641,Tapi,IN-GJ,Gujarat,GJ,true
+IN-LGD-642,642,Sukma,IN-CG,Chhattisgarh,CG,true
+IN-LGD-643,643,Kondagaon,IN-CG,Chhattisgarh,CG,true
+IN-LGD-644,644,Balodabazar-Bhatapara,IN-CG,Chhattisgarh,CG,true
+IN-LGD-645,645,Gariyaband,IN-CG,Chhattisgarh,CG,true
+IN-LGD-646,646,Balod,IN-CG,Chhattisgarh,CG,true
+IN-LGD-647,647,Mungeli,IN-CG,Chhattisgarh,CG,true
+IN-LGD-648,648,Surajpur,IN-CG,Chhattisgarh,CG,true
+IN-LGD-649,649,Balrampur-Ramanujganj,IN-CG,Chhattisgarh,CG,true
+IN-LGD-65,65,Jind,IN-HR,Haryana,HR,true
+IN-LGD-650,650,Bemetara,IN-CG,Chhattisgarh,CG,true
+IN-LGD-651,651,Fazilka,IN-PB,Punjab,PB,true
+IN-LGD-652,652,Khowai,IN-TR,Tripura,TR,true
+IN-LGD-653,653,Sepahijala,IN-TR,Tripura,TR,true
+IN-LGD-654,654,Gomati,IN-TR,Tripura,TR,true
+IN-LGD-655,655,Unakoti,IN-TR,Tripura,TR,true
+IN-LGD-656,656,North Garo Hills,IN-ML,Meghalaya,ML,true
+IN-LGD-657,657,East Jaintia Hills,IN-ML,Meghalaya,ML,true
+IN-LGD-658,658,South West Khasi Hills,IN-ML,Meghalaya,ML,true
+IN-LGD-659,659,Sambhal,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-66,66,Kaithal,IN-HR,Haryana,HR,true
+IN-LGD-660,660,Shamli,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-661,661,Hapur,IN-UP,Uttar Pradesh,UP,true
+IN-LGD-662,662,Pathankot,IN-PB,Punjab,PB,true
+IN-LGD-663,663,South West Garo Hills,IN-ML,Meghalaya,ML,true
+IN-LGD-664,664,Alipurduar,IN-WB,West Bengal,WB,true
+IN-LGD-665,665,Palghar,IN-MH,Maharashtra,MH,true
+IN-LGD-666,666,Longding,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-667,667,Agar-Malwa,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-668,668,Chhotaudepur,IN-GJ,Gujarat,GJ,true
+IN-LGD-669,669,Mahisagar,IN-GJ,Gujarat,GJ,true
+IN-LGD-67,67,Karnal,IN-HR,Haryana,HR,true
+IN-LGD-670,670,South East,IN-DL,Delhi,DL,true
+IN-LGD-672,672,Arvalli,IN-GJ,Gujarat,GJ,true
+IN-LGD-673,673,Morbi,IN-GJ,Gujarat,GJ,true
+IN-LGD-674,674,Devbhumi Dwarka,IN-GJ,Gujarat,GJ,true
+IN-LGD-675,675,Gir Somnath,IN-GJ,Gujarat,GJ,true
+IN-LGD-676,676,Botad,IN-GJ,Gujarat,GJ,true
+IN-LGD-677,677,Kra Daadi,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-678,678,Namsai,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-679,679,Siang,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-68,68,Kurukshetra,IN-HR,Haryana,HR,true
+IN-LGD-680,680,Nirmal,IN-TS,Telangana,TS,true
+IN-LGD-681,681,Jagitial,IN-TS,Telangana,TS,true
+IN-LGD-682,682,Peddapalli,IN-TS,Telangana,TS,true
+IN-LGD-683,683,Rajanna Sircilla,IN-TS,Telangana,TS,true
+IN-LGD-684,684,Mancherial,IN-TS,Telangana,TS,true
+IN-LGD-685,685,Kamareddy,IN-TS,Telangana,TS,true
+IN-LGD-686,686,Hanumakonda,IN-TS,Telangana,TS,true
+IN-LGD-687,687,Jayashankar Bhupalapally,IN-TS,Telangana,TS,true
+IN-LGD-688,688,Mahabubabad,IN-TS,Telangana,TS,true
+IN-LGD-689,689,Jangoan,IN-TS,Telangana,TS,true
+IN-LGD-69,69,Mahendragarh,IN-HR,Haryana,HR,true
+IN-LGD-690,690,Bhadradri Kothagudem,IN-TS,Telangana,TS,true
+IN-LGD-691,691,Sangareddy,IN-TS,Telangana,TS,true
+IN-LGD-692,692,Siddipet,IN-TS,Telangana,TS,true
+IN-LGD-693,693,Wanaparthy,IN-TS,Telangana,TS,true
+IN-LGD-694,694,Nagarkurnool,IN-TS,Telangana,TS,true
+IN-LGD-695,695,Jogulamba Gadwal,IN-TS,Telangana,TS,true
+IN-LGD-696,696,Suryapet,IN-TS,Telangana,TS,true
+IN-LGD-697,697,Yadadri Bhuvanagiri,IN-TS,Telangana,TS,true
+IN-LGD-698,698,Vikarabad,IN-TS,Telangana,TS,true
+IN-LGD-699,699,Kumuram Bheem Asifabad,IN-TS,Telangana,TS,true
+IN-LGD-7,7,Kathua,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-70,70,Panchkula,IN-HR,Haryana,HR,true
+IN-LGD-700,700,Medchal Malkajgiri,IN-TS,Telangana,TS,true
+IN-LGD-701,701,Charkhi Dadri,IN-HR,Haryana,HR,true
+IN-LGD-702,702,Kalimpong,IN-WB,West Bengal,WB,true
+IN-LGD-703,703,Jhargram,IN-WB,West Bengal,WB,true
+IN-LGD-704,704,Paschim Bardhaman,IN-WB,West Bengal,WB,true
+IN-LGD-705,705,Biswanath,IN-AS,Assam,AS,true
+IN-LGD-706,706,Majuli,IN-AS,Assam,AS,true
+IN-LGD-707,707,South Salmara Mancachar,IN-AS,Assam,AS,true
+IN-LGD-708,708,Charaideo,IN-AS,Assam,AS,true
+IN-LGD-709,709,Hojai,IN-AS,Assam,AS,true
+IN-LGD-71,71,Panipat,IN-HR,Haryana,HR,true
+IN-LGD-710,710,West Karbi Anglong,IN-AS,Assam,AS,true
+IN-LGD-711,711,Kakching,IN-MN,Manipur,MN,true
+IN-LGD-712,712,Kangpokpi,IN-MN,Manipur,MN,true
+IN-LGD-713,713,Jiribam,IN-MN,Manipur,MN,true
+IN-LGD-714,714,Noney,IN-MN,Manipur,MN,true
+IN-LGD-715,715,Pherzawl,IN-MN,Manipur,MN,true
+IN-LGD-716,716,Tengnoupal,IN-MN,Manipur,MN,true
+IN-LGD-717,717,Kamjong,IN-MN,Manipur,MN,true
+IN-LGD-718,718,Kamle,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-719,719,Lower Siang,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-72,72,Rewari,IN-HR,Haryana,HR,true
+IN-LGD-720,720,Mulugu,IN-TS,Telangana,TS,true
+IN-LGD-721,721,Narayanpet,IN-TS,Telangana,TS,true
+IN-LGD-722,722,Niwari,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-723,723,Pakke Kessang,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-724,724,Leparada,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-725,725,Shi Yomi,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-726,726,Hnahthial,IN-MZ,Mizoram,MZ,true
+IN-LGD-727,727,Saitual,IN-MZ,Mizoram,MZ,true
+IN-LGD-728,728,Khawzawl,IN-MZ,Mizoram,MZ,true
+IN-LGD-729,729,Kallakurichi,IN-TN,Tamil Nadu,TN,true
+IN-LGD-73,73,Rohtak,IN-HR,Haryana,HR,true
+IN-LGD-730,730,Chengalpattu,IN-TN,Tamil Nadu,TN,true
+IN-LGD-731,731,Ranipet,IN-TN,Tamil Nadu,TN,true
+IN-LGD-732,732,Tirupathur,IN-TN,Tamil Nadu,TN,true
+IN-LGD-733,733,Tenkasi,IN-TN,Tamil Nadu,TN,true
+IN-LGD-734,734,Gaurela-Pendra-Marwahi,IN-CG,Chhattisgarh,CG,true
+IN-LGD-735,735,Mayiladuthurai,IN-TN,Tamil Nadu,TN,true
+IN-LGD-736,736,Noklak,IN-NL,Nagaland,NL,true
+IN-LGD-737,737,Malerkotla,IN-PB,Punjab,PB,true
+IN-LGD-738,738,Vijayanagara,IN-KA,Karnataka,KA,true
+IN-LGD-739,739,Bajali,IN-AS,Assam,AS,true
+IN-LGD-74,74,Sirsa,IN-HR,Haryana,HR,true
+IN-LGD-740,740,Eastern West Khasi Hills,IN-ML,Meghalaya,ML,true
+IN-LGD-741,741,Pakyong,IN-SK,Sikkim,SK,true
+IN-LGD-742,742,Soreng,IN-SK,Sikkim,SK,true
+IN-LGD-743,743,Parvathipuram Manyam,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-744,744,Anakapalli,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-745,745,Alluri Sitharama Raju,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-746,746,Kakinada,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-747,747,Dr. B.R. Ambedkar Konaseema,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-748,748,Eluru,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-749,749,Ntr,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-75,75,Sonipat,IN-HR,Haryana,HR,true
+IN-LGD-750,750,Bapatla,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-751,751,Palnadu,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-752,752,Tirupati,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-753,753,Annamayya,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-754,754,Sri Sathya Sai,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-755,755,Nandyal,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-756,756,Tamulpur,IN-AS,Assam,AS,true
+IN-LGD-757,757,Tseminyu,IN-NL,Nagaland,NL,true
+IN-LGD-758,758,Chumoukedima,IN-NL,Nagaland,NL,true
+IN-LGD-759,759,Khairagarh-Chhuikhadan-Gandai,IN-CG,Chhattisgarh,CG,true
+IN-LGD-76,76,Yamunanagar,IN-HR,Haryana,HR,true
+IN-LGD-760,760,Manendragarh-Chirmiri-Bharatpur(M C B),IN-CG,Chhattisgarh,CG,true
+IN-LGD-761,761,Mohla-Manpur-Ambagarh Chouki,IN-CG,Chhattisgarh,CG,true
+IN-LGD-762,762,Sakti,IN-CG,Chhattisgarh,CG,true
+IN-LGD-763,763,Sarangarh-Bilaigarh,IN-CG,Chhattisgarh,CG,true
+IN-LGD-764,764,Niuland,IN-NL,Nagaland,NL,true
+IN-LGD-765,765,Shamator,IN-NL,Nagaland,NL,true
+IN-LGD-766,766,MAUGANJ,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-767,767,Deeg,IN-RJ,Rajasthan,RJ,true
+IN-LGD-768,768,Didwana-Kuchaman,IN-RJ,Rajasthan,RJ,true
+IN-LGD-77,77,Central,IN-DL,Delhi,DL,true
+IN-LGD-770,770,Khairthal-Tijara,IN-RJ,Rajasthan,RJ,true
+IN-LGD-772,772,Phalodi,IN-RJ,Rajasthan,RJ,true
+IN-LGD-774,774,Beawar,IN-RJ,Rajasthan,RJ,true
+IN-LGD-775,775,Balotra,IN-RJ,Rajasthan,RJ,true
+IN-LGD-777,777,Salumbar,IN-RJ,Rajasthan,RJ,true
+IN-LGD-78,78,East,IN-DL,Delhi,DL,true
+IN-LGD-782,782,Kotputli-Behror,IN-RJ,Rajasthan,RJ,true
+IN-LGD-784,784,Maihar,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-785,785,Pandhurna,IN-MP,Madhya Pradesh,MP,true
+IN-LGD-786,786,Keyi Panyor,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-787,787,Bichom,IN-AR,Arunachal Pradesh,AR,true
+IN-LGD-788,788,Meluri,IN-NL,Nagaland,NL,true
+IN-LGD-789,789,Vav-Tharad,IN-GJ,Gujarat,GJ,true
+IN-LGD-79,79,New Delhi,IN-DL,Delhi,DL,true
+IN-LGD-790,790,Markapuram,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-791,791,Polavaram,IN-AP,Andhra Pradesh,AP,true
+IN-LGD-792,792,Hansi,IN-HR,Haryana,HR,true
+IN-LGD-793,793,Kushavati,IN-GA,Goa,GA,true
+IN-LGD-794,794,Outer North,IN-DL,Delhi,DL,true
+IN-LGD-795,795,Old Delhi,IN-DL,Delhi,DL,true
+IN-LGD-796,796,Central North,IN-DL,Delhi,DL,true
+IN-LGD-8,8,Kupwara,IN-JK,Jammu and Kashmir,JK,true
+IN-LGD-80,80,North,IN-DL,Delhi,DL,true
+IN-LGD-81,81,North East,IN-DL,Delhi,DL,true
+IN-LGD-82,82,North West,IN-DL,Delhi,DL,true
+IN-LGD-83,83,South,IN-DL,Delhi,DL,true
+IN-LGD-84,84,South West,IN-DL,Delhi,DL,true
+IN-LGD-85,85,West,IN-DL,Delhi,DL,true
+IN-LGD-86,86,Ajmer,IN-RJ,Rajasthan,RJ,true
+IN-LGD-87,87,Alwar,IN-RJ,Rajasthan,RJ,true
+IN-LGD-88,88,Banswara,IN-RJ,Rajasthan,RJ,true
+IN-LGD-89,89,Baran,IN-RJ,Rajasthan,RJ,true
+IN-LGD-9,9,Leh Ladakh,IN-LA,Ladakh,LA,true
+IN-LGD-90,90,Barmer,IN-RJ,Rajasthan,RJ,true
+IN-LGD-91,91,Bharatpur,IN-RJ,Rajasthan,RJ,true
+IN-LGD-92,92,Bhilwara,IN-RJ,Rajasthan,RJ,true
+IN-LGD-93,93,Bikaner,IN-RJ,Rajasthan,RJ,true
+IN-LGD-94,94,Bundi,IN-RJ,Rajasthan,RJ,true
+IN-LGD-95,95,Chittorgarh,IN-RJ,Rajasthan,RJ,true
+IN-LGD-96,96,Churu,IN-RJ,Rajasthan,RJ,true
+IN-LGD-97,97,Dausa,IN-RJ,Rajasthan,RJ,true
+IN-LGD-98,98,Dholpur,IN-RJ,Rajasthan,RJ,true
+IN-LGD-99,99,Dungarpur,IN-RJ,Rajasthan,RJ,true
