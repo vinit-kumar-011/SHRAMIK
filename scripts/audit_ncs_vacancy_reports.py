@@ -41,6 +41,11 @@ class HTMLInventoryParser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.title = ""
         self._in_title = False
+        self._skip_content_depth = 0
+        self._current_context_tag: str | None = None
+        self._current_context_parts: list[str] = []
+        self.context_elements: list[dict[str, str]] = []
+        self.visible_text_parts: list[str] = []
         self._cell_depth = 0
         self._table_depth = 0
         self._current_cell: list[str] | None = None
@@ -56,10 +61,15 @@ class HTMLInventoryParser(HTMLParser):
         attrs_map = dict(attrs)
         if tag.lower() == "title":
             self._in_title = True
-        elif tag.lower() == "script":
-            source = attrs_map.get("src") or ""
-            if source:
-                self.script_sources.append(source)
+        elif tag.lower() in ("script", "style"):
+            self._skip_content_depth += 1
+            if tag.lower() == "script":
+                source = attrs_map.get("src") or ""
+                if source:
+                    self.script_sources.append(source)
+        elif tag.lower() in ("h1", "h2", "h3", "h4", "caption", "legend"):
+            self._current_context_tag = tag.lower()
+            self._current_context_parts = []
         elif tag.lower() == "link":
             rel = (attrs_map.get("rel") or "").lower()
             href = attrs_map.get("href") or ""
@@ -83,6 +93,14 @@ class HTMLInventoryParser(HTMLParser):
 
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
+        if tag in ("script", "style"):
+            self._skip_content_depth = max(0, self._skip_content_depth - 1)
+        if self._current_context_tag == tag:
+            text = re.sub(r"\s+", " ", "".join(self._current_context_parts)).strip()
+            if text:
+                self.context_elements.append({"tag": tag, "text": text[:500]})
+            self._current_context_tag = None
+            self._current_context_parts = []
         if tag == "title":
             self._in_title = False
         elif tag == "a":
@@ -113,6 +131,10 @@ class HTMLInventoryParser(HTMLParser):
     def handle_data(self, data: str) -> None:
         if self._in_title:
             self.title += data
+        if self._skip_content_depth == 0:
+            self.visible_text_parts.append(data)
+        if self._current_context_tag is not None:
+            self._current_context_parts.append(data)
         if self._current_cell is not None:
             self._current_cell.append(data)
         if self._current_link is not None:
@@ -136,6 +158,8 @@ def fetch_page(url: str, timeout: int = 25) -> dict[str, Any]:
         "bytes": 0,
         "sha256": None,
         "title": "",
+        "context_elements": [],
+        "visible_text_excerpt": "",
         "table_count": 0,
         "table_previews": [],
         "link_count": 0,
@@ -166,6 +190,9 @@ def fetch_page(url: str, timeout: int = 25) -> dict[str, Any]:
         parser = HTMLInventoryParser()
         parser.feed(text)
         result["title"] = re.sub(r"\s+", " ", parser.title).strip()
+        result["context_elements"] = parser.context_elements[:100]
+        visible_text = re.sub(r"\s+", " ", " ".join(parser.visible_text_parts)).strip()
+        result["visible_text_excerpt"] = visible_text[:6000]
         result["route_redirected_to_root"] = (
             (result["final_url"] or "").rstrip("/") in ("https://ncs.gov.in", "https://www.ncs.gov.in")
             and url.rstrip("/") not in ("https://ncs.gov.in", "https://www.ncs.gov.in")
@@ -176,7 +203,7 @@ def fetch_page(url: str, timeout: int = 25) -> dict[str, Any]:
         result["table_previews"] = [
             {
                 "row_count": len(table),
-                "rows": [row[:16] for row in table[:25]],
+                "rows": [row[:16] for row in table[:60]],
             }
             for table in parser.tables[:12]
         ]
