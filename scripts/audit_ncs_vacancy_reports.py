@@ -7,6 +7,7 @@ It does not access authenticated pages, post credentials, write to a database, o
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import re
@@ -251,14 +252,225 @@ def audit() -> dict[str, Any]:
     }
 
 
+
+STATE_REGISTRATION_FIELDS = (
+    "source_state_label",
+    "record_type",
+    "fy_2015_16_registered",
+    "fy_2016_17_registered",
+    "fy_2017_18_registered",
+    "fy_2018_19_registered",
+    "fy_2019_20_registered",
+    "ncs_dashboard_grand_total_registered",
+    "reference_period",
+    "source_page_url",
+    "observed_at_utc",
+    "source_page_data_freshness_label",
+    "website_footer_last_updated_label",
+    "semantics_note",
+)
+
+DASHBOARD_METRIC_FIELDS = (
+    "metric_code",
+    "display_label",
+    "value_numeric",
+    "display_value",
+    "geography_scope",
+    "observed_at_utc",
+    "source_page_url",
+    "source_page_data_freshness_label",
+    "website_footer_last_updated_label",
+    "freshness_status",
+    "interpretation_note",
+)
+
+
+def _parse_count(value: str) -> int | None:
+    cleaned = _clean_table_text(value).replace(",", "")
+    if not cleaned or cleaned in ("-", "—", "–", "NA", "N/A"):
+        return None
+    if not cleaned.isdigit():
+        return None
+    return int(cleaned)
+
+
+def _clean_table_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", "" if value is None else str(value)).strip()
+
+
+def _extract_labeled_number(text: str, label: str) -> int | None:
+    match = re.search(re.escape(label) + r"\s+([\d,]+)", text, flags=re.I)
+    return _parse_count(match.group(1)) if match else None
+
+
+def extract_dashboard_datasets(
+    source: dict[str, Any],
+    observed_at_utc: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    """Extract the public historical NCS jobseeker-registration table and KPI cards.
+
+    Extraction is accepted only when the table headers match FY 2015-16 through 2019-20
+    and the table's Grand Total agrees with the adjacent Jobseeker Registered headline.
+    This is a platform registration measure, not worker supply and not vacancy demand.
+    """
+    matching_table = None
+    for table in source.get("table_previews", []):
+        rows = table.get("rows", [])
+        if not rows:
+            continue
+        header = [_clean_table_text(x).replace("–", "-").upper() for x in rows[0]]
+        expected = ["STATE", "2015-16", "2016-17", "2017-18", "2018-19", "2019-20", "GRAND TOTAL"]
+        if header[:len(expected)] == expected:
+            matching_table = rows
+            break
+    if matching_table is None:
+        return [], [], {
+            "statewise_registration_table_extracted": False,
+            "reason": "Expected NCS state/year registration table headers were not found.",
+        }
+
+    visible_text = str(source.get("visible_text_excerpt", ""))
+    headline_registered = _extract_labeled_number(visible_text, "Jobseeker Registered")
+    active_jobseekers = _extract_labeled_number(visible_text, "Active Jobseekers")
+    total_vacancies = _extract_labeled_number(visible_text, "Vacancies")
+    active_employers = _extract_labeled_number(visible_text, "Active Employers")
+
+    page_update_match = re.search(
+        r"Last Updated on\s+(.{1,50}?)(?=\s+Jobseeker Details|\s+Jobseeker Registered|$)",
+        visible_text, flags=re.I,
+    )
+    footer_update_match = re.search(
+        r"Last updated:\s*(\d{1,2}-\d{1,2}-\d{2,4})",
+        visible_text, flags=re.I,
+    )
+    page_update_label = _clean_table_text(page_update_match.group(1)) if page_update_match else ""
+    footer_update_label = _clean_table_text(footer_update_match.group(1)) if footer_update_match else ""
+    update_labels_conflict = bool(page_update_label and footer_update_label)
+
+    grand_total_row = next(
+        (row for row in matching_table[1:] if _clean_table_text(row[0]).casefold() == "grand total"),
+        None,
+    )
+    table_total = _parse_count(grand_total_row[-1]) if grand_total_row and grand_total_row else None
+    total_matches_headline = (
+        headline_registered is not None and table_total is not None and headline_registered == table_total
+    )
+
+    state_rows: list[dict[str, Any]] = []
+    for row in matching_table[1:]:
+        if len(row) < 7:
+            continue
+        state_label = _clean_table_text(row[0])
+        normalized = state_label.casefold()
+        if normalized == "grand total":
+            record_type = "TOTAL"
+        elif normalized == "state not specified":
+            record_type = "UNSPECIFIED_STATE"
+        else:
+            record_type = "STATE_UT"
+        numbers = [_parse_count(cell) for cell in row[1:7]]
+        state_rows.append({
+            "source_state_label": state_label,
+            "record_type": record_type,
+            "fy_2015_16_registered": numbers[0],
+            "fy_2016_17_registered": numbers[1],
+            "fy_2017_18_registered": numbers[2],
+            "fy_2018_19_registered": numbers[3],
+            "fy_2019_20_registered": numbers[4],
+            "ncs_dashboard_grand_total_registered": numbers[5],
+            "reference_period": "FY 2015-16 to FY 2019-20 columns as shown; Grand Total period not separately specified",
+            "source_page_url": str(source.get("final_url") or source.get("requested_url") or ""),
+            "observed_at_utc": observed_at_utc,
+            "source_page_data_freshness_label": page_update_label,
+            "website_footer_last_updated_label": footer_update_label,
+            "semantics_note": (
+                "State-wise jobseeker registrations as inferred from the table placement and "
+                "matching Grand Total against the NCS Dashboard 'Jobseeker Registered' headline. "
+                "Platform registrations are not active jobseekers, employed workforce, or available labour supply."
+            ),
+        })
+
+    freshness_status = (
+        "CONFLICTING_PAGE_UPDATE_LABELS_REVIEW"
+        if update_labels_conflict
+        else "DATA_FRESHNESS_LABEL_NOT_FOUND"
+        if not page_update_label and not footer_update_label
+        else "LABELS_RECORDED_REVIEW_SOURCE_DEFINED_CADENCE"
+    )
+    kpis = [
+        ("NCS_DASHBOARD_JOBSEEKERS_REGISTERED", "Jobseeker Registered", headline_registered,
+         "Registration total on NCS platform; not active jobseekers or available workforce."),
+        ("NCS_DASHBOARD_ACTIVE_JOBSEEKERS", "Active Jobseekers", active_jobseekers,
+         "NCS platform's own active-jobseeker label; not a measure of employed workers or all available labour."),
+        ("NCS_DASHBOARD_VACANCIES_LABELLED_TOTAL", "Vacancies", total_vacancies,
+         "Displayed NCS dashboard label only; active-versus-cumulative semantics were not defined in the retrieved page."),
+        ("NCS_DASHBOARD_ACTIVE_EMPLOYERS", "Active Employers", active_employers,
+         "NCS platform employer metric; not a count of all employers in India."),
+    ]
+    metric_rows = [{
+        "metric_code": code,
+        "display_label": label,
+        "value_numeric": value if value is not None else "",
+        "display_value": f"{value:,}" if value is not None else "",
+        "geography_scope": "NCS_PLATFORM_NATIONAL",
+        "observed_at_utc": observed_at_utc,
+        "source_page_url": str(source.get("final_url") or source.get("requested_url") or ""),
+        "source_page_data_freshness_label": page_update_label,
+        "website_footer_last_updated_label": footer_update_label,
+        "freshness_status": freshness_status,
+        "interpretation_note": note,
+    } for code, label, value, note in kpis if value is not None]
+
+    summary = {
+        "statewise_registration_table_extracted": True,
+        "statewise_table_rows_including_state_not_specified_and_total": len(state_rows),
+        "state_rows_excluding_unspecified_and_total": sum(1 for row in state_rows if row["record_type"] == "STATE_UT"),
+        "ncs_jobseeker_registered_headline": headline_registered,
+        "statewise_table_grand_total": table_total,
+        "table_grand_total_matches_jobseeker_registered_headline": total_matches_headline,
+        "kpi_metrics_extracted": len(metric_rows),
+        "source_page_data_freshness_label": page_update_label,
+        "website_footer_last_updated_label": footer_update_label,
+        "freshness_status": freshness_status,
+        "dataset_interpretation": "NCS platform jobseeker registration context, never labour supply or vacancy demand.",
+    }
+    if not total_matches_headline:
+        summary["acceptance_note"] = (
+            "Table extraction was structurally successful, but its Grand Total did not match the "
+            "Jobseeker Registered headline. Do not accept the semantic inference without review."
+        )
+    return state_rows, metric_rows, summary
+
+
+def _write_csv(path: Path, rows: list[dict[str, Any]], fields: tuple[str, ...]) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows({field: row.get(field, "") for field in fields} for row in rows)
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=Path("artifacts/ncs-vacancy-source-audit.json"))
     args = parser.parse_args()
     report = audit()
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    observed_at = report["checked_at_utc"]
+    dashboard = report["sources"].get("current_ncs_report_dashboard", {})
+    state_rows, metric_rows, extracted_summary = extract_dashboard_datasets(dashboard, observed_at)
+    report["extracted_datasets"] = extracted_summary
+    output_dir = args.output.parent
+    output_hashes = {}
+    if state_rows:
+        state_csv = output_dir / "ncs_dashboard_statewise_jobseeker_registrations_fy2015_2020.csv"
+        output_hashes[state_csv.name] = _write_csv(state_csv, state_rows, STATE_REGISTRATION_FIELDS)
+    if metric_rows:
+        metrics_csv = output_dir / "ncs_dashboard_kpi_snapshot_observed_2026-10-23.csv"
+        output_hashes[metrics_csv.name] = _write_csv(metrics_csv, metric_rows, DASHBOARD_METRIC_FIELDS)
+    report["extracted_dataset_file_sha256"] = output_hashes
     args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(json.dumps(report["summary"], indent=2, ensure_ascii=False))
+    print(json.dumps({"source_summary": report["summary"], "extracted_datasets": extracted_summary, "csv_files": output_hashes}, indent=2, ensure_ascii=False))
     return 0
 
 
