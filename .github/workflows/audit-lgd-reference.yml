@@ -7,6 +7,7 @@ on:
       - "scripts/test_lgd_reference_refresh.py"
       - ".github/workflows/audit-lgd-reference.yml"
       - "docs/data/LGD_REFERENCE_REFRESH.md"
+      - "data/reference/source_audits/current_canonical_district_roster_2026-10-23.csv"
   workflow_dispatch: {}
 
 permissions:
@@ -34,7 +35,10 @@ jobs:
         run: python -m unittest scripts.test_lgd_reference_refresh -v
 
       - name: Retrieve and validate current LGD reference snapshot
-        run: python scripts/refresh_lgd_reference.py --output-dir artifacts/lgd-reference
+        run: >-
+          python scripts/refresh_lgd_reference.py
+          --output-dir artifacts/lgd-reference
+          --baseline-csv data/reference/source_audits/current_canonical_district_roster_2026-10-23.csv
 
       - name: Summarize candidate snapshot
         if: always()
@@ -43,6 +47,7 @@ jobs:
             echo "LGD source date: $(jq -r '.source_date' artifacts/lgd-reference/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
             echo "Counts: $(jq -c '.row_counts' artifacts/lgd-reference/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
             echo "Acceptance: $(jq -r '.acceptance_status' artifacts/lgd-reference/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
+            echo "District reconciliation: $(jq -c '.reconciliation.status_counts // {}' artifacts/lgd-reference/manifest.json)" >> "$GITHUB_STEP_SUMMARY"
             echo "Database modified: false" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Candidate snapshot was not produced; inspect validation/download logs." >> "$GITHUB_STEP_SUMMARY"
