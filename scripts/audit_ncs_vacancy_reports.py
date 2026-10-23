@@ -302,6 +302,10 @@ DASHBOARD_JS_KEYWORDS = (
     "baseUrl",
     "dashboard-report",
     "dashboardReport",
+    "allColumns",
+    "columnBatches",
+    "allTabData",
+    "selectedBatchStart",
 )
 
 
