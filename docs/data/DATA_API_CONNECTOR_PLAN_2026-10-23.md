@@ -76,3 +76,18 @@ The connector now has separate keys/settings for UDYAM total, services and manuf
 - UDYAM total: `f8cd85a1-f9b8-4ff1-b195-9f75c10eb338` — https://ap.data.gov.in/resource/district-wise-total-msme-registered-enterprises-under-udyam-registration-till-last-date
 - UDYAM services: `c3dfe7e6-0cfd-4ddb-8f79-9cb3695d9866` — https://www.data.gov.in/resource/district-wise-services-msme-registered-enterprises-under-udyam-registration-till-last-date
 - UDYAM manufacturing: `ae789703-638a-4942-b79e-17868103dec8` — https://ap.data.gov.in/resource/district-level-manufacturing-msme-registered-enterprises-under-udyam-registration-till
+
+
+## Running the six read-only previews locally
+
+The live preview has not been executed from the code-review environment: the backend branch is not deployed, and no OGD API key is available to this environment. Do not paste either the OGD key or ingestion token into a chat, issue, or commit.
+
+1. In the backend runtime environment file used by `app.core.config.Settings`, set `OGD_API_KEY` and `INGESTION_ADMIN_TOKEN`. The six resource IDs are already filled in the example; keep the API key private and server-side.
+2. Start the FastAPI backend with the configured environment, then from the repository root run:
+
+```powershell
+$env:INGESTION_ADMIN_TOKEN = '<copy the local token from your backend environment file>'
+.\backend\scripts\preview_ogd_sources.ps1 -BaseUrl 'http://127.0.0.1:8000/api/v1/ingestion' -EnvFile '.env'
+```
+
+The script reports status, total/received record counts and field names only. It sets `sample_rows=0` and calls only the read-only `/preview/{source_key}` route. It does not write staging rows. Use the `-EnvFile` argument to point at the exact local file containing `INGESTION_ADMIN_TOKEN` if it is not the repository-root `.env` file. A `NOT_CONFIGURED` result means the backend itself does not have `OGD_API_KEY` and that source's resource ID loaded. A successful `PREVIEW_OK` still needs human review of the resource title, date period, fields and district-code coverage before any sync.
