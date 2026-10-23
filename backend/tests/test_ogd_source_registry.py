@@ -7,6 +7,8 @@ def test_registry_has_expected_aggregate_source_keys():
     assert set(OGD_SOURCES) == {
         "eshram_district_registrations",
         "udyam_district_enterprises",
+        "udyam_district_services",
+        "udyam_district_manufacturing",
         "mgnrega_district_employment",
         "jss_district_training_snapshot",
     }
@@ -17,6 +19,8 @@ def test_source_metadata_never_exposes_resource_env_name_or_source_uuid():
         ogd_api_key="do-not-return-this",
         ogd_eshram_resource_id="resource-123",
         ogd_udyam_resource_id=None,
+        ogd_udyam_services_resource_id=None,
+        ogd_udyam_manufacturing_resource_id=None,
         ogd_mgnrega_resource_id=None,
         ogd_jss_resource_id=None,
     )
@@ -32,3 +36,15 @@ def test_jss_resource_is_marked_as_historical_snapshot():
     jss = get_source("jss_district_training_snapshot")
     assert "2022" in jss.observed_grain
     assert "do not schedule daily" in jss.refresh_hint.lower()
+
+
+def test_udyam_total_services_and_manufacturing_are_separate_resources():
+    total = get_source("udyam_district_enterprises")
+    services = get_source("udyam_district_services")
+    manufacturing = get_source("udyam_district_manufacturing")
+    assert len({total.source_id, services.source_id, manufacturing.source_id}) == 3
+    assert "total-msme" in total.resource_url
+    assert "services-msme" in services.resource_url
+    assert "manufacturing-msme" in manufacturing.resource_url
+    assert "Do not add" in services.interpretation
+    assert "Do not add" in manufacturing.interpretation
