@@ -36,6 +36,8 @@ jobs:
           if [ -f artifacts/ncs-vacancy-source-audit.json ]; then
             echo "NCS aggregate-report source probe:" >> "$GITHUB_STEP_SUMMARY"
             jq -r '.summary | to_entries[] | "- \(.key): \(.value.outcome) (HTTP \(.value.http_status // "n/a"), bytes \(.value.bytes))"' artifacts/ncs-vacancy-source-audit.json >> "$GITHUB_STEP_SUMMARY"
+            echo "Extracted datasets:" >> "$GITHUB_STEP_SUMMARY"
+            jq -c '.extracted_datasets // {}' artifacts/ncs-vacancy-source-audit.json >> "$GITHUB_STEP_SUMMARY"
             echo "Database modified: false" >> "$GITHUB_STEP_SUMMARY"
           fi
 
@@ -44,6 +46,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: shramik-ncs-source-access-audit
-          path: artifacts/ncs-vacancy-source-audit.json
+          path: artifacts/
           if-no-files-found: warn
           retention-days: 14
