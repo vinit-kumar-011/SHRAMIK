@@ -1,0 +1,67 @@
+name: Audit LGD reference refresh
+
+on:
+  pull_request:
+    paths:
+      - "scripts/refresh_lgd_reference.py"
+      - "scripts/test_lgd_reference_refresh.py"
+      - ".github/workflows/audit-lgd-reference.yml"
+      - "docs/data/LGD_REFERENCE_REFRESH.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install 7-Zip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full
+
+      - name: Run offline parser and validation tests
+        run: python -m unittest scripts.test_lgd_reference_refresh -v
+
+      - name: Retrieve and validate current LGD reference snapshot
+        run: python scripts/refresh_lgd_reference.py --output-dir artifacts/lgd-reference
+
+      - name: Summarize candidate snapshot
+        if: always()
+        run: |
+          if [ -f artifacts/lgd-reference/manifest.json ]; then
+            python - <<'PY'
+            import json, os
+            with open("artifacts/lgd-reference/manifest.json", encoding="utf-8") as f:
+                m = json.load(f)
+            lines = [
+                f"LGD source date: {m['source_date']}",
+                f"Counts: {m['row_counts']}",
+                f"Acceptance: {m['acceptance_status']}",
+                "Database modified: false",
+            ]
+            with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+                f.write("\n".join(lines) + "\n")
+            PY
+          else
+            echo "Candidate snapshot was not produced; inspect validation/download logs." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload source snapshot and provenance manifest
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shramik-lgd-reference-candidate
+          path: artifacts/lgd-reference/
+          if-no-files-found: error
+          retention-days: 14
