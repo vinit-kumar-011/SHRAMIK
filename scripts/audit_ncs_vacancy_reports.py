@@ -37,6 +37,28 @@ SOURCES = {
 MAX_RESPONSE_BYTES = 5_000_000
 
 
+DASHBOARD_SERIES_FIELDS = (
+    "source_state_label",
+    "record_type",
+    "metric_tab_label",
+    "metric_code",
+    "fiscal_year_source_label",
+    "fiscal_year_normalized",
+    "fiscal_year_start",
+    "value_numeric",
+    "row_total_all_periods",
+    "source_page_url",
+    "source_static_asset_url",
+    "source_static_asset_sha256",
+    "observed_at_utc",
+    "dashboard_data_freshness_label",
+    "website_footer_last_updated_label",
+    "freshness_status",
+    "period_status",
+    "semantics_note",
+)
+
+
 class HTMLInventoryParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -330,7 +352,7 @@ def extract_static_route_candidates(js_text: str) -> list[dict[str, str]]:
             start = max(0, match.start() - 120)
             end = min(len(js_text), match.end() + 160)
             context = re.sub(r"\s+", " ", js_text[start:end]).strip()
-            candidates.append({"route": route[:500], "context": context[:400]})
+            candidates.append({"route": _redact_static_text(route)[:500], "context": _redact_static_text(context)[:400]})
             if len(candidates) >= STATIC_ASSET_CANDIDATE_LIMIT:
                 return candidates
     return candidates
@@ -401,7 +423,18 @@ def probe_dashboard_static_assets(source: dict[str, Any]) -> dict[str, Any]:
             routes = extract_static_route_candidates(text)
             record["route_candidate_count"] = len(routes)
             record["route_candidates"] = routes
-            record["dashboard_keyword_contexts"] = find_dashboard_keyword_contexts(text)
+            record["dashboard_keyword_contexts"] = [
+                {"keyword": item["keyword"], "context": _redact_static_text(item["context"])[:600]}
+                for item in find_dashboard_keyword_contexts(text)
+            ]
+            if "this.allTabData=" in text and "this.allColumns=" in text:
+                record["embedded_dashboard_series"] = extract_embedded_dashboard_series(
+                    text,
+                    dashboard_source=source,
+                    observed_at_utc=datetime.now(timezone.utc).isoformat(),
+                    asset_url=asset_url,
+                    asset_sha256=record["sha256"],
+                )
             record["outcome"] = "FIRST_PARTY_JS_SCANNED"
         except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
             record["outcome"] = "ASSET_FETCH_FAILED"
@@ -572,6 +605,321 @@ def extract_dashboard_datasets(
     return state_rows, metric_rows, summary
 
 
+DASHBOARD_SERIES_FIELDS = (
+    "source_state_label",
+    "record_type",
+    "metric_tab_label",
+    "metric_code",
+    "fiscal_year_source_label",
+    "fiscal_year_normalized",
+    "fiscal_year_start",
+    "value_numeric",
+    "row_total_all_periods",
+    "source_page_url",
+    "source_static_asset_url",
+    "source_static_asset_sha256",
+    "observed_at_utc",
+    "dashboard_data_freshness_label",
+    "website_footer_last_updated_label",
+    "freshness_status",
+    "period_status",
+    "semantics_note",
+)
+
+
+def _redact_static_text(value: str) -> str:
+    """Remove signed URL query values and credential-like parameters from audit excerpts."""
+    text = re.sub(
+        r"https?://[^\\s\\"'<>]+",
+        lambda match: (
+            urlparse(match.group(0)).scheme + "://" + urlparse(match.group(0)).netloc +
+            urlparse(match.group(0)).path +
+            ("?[QUERY REDACTED]" if urlparse(match.group(0)).query else "")
+        ),
+        value,
+    )
+    text = re.sub(
+        r"(?i)\\b(accessToken|refreshToken|authorization|userId|mobileNumber|otp|sig|sv|se|sr|sp|st)=([^&\\"'\\s]+)",
+        r"\\1=[REDACTED]",
+        text,
+    )
+    return text
+
+
+def _normalise_fiscal_year(label: str) -> tuple[str, int]:
+    match = re.fullmatch(r"(\\d{4})-(\\d{2}|\\d{4})", label.strip())
+    if not match:
+        raise ValueError(f"Unrecognized fiscal-year column label: {label!r}")
+    start_year = int(match.group(1))
+    end_year = int(match.group(2)) if len(match.group(2)) == 4 else (start_year // 100) * 100 + int(match.group(2))
+    if end_year < start_year:
+        end_year += 100
+    return f"{start_year}-{end_year % 100:02d}", start_year
+
+
+def extract_embedded_dashboard_series(
+    js_text: str,
+    dashboard_source: dict[str, Any],
+    observed_at_utc: str,
+    *,
+    asset_url: str,
+    asset_sha256: str,
+) -> dict[str, Any]:
+    """Parse first-party public JS-embedded state/FY dashboard series without executing JS."""
+    summary: dict[str, Any] = {
+        "extraction_status": "REJECTED",
+        "metric_tabs": [],
+        "fiscal_year_columns": [],
+        "row_count": 0,
+        "state_ut_count": 0,
+        "period_cells": 0,
+        "per_row_totals_valid": False,
+        "per_period_grand_totals_valid": False,
+        "headline_totals_match": False,
+        "freshness_status": "CONFLICTING_PAGE_UPDATE_LABELS_REVIEW",
+        "errors": [],
+        "semantics_warning": (
+            "These are NCS platform dashboard tab values, not a census of all Indian vacancies, "
+            "the number of current open vacancies, or a valid workforce-supply measure."
+        ),
+    }
+    columns_match = re.search(
+        r"this\\.allColumns=(\\[[^\\]]*\\]),this\\.columnBatches=",
+        js_text,
+    )
+    tabs_match = re.search(
+        r"this\\.allTabData=(\\{.*?\\}),this\\.searchQuery=",
+        js_text,
+        flags=re.S,
+    )
+    if not columns_match:
+        summary["errors"].append("The expected this.allColumns fiscal-year list was not found.")
+    if not tabs_match:
+        summary["errors"].append("The expected this.allTabData object was not found.")
+    if summary["errors"]:
+        return { "summary": summary, "rows": [] }
+
+    try:
+        fiscal_year_labels = json.loads(columns_match.group(1))
+        all_tabs = json.loads(tabs_match.group(1))
+    except (json.JSONDecodeError, TypeError) as exc:
+        summary["errors"].append(f"Embedded dashboard object is not strict JSON-compatible text: {exc}")
+        return { "summary": summary, "rows": [] }
+
+    expected_tabs = {
+        "Jobseeker Registered": (
+            "NCS_DASHBOARD_JOBSEEKER_REGISTERED_BY_FY",
+            "NCS jobseeker registration values by displayed fiscal-year column; not worker supply."
+        ),
+        "Active Jobseekers": (
+            "NCS_DASHBOARD_ACTIVE_JOBSEEKERS_BY_FY",
+            "NCS dashboard's Active Jobseekers tab value by fiscal-year column. The retrieved page does not define whether each annual value is a cohort, stock, or activity count; do not treat as labour supply."
+        ),
+        "Vacancies": (
+            "NCS_DASHBOARD_VACANCIES_BY_FY",
+            "NCS dashboard's Vacancies tab value by fiscal-year column. The retrieved page does not define whether annual values are new vacancy reports, cumulative postings, or another measure; not a current-open-vacancy inventory or all-economy demand."
+        ),
+        "Active Employer": (
+            "NCS_DASHBOARD_ACTIVE_EMPLOYERS_BY_FY",
+            "NCS dashboard's Active Employer tab value by fiscal-year column. Annual semantics are not defined in the retrieved page; not a census of Indian employers."
+        ),
+    }
+    visible_text = str(dashboard_source.get("visible_text_excerpt") or "")
+    page_update_match = re.search(
+        r"Last Updated on\\s+(.{1,50}?)(?=\\s+Jobseeker Details|\\s+Jobseeker Registered|$)",
+        visible_text, flags=re.I,
+    )
+    footer_update_match = re.search(
+        r"Last updated:\\s*(\\d{1,2}-\\d{1,2}-\\d{2,4})",
+        visible_text, flags=re.I,
+    )
+    page_update_label = _clean_table_text(page_update_match.group(1)) if page_update_match else ""
+    footer_update_label = _clean_table_text(footer_update_match.group(1)) if footer_update_match else ""
+    freshness_status = (
+        "CONFLICTING_PAGE_UPDATE_LABELS_REVIEW"
+        if page_update_label and footer_update_label and page_update_label.casefold() != footer_update_label.casefold()
+        else "DATA_FRESHNESS_LABEL_NOT_FOUND"
+        if not page_update_label and not footer_update_label
+        else "LABELS_RECORDED_REVIEW_SOURCE_DEFINED_CADENCE"
+    )
+    summary["freshness_status"] = freshness_status
+    summary["fiscal_year_columns"] = fiscal_year_labels
+    summary["metric_tabs"] = list(expected_tabs)
+
+    try:
+        normalized_years = [_normalise_fiscal_year(label) for label in fiscal_year_labels]
+    except ValueError as exc:
+        summary["errors"].append(str(exc))
+        return {"summary": summary, "rows": []}
+    if len(set(label for label, _ in normalized_years)) != len(normalized_years):
+        summary["errors"].append("Fiscal-year labels collide after normalization.")
+        return {"summary": summary, "rows": []}
+
+    observed_dt = datetime.fromisoformat(observed_at_utc.replace("Z", "+00:00"))
+    current_year = observed_dt.astimezone(timezone.utc).year
+    rows_out: list[dict[str, Any]] = []
+    row_total_checks = []
+    grand_total_checks = []
+    headline_checks = []
+    per_tab_counts: dict[str, Any] = {}
+    missing_tabs = [tab for tab in expected_tabs if tab not in all_tabs]
+    if missing_tabs:
+        summary["errors"].append("Missing expected tab data: " + ", ".join(missing_tabs))
+        return {"summary": summary, "rows": []}
+
+    for tab_label, (metric_code, semantic_note) in expected_tabs.items():
+        tab = all_tabs[tab_label]
+        tab_rows = tab.get("rows", [])
+        grand = tab.get("grandTotal") or {}
+        if not tab_rows or len(fiscal_year_labels) == 0:
+            summary["errors"].append(f"{tab_label}: missing rows or fiscal-year columns.")
+            continue
+
+        state_rows = [row for row in tab_rows if _clean_table_text(row.get("state", "")).casefold() != "state not specified"]
+        unspecified_rows = [row for row in tab_rows if _clean_table_text(row.get("state", "")).casefold() == "state not specified"]
+        state_names = [_clean_table_text(row.get("state", "")) for row in state_rows]
+        if len(state_names) != 36 or len(set(state_names)) != 36:
+            summary["errors"].append(
+                f"{tab_label}: expected 36 unique state/UT rows, found {len(state_names)}."
+            )
+        if len(unspecified_rows) > 1:
+            summary["errors"].append(f"{tab_label}: repeated 'State Not Specified' rows.")
+        if not grand or len(grand.get("values", [])) != len(fiscal_year_labels):
+            summary["errors"].append(f"{tab_label}: grand total column count mismatch.")
+            continue
+
+        row_total_valid = True
+        all_source_rows = list(tab_rows)
+        for source_row in all_source_rows:
+            values = source_row.get("values", [])
+            total = source_row.get("total")
+            if len(values) != len(fiscal_year_labels) or any(not isinstance(v, int) or v < 0 for v in values):
+                row_total_valid = False
+                summary["errors"].append(f"{tab_label}: invalid annual values for {source_row.get('state')!r}.")
+                continue
+            if sum(values) != total:
+                row_total_valid = False
+                summary["errors"].append(f"{tab_label}: annual values do not sum to row total for {source_row.get('state')!r}.")
+        if sum(grand.get("values", [])) != grand.get("total"):
+            row_total_valid = False
+            summary["errors"].append(f"{tab_label}: grand-total annual values do not sum to grand-total total.")
+        row_total_checks.append(row_total_valid)
+
+        per_period_valid = True
+        for idx, fy in enumerate(fiscal_year_labels):
+            sum_state_rows = sum(row["values"][idx] for row in all_source_rows if len(row.get("values", [])) == len(fiscal_year_labels))
+            if sum_state_rows != grand["values"][idx]:
+                per_period_valid = False
+                summary["errors"].append(f"{tab_label}: state rows do not sum to grand total for {fy}.")
+        grand_total_checks.append(per_period_valid)
+
+        kpi_label = {
+            "Jobseeker Registered": "Jobseeker Registered",
+            "Active Jobseekers": "Active Jobseekers",
+            "Vacancies": "Vacancies",
+            "Active Employer": "Active Employers",
+        }[tab_label]
+        headline = _extract_labeled_number(visible_text, kpi_label)
+        headline_match = headline is not None and headline == grand.get("total")
+        headline_checks.append(headline_match)
+        if not headline_match:
+            summary["errors"].append(
+                f"{tab_label}: grand total {grand.get('total')} does not match visible dashboard card {kpi_label!r} ({headline})."
+            )
+
+        for source_row in all_source_rows:
+            state_label = _clean_table_text(source_row.get("state", ""))
+            record_type = "STATE_NOT_SPECIFIED" if state_label.casefold() == "state not specified" else "STATE_UT"
+            for idx, value in enumerate(source_row["values"]):
+                source_fy = str(fiscal_year_labels[idx])
+                normalized_fy, start_year = normalized_years[idx]
+                period_status = (
+                    "CURRENT_FISCAL_YEAR_IN_PROGRESS_AS_OF_CAPTURE"
+                    if start_year == current_year
+                    else "PAST_FISCAL_YEAR"
+                    if start_year < current_year
+                    else "FUTURE_FISCAL_YEAR_LABEL_REVIEW"
+                )
+                rows_out.append({
+                    "source_state_label": state_label,
+                    "record_type": record_type,
+                    "metric_tab_label": tab_label,
+                    "metric_code": metric_code,
+                    "fiscal_year_source_label": source_fy,
+                    "fiscal_year_normalized": normalized_fy,
+                    "fiscal_year_start": start_year,
+                    "value_numeric": value,
+                    "row_total_all_periods": source_row["total"],
+                    "source_page_url": str(dashboard_source.get("final_url") or dashboard_source.get("requested_url") or ""),
+                    "source_static_asset_url": asset_url,
+                    "source_static_asset_sha256": asset_sha256,
+                    "observed_at_utc": observed_at_utc,
+                    "dashboard_data_freshness_label": page_update_label,
+                    "website_footer_last_updated_label": footer_update_label,
+                    "freshness_status": freshness_status,
+                    "period_status": period_status,
+                    "semantics_note": semantic_note,
+                })
+
+        # Grand Total is emitted as its own row for each tab, not as a state.
+        for idx, value in enumerate(grand["values"]):
+            source_fy = str(fiscal_year_labels[idx])
+            normalized_fy, start_year = normalized_years[idx]
+            period_status = (
+                "CURRENT_FISCAL_YEAR_IN_PROGRESS_AS_OF_CAPTURE"
+                if start_year == current_year
+                else "PAST_FISCAL_YEAR"
+                if start_year < current_year
+                else "FUTURE_FISCAL_YEAR_LABEL_REVIEW"
+            )
+            rows_out.append({
+                "source_state_label": _clean_table_text(grand.get("label", "Grand Total")),
+                "record_type": "GRAND_TOTAL",
+                "metric_tab_label": tab_label,
+                "metric_code": metric_code,
+                "fiscal_year_source_label": source_fy,
+                "fiscal_year_normalized": normalized_fy,
+                "fiscal_year_start": start_year,
+                "value_numeric": value,
+                "row_total_all_periods": grand["total"],
+                "source_page_url": str(dashboard_source.get("final_url") or dashboard_source.get("requested_url") or ""),
+                "source_static_asset_url": asset_url,
+                "source_static_asset_sha256": asset_sha256,
+                "observed_at_utc": observed_at_utc,
+                "dashboard_data_freshness_label": page_update_label,
+                "website_footer_last_updated_label": footer_update_label,
+                "freshness_status": freshness_status,
+                "period_status": period_status,
+                "semantics_note": semantic_note,
+            })
+        per_tab_counts[tab_label] = {
+            "state_ut_rows": len(state_rows),
+            "state_not_specified_rows": len(unspecified_rows),
+            "fiscal_year_columns": len(fiscal_year_labels),
+            "headline_card_value": headline,
+            "grand_total": grand.get("total"),
+            "row_total_valid": row_total_valid,
+            "per_period_grand_total_valid": per_period_valid,
+            "headline_matches": headline_match,
+        }
+
+    summary["per_tab_validation"] = per_tab_counts
+    summary["row_count"] = len(rows_out)
+    summary["per_row_totals_valid"] = bool(row_total_checks) and all(row_total_checks)
+    summary["per_period_grand_totals_valid"] = bool(grand_total_checks) and all(grand_total_checks)
+    summary["headline_totals_match"] = bool(headline_checks) and all(headline_checks)
+    summary["state_ut_count"] = 36
+    summary["period_cells"] = len(rows_out)
+    summary["extraction_status"] = (
+        "PASS_CONTEXT_ONLY_FRESHNESS_REVIEW"
+        if not summary["errors"]
+        and summary["per_row_totals_valid"]
+        and summary["per_period_grand_totals_valid"]
+        and summary["headline_totals_match"]
+        else "REJECTED"
+    )
+    return {"summary": summary, "rows": rows_out if summary["extraction_status"].startswith("PASS") else []}
+
 def _write_csv(path: Path, rows: list[dict[str, Any]], fields: tuple[str, ...]) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
@@ -591,8 +939,20 @@ def main() -> int:
     state_rows, metric_rows, extracted_summary = extract_dashboard_datasets(dashboard, observed_at)
     report["extracted_datasets"] = extracted_summary
     report["static_asset_route_inventory"] = probe_dashboard_static_assets(dashboard)
+    embedded_series_rows: list[dict[str, Any]] = []
+    embedded_series_summary: dict[str, Any] = {"extraction_status": "NOT_FOUND", "errors": ["No first-party static asset exposed the expected embedded table."]}
+    for asset_record in report["static_asset_route_inventory"].get("assets", []):
+        embedded = asset_record.pop("embedded_dashboard_series", None)
+        if embedded is not None:
+            embedded_series_summary = embedded.get("summary", {})
+            embedded_series_rows = embedded.get("rows", [])
+            break
+    report["embedded_dashboard_series"] = embedded_series_summary
     output_dir = args.output.parent
     output_hashes = {}
+    if embedded_series_rows:
+        series_csv = output_dir / "ncs_dashboard_state_fy_metric_series_2015_2027.csv"
+        output_hashes[series_csv.name] = _write_csv(series_csv, embedded_series_rows, DASHBOARD_SERIES_FIELDS)
     if state_rows:
         state_csv = output_dir / "ncs_dashboard_statewise_jobseeker_registrations_fy2015_2020.csv"
         output_hashes[state_csv.name] = _write_csv(state_csv, state_rows, STATE_REGISTRATION_FIELDS)
