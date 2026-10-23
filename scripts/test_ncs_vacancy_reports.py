@@ -5,6 +5,7 @@ from scripts.audit_ncs_vacancy_reports import (
     SOURCES,
     extract_dashboard_datasets,
     extract_static_route_candidates,
+    find_dashboard_keyword_contexts,
 )
 
 
@@ -87,6 +88,15 @@ class NCSHTMLInventoryTests(unittest.TestCase):
         self.assertIn("/api/report/vacancies", values)
         self.assertIn("https://api.example.test/v1/aggregate", values)
         self.assertTrue(any("ViewStaticReport.aspx" in value for value in values))
+
+
+    def test_dashboard_keyword_context_inventory_captures_kpi_and_api_configuration(self):
+        js = 'const apiUrl="https://ncs.gov.in/api/"; const dashboard="NCSReportDashboard"; const kpi="Vacancies";'
+        contexts = find_dashboard_keyword_contexts(js)
+        keywords = {item["keyword"] for item in contexts}
+        self.assertIn("apiUrl", keywords)
+        self.assertIn("NCSReportDashboard", keywords)
+        self.assertIn("Vacancies", keywords)
 
 
 if __name__ == "__main__":
